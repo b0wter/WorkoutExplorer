@@ -25,6 +25,8 @@ Sample pages on protoserve (`/w/<name>`) come from `src/server/testdata/page/*.j
 
 ## Reminders
 
+- F-24 (viewer download) deferred to phase 3 on 2 Nov 2026. Its design (architect/F-24-viewer-download.md, ADR-036) is done; unfinished B-1 work (internal/fitexport, publish/page/template/Caddyfile changes, no QA, `make ci` not run) is parked on the local, unpushed branch `wip/f-24-export` (332e041). Rebase it onto main when phase 3 starts, or drop it.
+
 - F-31: take the Caddy version from `deploy/caddy.env` (pinned 2.11.7; 2.10.2 answers `.br` with 206).
 
 - F-31: Go + Caddy in one Docker setup (decision 31 Oct). Its design must reword the systemd assumptions in F-31 (lines ~13–30), the TD (Hosting and operations, Logs) and the F-21 design hand-off (`Restart=always`).
