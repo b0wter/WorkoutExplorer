@@ -1,8 +1,10 @@
-# Continue here (state of 31 Oct 2026)
+# Continue here (state of 2 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
 ## Current: F-31 built, waiting on the first deploy; F-24 next
+
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>` (HEAD must be the tag's commit).
 
 F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks. Report notifications via HTTP callbacks (Pushover) are a later idea (decision log).
 
