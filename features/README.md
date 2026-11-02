@@ -39,7 +39,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
 | [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | waiting on user | AC 3 loop-route check; AC 8/9 messengers (deployed) |
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
-| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | not started | |
+| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | design | architect |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | not started | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | not started | |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | not started | |
@@ -132,6 +132,12 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
   - [ ] Malformed, empty, zero-length, reversed and entirely out-of-range values are each ignored without a message; the page opens with no range and works as usual.
   - [ ] With JavaScript off the page shows as before; the summary still renders before the map and charts (LCP target unchanged).
   - [ ] With live link update (assumed, open question): selecting updates the link without new browser history entries, clearing (AP-7) removes the range from it, and the copy-link button (SH-6) copies the link with the range.
+- Summary colours: summary cells tinted with a muted version of their chart's line colour (frontend only) — DS-5, AP-2, AP-4, DS-4. Acceptance criteria, to carry into its feature file:
+  - [ ] Elevation gain, speed or pace, heart rate, power, cadence and temperature cells are tinted, each in a muted version of its own chart's line colour; distance, moving time, elapsed time and calories cells stay plain.
+  - [ ] In light and dark theme the tint matches that theme's line colour, and every text in a tinted cell has a contrast of at least 4.5:1 against it.
+  - [ ] A workout missing a stream shows no cell and no tint for it; a server-computed value is tinted like a device value.
+  - [ ] Range panel, laps and splits, cursor readout and preview image are unchanged.
+  - [ ] Data file size and the summary's render time (LCP) are unchanged.
 
 ## Questions for review
 
@@ -381,6 +387,13 @@ Updated: F-31 (scope), technical design (Hosting and operations: Deploys).
 - **Open, with suggestions in the spec's open question "Range in the link":** elapsed seconds rather than sample numbers; live link update plus the copy-link button (SH-6) rather than a separate "copy link to this selection" button; cursor position and x axis not included; no scroll or map zoom on opening.
 
 Updated: spec (viewer story 12, scope table, AP-19, Open questions, Roadmap phase 2), Phase 2 list (with acceptance criteria). No MVP feature changes. Technical design: link formats (ADR-020) gain the viewing-page fragment once phase 2 is designed.
+
+**Recorded on 2 Nov 2026, summary colours** (new request from the user, phase 2; not yet decided in detail):
+
+- **Summary colours (DS-5, Could, phase 2):** each summary cell whose metric has a chart line gets a background tint, a muted version of that line's colour; cells without a chart line (distance, times, calories) stay plain. Fixed by the request: follows the light and dark theme; text contrast kept (at least 4.5:1, an exception to accessibility not being a goal, NFR Accessibility).
+- **Open, with suggestions in the spec's open question "Summary colours":** one tint strength for all metrics, reviewed on screen; summary strip only, not range panel or laps; chart line colours changed only where contrast requires it.
+
+Updated: spec (viewer story 13, scope table, DS-5, Open questions, Roadmap phase 2), Phase 2 list (with acceptance criteria). No MVP feature changes.
 
 **Decided on 2 Nov 2026, viewer download deferred** (user, F-24):
 
