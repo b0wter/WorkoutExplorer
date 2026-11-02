@@ -15,6 +15,7 @@ import {
   MAX_MAP_PIXEL_RATIO,
   OPENFREEMAP_STYLE_URL,
   HIDDEN_SOURCE,
+  RANGE_BLUES,
   RANGE_SOURCE,
   ROUTE_SOURCE,
   TILE_HOST,
@@ -23,8 +24,10 @@ import {
   classColourExpression,
   colourData,
   isStyle,
+  linesData,
   mapPixelRatio,
   mergeStyle,
+  rangeData,
 } from './map-style';
 
 const markers: RouteMarker[] = [
@@ -188,7 +191,7 @@ describe('baseStyle', () => {
     expect(ids(s.layers)).toEqual(['background', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish']);
   });
 
-  it('F-17 R-10: wx-range holds the given range (empty by default), drawn by its own layers in the range colour', () => {
+  it('F-17 R-10: wx-range holds the given range (empty by default), drawn by its own layers in the range colour (classed edges in the range blues, F-25)', () => {
     const empty = baseStyle(lines, markers).sources[RANGE_SOURCE];
     expect(empty).toEqual({ type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     const s = baseStyle(lines, markers, MAP_COLOURS, { recorded: [recorded[0]], bridges });
@@ -196,7 +199,7 @@ describe('baseStyle', () => {
     if (src?.type !== 'geojson' || typeof src.data !== 'object' || src.data.type !== 'FeatureCollection') throw new Error('no collection');
     expect(src.data.features.map((f: { properties?: { kind?: unknown } | null }) => f.properties?.kind)).toEqual(['recorded', 'bridge']);
     const byId = new Map(s.layers.map((l) => [l.id, l]));
-    expect(byId.get('wx-range-line')).toMatchObject({ source: RANGE_SOURCE, filter: ['==', ['get', 'kind'], 'recorded'], paint: { 'line-color': MAP_COLOURS.range, 'line-width': 5 } });
+    expect(byId.get('wx-range-line')).toMatchObject({ source: RANGE_SOURCE, filter: ['==', ['get', 'kind'], 'recorded'], paint: { 'line-color': classColourExpression(CLASS_COLOURS, MAP_COLOURS.range), 'line-width': 5 } });
     expect(byId.get('wx-range-bridge')).toMatchObject({ source: RANGE_SOURCE, filter: ['==', ['get', 'kind'], 'bridge'], paint: { 'line-dasharray': [2, 1.5] } });
   });
 
@@ -225,20 +228,31 @@ describe('F-25: route colouring (C-1, ADR-037)', () => {
     expect(byId.get('wx-colour-line')).not.toHaveProperty('filter');
   });
 
-  it('the class expression maps c = 0…13 to the 14 class colours, else the route colour', () => {
+  it('the class expression maps c = 0…20 to the 21 class colours, else the fallback', () => {
     const e = classColourExpression(['#000001', '#000002'], '#ff0000');
     expect(e).toEqual(['match', ['get', 'c'], 0, '#000001', 1, '#000002', '#ff0000']);
-    expect(CLASS_COLOURS).toHaveLength(2 * DIVERGING);
+    expect(CLASS_COLOURS).toHaveLength(RANGE_BLUES + 7);
+    expect(RANGE_BLUES).toBe(2 * DIVERGING);
   });
 
   it('colourData: one MultiLineString per non-empty class, c offset for the diverging palette', () => {
     const a: [number, number][][] = [[[8, 47], [8.1, 47]]];
     const d = colourData([a, [], a], DIVERGING);
     expect(d.features).toEqual([
-      { type: 'Feature', properties: { c: 7 }, geometry: { type: 'MultiLineString', coordinates: a } },
-      { type: 'Feature', properties: { c: 9 }, geometry: { type: 'MultiLineString', coordinates: a } },
+      { type: 'Feature', properties: { kind: 'recorded', c: 7 }, geometry: { type: 'MultiLineString', coordinates: a } },
+      { type: 'Feature', properties: { kind: 'recorded', c: 9 }, geometry: { type: 'MultiLineString', coordinates: a } },
     ]);
     expect(colourData([]).features).toEqual([]);
+  });
+
+  it('rangeData: the plain range lines first, then the classed edges in the range blues', () => {
+    const a: [number, number][][] = [[[8, 47], [8.1, 47]]];
+    const bridge: [[number, number], [number, number]] = [[8.1, 47], [8.2, 47]];
+    const d = rangeData({ recorded: a, bridges: [bridge] }, [[], a]);
+    expect(d.features).toEqual([
+      ...linesData({ recorded: a, bridges: [bridge] }).features,
+      { type: 'Feature', properties: { kind: 'recorded', c: RANGE_BLUES + 1 }, geometry: { type: 'MultiLineString', coordinates: a } },
+    ]);
   });
 });
 

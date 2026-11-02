@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CLASS_COLOURS,
   MAP_COLOURS,
+  RANGE_BLUES,
   OPENFREEMAP_DARK_STYLE_URL,
   OPENFREEMAP_STYLE_URL,
   TILE_HOST,
@@ -47,22 +48,26 @@ describe('recolour', () => {
     expect(calls).toContain('background.background-color=' + MAP_COLOURS.background);
     expect(calls.some((c) => c.startsWith('wx-finish'))).toBe(false);
   });
-  it('F-25 C-5: rebuilds the class colour expression from the theme, with the route colour as fallback', () => {
+  it('F-25 C-5: rebuilds the class colour expressions from the theme: route colour fallback, range colour for the range', () => {
     const calls: [string, string, unknown][] = [];
     const classes = CLASS_COLOURS.map((_, k) => '#0000' + (10 + k));
     recolour({ getLayer: () => ({}), setPaintProperty: (id, name, value) => calls.push([id, name, value]) }, { ...MAP_COLOURS, route: '#aa0000' }, classes);
     expect(calls).toContainEqual(['wx-colour-line', 'line-color', classColourExpression(classes, '#aa0000')]);
+    expect(calls).toContainEqual(['wx-range-line', 'line-color', classColourExpression(classes, MAP_COLOURS.range)]);
+    expect(calls.filter(([id]) => id === 'wx-range-line')).toHaveLength(1);
   });
 });
 
 describe('classColours (F-25 C-5)', () => {
-  it('falls back to the light values; reads --seq-k and --div-k from the element', () => {
+  it('falls back to the light values; reads --seq-k, --div-k and --range-k from the element', () => {
     expect(classColours(document.createElement('div'))).toEqual(CLASS_COLOURS);
     const el = document.createElement('div');
     el.style.setProperty('--seq-6', '#010203');
     el.style.setProperty('--div-0', '#040506');
+    el.style.setProperty('--range-6', '#070809');
     const c = classColours(el);
     expect([c[6], c[7], c[8]]).toEqual(['#010203', '#040506', CLASS_COLOURS[8]]);
+    expect([c[RANGE_BLUES - 1], c[RANGE_BLUES + 6]]).toEqual([CLASS_COLOURS[RANGE_BLUES - 1], '#070809']);
   });
 });
 

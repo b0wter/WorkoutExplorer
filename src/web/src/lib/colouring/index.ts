@@ -198,7 +198,7 @@ export function classify(values: Float64Array, scale: ColourScale): Uint8Array {
 }
 
 export interface Legend {
-  /** Relative scales: [class 0 end, last class end]; gradient: its class edges, left to right. */
+  /** Relative scales: [class 0 end, last class end], marked ≤ or ≥; gradient: its class edges, left to right. */
   readonly labels: readonly string[];
   readonly unit: string;
 }
@@ -208,10 +208,13 @@ export function legend(scale: ColourScale, sport: string, units: Units): Legend 
   const m = scale.metric;
   if (m === 'gradient') return { labels: GRADIENT_EDGES.map((e) => formatFixed(e, 0)), unit: '%' };
   const ends = scale.reverse ? [scale.hi, scale.lo] : [scale.lo, scale.hi];
+  // The bounds are the 5th and 95th percentile; values beyond clip into the end classes (QA-25-r1-4).
+  // Pace: the slow (left) end is the larger number.
+  const marks = scale.lo !== scale.lo ? ['', ''] : scale.reverse ? ['≥ ', '≤ '] : ['≤ ', '≥ '];
+  let text = (v: number): string => formatFixed(v, 0);
   if (m === 'speed') {
     // A missing bound gives '' from formatSpeedOrPace; show the missing-value dash instead.
-    const text = (v: number): string => formatSpeedOrPace(sport, scale.reverse ? 1 / v : v, units) || formatFixed(Number.NaN, 0);
-    return { labels: ends.map(text), unit: speedOrPaceUnit(sport, units) };
+    text = (v) => formatSpeedOrPace(sport, scale.reverse ? 1 / v : v, units) || formatFixed(Number.NaN, 0);
   }
-  return { labels: ends.map((v) => formatFixed(v, 0)), unit: m === 'heart_rate' ? 'bpm' : 'W' };
+  return { labels: ends.map((v, k) => marks[k] + text(v)), unit: m === 'speed' ? speedOrPaceUnit(sport, units) : m === 'heart_rate' ? 'bpm' : 'W' };
 }

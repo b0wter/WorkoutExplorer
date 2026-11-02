@@ -36,6 +36,7 @@ import {
   createRouteIndex,
   hitRadiusPx,
   interceptsTouch,
+  lowerBound,
   mercatorX,
   mercatorY,
   recordedEdgeEnds,
@@ -61,6 +62,7 @@ import {
   mapColours,
   mapPixelRatio,
   mergeStyle,
+  rangeData,
   recolour,
   styleUrlFor,
   type Scheme,
@@ -155,7 +157,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   // style's own load and a style swap (merge) carry it.
   const rangeLines = (a: number, b: number) => (a < 0 ? { recorded: [], bridges: [] } : routeLinesIn(data, route, a, b));
   const initialRange = rangeLines(selection ? selection.start() : -1, selection ? selection.end() : -1);
-  let range = linesData(initialRange);
+  let range: unknown = linesData(initialRange);
   const markers = routeMarkers(data, route);
   const lat = position.latitude;
   const lon = position.longitude;
@@ -262,6 +264,20 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let unsubscribeUnits: (() => void) | null = null;
   // Route colouring (F-25 C-7): the latest wx-colour data, re-applied on 'style.load' like the range.
   let colour = colourData([]);
+  // The current metric's class per sample, no class as CLASS_COUNT (null = plain route), and the recorded
+  // edges' ends: kept, so a range update only partitions the range's edges, never recomputes values or bounds.
+  let classes: Uint8Array | null = null;
+  let ends: Uint32Array | null = null;
+  // The range highlight's data: with colouring on, its classed edges in the range blues (F-25); edges
+  // without a class and the bridges as without colouring. O(log N + range).
+  const rangeOf = (a: number, b: number): unknown => {
+    const l = rangeLines(a, b);
+    if (classes === null || ends === null || a < 0) return linesData(l);
+    const inRange = ends.subarray(lowerBound(ends, a + 1), lowerBound(ends, b + 1));
+    // The extra last class holds the edges without a class, drawn plain.
+    const byClass = classLines(data, inRange, classes, CLASS_COUNT + 1);
+    return rangeData({ recorded: byClass.pop()!, bridges: l.bridges }, byClass);
+  };
   const applyColour = (): void => {
     (map.getSource(COLOUR_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(colour);
   };
@@ -342,7 +358,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
         clearTimeout(rangeTimer);
         rangeTimer = setTimeout(() => {
           if (destroyed) return;
-          range = linesData(rangeLines(a, b));
+          range = rangeOf(a, b);
           applyRange();
         }, RANGE_SETTLE_MS);
       });
@@ -364,7 +380,6 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       legendBox.className = 'wx-legend';
       legendBox.hidden = true;
       box.append(select, legendBox);
-      let ends: Uint32Array | null = null;
       let shown: { scale: ReturnType<typeof colourScale>; missing: boolean } | null = null;
       const span = (className: string, text = ''): HTMLSpanElement => {
         const el = document.createElement('span');
@@ -401,19 +416,26 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       const choose = (metric: ColourMetric | ''): void => {
         if (metric === '') {
           shown = null;
+          classes = null;
           colour = colourData([]);
         } else {
           ends ??= recordedEdgeEnds(data, route);
           const values = metricValues(data, metric);
           const scale = colourScale(metric, values, ends, sport);
-          const classes = classify(values, scale);
+          const c = classify(values, scale);
+          classes = c.map((k) => Math.min(k, CLASS_COUNT));
           let missing = false;
-          for (let k = 0; k < ends.length && !missing; k++) missing = classes[ends[k]] >= CLASS_COUNT;
+          for (let k = 0; k < ends.length && !missing; k++) missing = c[ends[k]] >= CLASS_COUNT;
           shown = { scale, missing };
-          colour = colourData(classLines(data, ends, classes, CLASS_COUNT), metric === 'gradient' ? DIVERGING : 0);
+          colour = colourData(classLines(data, ends, c, CLASS_COUNT), metric === 'gradient' ? DIVERGING : 0);
         }
         applyColour();
         renderLegend();
+        if (selection) {
+          clearTimeout(rangeTimer);
+          range = rangeOf(selection.start(), selection.end());
+          applyRange();
+        }
       };
       select.addEventListener('change', () => choose(select.value as ColourMetric | ''));
       if (options.units) unsubscribeUnits = options.units.subscribe(renderLegend);

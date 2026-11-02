@@ -186,22 +186,22 @@ describe('colourScale and classify (AC 3, C-4)', () => {
 describe('legend (AC 3, AC 4, DS-1, DS-2)', () => {
   const scale = (metric: ColourScale['metric'], lo: number, hi: number, reverse = false): ColourScale => ({ metric, edges: [], reverse, lo, hi });
   it('speed in km/h or mph; a units switch only relabels', () => {
-    expect(legend(scale('speed', 5, 10), 'cycling', 'metric')).toEqual({ labels: ['18.0', '36.0'], unit: 'km/h' });
-    expect(legend(scale('speed', 5, 10), 'cycling', 'imperial')).toEqual({ labels: ['11.2', '22.4'], unit: 'mph' });
+    expect(legend(scale('speed', 5, 10), 'cycling', 'metric')).toEqual({ labels: ['≤ 18.0', '≥ 36.0'], unit: 'km/h' });
+    expect(legend(scale('speed', 5, 10), 'cycling', 'imperial')).toEqual({ labels: ['≤ 11.2', '≥ 22.4'], unit: 'mph' });
   });
   it.each([
-    ['running', 'metric', ['6:40', '3:20'], '/km'],
-    ['running', 'imperial', ['10:44', '5:22'], '/mi'],
-    ['swimming', 'metric', ['0:40', '0:20'], '/100 m'],
-    ['swimming', 'imperial', ['0:37', '0:18'], '/100 yd'],
-    ['rowing', 'imperial', ['3:20', '1:40'], '/500 m'],
-  ] as const)('pace for %s (%s): slow pace on the left', (sport, units, labels, unit) => {
+    ['running', 'metric', ['≥ 6:40', '≤ 3:20'], '/km'],
+    ['running', 'imperial', ['≥ 10:44', '≤ 5:22'], '/mi'],
+    ['swimming', 'metric', ['≥ 0:40', '≤ 0:20'], '/100 m'],
+    ['swimming', 'imperial', ['≥ 0:37', '≤ 0:18'], '/100 yd'],
+    ['rowing', 'imperial', ['≥ 3:20', '≤ 1:40'], '/500 m'],
+  ] as const)('pace for %s (%s): slow pace on the left, the larger number marked ≥', (sport, units, labels, unit) => {
     // lo/hi in s/m: 0.2 s/m = 5 m/s (fast), 0.4 s/m = 2.5 m/s (slow)
     expect(legend(scale('speed', 0.2, 0.4, true), sport, units)).toEqual({ labels, unit });
   });
   it('heart rate, power and gradient', () => {
-    expect(legend(scale('heart_rate', 110.4, 171.6), 'cycling', 'imperial')).toEqual({ labels: ['110', '172'], unit: 'bpm' });
-    expect(legend(scale('power', 0, 312), 'cycling', 'metric')).toEqual({ labels: ['0', '312'], unit: 'W' });
+    expect(legend(scale('heart_rate', 110.4, 171.6), 'cycling', 'imperial')).toEqual({ labels: ['≤ 110', '≥ 172'], unit: 'bpm' });
+    expect(legend(scale('power', 0, 312), 'cycling', 'metric')).toEqual({ labels: ['≤ 0', '≥ 312'], unit: 'W' });
     expect(legend(scale('gradient', -8, 8), 'cycling', 'imperial')).toEqual({ labels: ['-8', '-4', '-1', '1', '4', '8'], unit: '%' });
   });
 });

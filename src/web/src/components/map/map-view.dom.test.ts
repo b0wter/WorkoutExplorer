@@ -11,7 +11,7 @@ import { createSelectionStore } from '../../lib/selection';
 import type { WorkoutData } from '../../lib/datafile';
 import { buildRoute, mercatorX } from '../../lib/route';
 import { positioned } from '../../lib/route/testing/fixtures';
-import { COLOUR_SOURCE, HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, RANGE_BLUES, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
 import { RANGE_SETTLE_MS, mountRouteMap, type RouteMapHandle } from './map-view';
 import { createUnitsStore } from '../../lib/units';
 import { recorder, resetRecorder, type FakeMap, type FakeMarker } from './testing/maplibre-fake';
@@ -1216,6 +1216,7 @@ describe('to-be-hidden marks (F-19 E-9, ADR-030)', () => {
 });
 
 describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
+  afterEach(() => vi.useRealTimers());
   type Colour = { features: { properties: { c: number }; geometry: { coordinates: number[][][] } }[] };
   /** LAT/LON with speed (5 → 10 m/s), heart rate and no power; samples 3–4 have no position. */
   function coloured(sport = 'cycling'): WorkoutData {
@@ -1226,9 +1227,9 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
       meta: { ...d.meta, sport },
     };
   }
-  async function withControl(data: WorkoutData, units = createUnitsStore('metric')) {
+  async function withControl(data: WorkoutData, units = createUnitsStore('metric'), selection?: ReturnType<typeof createSelectionStore>) {
     const s = setup(data);
-    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, whenQuiet: s.whenQuiet, units, signal: s.abort.signal });
+    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, selection, whenQuiet: s.whenQuiet, units, signal: s.abort.signal });
     await quietUntilMap(s);
     const handle = await p;
     handles.push(handle);
@@ -1283,7 +1284,72 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     const { box } = await withControl(coloured('running'));
     expect(box!.querySelector('option[value="speed"]')!.textContent).toBe('Pace');
     pick(box!, 'speed');
-    expect(box!.querySelector('.wx-l7')!.textContent).toMatch(/^\d+:\d\d \/km$/);
+    // Pace: the fast (right) end is the smaller number (QA-25-r1-4).
+    expect(box!.querySelector('.wx-l7')!.textContent).toMatch(/^≤ \d+:\d\d \/km$/);
+  });
+
+  it('gradient: the diverging classes and their legend (QA-25-r1-3)', async () => {
+    // 3 m up per 30 m: 10 %, steeper than the last edge (+8 %), so every classed edge takes the last class.
+    const d = coloured();
+    const { map, box } = await withControl({
+      ...d,
+      metrics: { ...d.metrics, altitude: Float64Array.from([0, 3, 6, 9, 12, 15, 18, 21]), distance: Float64Array.from([0, 30, 60, 90, 120, 150, 180, 210]) },
+    });
+    pick(box!, 'gradient');
+    const data = map.sourceData.filter(([id]) => id === COLOUR_SOURCE)[0][1] as Colour;
+    expect(data.features.length).toBeGreaterThan(0);
+    expect(new Set(data.features.map((f) => f.properties.c))).toEqual(new Set([DIVERGING + 6]));
+    expect(Array.from(box!.querySelectorAll('.wx-swatches span'), (e) => e.className)).toEqual(['wx-c7', 'wx-c8', 'wx-c9', 'wx-c10', 'wx-c11', 'wx-c12', 'wx-c13']);
+    expect(Array.from(box!.querySelectorAll('.wx-labels span'), (e) => [e.className, e.textContent])).toEqual([
+      ['wx-l1', '-8'],
+      ['wx-l2', '-4'],
+      ['wx-l3', '-1'],
+      ['wx-l4', '1'],
+      ['wx-l5', '4'],
+      ['wx-l6', '8'],
+      ['wx-l7', '%'],
+    ]);
+  });
+
+  it('with colouring on, the range draws its classed edges in the range blues; no class and bridges stay plain', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    type Range = { features: { properties: { kind: string; c?: number }; geometry: { coordinates: number[][][] } }[] };
+    const d = coloured();
+    const hr = Float64Array.from([100, 110, 120, N, N, 150, N, 170]); // edge 5–6 has no value
+    const queue: (() => void)[] = [];
+    const selection = createSelectionStore(d.sampleCount, (f) => queue.push(f));
+    selection.set(0, 7);
+    const { map, box } = await withControl({ ...d, metrics: { ...d.metrics, heart_rate: hr } }, undefined, selection);
+    const ranges = () => map.sourceData.filter(([id]) => id === RANGE_SOURCE).map(([, r]) => r as Range);
+    const colours = () => map.sourceData.filter(([id]) => id === COLOUR_SOURCE).length;
+
+    pick(box!, 'heart_rate'); // applies the coloured range at once
+    let f = ranges().at(-1)!.features;
+    expect(f.filter((x) => x.properties.c === undefined).map((x) => [x.properties.kind, x.geometry.coordinates])).toEqual([
+      ['recorded', [[[8.05, 47], [8.06, 47]]]],
+      ['bridge', [[[8.02, 47], [8.05, 47]]]],
+    ]);
+    const classed = f.filter((x) => x.properties.c !== undefined);
+    expect(classed.every((x) => x.properties.kind === 'recorded')).toBe(true);
+    expect(classed.flatMap((x) => x.geometry.coordinates).reduce((n, l) => n + l.length - 1, 0)).toBe(3); // 0–1, 1–2, 6–7
+    const cs = classed.map((x) => x.properties.c!);
+    expect(Math.min(...cs)).toBe(RANGE_BLUES); // 110 bpm, the lower bound
+    expect(Math.max(...cs)).toBe(RANGE_BLUES + 6); // 170 bpm, the upper bound
+
+    // A range update partitions the kept classes: wx-colour is never rewritten.
+    const before = colours();
+    selection.set(5, 7);
+    queue.splice(0).forEach((g) => g());
+    vi.advanceTimersByTime(RANGE_SETTLE_MS);
+    f = ranges().at(-1)!.features;
+    expect(f.map((x) => [x.properties.c, x.geometry.coordinates])).toEqual([
+      [undefined, [[[8.05, 47], [8.06, 47]]]],
+      [RANGE_BLUES + 6, [[[8.06, 47], [8.07, 47]]]],
+    ]);
+    expect(colours()).toBe(before);
+
+    pick(box!, ''); // colouring off: the range as without colouring
+    expect(ranges().at(-1)!.features.map((x) => x.properties)).toEqual([{ kind: 'recorded' }]);
   });
 
   it('the cursor never touches wx-colour; style.load re-applies the latest colouring; the scheme rebuilds the class colours', async () => {

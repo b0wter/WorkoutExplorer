@@ -71,7 +71,7 @@ export function routeLines(data: WorkoutData, route: Route): RouteLines {
 }
 
 /** First k with indices[k] ≥ i (indices.length if none). */
-function lowerBound(indices: Uint32Array, i: number): number {
+export function lowerBound(indices: Uint32Array, i: number): number {
   let lo = 0;
   let hi = indices.length;
   while (lo < hi) {
