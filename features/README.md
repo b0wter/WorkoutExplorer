@@ -123,6 +123,15 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Privacy zones of 200 m to 1 km — SH-3
 - iframe embed with compact layout — SH-7
 - Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
+- Shareable range: the selected range kept in the viewing link's fragment (frontend only) — AP-19, AP-7, AP-8, SH-6. Acceptance criteria, to carry into its feature file:
+  - [ ] Selecting a range on `/w/{id}` (drag or lap/split row) and opening the resulting link in another browser shows the same range: map highlight and range panel with the same values.
+  - [ ] The range is only in the fragment: the server access log and the request for the page show no trace of it, and the cached static page is served unchanged.
+  - [ ] The fragment holds time positions only (no coordinates, no distance); a link opened after the data file is regenerated selects the same time span.
+  - [ ] The edit page and the published page neither read nor write the range; their token fragment is untouched, and opening `/edit/{id}#{token}` never selects a range.
+  - [ ] A range that ends past the workout's data, or starts before it, is cut to the data; with start and end hiding on, a range inside a hidden section shows the range panel but no positions on the map, the same as selecting it by hand.
+  - [ ] Malformed, empty, zero-length, reversed and entirely out-of-range values are each ignored without a message; the page opens with no range and works as usual.
+  - [ ] With JavaScript off the page shows as before; the summary still renders before the map and charts (LCP target unchanged).
+  - [ ] With live link update (assumed, open question): selecting updates the link without new browser history entries, clearing (AP-7) removes the range from it, and the copy-link button (SH-6) copies the link with the range.
 
 ## Questions for review
 
@@ -365,6 +374,13 @@ Updated: F-01 (AC 2), technical design (Build and CI).
 - **Releases are public downloads.** Self-hosters either build the image (`deploy/Dockerfile`, `docker compose build`) or download a release.
 
 Updated: F-31 (scope), technical design (Hosting and operations: Deploys).
+
+**Recorded on 2 Nov 2026, shareable range** (new request from the user, phase 2; not yet decided in detail):
+
+- **Range in the link (AP-19, Could, phase 2):** the range selected on the viewing page is kept in the link's fragment, so a shared link opens with it selected. Fixed by the request: fragment only (never sent to the server or logged, works with cached static pages); viewing page only, not the edit or published page with their token fragment; time positions, never coordinates; cut to the published data, revealing nothing a viewer could not select; invalid values ignored silently.
+- **Open, with suggestions in the spec's open question "Range in the link":** elapsed seconds rather than sample numbers; live link update plus the copy-link button (SH-6) rather than a separate "copy link to this selection" button; cursor position and x axis not included; no scroll or map zoom on opening.
+
+Updated: spec (viewer story 12, scope table, AP-19, Open questions, Roadmap phase 2), Phase 2 list (with acceptance criteria). No MVP feature changes. Technical design: link formats (ADR-020) gain the viewing-page fragment once phase 2 is designed.
 
 The original questions follow for reference.
 
