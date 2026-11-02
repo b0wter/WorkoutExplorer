@@ -31,6 +31,8 @@ export const MARKER_SOURCE = 'wx-markers';
 export const RANGE_SOURCE = 'wx-range';
 /** The to-be-hidden start and end on the edit page (F-19 E-9): above the route, below the range. */
 export const HIDDEN_SOURCE = 'wx-hidden';
+/** Route colouring by metric (F-25 C-1, ADR-037): at most one MultiLineString per colour class; empty = plain route. */
+export const COLOUR_SOURCE = 'wx-colour';
 
 /** Cap for MapLibre's pixelRatio (v1.4): a 3× canvas has 2.25 times the pixels of 2× in every
  *  frame, first render included, with little visible gain on a map. F-26 may raise it. */
@@ -77,6 +79,31 @@ const COLOUR_PROPERTIES: Readonly<Record<keyof typeof MAP_COLOURS, string>> = {
   markerStroke: '--marker-stroke',
 };
 
+/** The colour classes' light values, the fallback of `--seq-0…6` (speed, pace, heart rate, power: low → high)
+ *  and `--div-0…6` (gradient: descent, flat, climb) in page.css (F-25 C-5). Feature property `c` of
+ *  wx-colour indexes this list: 0–6 sequential, 7–13 diverging. */
+export const CLASS_COLOURS: readonly string[] = [
+  '#f0c43c', '#eba337', '#e18231', '#cc632a', '#ad4823', '#86321b', '#5c2112',
+  '#01665e', '#35978f', '#80cdc1', '#cfc6b0', '#dfc27d', '#bf812d', '#8c510a',
+];
+/** Offset of the diverging palette in CLASS_COLOURS. */
+export const DIVERGING = 7;
+const classProperty = (k: number): string => (k < DIVERGING ? '--seq-' + k : '--div-' + (k - DIVERGING));
+
+/** The class colours of the current theme, read from `el`; the light values where unset. */
+export function classColours(el: Element): string[] {
+  const css = getComputedStyle(el);
+  return CLASS_COLOURS.map((fallback, k) => css.getPropertyValue(classProperty(k)).trim() || fallback);
+}
+
+/** wx-colour-line's line-color: the class colour by feature property `c`. */
+export function classColourExpression(classes: readonly string[], fallback: string): unknown[] {
+  const e: unknown[] = ['match', ['get', 'c']];
+  classes.forEach((colour, k) => e.push(k, colour));
+  e.push(fallback);
+  return e;
+}
+
 /** The colours of the current theme, read from the custom properties of `el`; the light values where unset. */
 export function mapColours(el: Element): MapColours {
   const css = getComputedStyle(el);
@@ -106,13 +133,19 @@ const PAINT: readonly [layer: string, property: string, colour: keyof typeof MAP
   ['wx-finish', 'circle-stroke-color', 'markerStroke'],
 ];
 
-/** Repaints our layers (and the base background, while it exists) in place after a scheme change. */
-export function recolour(map: { getLayer(id: string): unknown; setPaintProperty(id: string, name: string, value: string): void }, colours: MapColours): void {
+/** Repaints our layers (and the base background, while it exists) in place after a scheme change; the class
+ *  colour expression is rebuilt from `classes` (F-25 C-5). */
+export function recolour(
+  map: { getLayer(id: string): unknown; setPaintProperty(id: string, name: string, value: unknown): void },
+  colours: MapColours,
+  classes: readonly string[] = CLASS_COLOURS,
+): void {
   for (const [layer, property, colour] of PAINT) if (map.getLayer(layer)) map.setPaintProperty(layer, property, colours[colour]);
+  if (map.getLayer('wx-colour-line')) map.setPaintProperty('wx-colour-line', 'line-color', classColourExpression(classes, colours.route));
 }
 
 /** Bottom → top, as in the design's layer table. */
-export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish'] as const;
+export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish'] as const;
 
 const kindIs = (kind: string): FilterSpecification => ['==', ['get', 'kind'], kind];
 
@@ -138,6 +171,15 @@ export function linesData(lines: RouteLines): { type: 'FeatureCollection'; featu
 
 const NO_LINES: RouteLines = { recorded: [], bridges: [] };
 
+/** The GeoJSON of wx-colour: one MultiLineString per non-empty class k of `lines`, property c = offset + k. */
+export function colourData(lines: readonly [number, number][][][], offset = 0): { type: 'FeatureCollection'; features: unknown[] } {
+  const features: unknown[] = [];
+  lines.forEach((coordinates, k) => {
+    if (coordinates.length > 0) features.push({ type: 'Feature', properties: { c: offset + k }, geometry: { type: 'MultiLineString', coordinates } });
+  });
+  return { type: 'FeatureCollection', features };
+}
+
 /** Local style: background, glyphs URL, sources wx-route and wx-markers (inline GeoJSON), and
  *  the wx- layers. wx-route (v1.4) is a FeatureCollection of at most two MultiLineStrings,
  *  kind 'recorded' (solid) and kind 'bridge' (dashed), each only if non-empty; the source and
@@ -148,6 +190,7 @@ export function baseStyle(
   markers: readonly RouteMarker[],
   colours: MapColours = MAP_COLOURS,
   range: RouteLines = NO_LINES,
+  classes: readonly string[] = CLASS_COLOURS,
 ): StyleSpecification {
   const sources: Record<string, SourceSpecification> = {
     [MARKER_SOURCE]: {
@@ -182,10 +225,19 @@ export function baseStyle(
       { id: 'wx-route-line', type: 'line', source: ROUTE_SOURCE, filter: recorded, layout: join, paint: { 'line-color': colours.route, 'line-width': 3 } },
     );
   }
-  // The hidden and range sources always exist (empty at first), so the map view can setData them.
+  // The colour, hidden and range sources always exist (empty at first), so the map view can setData them.
+  sources[COLOUR_SOURCE] = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } };
   sources[HIDDEN_SOURCE] = { type: 'geojson', data: linesData(NO_LINES) };
   sources[RANGE_SOURCE] = { type: 'geojson', data: linesData(range) };
   layers.push(
+    // F-25 C-1: over the plain route line, at its width; an edge without a class is not in the source.
+    {
+      id: 'wx-colour-line',
+      type: 'line',
+      source: COLOUR_SOURCE,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': classColourExpression(classes, colours.route) as never, 'line-width': 3 },
+    },
     {
       id: 'wx-hidden-bridge',
       type: 'line',

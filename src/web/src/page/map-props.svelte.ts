@@ -13,6 +13,8 @@ import type { UnitsStore } from '../lib/units';
 export interface Look {
   readonly units: Units;
   readonly scheme: 'light' | 'dark';
+  /** The store itself, for consumers that subscribe (the map's colouring legend, F-25 C-6). */
+  readonly store: UnitsStore;
 }
 
 export function createLook(units: UnitsStore, dark: MediaQueryList | null): Look {
@@ -27,6 +29,7 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null): Look
     get scheme() {
       return isDark ? 'dark' : 'light';
     },
+    store: units,
   };
 }
 
@@ -38,6 +41,7 @@ export interface MapProps {
   /** The container fills #map-slot, whose CSS owns the height (D-20). */
   readonly fill: boolean;
   readonly scheme: 'light' | 'dark';
+  readonly units: UnitsStore;
   readonly onmapready: () => void;
   /** F-19 E-9: sample ranges marked as to-be-hidden; edit page only. */
   readonly hidden: readonly (readonly [number, number])[] | undefined;
@@ -58,6 +62,7 @@ export function createMapProps(
       cursor,
       selection,
       fill: true,
+      units: look.store,
       onmapready,
       get scheme() {
         return look.scheme;

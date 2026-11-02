@@ -32,3 +32,67 @@ div.wx-map {
     bottom: auto;
   }
 }
+
+/* F-25 C-6: the colour selector and its legend, one MapLibre control at bottom-left (moved to the top
+   in the two-column layouts above). */
+.wx-colour {
+  padding: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 12px/1.3 system-ui, sans-serif;
+}
+.wx-colour select {
+  font: inherit;
+}
+.wx-legend {
+  margin-top: 4px;
+}
+.wx-swatches {
+  display: flex;
+}
+.wx-swatches span,
+.wx-nodata span {
+  width: 20px;
+  height: 8px;
+}
+.wx-labels {
+  position: relative;
+  height: 15px;
+}
+.wx-labels span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+.wx-labels .wx-l0 {
+  left: 0;
+}
+.wx-labels .wx-l7 {
+  right: 0;
+}
+.wx-l1 { left: 20px; transform: translateX(-50%); }
+.wx-l2 { left: 40px; transform: translateX(-50%); }
+.wx-l3 { left: 60px; transform: translateX(-50%); }
+.wx-l4 { left: 80px; transform: translateX(-50%); }
+.wx-l5 { left: 100px; transform: translateX(-50%); }
+.wx-l6 { left: 120px; transform: translateX(-50%); }
+.wx-nodata {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wx-c0 { background: var(--seq-0); }
+.wx-c1 { background: var(--seq-1); }
+.wx-c2 { background: var(--seq-2); }
+.wx-c3 { background: var(--seq-3); }
+.wx-c4 { background: var(--seq-4); }
+.wx-c5 { background: var(--seq-5); }
+.wx-c6 { background: var(--seq-6); }
+.wx-c7 { background: var(--div-0); }
+.wx-c8 { background: var(--div-1); }
+.wx-c9 { background: var(--div-2); }
+.wx-c10 { background: var(--div-3); }
+.wx-c11 { background: var(--div-4); }
+.wx-c12 { background: var(--div-5); }
+.wx-c13 { background: var(--div-6); }
+.wx-cn { background: var(--route); }

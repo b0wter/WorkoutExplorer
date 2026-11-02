@@ -4,6 +4,7 @@
 
 import type { WorkoutData } from '../../lib/datafile';
 import type { CursorStore } from '../../lib/cursor';
+import type { UnitsStore } from '../../lib/units';
 
 export interface RouteMapTestProps {
   data: WorkoutData;
@@ -12,6 +13,7 @@ export interface RouteMapTestProps {
   height?: number;
   styleUrl?: string;
   scheme?: 'light' | 'dark';
+  units?: UnitsStore;
   onmapready?: () => void;
   hidden?: readonly (readonly [number, number])[];
 }
@@ -47,6 +49,9 @@ export function routeMapHarness(initial: RouteMapTestProps): RouteMapHarness {
       },
       get styleUrl() {
         return current.styleUrl;
+      },
+      get units() {
+        return current.units;
       },
       get onmapready() {
         return current.onmapready;

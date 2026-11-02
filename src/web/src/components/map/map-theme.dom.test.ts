@@ -1,7 +1,19 @@
 // @vitest-environment jsdom
 // Map colours from the theme's custom properties and the scheme's style URL (F-14 design D-10, D-12).
 import { describe, expect, it } from 'vitest';
-import { MAP_COLOURS, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, TILE_HOST, baseStyle, mapColours, recolour, styleUrlFor } from './map-style';
+import {
+  CLASS_COLOURS,
+  MAP_COLOURS,
+  OPENFREEMAP_DARK_STYLE_URL,
+  OPENFREEMAP_STYLE_URL,
+  TILE_HOST,
+  baseStyle,
+  classColourExpression,
+  classColours,
+  mapColours,
+  recolour,
+  styleUrlFor,
+} from './map-style';
 
 describe('mapColours', () => {
   it('falls back to the light values where no theme is present', () => {
@@ -34,6 +46,23 @@ describe('recolour', () => {
     expect(calls).toContain('wx-route-line.line-color=#aa0000');
     expect(calls).toContain('background.background-color=' + MAP_COLOURS.background);
     expect(calls.some((c) => c.startsWith('wx-finish'))).toBe(false);
+  });
+  it('F-25 C-5: rebuilds the class colour expression from the theme, with the route colour as fallback', () => {
+    const calls: [string, string, unknown][] = [];
+    const classes = CLASS_COLOURS.map((_, k) => '#0000' + (10 + k));
+    recolour({ getLayer: () => ({}), setPaintProperty: (id, name, value) => calls.push([id, name, value]) }, { ...MAP_COLOURS, route: '#aa0000' }, classes);
+    expect(calls).toContainEqual(['wx-colour-line', 'line-color', classColourExpression(classes, '#aa0000')]);
+  });
+});
+
+describe('classColours (F-25 C-5)', () => {
+  it('falls back to the light values; reads --seq-k and --div-k from the element', () => {
+    expect(classColours(document.createElement('div'))).toEqual(CLASS_COLOURS);
+    const el = document.createElement('div');
+    el.style.setProperty('--seq-6', '#010203');
+    el.style.setProperty('--div-0', '#040506');
+    const c = classColours(el);
+    expect([c[6], c[7], c[8]]).toEqual(['#010203', '#040506', CLASS_COLOURS[8]]);
   });
 });
 

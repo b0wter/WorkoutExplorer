@@ -26,15 +26,19 @@ import './map-view.css';
 import type { WorkoutData } from '../../lib/datafile';
 import type { CursorIndex, CursorStore } from '../../lib/cursor';
 import type { SelectionStore } from '../../lib/selection';
+import type { UnitsStore } from '../../lib/units';
+import { CLASS_COUNT, classify, colourScale, legend, metricLabel, metricValues, offeredMetrics, type ColourMetric } from '../../lib/colouring';
 import {
   ROUTE_IDLE,
   TIE_PX,
   buildRoute,
+  classLines,
   createRouteIndex,
   hitRadiusPx,
   interceptsTouch,
   mercatorX,
   mercatorY,
+  recordedEdgeEnds,
   routeLines,
   routeLinesIn,
   routeMarkers,
@@ -45,9 +49,13 @@ import {
   type RouteGestureState,
 } from '../../lib/route';
 import {
+  COLOUR_SOURCE,
+  DIVERGING,
   HIDDEN_SOURCE,
   RANGE_SOURCE,
   baseStyle,
+  classColours,
+  colourData,
   isStyle,
   linesData,
   mapColours,
@@ -84,6 +92,8 @@ export interface MountOptions {
   readonly styleUrl?: string;
   /** The colour scheme at mount: picks the style and our layers' colours (F-14 D-12). Default light. */
   readonly scheme?: Scheme;
+  /** The viewer's units, for the colouring legend (F-25 C-6); metric when absent (tests, bench). */
+  readonly units?: UnitsStore;
   readonly signal: AbortSignal;
 }
 
@@ -149,6 +159,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   const markers = routeMarkers(data, route);
   const lat = position.latitude;
   const lon = position.longitude;
+  // F-25 C-8: only which metrics are offered; no classes until the viewer picks one.
+  const offered = offeredMetrics(data);
   performance.measure('wx-map:route-model', { start: modelStart });
 
   // Step 6a (v1.4): our work and MapLibre's never share one task.
@@ -170,7 +182,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     const mapStart = performance.now();
     map = new MapLibreMap({
       container: inner,
-      style: baseStyle(lines, markers, mapColours(container), initialRange),
+      style: baseStyle(lines, markers, mapColours(container), initialRange, classColours(container)),
       ...(point
         ? { center: [west, south] as [number, number], zoom: 15 }
         : { bounds: [west, south, east, north] as [number, number, number, number], fitBoundsOptions: { padding: fitPadding(), maxZoom: 16 } }),
@@ -247,6 +259,12 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let attribTimer: ReturnType<typeof setTimeout> | undefined;
   let rangeTimer: ReturnType<typeof setTimeout> | undefined;
   let unsubscribeRange: (() => void) | null = null;
+  let unsubscribeUnits: (() => void) | null = null;
+  // Route colouring (F-25 C-7): the latest wx-colour data, re-applied on 'style.load' like the range.
+  let colour = colourData([]);
+  const applyColour = (): void => {
+    (map.getSource(COLOUR_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(colour);
+  };
   const teardown = (): void => {
     destroyed = true;
     clearTimeout(attribTimer);
@@ -255,6 +273,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     unsubscribe = null;
     unsubscribeRange?.();
     unsubscribeRange = null;
+    unsubscribeUnits?.();
+    unsubscribeUnits = null;
     for (const [target, type, fn, opts] of listeners) target.removeEventListener(type, fn, opts);
     listeners.length = 0;
     query?.removeEventListener('change', onResolution);
@@ -329,6 +349,76 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       map.on('style.load', applyRange);
     }
     map.on('style.load', applyHidden);
+    map.on('style.load', applyColour);
+
+    // ---- route colouring (F-25 C-6, C-8): a select and its legend; work only on a selection ----
+    if (offered.length > 0) {
+      const sport = data.meta.sport;
+      const box = document.createElement('div');
+      box.className = 'maplibregl-ctrl wx-colour';
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', 'Route colour');
+      select.add(new Option('Plain route', ''));
+      for (const m of offered) select.add(new Option(metricLabel(m, sport), m));
+      const legendBox = document.createElement('div');
+      legendBox.className = 'wx-legend';
+      legendBox.hidden = true;
+      box.append(select, legendBox);
+      let ends: Uint32Array | null = null;
+      let shown: { scale: ReturnType<typeof colourScale>; missing: boolean } | null = null;
+      const span = (className: string, text = ''): HTMLSpanElement => {
+        const el = document.createElement('span');
+        el.className = className;
+        el.textContent = text;
+        return el;
+      };
+      const renderLegend = (): void => {
+        legendBox.hidden = shown === null;
+        if (shown === null) return;
+        const { scale, missing } = shown;
+        const offset = scale.metric === 'gradient' ? DIVERGING : 0;
+        const { labels, unit } = legend(scale, sport, options.units?.get() ?? 'metric');
+        const swatches = document.createElement('div');
+        swatches.className = 'wx-swatches';
+        for (let k = 0; k < CLASS_COUNT; k++) swatches.append(span('wx-c' + (offset + k)));
+        const row = document.createElement('div');
+        row.className = 'wx-labels';
+        if (scale.metric === 'gradient') {
+          labels.forEach((t, k) => row.append(span('wx-l' + (k + 1), t)));
+          row.append(span('wx-l7', unit));
+        } else {
+          row.append(span('wx-l0', labels[0]), span('wx-l7', labels[1] + ' ' + unit));
+        }
+        legendBox.replaceChildren(swatches, row);
+        if (missing) {
+          const none = document.createElement('div');
+          none.className = 'wx-nodata';
+          none.append(span('wx-cn'), 'no data');
+          legendBox.append(none);
+        }
+      };
+      // Viewer-caused, off the scrub path: values, scale, classes and geometry, then one setData (C-8).
+      const choose = (metric: ColourMetric | ''): void => {
+        if (metric === '') {
+          shown = null;
+          colour = colourData([]);
+        } else {
+          ends ??= recordedEdgeEnds(data, route);
+          const values = metricValues(data, metric);
+          const scale = colourScale(metric, values, ends, sport);
+          const classes = classify(values, scale);
+          let missing = false;
+          for (let k = 0; k < ends.length && !missing; k++) missing = classes[ends[k]] >= CLASS_COUNT;
+          shown = { scale, missing };
+          colour = colourData(classLines(data, ends, classes, CLASS_COUNT), metric === 'gradient' ? DIVERGING : 0);
+        }
+        applyColour();
+        renderLegend();
+      };
+      select.addEventListener('change', () => choose(select.value as ColourMetric | ''));
+      if (options.units) unsubscribeUnits = options.units.subscribe(renderLegend);
+      map.addControl({ onAdd: () => box, onRemove: () => box.remove() }, 'bottom-left');
+    }
 
     // ---- route interaction (D-9, D-10, ADR-015) --------------------------------------------
     let state: RouteGestureState = ROUTE_IDLE;
@@ -487,7 +577,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       scheme = next;
       // Our layers first, so the merge below carries the new colours over; the base style
       // keeps drawing if the other style never arrives ("where available", question 28).
-      recolour(map, mapColours(container));
+      recolour(map, mapColours(container), classColours(container));
       if (options.styleUrl !== undefined) return; // an override has no other scheme
       void fetchStyle(styleUrlFor(next)).then((style) => {
         if (style === null || scheme !== next || destroyed) return;

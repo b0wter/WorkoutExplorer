@@ -11,8 +11,9 @@ import { createSelectionStore } from '../../lib/selection';
 import type { WorkoutData } from '../../lib/datafile';
 import { buildRoute, mercatorX } from '../../lib/route';
 import { positioned } from '../../lib/route/testing/fixtures';
-import { HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
 import { RANGE_SETTLE_MS, mountRouteMap, type RouteMapHandle } from './map-view';
+import { createUnitsStore } from '../../lib/units';
 import { recorder, resetRecorder, type FakeMap, type FakeMarker } from './testing/maplibre-fake';
 
 vi.mock('maplibre-gl', async () => await import('./testing/maplibre-fake'));
@@ -1204,12 +1205,98 @@ describe('to-be-hidden marks (F-19 E-9, ADR-030)', () => {
     expect(last()).toEqual([HIDDEN_SOURCE, { type: 'FeatureCollection', features: [] }]);
     handle.setHidden([[0, 1]]);
     const count = map.sourceData.length;
-    map.fire('style.load');
-    expect(map.sourceData.length).toBe(count + 1);
-    expect(last()).toEqual(map.sourceData[count - 1]);
+    map.fire('style.load'); // re-applies the hidden marks (and the plain colouring, F-25 C-7)
+    expect(map.sourceData.length).toBe(count + 2);
+    expect(map.sourceData.find(([id], k) => k >= count && id === HIDDEN_SOURCE)).toEqual(map.sourceData[count - 1]);
 
     handle.destroy();
     handle.setHidden([[0, 7]]);
-    expect(map.sourceData.length).toBe(count + 1);
+    expect(map.sourceData.length).toBe(count + 2);
+  });
+});
+
+describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
+  type Colour = { features: { properties: { c: number }; geometry: { coordinates: number[][][] } }[] };
+  /** LAT/LON with speed (5 → 10 m/s), heart rate and no power; samples 3–4 have no position. */
+  function coloured(sport = 'cycling'): WorkoutData {
+    const d = positioned(LAT, LON);
+    return {
+      ...d,
+      metrics: { speed: Float64Array.from([5, 6, 7, 8, 8, 9, 10, 10]), heart_rate: Float64Array.from([100, 110, 120, N, N, 150, 160, 170]) },
+      meta: { ...d.meta, sport },
+    };
+  }
+  async function withControl(data: WorkoutData, units = createUnitsStore('metric')) {
+    const s = setup(data);
+    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, whenQuiet: s.whenQuiet, units, signal: s.abort.signal });
+    await quietUntilMap(s);
+    const handle = await p;
+    handles.push(handle);
+    const map = recorder.maps[recorder.maps.length - 1];
+    const entry = map.controls.find(([, pos]) => pos === 'bottom-left');
+    const box = entry ? (entry[0] as { onAdd(m: unknown): HTMLElement }).onAdd(map) : null;
+    return { s, handle, map, box, units };
+  }
+  const pick = (box: HTMLElement, value: string): void => {
+    const select = box.querySelector('select')!;
+    select.value = value;
+    select.dispatchEvent(new Event('change'));
+  };
+
+  it('offers plain route first, then only the metrics the workout has; nothing is classed before a choice', async () => {
+    const { map, box } = await withControl(coloured());
+    expect(Array.from(box!.querySelectorAll('option'), (o) => [o.value, o.textContent])).toEqual([
+      ['', 'Plain route'],
+      ['speed', 'Speed'],
+      ['heart_rate', 'Heart rate'],
+    ]);
+    expect(box!.querySelector<HTMLElement>('.wx-legend')!.hidden).toBe(true);
+    expect(map.sourceData.filter(([id]) => id === COLOUR_SOURCE)).toEqual([]);
+  });
+
+  it('no offered metric: no control', async () => {
+    const { box } = await withControl(positioned(LAT, LON));
+    expect(box).toBeNull();
+  });
+
+  it('a choice sets wx-colour once, recorded edges only; the legend follows the units; plain empties it', async () => {
+    const { map, box, units } = await withControl(coloured());
+    pick(box!, 'speed');
+    const writes = map.sourceData.filter(([id]) => id === COLOUR_SOURCE);
+    expect(writes).toHaveLength(1);
+    const data = writes[0][1] as Colour;
+    const edges = data.features.flatMap((f) => f.geometry.coordinates).reduce((n, line) => n + line.length - 1, 0);
+    expect(edges).toBe(4); // 0–1, 1–2, 5–6, 6–7: never the dropout bridge 2–5
+    const legendBox = box!.querySelector<HTMLElement>('.wx-legend')!;
+    expect(legendBox.hidden).toBe(false);
+    expect(legendBox.querySelectorAll('.wx-swatches span')).toHaveLength(7);
+    expect(legendBox.querySelector('.wx-l7')!.textContent).toMatch(/ km\/h$/);
+    units.set('imperial');
+    expect(legendBox.querySelector('.wx-l7')!.textContent).toMatch(/ mph$/);
+    expect(map.sourceData.filter(([id]) => id === COLOUR_SOURCE)).toHaveLength(1); // a units switch only relabels
+    pick(box!, '');
+    expect(map.sourceData[map.sourceData.length - 1]).toEqual([COLOUR_SOURCE, { type: 'FeatureCollection', features: [] }]);
+    expect(legendBox.hidden).toBe(true);
+  });
+
+  it('a run labels speed as pace, with a pace legend', async () => {
+    const { box } = await withControl(coloured('running'));
+    expect(box!.querySelector('option[value="speed"]')!.textContent).toBe('Pace');
+    pick(box!, 'speed');
+    expect(box!.querySelector('.wx-l7')!.textContent).toMatch(/^\d+:\d\d \/km$/);
+  });
+
+  it('the cursor never touches wx-colour; style.load re-applies the latest colouring; the scheme rebuilds the class colours', async () => {
+    const { s, handle, map, box } = await withControl(coloured());
+    pick(box!, 'heart_rate');
+    const latest = map.sourceData[map.sourceData.length - 1];
+    const count = map.sourceData.length;
+    s.cursor.set(1);
+    s.flush();
+    expect(map.sourceData).toHaveLength(count);
+    map.fire('style.load');
+    expect(map.sourceData.filter(([id], k) => k >= count && id === COLOUR_SOURCE)).toEqual([latest]);
+    handle.setScheme('dark');
+    expect(map.paints.some(([id, prop]) => id === 'wx-colour-line' && prop === 'line-color')).toBe(true);
   });
 });

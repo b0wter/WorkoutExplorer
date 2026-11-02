@@ -6,6 +6,9 @@ import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { buildRoute, routeLines, routeMarkers, type RouteLines, type RouteMarker } from '../../lib/route';
 import { golden } from '../../lib/route/testing/fixtures';
 import {
+  CLASS_COLOURS,
+  COLOUR_SOURCE,
+  DIVERGING,
   GLYPHS_URL,
   MAP_COLOURS,
   MARKER_SOURCE,
@@ -17,6 +20,8 @@ import {
   TILE_HOST,
   WX_LAYER_IDS,
   baseStyle,
+  classColourExpression,
+  colourData,
   isStyle,
   mapPixelRatio,
   mergeStyle,
@@ -87,10 +92,10 @@ describe('baseStyle', () => {
     expect(s.version).toBe(8);
     expect(s.glyphs).toBe(GLYPHS_URL);
     expect(s.sprite).toBeUndefined();
-    expect(Object.keys(s.sources).sort()).toEqual([HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
+    expect(Object.keys(s.sources).sort()).toEqual([COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
     expect(ids(s.layers)).toEqual(['background', ...WX_LAYER_IDS]);
     expect(WX_LAYER_IDS).toEqual([
-      'wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish',
+      'wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish',
     ]);
   });
 
@@ -179,8 +184,8 @@ describe('baseStyle', () => {
 
   it('neither a recorded segment nor a bridge (one positioned sample): no wx-route source and no route layers', () => {
     const s = baseStyle(none, markers.filter((m) => m.kind !== 'lap'));
-    expect(Object.keys(s.sources)).toEqual([MARKER_SOURCE, HIDDEN_SOURCE, RANGE_SOURCE]);
-    expect(ids(s.layers)).toEqual(['background', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish']);
+    expect(Object.keys(s.sources)).toEqual([MARKER_SOURCE, COLOUR_SOURCE, HIDDEN_SOURCE, RANGE_SOURCE]);
+    expect(ids(s.layers)).toEqual(['background', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish']);
   });
 
   it('F-17 R-10: wx-range holds the given range (empty by default), drawn by its own layers in the range colour', () => {
@@ -205,6 +210,38 @@ describe('baseStyle', () => {
   });
 });
 
+describe('F-25: route colouring (C-1, ADR-037)', () => {
+  it('wx-colour starts empty (plain route); its layer lies right above the route line, at its width, coloured by class', () => {
+    const s = baseStyle(lines, markers);
+    expect(s.sources[COLOUR_SOURCE]).toEqual({ type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    const order = ids(s.layers);
+    expect(order.indexOf('wx-colour-line')).toBe(order.indexOf('wx-route-line') + 1);
+    const byId = new Map(s.layers.map((l) => [l.id, l]));
+    expect(byId.get('wx-colour-line')).toMatchObject({
+      source: COLOUR_SOURCE,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-width': 3, 'line-color': classColourExpression(CLASS_COLOURS, MAP_COLOURS.route) },
+    });
+    expect(byId.get('wx-colour-line')).not.toHaveProperty('filter');
+  });
+
+  it('the class expression maps c = 0…13 to the 14 class colours, else the route colour', () => {
+    const e = classColourExpression(['#000001', '#000002'], '#ff0000');
+    expect(e).toEqual(['match', ['get', 'c'], 0, '#000001', 1, '#000002', '#ff0000']);
+    expect(CLASS_COLOURS).toHaveLength(2 * DIVERGING);
+  });
+
+  it('colourData: one MultiLineString per non-empty class, c offset for the diverging palette', () => {
+    const a: [number, number][][] = [[[8, 47], [8.1, 47]]];
+    const d = colourData([a, [], a], DIVERGING);
+    expect(d.features).toEqual([
+      { type: 'Feature', properties: { c: 7 }, geometry: { type: 'MultiLineString', coordinates: a } },
+      { type: 'Feature', properties: { c: 9 }, geometry: { type: 'MultiLineString', coordinates: a } },
+    ]);
+    expect(colourData([]).features).toEqual([]);
+  });
+});
+
 describe('F-19 E-9: the to-be-hidden marks', () => {
   it('wx-hidden starts empty and is drawn over the route, under the range, in the hidden colour', () => {
     const s = baseStyle(lines, markers);
@@ -224,7 +261,7 @@ describe('mergeStyle', () => {
   it("next's layers first, then every wx- layer of previous in its order; wx- sources added", () => {
     const merged = mergeStyle(previous, remote());
     expect(ids(merged.layers)).toEqual(['background', 'natural_earth', 'water', ...WX_LAYER_IDS]);
-    expect(Object.keys(merged.sources).sort()).toEqual(['ne2_shaded', 'openmaptiles', HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
+    expect(Object.keys(merged.sources).sort()).toEqual(['ne2_shaded', 'openmaptiles', COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
     expect(merged.sources[ROUTE_SOURCE]).toBe(previous.sources[ROUTE_SOURCE]);
     // The base background is not carried over; liberty's own is kept.
     expect(merged.layers.filter((l) => l.id === 'background')).toHaveLength(1);

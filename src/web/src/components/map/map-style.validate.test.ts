@@ -12,10 +12,11 @@
 import { describe, expect, it } from 'vitest';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import type { StyleSpecification } from 'maplibre-gl';
-import { buildRoute, routeLines, routeLinesIn, routeMarkers, type Route } from '../../lib/route';
+import { buildRoute, classLines, recordedEdgeEnds, routeLines, routeLinesIn, routeMarkers, type Route } from '../../lib/route';
+import { CLASS_COUNT, classify, colourScale, metricValues } from '../../lib/colouring';
 import type { WorkoutData } from '../../lib/datafile';
 import { golden, positioned } from '../../lib/route/testing/fixtures';
-import { GLYPHS_URL, ROUTE_SOURCE, TILE_HOST, baseStyle, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, GLYPHS_URL, ROUTE_SOURCE, TILE_HOST, baseStyle, colourData, mergeStyle } from './map-style';
 
 const N = Number.NaN;
 
@@ -94,6 +95,24 @@ describe('style-spec validation (QA-06-r3-2)', () => {
     expect(range.data.features.map((f: { properties?: { kind?: unknown } | null }) => f.properties?.kind)).toEqual(['recorded', 'bridge']);
     expect(errors(style)).toEqual([]);
     expect(errors(mergeStyle(style, remote()))).toEqual([]);
+  });
+
+  it('F-25: wx-colour with class features (sequential and diverging), also merged', () => {
+    const data = golden('gps-dropout');
+    const route = buildRoute(data);
+    if (route === null) throw new Error('expected a route');
+    const ends = recordedEdgeEnds(data, route);
+    for (const [metric, offset] of [['speed', 0], ['gradient', DIVERGING]] as const) {
+      const values = metricValues(data, metric);
+      const classes = classify(values, colourScale(metric, values, ends, data.meta.sport));
+      const style = base(data);
+      style.sources[COLOUR_SOURCE] = { type: 'geojson', data: colourData(classLines(data, ends, classes, CLASS_COUNT), offset) as never };
+      const src = style.sources[COLOUR_SOURCE];
+      if (src?.type !== 'geojson' || typeof src.data !== 'object' || src.data.type !== 'FeatureCollection') throw new Error('no wx-colour');
+      expect(src.data.features.length).toBeGreaterThan(1);
+      expect(errors(style)).toEqual([]);
+      expect(errors(mergeStyle(style, remote()))).toEqual([]);
+    }
   });
 
   it('the case without lap markers really has none', () => {

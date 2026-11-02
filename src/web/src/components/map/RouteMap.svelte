@@ -10,6 +10,7 @@
   import type { WorkoutData } from '../../lib/datafile';
   import type { CursorStore } from '../../lib/cursor';
   import type { SelectionStore } from '../../lib/selection';
+  import type { UnitsStore } from '../../lib/units';
   import { routePresence } from '../../lib/route';
   import { createTouchQuiet } from './touch-quiet';
   import type { Scheme } from './map-style';
@@ -30,6 +31,8 @@
     fill?: boolean;
     /** Colour scheme (F-14 D-10, D-12): picks the style at load; a change repaints and swaps the style in place. */
     scheme?: Scheme;
+    /** The viewer's units, for the route colouring legend (F-25 C-6); read once per data value. */
+    units?: UnitsStore;
     /** Overrides the scheme's remote style URL (tests, bench). */
     styleUrl?: string;
     /** Called once per data value, after the map exists and the marker follows the cursor. */
@@ -38,7 +41,7 @@
     hidden?: readonly (readonly [number, number])[];
   }
 
-  let { data, cursor, selection, load = false, height, fill = false, scheme = 'light', styleUrl, onmapready, hidden }: Props = $props();
+  let { data, cursor, selection, load = false, height, fill = false, scheme = 'light', units, styleUrl, onmapready, hidden }: Props = $props();
 
   const MAP_HEIGHT = 320;
 
@@ -80,6 +83,7 @@
           whenQuiet: quiet.whenQuiet,
           styleUrl: untrack(() => styleUrl),
           scheme: untrack(() => scheme),
+          units: untrack(() => units),
           signal,
         });
         if (signal.aborted) {

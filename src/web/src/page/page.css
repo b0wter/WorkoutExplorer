@@ -32,6 +32,22 @@
   --start: #2e7d32;
   --finish: #c62828;
   --marker-stroke: #fff;
+  /* F-25 C-5: route colouring classes. Sequential (speed, pace, heart rate, power: low → high), monotonic
+     lightness; diverging (gradient: descent, flat, climb). Not the route's magenta or the range's blue. */
+  --seq-0: #f0c43c;
+  --seq-1: #eba337;
+  --seq-2: #e18231;
+  --seq-3: #cc632a;
+  --seq-4: #ad4823;
+  --seq-5: #86321b;
+  --seq-6: #5c2112;
+  --div-0: #01665e;
+  --div-1: #35978f;
+  --div-2: #80cdc1;
+  --div-3: #cfc6b0;
+  --div-4: #dfc27d;
+  --div-5: #bf812d;
+  --div-6: #8c510a;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -61,6 +77,20 @@
     --start: #66bb6a;
     --finish: #ef5350;
     --marker-stroke: #121214;
+    --seq-0: #8a3a1c;
+    --seq-1: #a9481f;
+    --seq-2: #c85d24;
+    --seq-3: #e07a2c;
+    --seq-4: #ee9a3a;
+    --seq-5: #f5bb4e;
+    --seq-6: #f9d96c;
+    --div-0: #93dcc8;
+    --div-1: #5fbfb4;
+    --div-2: #2f8f86;
+    --div-3: #5c5850;
+    --div-4: #a67a32;
+    --div-5: #d9a54e;
+    --div-6: #f2d28a;
   }
 }
 /* The background sits on the root: iOS Safari paints the notch strips it reserves in landscape

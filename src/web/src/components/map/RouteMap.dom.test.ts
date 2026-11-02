@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import { createCursorStore, type CursorStore } from '../../lib/cursor';
 import type { WorkoutData } from '../../lib/datafile';
+import { createUnitsStore } from '../../lib/units';
 import { golden, hidePositions, positioned } from '../../lib/route/testing/fixtures';
 import type { MountOptions, RouteMapHandle } from './map-view';
 import RouteMap from './RouteMap.svelte';
@@ -129,6 +130,15 @@ describe('RouteMap: scheme (F-14 D-12)', () => {
     flushSync();
     expect(setScheme).toHaveBeenLastCalledWith('light');
     expect(mv.calls).toHaveLength(1);
+  });
+});
+
+describe('RouteMap: units (F-25 C-6)', () => {
+  it('the units store reaches the map at mount', async () => {
+    const units = createUnitsStore('imperial');
+    setup(ride(), { load: true, units });
+    await run();
+    expect(mv.calls[0].units).toBe(units);
   });
 });
 

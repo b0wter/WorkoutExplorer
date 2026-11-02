@@ -115,3 +115,54 @@ export function routeLinesIn(data: WorkoutData, route: Route, a: number, b: numb
   if (run.length >= 2) recorded.push(run);
   return { recorded, bridges };
 }
+
+/** Sample i of every recorded edge (i − 1, i), ascending (F-25 C-2): consecutive positioned samples with no
+ *  bridge between them, by routeLinesIn's rule. */
+export function recordedEdgeEnds(data: WorkoutData, route: Route): Uint32Array {
+  const indices = route.indices;
+  const gaps = data.gaps;
+  const out = new Uint32Array(indices.length);
+  let n = 0;
+  let g = 0;
+  for (let k = 1; k < indices.length; k++) {
+    const b = indices[k];
+    while (g < gaps.length && gaps[g] < b) g++;
+    if (b - indices[k - 1] === 1 && !(g < gaps.length && gaps[g] === b)) out[n++] = b;
+  }
+  return out.subarray(0, n);
+}
+
+/** The recorded edges by class (F-25 C-2, ADR-037): lines[c] holds the edges (i − 1, i) of `ends` with
+ *  classes[i] === c, consecutive edges of one class merged into one line, coordinates [longitude, latitude].
+ *  An edge whose class is ≥ count is left out. No metric knowledge. */
+export function classLines(data: WorkoutData, ends: Uint32Array, classes: Uint8Array, count: number): [number, number][][][] {
+  const lines: [number, number][][][] = [];
+  for (let c = 0; c < count; c++) lines.push([]);
+  const position = data.position;
+  if (!position) return lines;
+  const lat = position.latitude;
+  const lon = position.longitude;
+  let run: [number, number][] | null = null;
+  let prevEnd = -1;
+  let prevClass = -1;
+  for (let k = 0; k < ends.length; k++) {
+    const i = ends[k];
+    const c = classes[i];
+    if (c >= count) {
+      run = null;
+      continue;
+    }
+    if (run !== null && c === prevClass && prevEnd === i - 1) {
+      run.push([lon[i], lat[i]]);
+    } else {
+      run = [
+        [lon[i - 1], lat[i - 1]],
+        [lon[i], lat[i]],
+      ];
+      lines[c].push(run);
+    }
+    prevEnd = i;
+    prevClass = c;
+  }
+  return lines;
+}

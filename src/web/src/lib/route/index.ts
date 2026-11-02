@@ -5,7 +5,7 @@
 
 export { routePresence } from './presence';
 export type { RoutePresence } from './presence';
-export { buildRoute, routeLines, routeLinesIn } from './route';
+export { buildRoute, classLines, recordedEdgeEnds, routeLines, routeLinesIn } from './route';
 export type { Route, RouteLines } from './route';
 export { routeMarkers } from './markers';
 export type { RouteMarker } from './markers';
