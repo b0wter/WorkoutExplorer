@@ -58,7 +58,6 @@
     field(f, 'title').value = s.title;
     field(f, 'description').value = s.description;
     field(f, 'hide_ends').checked = s.hide_ends;
-    field(f, 'allow_download').checked = s.allow_download;
     field(f, 'lifetime').value = String(s.lifetime_days);
     lifetime = s.lifetime_days;
   };
@@ -67,7 +66,8 @@
     title: field(f, 'title').value,
     description: field(f, 'description').value,
     hide_ends: field(f, 'hide_ends').checked,
-    allow_download: field(f, 'allow_download').checked,
+    // Hidden until F-24 (phase 3): the stored value goes back unchanged, so a save never flips it.
+    allow_download: settings.allow_download,
     // '' when the stored lifetime is not offered (a browser clock ahead of the server's): keep it.
     lifetime_days: Number(field(f, 'lifetime').value) || settings.lifetime_days,
   });
@@ -105,7 +105,6 @@
     <textarea name="description" maxlength={DESCRIPTION_MAX} rows="3"></textarea>
   </label>
   <label class="edit-check"><input type="checkbox" name="hide_ends" /> Hide start and end</label>
-  <label class="edit-check"><input type="checkbox" name="allow_download" /> Viewers may download the file</label>
   <div class="edit-row">
     <span class="edit-field">Visibility <span class="edit-value">{draft ? 'Draft' : 'Unlisted'}</span></span>
     <label class="edit-field">Keep for

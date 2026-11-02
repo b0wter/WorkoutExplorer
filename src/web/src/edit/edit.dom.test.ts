@@ -246,10 +246,10 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expect(link().hidden).toBe(true);
   });
 
-  it('AC 4: hiding and download are off on a new upload; visibility is "Draft" with no control', async () => {
+  it('AC 4: hiding is off on a new upload; download hidden until F-24; visibility is "Draft" with no control', async () => {
     await open();
     expect(field('hide_ends').checked).toBe(false);
-    expect(field('allow_download').checked).toBe(false);
+    expect(field('allow_download')).toBeNull();
     expect(field('visibility')).toBeNull();
     expect($('.edit-panel')?.textContent).toContain('Draft');
   });
@@ -336,9 +336,17 @@ describe('AC 2, E-6: saving', () => {
     expect($('.edit-panel')?.textContent).toContain('Unlisted');
     expect($('.edit-panel')?.textContent).not.toMatch(/private/i);
     type('title', 'x');
-    toggle('allow_download');
     await save();
-    expect(patches()).toEqual([{ title: 'x', allow_download: true }]);
+    expect(patches()).toEqual([{ title: 'x' }]);
+  });
+
+  it('F-24 (phase 3): the download toggle is hidden and a save keeps the stored value', async () => {
+    settings = fresh({ allow_download: true });
+    await open();
+    expect(field('allow_download')).toBeNull();
+    type('title', 'x');
+    await save();
+    expect(patches()).toEqual([{ title: 'x' }]);
   });
 });
 
@@ -474,7 +482,7 @@ describe('E-9, AC 8: to-be-hidden marks', () => {
   });
 });
 
-const FIELDS = ['title', 'description', 'hide_ends', 'allow_download', 'lifetime'];
+const FIELDS = ['title', 'description', 'hide_ends', 'lifetime'];
 const btn = (act: string) => $<HTMLButtonElement>(`[data-act="${act}"]`);
 async function click(act: string): Promise<void> {
   btn(act)!.click();

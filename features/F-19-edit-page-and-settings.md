@@ -11,7 +11,7 @@ One page, opened by the edit link, that shows the workout as viewers will see it
 ## Scope
 - Reads the token from the URL fragment, sends it only as a header; never puts it in a link, query string or log. Page has Referrer-Policy as in F-22, and `noindex`.
 - Loads draft settings and `draft.bin` through the owner API; renders all activity modules client-side with the F-13 components.
-- Edit panel: title, description, start and end hiding (off by default), lifetime (up to 30 days from upload; shows the resulting expiry date in the browser's time zone), viewer download (off by default).
+- Edit panel: title, description, start and end hiding (off by default), lifetime (up to 30 days from upload; shows the resulting expiry date in the browser's time zone), viewer download (off by default; hidden until F-24, phase 3).
 - No visibility control (SH-2, 30 Oct 2026): publishing is F-20's Publish button and cannot be undone. The built unlisted/private control is removed (removal of built behaviour; architect hand-off).
 - Description: line breaks are kept; the server refuses a tab or any other control character (UP-4, F-12), so the panel never sends one (for example by replacing a pasted tab with a space or blocking it; the engineer's choice) and never loses the rest of the text.
 - Saves through the owner API; clear saved/error state.
@@ -28,7 +28,7 @@ One page, opened by the edit link, that shows the workout as viewers will see it
 - [ ] Opening the edit link of a fresh upload shows the activity page from `draft.bin` with the edit panel; network log shows the token only in a request header.
 - [ ] Changing the title and reloading shows the new title.
 - [ ] The lifetime control offers nothing beyond 30 days from upload and shows the resulting expiry date.
-- [ ] Hiding and download toggles are off on a new upload.
+- [ ] Hiding and download toggles are off on a new upload (the download toggle is hidden until F-24, phase 3).
 - [ ] A truncated corpus file shows the incomplete-file notice with the time of the last intact record; a complete file shows no notice.
 - [ ] An edit link with a modified token shows the generic not-found page.
 - [ ] In a window 1024 px or wider the edit page shows the F-13 two-column layout; on a phone the map toggle pins the map as on the activity page.
