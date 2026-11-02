@@ -2,6 +2,7 @@
 # Deploy a GitHub Release (F-31 DP-10, ADR-035 rev. 2). Run by the operator from
 # a clean checkout at the release tag; CI never connects to the server.
 #   deploy/deploy.sh vX.Y.Z user@host   (needs git, gh, ssh, scp, tar, curl, sha256sum, sha512sum; linux/amd64 only)
+#   deploy/deploy.sh vX.Y.Z local        (on the server itself: same steps, no ssh/scp)
 # DEPLOY_DIR on the server defaults to /srv/workout-explorer; the SSH user owns it
 # and is in the docker group (RUNBOOK.md). No regenerate step (F-30 adds it
 # after the health wait); no rollback (ADR-019): a failed health wait exits 1.
@@ -28,17 +29,25 @@ sh deploy/fetch-caddy.sh "$tmp/caddy" # the pinned release, checksums from deplo
 "$tmp/caddy" validate --config deploy/Caddyfile --adapter caddyfile >/dev/null 2>&1 || { echo "deploy: deploy/Caddyfile is invalid" >&2; exit 1; }
 
 # 2. Copy. Every file goes to a temporary name and is renamed; web/assets only adds.
-r() { ssh "$host" "cd '$dir' && $1"; }
+if [ "$host" = local ]; then
+	r() { sh -c "cd '$dir' && $1"; }
+	cp_to() { cp "$1" "$dir/$2"; }
+	tar_to() { tar -C "$dir/web/assets" --no-same-owner -xf -; }
+else
+	r() { ssh "$host" "cd '$dir' && $1"; }
+	cp_to() { scp -q "$1" "$host:$dir/$2"; }
+	tar_to() { ssh "$host" "tar -C '$dir/web/assets' --no-same-owner -xf -"; }
+fi
 put() { # put <local> <remote relative path> <mode>
 	tn=$(dirname "$2")/.$(basename "$2").new
-	scp -q "$1" "$host:$dir/$tn"
+	cp_to "$1" "$tn"
 	r "chmod $3 '$tn' && mv '$tn' '$2'"
 }
 caddy_new=$(sha256sum "$tmp/caddy" | cut -d' ' -f1)
 caddy_old=$(r "sha256sum bin/caddy 2>/dev/null | cut -d' ' -f1" || true)
 conf_new=$(sha256sum deploy/Caddyfile | cut -d' ' -f1)
 conf_old=$(r "sha256sum conf/Caddyfile 2>/dev/null | cut -d' ' -f1" || true)
-tar -C "$tmp/a/web/assets" -cf - . | ssh "$host" "tar -C '$dir/web/assets' --no-same-owner -xf -"
+tar -C "$tmp/a/web/assets" -cf - . | tar_to
 put "$tmp/a/web/index.html" web/index.html 644 # the page template Go reads at publish
 put "$tmp/a/workout-explorer" bin/workout-explorer 755
 [ "$caddy_new" = "$caddy_old" ] || put "$tmp/caddy" bin/caddy 755

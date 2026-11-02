@@ -355,6 +355,8 @@ CI builds with that version, and the `release` job publishes `workout-explorer-v
 deploy/deploy.sh v1.4.0 deploy@your.vps
 ```
 
+Or, when you are logged in on the server itself (clone and `gh` there, running user owns the deploy directory and is in the `docker` group), use `local` instead of `user@host`: `deploy/deploy.sh v1.4.0 local`. Same steps and checks, no `ssh`/`scp`.
+
 Run it from a linux/amd64 machine with `git`, `gh`, `ssh`, `scp`, `tar`, `curl`, `sha256sum` and `sha512sum` (it runs the downloaded Caddy locally to validate the Caddyfile; macOS and arm64 do not work).
 
 It refuses a dirty tree, HEAD not at the tag, a bad checksum, or a release built from another commit. It downloads the release, copies it, starts the services, restarts `app` and waits (60 s) for `/api/health` through Caddy to report exactly the tag as its version. It never connects from CI and has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version). Old `web/assets/` files stay (additive); remove old bundles by hand when you like.
