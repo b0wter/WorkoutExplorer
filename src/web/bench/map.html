@@ -1,0 +1,40 @@
+<!doctype html>
+<!-- Dev-only check and measurement page for F-06 (architect/F-06-route-map-linked-to-cursor.md,
+     "Dev page bench/map.html", "Manual checks"). Not a build entry.
+     Open http://<vite>/bench/map.html via `npm run dev`. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- ADR-014: no referrer to the tile host from pages that load the map. -->
+    <meta name="referrer" content="no-referrer" />
+    <title>Map bench</title>
+    <style>
+      body { font: 15px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+      .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 8px; }
+      select, button { font-size: 16px; padding: 6px 12px; }
+      pre { white-space: pre-wrap; word-break: break-word; background: #f4f4f4; padding: 8px; margin: 8px 0; }
+      #second, #times { font-variant-numeric: tabular-nums; }
+      #map { margin-bottom: 8px; }
+      #stack { border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 8px 0; }
+      .spacer { height: 150vh; color: #777; padding-top: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>F-06 map bench</h1>
+    <div class="controls">
+      <label>File <select id="file"></select></label>
+      <label>Tiles <select id="tiles"><option value="normal">normal</option><option value="blocked">blocked</option></select></label>
+      <button id="scrub" disabled>Auto-scrub 10 s</button>
+    </div>
+    <pre id="times">charts onready: – · onmapready: –</pre>
+    <pre id="startup">Start-up window: waiting for the charts…</pre>
+    <pre id="info">Loading…</pre>
+    <div id="map"></div>
+    <div id="second">second subscriber: –</div>
+    <div id="stack"></div>
+    <pre id="out"></pre>
+    <p class="spacer">Spacer so the page can scroll: a one-finger swipe on the map away from the route, or a vertical swipe on a chart, must scroll the page.</p>
+    <script type="module" src="./map.ts"></script>
+  </body>
+</html>

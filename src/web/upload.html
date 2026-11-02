@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Workout Explorer</title>
+  </head>
+  <body>
+    <main id="page" data-state="checking">
+      <h1>Workout Explorer</h1>
+      <p class="intro">Upload a FIT file to get a page with map, charts and laps that you can share.</p>
+      <p id="notice" class="notice"></p>
+      <div id="drop" class="drop">
+        <p>Drop a FIT file here</p>
+        <input id="file" class="pick" type="file" />
+        <label for="file" class="button">Choose a file</label>
+      </div>
+      <p id="progress" class="progress"></p>
+      <p id="message" class="message"></p>
+    </main>
+    <footer><a href="/about">About</a></footer>
+    <script type="module" src="/src/upload/main.ts"></script>
+  </body>
+</html>

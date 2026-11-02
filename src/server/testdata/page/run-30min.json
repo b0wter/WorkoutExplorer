@@ -1,0 +1,181 @@
+{
+  "Page": {
+    "Title": "Run, 30 Jun 2026",
+    "ViewPath": "/w/run-30min",
+    "DataURL": "/w/run-30min/data.1d9012abc33a327f.bin"
+  },
+  "Header": {
+    "Title": "Run, 30 Jun 2026",
+    "SportName": "Run",
+    "SportIcon": "running",
+    "Start": "30 Jun 2026, 07:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "5.94",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "29:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "29:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "104",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg pace",
+      "Value": "5:03",
+      "Unit": "/km",
+      "Max": "4:46"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "142",
+      "Unit": "bpm",
+      "Max": "159"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "171",
+      "Unit": "spm",
+      "Max": "174"
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "19",
+      "Unit": "°C",
+      "Max": "20"
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "299",
+      "Unit": "kcal",
+      "Max": ""
+    }
+  ],
+  "Route": {
+    "Map": "yes",
+    "NoLocation": "",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-5 cells-7 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Pace (/km)"
+      },
+      {
+        "Key": "ascent",
+        "Label": "Gain (m)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (spm)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "5:00",
+        "0.99",
+        "5:04",
+        "49",
+        "144",
+        "171"
+      ],
+      [
+        "2",
+        "5:00",
+        "0.99",
+        "5:02",
+        "1",
+        "155",
+        "171"
+      ],
+      [
+        "3",
+        "5:00",
+        "0.99",
+        "5:03",
+        "8",
+        "156",
+        "171"
+      ],
+      [
+        "4",
+        "5:00",
+        "0.99",
+        "5:03",
+        "40",
+        "147",
+        "171"
+      ],
+      [
+        "5",
+        "5:00",
+        "0.99",
+        "5:02",
+        "5",
+        "133",
+        "171"
+      ],
+      [
+        "6",
+        "4:59",
+        "0.98",
+        "5:04",
+        "0",
+        "121",
+        "171"
+      ]
+    ],
+    "None": ""
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

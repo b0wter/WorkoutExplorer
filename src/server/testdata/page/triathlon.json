@@ -1,0 +1,181 @@
+{
+  "Page": {
+    "Title": "Multisport, 28 Jun 2026",
+    "ViewPath": "/w/triathlon",
+    "DataURL": "/w/triathlon/data.38c39d027f68a68f.bin"
+  },
+  "Header": {
+    "Title": "Multisport, 28 Jun 2026",
+    "SportName": "Multisport",
+    "SportIcon": "generic",
+    "Start": "28 Jun 2026, 07:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "18.33",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "1:01:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "1:01:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "112",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Max speed",
+      "Value": "28.8",
+      "Unit": "km/h",
+      "Max": ""
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "154",
+      "Unit": "bpm",
+      "Max": "166"
+    },
+    {
+      "Key": "power",
+      "Label": "Avg power",
+      "Value": "225",
+      "Unit": "W",
+      "Max": "240"
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "20",
+      "Unit": "°C",
+      "Max": "21"
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "615",
+      "Unit": "kcal",
+      "Max": ""
+    }
+  ],
+  "Route": {
+    "Map": "yes",
+    "NoLocation": "",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-6 cells-8 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Speed (km/h)"
+      },
+      {
+        "Key": "ascent",
+        "Label": "Gain (m)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_power",
+        "Label": "Power (W)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (/min)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "9:59",
+        "0.72",
+        "4.3",
+        "–",
+        "143",
+        "–",
+        "32"
+      ],
+      [
+        "2",
+        "0:59",
+        "0.09",
+        "–",
+        "–",
+        "133",
+        "–",
+        "–"
+      ],
+      [
+        "3",
+        "29:59",
+        "13.48",
+        "27.0",
+        "67",
+        "153",
+        "225",
+        "90"
+      ],
+      [
+        "4",
+        "0:59",
+        "0.09",
+        "–",
+        "–",
+        "133",
+        "–",
+        "–"
+      ],
+      [
+        "5",
+        "19:59",
+        "3.95",
+        "11.9",
+        "45",
+        "163",
+        "–",
+        "171"
+      ]
+    ],
+    "None": ""
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

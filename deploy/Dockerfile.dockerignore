@@ -1,0 +1,15 @@
+# Allow-list (F-31 DP-16): real FIT files, corpus/real, expected/real and build/ never enter the context.
+*
+!Makefile
+!deploy/caddy.env
+!deploy/fetch-caddy.sh
+!deploy/Caddyfile
+!src/server
+!src/web
+**/testdata
+**/*.[fF][iI][tT]
+**/*.[bB][iI][nN]
+**/*.[bB][rR]
+**/.env*
+src/web/node_modules
+src/web/dist

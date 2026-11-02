@@ -1,0 +1,34 @@
+/* LAZY with map-view.ts (F-06 design, "Cursor marker"). MapLibre's container fills the
+   outer div.route-map; div.wx-map outranks .maplibregl-map's position: relative. */
+div.wx-map {
+  position: absolute;
+  inset: 0;
+}
+
+/* The cursor marker: one DOM element moved by MapLibre's Marker (ADR-013 decision 4).
+   Colours follow the theme (F-14 D-9). */
+.wx-cursor-marker {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--marker-stroke);
+  background: var(--cursor);
+  pointer-events: none;
+}
+
+/* F-13 D-18: the sticky map is 100lvh tall, so its bottom strip can be out of view. Attribution
+   moves to the top, left of the zoom control (top-right), so the credits stay visible. The same
+   for the 100lvh map of the short-landscape two-column layout (F-17); it keeps the phone's
+   collapse to the (i) button. */
+@media (min-width: 1024px), (orientation: landscape) and (max-height: 500px) {
+  .route-map .maplibregl-ctrl-bottom-right {
+    top: 0;
+    bottom: auto;
+    right: 40px;
+  }
+  .route-map .maplibregl-ctrl-bottom-left {
+    top: 0;
+    bottom: auto;
+  }
+}

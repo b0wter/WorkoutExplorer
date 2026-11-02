@@ -1,0 +1,50 @@
+/* The plain pages' frame and theme (F-14 D-9, DS-4; F-15 P-12): the upload page and the generic
+   "not available" page import this one source. CSS only: the first paint follows the system's
+   light or dark setting without JavaScript. Never imported by the activity entry (ADR-024). */
+:root {
+  --bg: #fff;
+  --fg: #1c1c1e;
+  --muted: #6b6b70;
+  --line: #c8c8cc;
+  --accent: #0a6cff;
+  --accent-fg: #fff;
+  --error: #b3261e;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121214;
+    --fg: #ececf0;
+    --muted: #9a9aa2;
+    --line: #3a3a40;
+    --accent: #4d94ff;
+    --accent-fg: #0b0b0d;
+    --error: #ff8a80;
+  }
+}
+/* On the root: iOS Safari paints its landscape notch strips with the root's colour. */
+html {
+  background: var(--bg);
+}
+body {
+  margin: 0;
+  color: var(--fg);
+  font: 16px/1.5 system-ui, sans-serif;
+}
+main {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 2.5rem 16px 1rem;
+}
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 0.5rem;
+}
+footer {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 1rem 16px 2rem;
+}
+footer a {
+  color: var(--muted);
+}

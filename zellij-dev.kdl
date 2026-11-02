@@ -1,0 +1,25 @@
+// Dev layout: backend (Go API) on top, frontend (Vite) below.
+// Start from the project root: zellij --layout zellij-dev.kdl
+// Port 8080 is taken on the dev machine, so the API runs on 18080 and Vite proxies to it.
+// Vite listens on all interfaces (--host) so the phone can reach it on port 5173.
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="zellij:status-bar"
+        }
+    }
+    tab name="dev" focus=true {
+        pane split_direction="horizontal" {
+            pane name="backend" command="make" {
+                args "dev-server" "DEV_ADDR=127.0.0.1:18080"
+            }
+            pane name="frontend" cwd="src/web" command="bash" focus=true {
+                args "-c" "npm install --no-audit --no-fund && DEV_ADDR=127.0.0.1:18080 npm run dev -- --host"
+            }
+        }
+    }
+}

@@ -1,0 +1,16 @@
+# Self-hosters (F-31 DP-16, ADR-034 rev. 3): builds one local image and runs both
+# services from it. Select with COMPOSE_FILE=compose.yaml:compose.build.yaml in .env,
+# then `docker compose build && docker compose up -d`. Everything else stays compose.yaml.
+# Needs Docker Compose 2.24+ (!override). Keep WX_WEB at its default: web/ is in the image.
+services:
+  app:
+    image: &image workout-explorer:local
+    platform: linux/amd64
+    build: {context: .., dockerfile: deploy/Dockerfile}
+    volumes: !override
+      - {type: bind, source: "${WX_DATA:-/srv/workouts}", target: "${WX_DATA:-/srv/workouts}", bind: {create_host_path: false}}
+  caddy:
+    image: *image # built once, by app
+    platform: linux/amd64
+    volumes: !override
+      - {type: bind, source: "${WX_DATA:-/srv/workouts}/public", target: "${WX_DATA:-/srv/workouts}/public", read_only: true, bind: {create_host_path: false}}

@@ -1,0 +1,42 @@
+{
+  "fixture_version": 1,
+  "format_version": 2,
+  "byte_length": 17136,
+  "sample_count": 1801,
+  "metadata_length": 910,
+  "streams": [
+    {
+      "name": "time_offset",
+      "byte_offset": 924,
+      "valid": 1801,
+      "missing": 0,
+      "first": 0,
+      "last": 1800,
+      "min": 0,
+      "max": 1800,
+      "digest": "59e4fad8e0f7f8af"
+    },
+    {
+      "name": "heart_rate",
+      "byte_offset": 8128,
+      "valid": 1801,
+      "missing": 0,
+      "first": 120,
+      "last": 141,
+      "min": 90,
+      "max": 153,
+      "digest": "a3a042f70b7e50a1"
+    },
+    {
+      "name": "moving_time",
+      "byte_offset": 9932,
+      "valid": 1801,
+      "missing": 0,
+      "first": 0,
+      "last": 1800,
+      "min": 0,
+      "max": 1800,
+      "digest": "59e4fad8e0f7f8af"
+    }
+  ]
+}

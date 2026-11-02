@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- Dev-only check and measurement page for F-05 (architect/F-05-stacked-charts-with-shared-cursor.md,
+     "Dev page bench/charts.html", "Performance"). Not a build entry.
+     Open http://<vite>/bench/charts.html via `npm run dev`. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Charts bench</title>
+    <style>
+      body { font: 15px/1.4 system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+      .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-bottom: 8px; }
+      select, button { font-size: 16px; padding: 6px 12px; }
+      pre { white-space: pre-wrap; word-break: break-word; background: #f4f4f4; padding: 8px; margin: 8px 0; }
+      #second { font-variant-numeric: tabular-nums; }
+      #stack { border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 8px 0; }
+      .spacer { height: 150vh; color: #777; padding-top: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>F-05 charts bench</h1>
+    <div class="controls">
+      <label>File <select id="file"></select></label>
+      <button id="scrub" disabled>Auto-scrub 10 s</button>
+      <span id="second">second subscriber: –</span>
+    </div>
+    <pre id="info">Loading…</pre>
+    <div id="stack"></div>
+    <pre id="out"></pre>
+    <p class="spacer">Spacer so the page can scroll: a vertical swipe that starts on a chart must scroll the page (AC 5).</p>
+    <script type="module" src="./charts.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+# All build output (ADR-001)
+/build/
+
+# Front-end dependencies
+/src/web/node_modules/
+
+# FIT files are never committed, except generated synthetic ones (ADR-004 rev. 2, rev. 3)
+*.[fF][iI][tT]
+!/src/server/testdata/corpus/synthetic/*.fit
+/src/server/testdata/corpus/real/*
+!/src/server/testdata/corpus/real/.gitkeep
+/src/server/testdata/corpus/expected/real/*
+!/src/server/testdata/corpus/expected/real/.gitkeep
+
+# Data files are never committed, except golden ones from synthetic files (ADR-004 rev. 4, rev. 5)
+*.[bB][iI][nN]
+*.[bB][rR]
+!/src/server/testdata/datafile/synthetic/*.bin
+
+# Compose env of a self-hoster's checkout (deploy/example.env)
+/deploy/.env
+
+# Claude stuff
+.claude

@@ -1,0 +1,8 @@
+{
+  "report_version": 2,
+  "rejected": {
+    "kind": "unsupported_type",
+    "message": "Unsupported FIT file type.",
+    "file_type": "workout"
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "Page": {
+    "Title": "Ride, 6 Jun 2026",
+    "ViewPath": "/w/route-hidden",
+    "DataURL": "/w/route-hidden/data.3fd9708351b577b5.bin"
+  },
+  "Header": {
+    "Title": "Ride, 6 Jun 2026",
+    "SportName": "Ride",
+    "SportIcon": "cycling",
+    "Start": "6 Jun 2026, 07:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "29.89",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "1:00:00",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "1:00:00",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg speed",
+      "Value": "29.9",
+      "Unit": "km/h",
+      "Max": "31.7"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "142",
+      "Unit": "bpm",
+      "Max": "159"
+    },
+    {
+      "Key": "power",
+      "Label": "Avg power",
+      "Value": "231",
+      "Unit": "W",
+      "Max": "280"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "90",
+      "Unit": "rpm",
+      "Max": "93"
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "21",
+      "Unit": "°C",
+      "Max": "21"
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "600",
+      "Unit": "kcal",
+      "Max": ""
+    }
+  ],
+  "Route": {
+    "Map": "",
+    "NoLocation": "",
+    "Hidden": "yes"
+  },
+  "ChartsClass": "charts-5 cells-7 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Speed (km/h)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_power",
+        "Label": "Power (W)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (rpm)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "15:00",
+        "7.49",
+        "29.9",
+        "152",
+        "241",
+        "90"
+      ],
+      [
+        "2",
+        "15:00",
+        "7.47",
+        "29.9",
+        "132",
+        "236",
+        "90"
+      ],
+      [
+        "3",
+        "15:00",
+        "7.47",
+        "29.9",
+        "151",
+        "217",
+        "90"
+      ],
+      [
+        "4",
+        "15:00",
+        "7.46",
+        "29.8",
+        "133",
+        "229",
+        "90"
+      ]
+    ],
+    "None": ""
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

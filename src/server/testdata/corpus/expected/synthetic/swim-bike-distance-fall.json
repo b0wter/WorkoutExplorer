@@ -1,0 +1,177 @@
+{
+  "report_version": 2,
+  "file_type": "activity",
+  "device": {
+    "manufacturer": "development",
+    "product_id": 1,
+    "product_name": "corpusgen"
+  },
+  "sport": "multisport",
+  "start_time": "2026-07-02T05:00:00Z",
+  "time_zone": {
+    "known": true,
+    "offset_seconds": 7200
+  },
+  "integrity": {
+    "truncated": false,
+    "crc_failed": false,
+    "sequences": 1,
+    "skipped_sequences": 0,
+    "ignored_bytes": 0
+  },
+  "sessions": [
+    {
+      "sport": "swimming",
+      "sub_sport": "open_water",
+      "start": 0,
+      "end": 599,
+      "totals": {
+        "elapsed_time": 599.000,
+        "timer_time": 599.000,
+        "distance": 599.000,
+        "calories": 99.000,
+        "avg_speed": 1.000,
+        "max_speed": 1.000,
+        "avg_heart_rate": 143.000,
+        "max_heart_rate": 146.000
+      }
+    },
+    {
+      "sport": "cycling",
+      "sub_sport": "road",
+      "start": 600,
+      "end": 1199,
+      "totals": {
+        "elapsed_time": 599.000,
+        "timer_time": 599.000,
+        "distance": 2946.000,
+        "calories": 99.000,
+        "avg_speed": 4.918,
+        "max_speed": 5.000,
+        "avg_heart_rate": 153.000,
+        "max_heart_rate": 156.000
+      }
+    }
+  ],
+  "laps": [
+    {
+      "start": 0,
+      "end": 599,
+      "totals": {
+        "elapsed_time": 599.000,
+        "timer_time": 599.000,
+        "distance": 599.000,
+        "avg_speed": 1.000,
+        "max_speed": 1.000,
+        "avg_heart_rate": 143.000,
+        "max_heart_rate": 146.000
+      }
+    },
+    {
+      "start": 600,
+      "end": 1199,
+      "totals": {
+        "elapsed_time": 599.000,
+        "timer_time": 599.000,
+        "distance": 2946.000,
+        "avg_speed": 4.918,
+        "max_speed": 5.000,
+        "avg_heart_rate": 153.000,
+        "max_heart_rate": 156.000
+      }
+    }
+  ],
+  "timer_events": [
+    {
+      "offset": 0,
+      "kind": "start"
+    },
+    {
+      "offset": 1199,
+      "kind": "stop"
+    }
+  ],
+  "samples": {
+    "count": 1200,
+    "last_offset": 1199,
+    "filled": 0,
+    "gaps": {
+      "count": 0,
+      "total_seconds": 0,
+      "longest_seconds": 0
+    },
+    "offsets_digest": "6b2fb420457ea634"
+  },
+  "streams": {
+    "latitude": {
+      "present": 1200,
+      "missing": 0,
+      "min": 47.0500000,
+      "max": 47.0693181,
+      "first": 47.0500000,
+      "last": 47.0693181,
+      "mean": 47.0580057,
+      "digest": "e771cae107e5710a"
+    },
+    "longitude": {
+      "present": 1200,
+      "missing": 0,
+      "min": 8.3000000,
+      "max": 8.3352423,
+      "first": 8.3000000,
+      "last": 8.3352423,
+      "mean": 8.3093007,
+      "digest": "e4abdf5ea5eb476a"
+    },
+    "distance": {
+      "present": 1200,
+      "missing": 0,
+      "min": 0.00,
+      "max": 3545.00,
+      "first": 0.00,
+      "last": 3545.00,
+      "mean": 1173.55,
+      "digest": "f6399b770db8aa9a"
+    },
+    "speed": {
+      "present": 1200,
+      "missing": 0,
+      "min": 1.000,
+      "max": 5.000,
+      "first": 1.000,
+      "last": 5.000,
+      "mean": 3.000,
+      "digest": "8edca8023f970ca0"
+    },
+    "heart_rate": {
+      "present": 1200,
+      "missing": 0,
+      "min": 140.00,
+      "max": 156.00,
+      "first": 144.00,
+      "last": 154.00,
+      "mean": 148.09,
+      "digest": "c3755c6da716912f"
+    }
+  },
+  "derived": {
+    "elapsed_time": 1199.000,
+    "moving_time": 1199.000,
+    "moving_time_source": "timer",
+    "distance": 3545.000,
+    "avg_speed": 2.957,
+    "max_speed": 5.000,
+    "avg_heart_rate": 148.088,
+    "max_heart_rate": 156.000
+  },
+  "summary": {
+    "elapsed_time": 1199.000,
+    "timer_time": 1198.000,
+    "distance": 3545.000,
+    "calories": 198.000,
+    "max_speed": 5.000,
+    "avg_heart_rate": 148.088,
+    "max_heart_rate": 156.000,
+    "moving_time": 1199.000
+  }
+}

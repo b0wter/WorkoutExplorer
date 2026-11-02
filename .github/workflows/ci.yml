@@ -1,0 +1,63 @@
+name: ci
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: src/server/go.mod
+          cache: true
+          cache-dependency-path: src/server/go.sum
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      # F-31 DP-18: a vX.Y.Z tag run builds with VERSION = the tag and hands the release asset to the release job.
+      - id: tag
+        run: |
+          if printf '%s' "$GITHUB_REF" | grep -Eq '^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+      - run: make -k ci
+      - if: steps.tag.outputs.release == 'true'
+        run: |
+          git rev-parse HEAD > build/COMMIT
+          mkdir release
+          tar -C build -czf "release/workout-explorer-$GITHUB_REF_NAME-linux-amd64.tar.gz" workout-explorer web COMMIT
+          (cd release && sha256sum *.tar.gz > SHA256SUMS)
+      - if: steps.tag.outputs.release == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: release/*
+          retention-days: 1
+    outputs:
+      release: ${{ steps.tag.outputs.release }}
+  release:
+    needs: ci
+    if: needs.ci.outputs.release == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write # the only write permission in CI (DP-14); no checkout, no repository code
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0 (pinned by SHA: this job holds the write token)
+        with:
+          name: release
+          path: release
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$GITHUB_REF_NAME" --notes "" release/*

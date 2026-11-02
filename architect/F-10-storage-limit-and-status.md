@@ -1,0 +1,33 @@
+# F-10 Storage limit and status endpoint: architecture
+
+- **Version:** 1.0
+- **Status:** accepted (normal lane, no separate architect step: decided and recorded by the backend engineer, 23 Oct 2026)
+- **Feature:** [`features/F-10-storage-limit-and-status.md`](../features/F-10-storage-limit-and-status.md)
+- **Requirements:** UP-8 (server side); TD Hosting and operations (Storage limit); `features/README.md` review decision 22 (cap semantics)
+- **Builds on:** [F-09 design](F-09-upload-api-and-storage.md) (check order step 0, response table, Wiring), [ADR-021](ADR-021-upload-request-handling-and-rate-limit.md) item 3, [ADR-022](ADR-022-private-workout-files-staging-and-recovery.md) (staging, recovery, delete order)
+
+## Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| S-1 | **Setting `WORKOUT_EXPLORER_STORAGE_LIMIT_MB`**: whole decimal megabytes (1,000,000 bytes, as the 20 MB upload cap), default **1,000** (1 GB), range **1 to 1,000,000** (1 TB). Strict format of TD Configuration; invalid → `serve` prints `serve: WORKOUT_EXPLORER_STORAGE_LIMIT_MB must be a whole number of megabytes from 1 to 1000000` and exits 2 before touching `<data>`. Read by `serve` only | Unset means a cap, not "no cap": UP-8 is a Must and a full disk breaks SQLite and the whole server, so the server must be capped without operator action. 1 GB is a safe default, chosen by the user (decided 23 Oct 2026); the operator raises it with the setting. MB gives fine control (tests, small disks); 1 TB is far beyond one small VPS (scaling path: object storage) |
+| S-2 | **What counts:** the sizes of all regular files under `<data>` (database with `-wal`/`-shm`, `private/`, `tmp/`, later `public/`). Apparent size (`Size()`), not blocks; directories and symbolic links count 0, links are not followed (`privatedir.Usage`) | UP-8 and the TD cap "the total size of `/srv/workouts`". Apparent size is deterministic and what the writer knows; block overhead is small next to the cap |
+| S-3 | **Where the total lives:** `lifecycle.Storage`, in memory, one mutex; pure (callers report bytes). `nil` means no cap (older tests only; `newApp` always sets it) | TD: lifecycle owns the storage limit; decision logic pure |
+| S-4 | **Startup:** `newApp` creates `Storage(limit, 0)`, runs `Recover` (staging emptied, orphans removed, ADR-022 item 5), then measures `<data>` with `privatedir.Usage` and adds it. One INFO line `storage` with `used_bytes`, `limit_bytes`, `uploads_open` | Recovery first, so crash leftovers never count (ADR-022 Consequences). Exact after every restart (AC 3) |
+| S-5 | **Writes:** an upload reserves `len(original.fit) + len(draft.bin)` in `lifecycle.Upload` after the cancellation check and before `Files.Create`. Failed `Create` → released. Failed insert with the folder removed → released. Folder possibly left (remove failed, or `WorkoutExists` failed) → stays counted until the next start | Staging bytes are counted from the moment they are written, so `tmp/` needs no tracking; every uncertain case counts too much, which can only refuse earlier, never fill the disk |
+| S-6 | **Deletes:** `lifecycle.Service.Delete(ctx, id)` is the single delete path (I-4): row first, then `Files.Remove`, which now returns the bytes it freed (`Remove(id) (freed int64, err error)`); the freed bytes are released. On a remove error nothing is released (the next start recomputes). F-12, F-21 (expiry) and F-27 call it; F-15 adds the public folder | AC 2: space freed by a delete or expiry reopens uploads without a restart |
+| S-7 | **Not tracked while running:** the database's own growth (about 1 to 2 KB per row, WAL up to its checkpoint size, about 4 MB). It is measured at every start | Bounded by a few MB against a cap of GB; tracking it would need a stat on every write for no product gain |
+| S-8 | **Never refused:** publish, edits, regeneration (F-12, F-15, F-30) count their files with `Storage.Add` and `Storage.Release`, which never refuse; deletes never consult the cap. Only `POST /api/workouts` is gated | Review decision 22 |
+| S-9 | **The check, twice:** (a) **step 0** of the F-09 check order, in `httpapi`, before the in-flight slot and the rate limit: `UploadsOpen()` is `used < limit`; a refusal does not count against the rate limit and reads no body byte. (b) **`Storage.Reserve`** in `Upload` (S-5): check and add in one step under the mutex; refused → `lifecycle.ErrStorageFull` | (a) is cheap and answers before the upload is read, its size unknown. (b) makes decision 22 exact under concurrency: of several uploads in flight when the total reaches the cap, only the first to reserve goes over it; the others get the same `503` after their parse (AC 1 "refused as documented"). The total exceeds the cap by at most one upload's files. An upload refused at `Reserve` has already used one of the sharer's hourly attempts (its parse ran after step 2), consistent with F-09's rule that refused uploads count toward the 60 per hour (QA-10-r1-2) |
+| S-10 | **Refusal:** `503`, `{"error":"storage_full","message":"Uploads are paused because storage is full. Please try again later."}`, `Cache-Control: no-store`, **no `Retry-After`** (freeing space has no known time). Log: `upload refused` with `reason=storage_full`, `status=503` | F-09 response table row "Storage full"; UP-8's sentence exactly |
+| S-11 | **`GET /api/status`** (and `HEAD`): `200`, `Content-Type: application/json`, `Cache-Control: no-store`, body exactly `{"uploads_open":true}` or `{"uploads_open":false}`. No usage, cap, version or count. Other methods `405` (ServeMux). Registered whenever `Config.Storage` is set | UP-8 notice before the file is picked (F-11). Reveals one bit; F-09 conventions (JSON, `no-store`, `/api/`). `no-store` so the notice follows a delete or expiry at once |
+
+## Contract for the front end (F-11)
+
+`GET /api/status` → `{"uploads_open": bool}`. When `false`, show UP-8's sentence and do not offer the file picker. An upload can still get `503 storage_full` (the cap was reached meanwhile); show its `message` as for every refusal.
+
+## Hand-offs
+
+- **F-12, F-21, F-27:** delete through `lifecycle.Service.Delete`; nothing else may remove a workout folder.
+- **F-15, F-30:** every file written or removed under `public/` or `private/` is reported with `Storage.Add` / `Storage.Release` (sizes as S-2), never `Reserve`. F-15 extends `Delete` with the public folder and adds an end-to-end test that publishes a draft while uploads are paused (F-10 AC 4).
+- **F-31:** set `WORKOUT_EXPLORER_STORAGE_LIMIT_MB` in the unit below the disk's free space, leaving room for logs and one over-cap upload (about 40 MB).

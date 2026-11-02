@@ -1,0 +1,86 @@
+{
+  "fixture_version": 1,
+  "format_version": 2,
+  "byte_length": 29480,
+  "sample_count": 1200,
+  "metadata_length": 1864,
+  "streams": [
+    {
+      "name": "time_offset",
+      "byte_offset": 1880,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 1199,
+      "min": 0,
+      "max": 1199,
+      "digest": "6b2fb420457ea634"
+    },
+    {
+      "name": "latitude",
+      "byte_offset": 6680,
+      "valid": 1200,
+      "missing": 0,
+      "first": 47050000,
+      "last": 47069318,
+      "min": 47050000,
+      "max": 47069318,
+      "digest": "c064ad01b875a742"
+    },
+    {
+      "name": "longitude",
+      "byte_offset": 11480,
+      "valid": 1200,
+      "missing": 0,
+      "first": 8300000,
+      "last": 8335242,
+      "min": 8300000,
+      "max": 8335242,
+      "digest": "a0816c7070381046"
+    },
+    {
+      "name": "distance",
+      "byte_offset": 16280,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 35450,
+      "min": 0,
+      "max": 35450,
+      "digest": "0e6732c262e9665b"
+    },
+    {
+      "name": "speed",
+      "byte_offset": 21080,
+      "valid": 1200,
+      "missing": 0,
+      "first": 1000,
+      "last": 5000,
+      "min": 1000,
+      "max": 5000,
+      "digest": "24745eddd5f931a9"
+    },
+    {
+      "name": "heart_rate",
+      "byte_offset": 23480,
+      "valid": 1200,
+      "missing": 0,
+      "first": 144,
+      "last": 154,
+      "min": 140,
+      "max": 156,
+      "digest": "052ef7ace9d9653f"
+    },
+    {
+      "name": "moving_time",
+      "byte_offset": 24680,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 1199,
+      "min": 0,
+      "max": 1199,
+      "digest": "6b2fb420457ea634"
+    }
+  ]
+}

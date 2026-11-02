@@ -1,0 +1,295 @@
+# Workout Explorer — Product Specification
+
+Oct 9, 2026 · @Joe
+
+## Summary
+
+Workout Explorer turns a FIT file from any device into a shareable web page where anyone can explore one workout: the route, the numbers, and every data stream, linked together. It is the device-agnostic equivalent of a Garmin Connect public activity page.
+
+**Problem.** Rich, interactive activity pages exist, but only inside each vendor's ecosystem. Athletes on other devices can share a screenshot or a static map, not the workout itself. Viewers often need an account to see anything.
+
+**Goals**
+
+- Upload a FIT file and get a shareable link.
+- Viewers explore without an account, on a phone as well as a desktop.
+- Map, charts and laps are linked: hovering a chart moves a marker on the map, selecting a range shows stats for that range.
+- The sharer controls privacy: who can open it, which locations are hidden, and whether the file can be downloaded.
+- Nothing is kept for long, and as little as possible is stored: every workout and all its data are deleted after a set lifetime (UP-7). It is a viewer, not a database.
+
+**Non-goals (for now)**
+
+- A training log, fitness tracking or coaching platform.
+- Long-term storage or an archive of workouts: a workout lives for 7 days by default and at most one month.
+- User accounts: an upload returns a viewing link and an edit link, and nothing identifies the sharer.
+- A social network: feeds, followers, kudos, comments.
+- Live tracking, automatic device sync, or imports from other services (Strava, device clouds, Intervals.icu, Dropbox). This is a viewer for FIT files; the only way in is uploading one.
+- Special handling for virtual rides (Zwift and similar). They are processed like any other file; their map may show nonsense.
+
+## Users and user stories
+
+Two roles matter: the **sharer**, who uploads a workout, and the **viewer**, who opens the link. Viewers will outnumber sharers many times over, so the viewing page gets most of the design effort. "Owner" in this document means whoever holds the edit link; there are no accounts.
+
+**Sharer** (athlete on a non-Garmin device: Wahoo, Coros, Hammerhead, or any app that exports FIT)
+
+1. As a sharer, I drop a FIT file onto the page and get a link I can paste into a chat or a club group.
+2. As a sharer, I give the workout a title and a short description.
+3. As a sharer, I hide the start and end of my route so it does not show where I live. (Phase 2: I hide a radius around chosen places.)
+4. As a sharer, I decide when it goes live: it stays a draft that only I can open until I publish it; after that anyone with the link can open it until I delete it or it expires.
+5. As a sharer, I can edit or delete a workout later, and deletion is permanent.
+6. As a sharer, I choose how long the workout stays online (7 days unless I change it, at most one month); after that it is gone with all its data.
+7. As a sharer, I decide whether viewers may download the workout file; by default they cannot.
+8. (Phase 2) As a sharer, I cut off the part where I forgot to stop my watch.
+9. (Phase 2) As a sharer, I get a suggested title so I don't have to type one.
+10. (Phase 2) As a sharer, I mark dangers and points of interest so the next rider knows about them.
+
+**Viewer** (friend, family, coach, club member)
+
+1. As a viewer, I open the link on my phone without signing up and see the key numbers at once.
+2. As a viewer, I drag along the elevation chart and see where on the map that point is, with the heart rate, power and speed at that moment.
+3. As a viewer, I select the big climb and see its distance, time, gain and averages.
+4. As a viewer, I compare laps or kilometre splits in a table.
+5. As a viewer, I see a rich preview card when the link is posted in WhatsApp, Signal or Slack.
+6. As a viewer, I open the map fullscreen on my phone to follow the route.
+7. As a viewer, I see the workout in my own units and can switch them, and the next workout I open on the same device keeps my choice.
+8. As a viewer, I can report a workout that should not be online.
+9. (Phase 2) As a viewer of a pool swim, I see the pool length and how many lengths were swum.
+10. As a viewer on a desktop, I see the map beside the numbers and charts, so I don't have to scroll between them.
+11. As a viewer on a phone in portrait, I keep the map at the top of the screen while I scroll through the charts.
+
+## Scope
+
+The MVP is one workout, one link: upload, explore, share, delete. Connecting workouts to each other comes later; connecting to other services is out of scope.
+
+| Capability | MVP | Phase 2 | Later |
+| --- | --- | --- | --- |
+| FIT upload (drag and drop, file picker) | Yes |  |  |
+| Recover truncated files (UP-3) | Yes |  |  |
+| Device identifiers and personal data removed from uploaded files (UP-9) | Yes |  |  |
+| Suggested title (UP-5) |  | Yes |  |
+| Trim start and end (UP-6) |  | Yes |  |
+| Activity page: summary, map, linked charts, laps | Yes |  |  |
+| Two-column activity page on wide screens and phones in landscape, map kept in view (AP-17) | Yes |  |  |
+| Map kept at the top while scrolling on a phone in portrait (AP-18) | Yes |  |  |
+| Range selection with stats | Yes |  |  |
+| Colour the route by metric (AP-9) | Yes |  |  |
+| Multisport legs and transitions (AP-12) |  | Yes |  |
+| Pool swims: lengths and stroke type (AP-13) |  | Yes |  |
+| Pool swims: pool length and number of lengths in the summary (AP-16) |  | Yes |  |
+| Device and sensor info (AP-14) |  | Yes |  |
+| Start and end hiding, publish step (draft, then unlisted) | Yes |  |  |
+| Viewer download of the published data, off by default (SH-8) | Yes |  |  |
+| Privacy notice and fast removal of changed content (SH-9, SH-10) | Yes |  |  |
+| Units, sport-specific pace or speed, English, light and dark theme (DS-1 to DS-4) | Yes |  |  |
+| Privacy zones around chosen places |  | Yes |  |
+| Workout lifetime: automatic deletion after 7 days, configurable up to one month; unpublished drafts deleted after 48 hours | Yes |  |  |
+| Fullscreen map (pins shown in fullscreen once pins exist) | Yes | Yes |  |
+| Link preview image for messengers | Yes |  |  |
+| Warning preview card for edit and published-page links (SH-11) | Yes |  |  |
+| Storage limit with an "uploads paused" notice | Yes |  |  |
+| Published page with the viewing link and the edit link (AC-6) | Yes |  |  |
+| About page: data we use, how, and attributions | Yes |  |  |
+| Report link and form; reports reviewed by the operator | Yes |  |  |
+| Push notification to the operator for new reports (e.g. Pushover) |  |  | Yes |
+| Zones, power curve, best efforts |  | Yes |  |
+| Embed on a blog via iframe |  | Yes |  |
+| Map pins, placed in the edit view: points of interest, dangers, difficult sections, with notes |  | Yes |  |
+| Photos on pins |  |  | Yes |
+| Extra sensor streams (running dynamics, app-specific fields such as Stryd) |  |  | Yes |
+| Remember my workouts on this device (browser storage, no accounts) |  |  | Yes |
+| Mobile share sheet (share a FIT file from another app) |  |  | Yes |
+| German interface |  |  | Yes |
+| Keyboard control of charts |  |  | Yes |
+| GPS dropouts drawn as gaps on the map |  |  | Yes |
+| Compare two workouts or a group ride |  |  | Yes |
+| GPX and TCX upload |  |  | Yes |
+
+## Functional requirements
+
+Priorities: **Must** ships in the MVP, **Should** ships in the MVP if time allows, **Could** waits for phase 2. If time runs short, Should items are dropped in this order: SH-8, DS-4, AP-15, AP-9. SH-4 is not dropped.
+
+### Upload and processing
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| UP-1 | Accept a .fit file up to 20 MB (20,000,000 bytes) by drag and drop or file picker. Upload opens the draft on the edit page (UP-4); the workout's two links, a viewing link to share and an edit link to keep, are shown once it is published (AC-6). | Must |
+| UP-2 | Validate the header and CRC. Reject, with a plain error message, files that are not FIT or contain no readable records. FIT files that are not recorded activities (courses, workout plans, settings, monitoring) get "Unsupported FIT file type." A file that is truncated or fails its CRC check is accepted when UP-3 recovers data from it. A file that exceeds a parse limit (Non-functional requirements, Security) gets "This file is too large or too complex to read." A malformed or crafted file that cannot be stored with UP-9 applied and its workout data unchanged may be refused with "This file could not be read." | Must |
+| UP-3 | Recover data from a truncated file (watch died mid-ride) when the records before the break are intact. The preview tells the sharer: "The file was incomplete; data after hh:mm:ss is missing." | Must |
+| UP-4 | Show a preview of the parsed workout before it is published, so the sharer can set title, description, start and end hiding (SH-4), lifetime (UP-7) and file download (SH-8), and then publish it (SH-2). After publishing, the edit link opens the same page, which is how the owner edits a published workout (AC-5). Title up to 100 characters after leading and trailing white space is trimmed, description up to 1,000 characters, both plain text and counted in Unicode code points (an emoji counts as one); the description keeps line breaks, and no other control characters, tab included, are accepted. An empty title shows sport and date ("Ride, 9 Oct 2026"). While the workout is a draft, the page shows neither the viewing link nor the edit link. Publishing saves unsaved changes first and publishes only if that save succeeds; it makes the workout unlisted and, only when it succeeds, opens the published page (AC-6). | Must |
+| UP-5 | Suggest a title from sport, time of day and place ("Morning ride near Riverton"). The place is the nearest town of 15,000 or more people to the first visible point of the route, looked up on the server without sending coordinates to any third party. | Could |
+| UP-6 | Phase 2. Trim the start or end of the workout (forgot to stop the watch). | Could |
+| UP-7 | Every workout has a limited lifetime: 7 days from upload by default; the sharer can choose any lifetime up to one month (30 days) from upload, on the draft page that opens right after upload (UP-4) or later through the edit link; the upload itself carries only the file. When it ends, the workout and all its data (original FIT file, workout data, preview image, pins, reports) are deleted as in AC-4, and the link shows a plain "This workout has expired or is not available." page, the same page shown for draft and unknown links (SH-2). A workout that is never published is deleted earlier, the same way: 48 hours after upload (counted in hours, not calendar days), or at the end of its chosen lifetime if that comes first. This only frees space early; once published, the chosen lifetime counts from upload as before. While the workout is a draft, the edit page shows one line: "Unpublished drafts are deleted 48 hours after upload."; it is not shown after publishing. The page shows viewers how long until it expires ("Expires in …"), counted in the browser from the expiry time, so it does not depend on any time zone; where a date is shown, it is in the viewer's browser time zone; with JavaScript off, the page shows the expiry date in the workout's own time zone, or in UTC when the workout has none, marked as an estimate (e.g. "Expires around 30 Oct 2026"). No reminder is sent before expiry. A workout can also end early: if a new version of the app reads its stored file differently, the workout is shown as the new version reads it, even if shorter; if the new version rejects its stored file, it is deleted at that deploy, as on expiry, without notice (a rebuild that fails on the server's side, is interrupted or hits a time limit keeps the workout for the next deploy). | Must |
+| UP-8 | Total storage is capped by a server setting. When the cap is reached, new uploads are refused, and the upload page shows a simple notice before the sharer picks a file: "Uploads are paused because storage is full. Please try again later." | Must |
+| UP-9 | Before an uploaded file is stored, data that identifies a person or a device and is not needed to show the workout is taken out: (1) every serial number and every ANT+ device number or ANT ID in the file, of the recording device and of every sensor, wherever the file records it (device and sensor lists, sensor profiles, ANT channel settings, segment identifiers, dive-tank pods), is blanked (the ANT transmission type next to it is kept: with the device number blank, it identifies nobody); (2) the user profile (name, gender, age, height, weight, heart-rate settings and every other field in it) is removed; (3) saved locations (named places such as "Home") are removed; (4) segment leaderboard entries, which name other people, are removed, and the segment leaders' activity IDs (as number and as text) and the segment account keys (of the segment's creator and of the leaders' groups), which point to other people, are blanked; (5) raw ANT radio messages (received and sent), which can contain sensor IDs, are removed. The stored file, called the original FIT file in this specification, is the upload with only these changes, plus repaired framing: CRCs are corrected (a truncated file is instead stored marked as unfinished, the FIT way, without CRCs, so it still reads as truncated, UP-3), and trailing bytes that are not FIT data and an incomplete last record are dropped. When reading stops early at a damaged record (for example an invalid record definition), the stored file ends at that record, like any truncated file, and nothing after it is kept. The workout data in it is identical to the upload's. Zone messages (heart-rate and power zones, including max, resting and threshold heart rate and threshold power) are kept as uploaded. None of the removed data is shown, logged or stored anywhere else. User-chosen names (sport profiles, devices) and developer fields from apps are kept as uploaded. | Must |
+| UP-10 | An upload that fails for a reason other than its file content (UP-2) shows one of these plain messages. Larger than 20 MB: "This file is larger than 20 MB." Over the hourly limit (Non-functional requirements, Security): "Too many uploads. Please try again later." Too many uploads being processed at once: "Too many uploads right now. Please try again in a minute." The upload could not be read (for example, the connection broke): "The upload could not be read. Please try again." A server error: "Something went wrong on the server. Please try again later." | Must |
+
+### Activity page
+
+&#91;embedded content: activity page on a phone · 6 modules, top to bottom\]
+
+Modules, top to bottom, in the one-column layout of phones in portrait and other narrow screens (this list is authoritative where the diagram differs; wide screens and phones in landscape use two columns when there is a route to show, AP-17):
+
+1. Header: title, sport, date and start time, description, expiry (AP-1, UP-7).
+2. Summary strip with the privacy notice (AP-2, SH-9).
+3. Map, or the "No location data in this workout" or "The entire route has been hidden by the uploader" hint (AP-3).
+4. Charts (AP-4 to AP-6).
+5. Range selection panel (AP-7), shown only while a range is selected; in this layout it sticks to the bottom of the screen. Until then, a one-line hint under the charts says how to select.
+6. Laps and splits table (AP-8).
+
+A footer on every page links to the About page and, on workout pages, the Report form (INF-1, INF-2).
+
+Dragging along any chart moves the marker on the map and updates every value; a dragged range shades the charts and fills the selection panel.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| AP-1 | Header: title, sport icon, date and start time in the activity's local time zone, description. | Must |
+| AP-2 | Summary strip with every one of these metrics the workout has, for every sport: distance, moving time, elapsed time, elevation gain, average and max speed or pace, average and max heart rate, power, cadence and temperature, calories. A maximum is shown as a second value in the same cell as its average, wherever the summary has it. Missing metrics are hidden, never shown as zero. The sport decides only whether speed or pace is shown (DS-2) and the cadence unit. Where the device recorded no total, the value computed on the server is shown. Totals are the values the device recorded for the whole workout, also when parts of the route are hidden for privacy (SH-3, SH-4, SH-9); after a trim (UP-6) they are recomputed for the part that remains. For a workout of several sessions or recordings, elapsed time is the time from the workout start to the last record (the same value the cursor shows at the last record, AP-5), including transitions and gaps between sessions, not the sum of the sessions. Transitions (AP-4) count toward distance and moving time (their whole duration counts as moving); average and max speed or pace, cadence and power leave transitions out, also where the device's own session totals are used; heart rate includes them. | Must |
+| AP-3 | Interactive map of the route (pan, zoom), start and finish markers, lap markers. When the workout has no location data (for example indoor workouts), the map is hidden and a small hint takes its place: "No location data in this workout." In the MVP the route is one connected line: GPS dropouts (samples without position) and time gaps (5 s or more between samples) are crossed by straight, dashed segments, so they don't look like recorded track. When start and end hiding (SH-4; later privacy zones, SH-3) removes every position of a workout that has location data, the map is hidden and this hint takes its place instead: "The entire route has been hidden by the uploader." A workout without location data shows the no-location hint whether or not hiding is on. The sharer is not warned before publishing a route that will be entirely hidden. A route trimmed away entirely (UP-6, phase 2) shows no route. | Must |
+| AP-4 | Stacked time-series charts sharing one x axis: elevation, speed or pace, heart rate, power, cadence, temperature. Only streams present in the file are shown. During transitions of a multisport file (sessions with sport "transition", such as T1 and T2) only position (the route), distance, heart rate, elevation and temperature are kept and shown; every other value (speed or pace, cadence, power and the like) is dropped on upload, so the charts and the cursor (AP-6) show nothing for them there. Changing clothes and gear makes them meaningless. | Must |
+| AP-5 | X axis toggles between time and distance. The time axis shows elapsed time since the workout start, counted across all sessions of a multi-session workout (an hour into the ride after a one-hour swim is 2:00:00, not 1:00:00); the cursor (AP-6) shows the same elapsed time; pauses are drawn as breaks of their real width (provisional, see Open questions). The toggle is hidden when the workout has no distance data. The default is time; a choice made with the toggle is remembered on the viewer's device (browser storage, no cookie, never sent to the server) and applies to every workout and edit page later opened in that browser. A workout without distance data shows time and leaves the remembered choice unchanged. When browser storage is unavailable, blocked or holds an unreadable value, the page starts on time without a message, and the toggle still works for that page. | Must |
+| AP-6 | Linked cursor: hovering or touch-dragging any chart moves a marker on the map and shows all values at that point; hovering the route moves the chart cursor; where the route crosses itself, the nearest sample wins, and on a tie within 3 px the earliest. On touch, a horizontal drag moves the cursor and a vertical swipe scrolls the page. | Must |
+| AP-7 | Range selection: drag across a chart to select a section (on touch: long-press, then drag); the map highlights it and a panel shows its distance, elapsed and moving time, elevation gain, average speed or pace (distance ÷ moving time), and average heart rate, power, cadence and temperature, each only when the workout has it. Averages leave out missing samples, and pauses add nothing; power averages include zeros, cadence averages exclude them. Transitions (AP-4) count toward the distance and time of a range; they add no speed, cadence or power samples. Selecting the whole workout may give values that differ from the device totals in the summary (AP-2); no note is shown. Until a range is selected the panel is hidden on every device, and a one-line hint under the charts says how to select (drag; on touch, long-press then drag). Where the panel sits while a range is selected depends on the layout (AP-17): in the one-column layout it sticks to the bottom of the screen; in the two-column layout of short landscape screens it sticks to the bottom of the right column; on wide screens it sits in the page above the laps and splits table, so the table moves down when the panel appears (accepted; a tapped lap or split row stays in place, AP-8). In the one-column layout the panel's place is above the laps and splits table: once the viewer has scrolled past that place, the panel stays there, above the screen, and is not pulled down (accepted). Clear with one tap: on the panel's clear control, or on a chart outside the shaded part; taps on the map or elsewhere, and scrolling, never clear the range. Clearing hides the panel again. Panel contents are provisional (see Open questions). | Must |
+| AP-8 | Laps table from the device's laps, plus automatic 1 km (or 1 mi) splits; tapping a row selects that range (AP-7). Columns (provisional, see Open questions): number, time, distance, average speed or pace, gain, average heart rate, power and cadence, each only when the workout has it. Laps use the device's lap values where recorded, otherwise values computed as for a range (AP-7); splits use the same columns, computed, and the last partial split shows its own distance. Laps and splits that include a transition count it as a range does (AP-7); a lap that starts in a transition shows no speed, cadence or power ("–"), as in the summary. When the workout has distance but no device laps, the section says "No laps recorded." and still offers the splits; without laps and distance there is no section. Every page starts on laps; the choice is not remembered. When a row tap makes the range panel appear (AP-7), the tapped row stays in place on screen. After a lap tap the panel's values may differ from the row's device values; no note is shown. | Must |
+| AP-9 | Colour the route by a chosen metric (speed, heart rate, power, gradient). For the pace sports (DS-2), speed colouring is labelled and its legend shown as pace. Coloured by speed, power or gradient, transitions (AP-4) are drawn in the plain route colour; coloured by heart rate, they are coloured as usual. | Should |
+| AP-10 | Heart-rate and power zone distribution, using zones from the file or entered by the sharer. Zones from the file come from its zone messages, not from the user profile, which is removed on upload (UP-9). | Could |
+| AP-11 | Power curve and best efforts (fastest 1 km, 5 km; best 5 min, 20 min power). | Could |
+| AP-12 | Phase 2. Multisport files (triathlon) show each leg and the transitions as sections. Until then, multi-session files show as one workout; the sport is "Multisport" when the sessions have more than one sport, otherwise that sport (e.g. two cycling sessions show as cycling). A transition session counts as a sport of its own, so ride, transition, ride shows as "Multisport". Already in the MVP, transitions keep only position, distance, heart rate, elevation and temperature (AP-4). | Could |
+| AP-13 | Pool swims show lengths and stroke type instead of a map. | Could |
+| AP-14 | Device and sensor info ("Wahoo ELEMNT BOLT, power meter, HR strap"). | Could |
+| AP-15 | Fullscreen map mode: one button expands the map to the whole screen and hides every data field (header, summary, charts, selection, laps). Kept visible: the route, start and finish markers, lap markers, zoom controls and an exit button. In phase 2, the pins and their legend (PIN-6) also stay visible, and tapping a pin opens its card over the map. Exit with the button, Esc, or the phone's back gesture; the page returns to the same scroll position. Works in portrait and landscape. | Should |
+| AP-16 | Phase 2. Pool swims: the summary strip (AP-2) also shows the pool length and the number of lengths swum, as the device recorded them for the workout (for example "25 m pool, 64 lengths"). Rest lengths (no strokes) are not counted. Both are hidden when the device recorded no value, for example for open-water swims, other sports, or a truncated file without session totals (UP-3); they are never computed or shown as zero. The pool length is shown in the unit the pool is measured in (a 25 yd pool shows 25 yd also in metric units); the number of lengths has no unit. In a workout with several pool-swim sessions, the lengths are summed; the pool length is shown only when every pool-swim session has the same one. Provisional, see Open questions. | Could |
+| AP-17 | Wide screens (desktop) and short landscape screens (phones in landscape, under about 500 px tall), when the workout has a route to show: the page has two columns. On wide screens they are of equal width; on short landscape screens the map column is narrower (about 40 % map, 60 % content). The left column holds only the map, full window height and flush with the window edges; it stays in view while the right column scrolls, for as long as the right column lasts. The right column holds, top to bottom, the header (AP-1), the summary strip with the privacy notice (AP-2, SH-9), the charts (AP-4 to AP-6), the range selection panel (AP-7, shown only while a range is selected; placement per layout as in AP-7), the laps and splits table (AP-8) and the footer. The map credits sit at the top of the map. Other narrow screens (phones in portrait), and screens of every width when the workout has no location data or no visible route (for example a route that is entirely hidden, AP-3), show one column in the module order above. The exact width at which the page switches between one and two columns, and the exact height below which a landscape screen counts as short, are left to the design. The layout holds with JavaScript off. In both two-column layouts, a splitter between the columns lets the viewer drag the map column to between 30 % and 70 % of the page width; on wide screens each column also keeps its minimum width (left to the design). The equal split and the 40/60 split above are the defaults. A double click or double tap on the splitter restores the default and forgets the remembered split. A dragged split is remembered on the viewer's device (browser storage, no cookie, never sent to the server), separately for wide and for short landscape screens, and applies to every workout and edit page later opened in that browser; storage that is unavailable, blocked or unreadable gives the default split without a message. With JavaScript off there is no splitter and the default split applies. The edit page uses the same layout. | Must |
+| AP-18 | One-column layout (phones in portrait), when the workout has a route to show: a toggle button on the map pins the map at the top of the screen while the viewer scrolls through the charts and laps, until the end of the laps and splits table; tapping it again puts the map back in its place in the page. Off by default. While pinned, the map is 35 % of the screen height, never more than 40 %; it need not be smaller than the map in the page (on a tablet it may be larger); the cursor marker, the range highlight and zooming keep working. The choice is not stored (no cookie or browser storage): every page load starts with it off. The toggle is not shown in either two-column layout (AP-17: wide screens, phones in landscape) or when the workout has no location data or no visible route. Leaving the fullscreen map (AP-15) keeps the pinned state as it was. The edit page has the same toggle. The toggle reads "Pin map" when off and "Unpin map" when on; in this specification, "pin" otherwise still means a map pin (PIN-). | Must |
+
+### Sharing and privacy
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| SH-1 | Each published workout has an unguessable URL. | Must |
+| SH-2 | Visibility has two states: draft (uploaded, not yet published; only the edit-link holder) and published, which is unlisted (anyone with the link). Publishing cannot be undone: a published workout never returns to draft and cannot be hidden again; the owner can still change its settings (AC-5) or delete it (AC-4). Viewers see a draft as a page that does not exist. (A third state, private, was removed on 30 Oct 2026.) A draft that is never published is deleted 48 hours after upload (UP-7). | Must |
+| SH-3 | Phase 2. Privacy zones: circles of 200 m to 1 km around chosen places; GPS points inside are removed from the stored public data, not just hidden in the browser. | Could |
+| SH-4 | Optional start and end privacy: hide the start and end of the route. The start section runs from the first position until the route first gets more than 300 m (straight line) from it; the end section runs back from the last position until the route, followed backwards, first gets more than 300 m from it. A route that stays within 300 m of its start or end (for example laps of a running track near home) is hidden more, or entirely (AP-3). GPS points there are removed from the stored public data, not just hidden in the browser. Off by default, so the full track is shown unless the sharer turns it on. | Should |
+| SH-5 | Open Graph and Twitter-card preview image showing the route, a sport icon (run, ride, swim, walk/hike, generic) in front of the workout's name (cut at 40 characters plus "…"); below it distance and duration (moving time; elapsed time when the workout has no GPS); elevation gain only when altitude was recorded and the gain is above zero; pace for runs, walks and hikes (min/km), speed for rides (km/h), pace per 100 m for swims; average heart rate when present. Distance, pace or speed only when the workout has a distance. The card renders in WhatsApp, Signal, Slack, Telegram and X. Draft and expired links have no workout preview card (no image, no workout values); edit and published-page links get the fixed warning card of SH-11. | Must |
+| SH-6 | The edit page has a Share button that shows the viewing link with a copy button, once the workout is published (hidden on a draft). The published page (AC-6) also shows the viewing link with a copy button. The viewing page has a copy-link button. | Must |
+| SH-7 | iframe embed code with a compact layout. | Could |
+| SH-8 | The owner can always download the original FIT file, which is the upload with identifying data removed (UP-9). On the draft page that opens right after upload (UP-4), and later through the edit link, the sharer chooses whether viewers may download the workout; the default is no download. Viewers who may download get a FIT file built from the published data, with trims applied and hidden points removed. The original file, which contains every point, is never offered to viewers. | Should |
+| SH-9 | Every workout page says clearly, next to the map and summary: "Parts of the route, such as the start and end, may be hidden for privacy. Totals include them." It is shown whether or not anything is hidden, so viewers cannot tell which routes were changed. The one exception is a route hidden entirely, which the page states (AP-3). | Must |
+| SH-10 | After a delete, expiry, or any edit that hides more of the route, the old content stops being served within 60 s, and no cache under the app's control keeps it longer. The edit panel tells the sharer that copies viewers already downloaded, or previews messengers already made, cannot be recalled. | Must |
+| SH-11 | The edit page (`/edit/{id}`) and the published page (`/published/{id}`) carry fixed link-preview tags (Open Graph and Twitter), the same for every workout: title "Edit link: do not share" and one short sentence saying that anyone with this link can change or delete the workout; optionally a static warning image. The tags contain nothing about the workout (no name, values, route or ID), so a messenger shows a warning when an edit link is pasted. The edit token stays in the link fragment and never reaches the preview fetcher. | Must |
+
+### Map pins (phase 2)
+
+In the edit view, the owner marks places on the route that matter to the next rider or runner, and every viewer of the shared page sees them. Priorities below apply within phase 2.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| PIN-1 | The owner places a pin by tapping the map, or by tapping a point on a chart, which drops it on the route at that position. | Must |
+| PIN-2 | Pin types with distinct icons and colours: point of interest, danger, difficult section, water or food, photo spot, note. | Must |
+| PIN-3 | A pin has a type, a short title (up to 60 characters) and an optional note. Photos on pins come later. | Must |
+| PIN-4 | A pin can mark a section instead of a point (steep climb, rough gravel, busy road): start and end on the route, highlighted on the map and shaded on the charts. | Should |
+| PIN-5 | Pins show on the map, as markers along the chart's x axis, and in a list under the map; selecting one in any view selects it in all, and moves the cursor there. | Must |
+| PIN-6 | Viewers can show or hide each pin type from a legend. | Should |
+| PIN-7 | Pins inside a privacy zone are refused, so a pin never reveals a hidden place. | Must |
+| PIN-8 | Owner can edit, move and delete pins after publishing; changes appear on the shared page without re-uploading. | Must |
+| PIN-9 | Export the route with its pins as GPX waypoints, so others can load the dangers onto their own device. | Could |
+
+### Ownership and links
+
+There are no accounts. Whoever holds the edit link owns the workout.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| AC-1 | Every workout has a secret edit link alongside its viewing link (UP-1). The edit link is shown to the owner only on the published page (AC-6) and never emailed; there is no other way to get it again. Losing it means the workout can no longer be changed or deleted and simply expires (UP-7). A sharer who closes the edit page before publishing, or whose connection drops after the workout is stored, loses the draft: it is deleted 48 hours after upload (UP-7). | Must |
+| AC-2 | Removed: no accounts. | — |
+| AC-3 | Removed: no accounts. A "my workouts" list kept in the browser may come later. | — |
+| AC-4 | Delete, or the end of the lifetime (UP-7), removes the page and all stored data at once. There are no backups, so nothing remains afterwards. | Must |
+| AC-5 | With the edit link, the owner can change everything: title, description, trim (phase 2), start and end hiding, lifetime (up to 30 days from upload), the download setting and pins (phase 2); can publish a draft, which cannot be undone (SH-2); and can delete the workout. | Must |
+| AC-6 | Published page: after a successful publish (UP-4), the owner lands on a page of its own that shows the viewing link with a copy button and the edit link with a copy button, plus a prominent warning: save this link; it is the only way to change or delete the workout, and it cannot be recovered. A "Back to edit" control opens the edit page. A reload shows the same page again, and the owner can open it again later with the edit token whenever the workout is published; opened on a draft, it sends the owner to the edit page. A wrong or missing token, or an unknown or expired workout, gets the same not-found page as the edit page. Viewers never see it. | Must |
+
+### Display settings
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| DS-1 | Metric and imperial units. The default comes from the viewer's browser language; a drop-down on the page switches units. The chosen units are remembered on the viewer's device (browser storage, no cookie) and never sent to the server; they apply to every workout and edit page opened later in that browser and win over the browser-language default. Only a choice made in the drop-down is remembered. When browser storage is unavailable, blocked or holds an unreadable value, the page uses the browser-language default without a message, and switching still works for that page. | Must |
+| DS-2 | Every sport in a FIT file is supported. Pace for running, walking and hiking; per 100 m (or 100 yd) for swimming; per 500 m for rowing; speed for cycling and all other sports. For the pace sports, pace takes the place of speed everywhere: summary, chart, cursor readout, range panel, laps and splits. The pace chart is flipped so faster is up. Stops (speed at or near 0) are gaps in the line, and the cursor readout shows "–" there; there is no fixed slowest pace: the axis range comes from the workout's own data, and slow outliers are clipped to the axis edge (the stop threshold is proposed during the build, reviewed on screen). Distance is in kilometres or miles for every sport, swims included; swim distance in yards comes later with pool lengths (AP-13, AP-16); until then an imperial swim shows distance in miles and pace per 100 yd. | Must |
+| DS-3 | English interface. Other languages come later. | Must |
+| DS-4 | Light and dark theme following the system setting, on the activity and edit pages, the upload page, the About page (INF-1) and the generic "expired or not available" page. Charts follow it, and the map where a dark map style is available. | Should |
+
+### Information and reports
+
+What the site tells people about itself, and how anyone can flag a workout to the operator.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| INF-1 | An About page, linked from the footer of every page, explains what data the site stores (FIT file, workout data, settings, reports), what the viewer's own browser keeps (the units choice, DS-1; the x axis, AP-5; the map/content split, AP-17; never sent to the server, no cookie) and lists, concretely, what is removed from every FIT file on upload (UP-9): device and sensor serial numbers and ANT+ IDs (wherever the file records them), the user profile (name, gender, age, height, weight, heart-rate settings), saved locations, segment leaderboard entries, the segment leaders' activity IDs and segment account keys, and raw ANT radio messages. It also explains how the data is used, who else sees what (the map tile host sees viewers' IP addresses), and how long it is kept (UP-7), including, exactly: "Workouts are not archived: after an app update, a damaged file may show less than before or be removed." The page also lists the attribution and licence of every library and data source used, including the map data and the place-name data. This page is the privacy policy and names the operator with a contact address. | Must |
+| INF-2 | Every workout page has a Report link that opens a short form: a reason (spam, illegal content, someone else's personal data, other) and an optional message of up to 1,000 characters. No contact details or IP address are stored with a report. Reports are saved in the database for the operator to review, and are deleted with their workout. | Must |
+| INF-3 | The operator can delete any workout after reviewing a report, without its edit link. | Must |
+
+## Technical design
+
+How the app is built (stack, architecture, FIT parsing, data file format, data model, hosting and security) is in the separate [technical design](https://claude.ai/code/artifact/f5773402-20bc-4231-91de-5c53c36e5a2f). This specification says what the app does; the requirement IDs here are referenced there.
+
+## Non-functional requirements
+
+| Area | Requirement |
+| --- | --- |
+| Performance | Activity page Largest Contentful Paint under 2.5 s on a mid-range phone over 4G. Summary numbers render before the map and charts load. |
+| Performance | Cursor scrubbing stays at 60 frames per second on a 12-hour workout. |
+| Performance | Workout data file under 500 KB compressed for a 4-hour ride. |
+| Performance | Reference for these targets: iPhone 13 mini, iOS 27, Orion browser, Low Power Mode off, portrait, production build; scrubbing is measured on the synthetic 12-hour ride with the map in view, and the in-page scrub record counts as the performance trace. Desktop reference: Firefox on Linux. Android is checked before launch. |
+| Privacy | Location history is personal data under GDPR: EU hosting, a privacy policy (the About page, INF-1), a data-processing record. Deletion is through the edit link (AC-4). Export on request is covered by downloading the original FIT file as stored (SH-8, UP-9); no further export is offered. |
+| Privacy | Store as little as possible: no accounts, no email addresses, no device identifiers or user profile from the file (UP-9), no backups, nothing kept past a workout's lifetime. |
+| Privacy | No advertising or cross-site tracking cookies; privacy-friendly, cookie-less analytics only. |
+| Privacy | Unlisted pages carry `noindex` so search engines do not list them. |
+| Security | Public IDs and edit tokens are 128-bit random values; edit tokens are stored hashed. |
+| Security | Uploads are size-limited (20 MB, that is 20,000,000 bytes) and rate-limited per IP address (separate server settings for IPv4 and IPv6, 60 per hour by default each); refused uploads count toward the limit, and IPv6 addresses count per /64 prefix. At most a set number of uploads are processed at once (a server setting, 4 by default); the next one is refused and asked to try again in a minute (UP-10). Parsing runs with a time limit (a server setting, 10 s by default) and a memory limit. A malformed or hostile file can fail only its own upload, never the service or other users' pages. |
+| Security | Original FIT files are never reachable by a public URL; only the edit-link holder can download them. |
+| Privacy | No data outlives its workout: every item stored on the server belongs to a workout and is deleted with it (UP-7, AC-4). Viewer preferences kept in the viewer's own browser (DS-1) are not workout data, never reach the server, and stay until the viewer clears them. |
+| Accessibility | Not a goal for now: this is a visual tool, and its core (map and charts) has no meaningful non-visual equivalent. The only keyboard shortcut in the MVP is Esc to leave the fullscreen map (AP-15). |
+| Compatibility | Last two versions of Chrome, Safari, Firefox and Edge; iOS Safari and Android Chrome. |
+| Reliability | A guiding principle for every change, not a measured target: a broken or unusual FIT file never breaks the page: unknown fields are ignored, missing streams are hidden. |
+| Operations | The server has at least 2 GB of RAM. The app's memory is capped at the measured worst case with the default 4 uploads processed at once, so a burst of uploads cannot exhaust the server. |
+| Operations | Parser errors are logged with the device model (no location data) so new devices can be supported quickly. |
+
+## Open questions
+
+These decisions change the build; the spec above assumes the first option where one is named.
+
+- [x] **Product name.** Decided: keep "Workout Explorer" for now.
+- [x] **Accounts?** Decided: no accounts, now or later. Upload returns a viewing link and an edit link (AC-1). A "my workouts" list kept in browser storage may come later.
+- [x] **GDPR export on request.** Decided: without accounts, the edit-link holder can download the original (SH-8) and delete everything (AC-4); nothing more is offered.
+- [x] **Keep the original FIT file?** Decided: yes, private, for the workout's lifetime only (UP-7), so it can be re-processed and downloaded by the owner. Decided on 16 Oct 2026: identifying data (serial numbers, ANT IDs, the user profile, saved locations, leaderboard entries) is removed before the file is stored, and its framing is repaired (UP-9), so the owner's download is not a byte-identical copy of the upload.
+- [x] **Upload limits and messages.** Decided on 16 Oct 2026: 20 MB means 20,000,000 bytes; refused uploads count toward the 60 per hour; for IPv6, "per IP address" means per /64 prefix; at most a set number of uploads (4 by default, a server setting) are processed at once; the wording of the upload messages (UP-10). Choosing lifetime and download "at upload" (UP-7, SH-8) happens on the draft page that opens right after upload; the upload request carries only the file. A sharer whose connection drops after the workout is stored keeps no links, and the draft is deleted 48 hours after upload (AC-1; changed 30 Oct 2026).
+- [x] **Who is it for?** Decided: the operator and their friends, not a public service. Moderation is a report form (INF-2) checked by the operator.
+- [x] **Business model.** Decided: free, no paid tiers.
+- [x] **FIT format licence.** Decided: the FIT format is not protected; files are read with a third-party open-source library that is not under Garmin's SDK licence.
+- [x] **Map tiles.** Decided: OpenFreeMap (free, no key). Viewers' IP addresses reach the tile host, which the About page says (INF-1).
+- [x] **Imports from other services?** Decided: none, now or later. Workouts arrive only as uploaded FIT files.
+- [x] **Reference features.** Decided: nothing more from the Garmin page for now.
+
+- [x] **Metric definitions.** Decided on 15 Oct 2026: summary metrics (AP-2), range panel (AP-7), time axis (AP-5), self-crossing route hover (AP-6), laps and splits columns (AP-8), preview card values (SH-5) and the performance reference (Non-functional requirements). The range panel (AP-7), the time axis (AP-5) and the laps and splits columns (AP-8) are accepted provisionally: review them once they are visible on the page. If the workout data cannot be loaded, the page says "The workout data could not be loaded.", plus "Reload the page." when the data format version is not supported; no technical detail is shown.
+- [x] **Other identifying fields in FIT files.** Decided on 16 Oct 2026: besides serial numbers, sensor radio IDs (ANT+ device numbers and ANT IDs) are blanked, their ANT transmission types kept; the whole user profile is removed, including resting and maximum heart rate, because the app never reads it (zones for AP-10 come from zone messages or the sharer); saved locations and segment leaderboard entries are removed (UP-9). The stored file may also differ in its framing (repaired CRCs, or for a truncated file marked as unfinished without CRCs; trailing non-FIT bytes and an incomplete last record dropped); the workout data is identical. Zone messages, with their max, resting and threshold heart rate and threshold power, are kept: they identify no one and are AP-10's source. The About page lists everything removed (INF-1). User-chosen names (sport profiles, devices) and developer fields are kept for now; revisit them when extra sensor streams (Later) are planned.
+- [x] **Malformed or crafted uploads (UP-2, UP-9).** Decided on 21 Oct 2026: on malformed or crafted input, the upload may refuse a file that the parser alone would accept, with "This file could not be read.", when it cannot be stored with UP-9 applied and its workout data unchanged. Privacy stays strict: UP-9 is never relaxed to accept a file. One such case, decided the same day (OQ-54): a file in which a later record's compressed timestamp depends on a message that UP-9 removes is refused. Added to UP-2 on 22 Oct 2026. No promise is made that files from real devices are always accepted (removed 22 Oct 2026): which errors a device may produce cannot be planned for.
+- [x] **Workouts after an app upgrade.** Decided on 21 Oct 2026 (OQ-53): the app does not store workouts long term. If a future version (for example of the FIT library) reads a stored original differently, or not at all, the workout is lost, and that is accepted. A deploy is never stopped to protect old workouts; a workout that rebuilds shorter is kept as rebuilt; a workout is deleted with everything stored for it, as on expiry (UP-7, AC-4), only when the new version rejects its file; on a server-side failure, an interrupted run or a time limit it is kept for the next run (decided 21 Oct 2026).
+- [ ] **Pool length and lengths in the summary (AP-16, phase 2).** Which count is shown, in which unit, and for workouts with several pools? Assumed: the device's number of active lengths (rest lengths left out), labelled "lengths", not "laps" (a lap is a device lap, AP-8, and some swimmers mean two lengths by a lap); the pool length in the pool's own unit (metres or yards, as the device recorded it), not converted by the units setting (DS-1); several pool-swim sessions: lengths summed, pool length shown only when all sessions share it. Affects AP-16, the summary layout (AP-2) and the workout data file format.
+- [ ] **Pin details (phase 2).** To be discussed after the MVP: pins and privacy zones (section pins that cross a zone, zones added after pins), whether pins snap to the route, and GPX export (PIN-9).
+- [x] **Edit link after upload, abandoned drafts.** Decided on 30 Oct 2026: the edit link is no longer shown in a notice on the first open of the edit page. The draft shows no links; a successful publish opens the published page (AC-6) with both links and the save warning, which the owner can reopen once it is published. An unpublished draft is deleted 48 hours after upload (UP-7, SH-2); published workouts keep their chosen lifetime from upload.
+- [x] **Private state removed.** Decided on 30 Oct 2026: a workout is a draft or published (unlisted); once published it cannot be unpublished or hidden; the owner can still change its settings and delete it. The published page (AC-6) shows whenever the workout is published, so the earlier question about it while private no longer arises. Affects SH-2, SH-5, SH-6, SH-10, UP-4, UP-7, AC-5, AC-6.
+- [ ] **Confirm before publishing?** Publishing can no longer be undone by switching to private. Assumed: no confirmation; the owner can still change every setting or delete the workout, and hiding more is removed within 60 s (SH-10). Affects UP-4, SH-2 and F-20.
+- [x] **Who can place pins?** Decided: only the owner, in the edit view. Letting viewers suggest pins, or sharing pins across workouts at the same place (a community map of dangers), adds moderation and changes the data model from per-workout to per-location.
+
+## Roadmap
+
+Build the hardest part first: a prototype that makes a long workout feel smooth on a phone. Each gate is a check before moving on, not a date.
+
+&#91;embedded content: roadmap · 4 phases, 3 gates, not to scale\]
+
+Phases and gates (this table is authoritative where the diagram differs):
+
+| Phase | Content | Gate before the next phase |
+| --- | --- | --- |
+| 0. Prototype | Parse a long FIT file, write the data file, draw charts and map with a synced cursor | Smooth cursor scrubbing on a 12-hour workout on the operator's phone |
+| 1. MVP | Everything marked MVP in the scope table | The operator and friends use it for real workouts for a few weeks |
+| 2. Phase 2 | Everything marked Phase 2: pins, privacy zones, trim, multisport, pool swims, zones and power curve, embed, suggested title | Decide which Later items are worth building |
+| 3. Later | Everything marked Later | — |
+
+No dates are set yet; phase lengths depend on how much time you can give the project each week.

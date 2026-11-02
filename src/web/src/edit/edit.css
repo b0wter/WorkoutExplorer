@@ -1,0 +1,205 @@
+/* The edit page's own styles (F-19), in the owner chunk: loaded only on edit.html. The theme's
+   custom properties come from page.css; new here: the to-be-hidden map colour (E-9) and the edit
+   link box's red. */
+:root {
+  --hidden: #8a8f98;
+  --danger: #c0392b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hidden: #7d828c;
+    --danger: #e5675a;
+  }
+}
+
+/* The panel (E-10, OQ-81): first item of the content column, always open. */
+.edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 4px;
+  padding: 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.edit-panel fieldset {
+  display: contents;
+}
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.edit-field input,
+.edit-field textarea,
+.edit-field select {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  font-size: 15px;
+  color: var(--fg);
+}
+.edit-field textarea {
+  resize: vertical;
+}
+.edit-value {
+  color: var(--fg);
+  font-size: 15px;
+}
+.edit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 16px;
+}
+.edit-row .edit-field select {
+  width: auto;
+}
+.edit-expiry,
+.edit-status,
+.edit-copied {
+  color: var(--muted);
+  font-size: 13px;
+}
+.edit-notice {
+  margin: 0;
+  color: var(--fg);
+  font-weight: 600;
+}
+.edit-save {
+  padding: 6px 16px;
+  font: inherit;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.edit-save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* F-20: the secondary buttons, the published page's edit link, Share and the delete confirmation. */
+.edit-button {
+  padding: 6px 12px;
+  font: inherit;
+  color: var(--fg);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.edit-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.edit-confirm {
+  padding: 8px 10px;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+}
+/* The published page's two boxes: the viewing link blue, the edit link red. */
+.link-box {
+  margin: 16px 0 0;
+  padding: 8px 12px 4px;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+}
+.link-box.edit-warn {
+  border-color: var(--danger);
+}
+.link-box p,
+.edit-share {
+  margin: 0 0 6px;
+}
+/* Delete and its confirmation sit in a button row; the confirmation takes a line of its own. */
+.edit-delete {
+  display: contents;
+}
+.edit-confirm {
+  box-sizing: border-box;
+  flex-basis: 100%;
+}
+.edit-confirm-text {
+  display: block;
+  margin-bottom: 6px;
+}
+.published h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.edit-link {
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  user-select: all; /* one click selects the whole link (C-5) */
+}
+.edit-share,
+.edit-warn p:has(> [data-act='back']) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+/* The edit box's Go there stays a button (no token in an href) but looks like the viewing box's link. */
+.edit-button[data-act='back'] {
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  border: 0;
+  border-radius: 0;
+}
+.edit-delete-hint {
+  margin: 16px 0 6px;
+}
+.edit-danger {
+  color: #fff;
+  background: #c0392b;
+  border-color: #c0392b;
+}
+.edit-small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The two-column layouts pad every column item (page.css); the panel keeps its card padding and
+   takes the column inset as margin. */
+.layout > .edit-panel {
+  padding: 10px 12px;
+}
+@media (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  .has-map .layout > .edit-panel {
+    margin: 12px 12px 4px 16px;
+  }
+}
+
+/* Two columns from 1024 px: one more item in the right column, so one more auto row before the
+   flexible last one, and the map spans them all (page.css D-17). */
+@media (min-width: 1024px) {
+  .has-map .layout {
+    grid-template-rows: repeat(7, auto) 1fr;
+  }
+  .has-map .map-slot {
+    grid-row: 1 / 9;
+  }
+  .has-map .layout > .edit-panel {
+    margin: 16px 16px 4px 24px;
+  }
+}
+
+/* The generic page's content (E-4) and server errors. */
+.generic {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.generic-foot {
+  max-width: 960px;
+  margin: 24px auto 16px;
+  padding: 0 16px;
+}

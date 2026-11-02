@@ -1,0 +1,585 @@
+/* The activity page's one stylesheet, served from the site (ADR-026 item 5, F-13 design D-10).
+   No inline CSS anywhere: sizes are reserved with classes. System fonts only. One column at every
+   width below 1024 px and without a map; two columns from 1024 px with a map (D-17), and on short
+   landscape screens with a map (F-17, user 27 Oct 2026). No viewport units in reserved heights: phone browser bars change them. Exceptions: the desktop and landscape maps (D-18) and the pinned phone map (D-19), all large-viewport units. */
+/* Theme (F-14 D-9): every colour of the page, the charts and our map layers is a custom property
+   here; light on :root, dark under prefers-color-scheme. Components and script read them (D-10). */
+:root {
+  color-scheme: light dark;
+  --fg: #111;
+  --bg: #fff;
+  --muted: #555;
+  --line: #c4c8cc;
+  --card: #f4f5f6;
+  --accent: #1f6fc5;
+  --on-accent: #fff;
+  --grid: rgba(0, 0, 0, 0.1);
+  --cursor: #222;
+  --range: #1f6fc5;
+  --range-shade: rgba(31, 111, 197, 0.16);
+  --c-altitude: #5b8c3a;
+  --c-speed: #1f6fc5;
+  --c-heart_rate: #d0312d;
+  --c-power: #8a3ffc;
+  --c-cadence: #0f8b8d;
+  --c-temperature: #d97706;
+  --map-bg: #e8eaed;
+  --route: #c2187a;
+  --route-casing: #fff;
+  --lap-fill: #fff;
+  --lap-stroke: #333;
+  --lap-text: #222;
+  --start: #2e7d32;
+  --finish: #c62828;
+  --marker-stroke: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #ececf0;
+    --bg: #121214;
+    --muted: #a3a3ab;
+    --line: #3d3e44;
+    --card: #1f2024;
+    --accent: #6aa9f0;
+    --on-accent: #0b0b0d;
+    --grid: rgba(255, 255, 255, 0.12);
+    --cursor: #ececf0;
+    --range: #6aa9f0;
+    --range-shade: rgba(106, 169, 240, 0.22);
+    --c-altitude: #8cc063;
+    --c-speed: #5aa2f0;
+    --c-heart_rate: #f26b66;
+    --c-power: #b78cff;
+    --c-cadence: #3fc1c3;
+    --c-temperature: #f0a03c;
+    --map-bg: #1b1c1f;
+    --route: #ff5cae;
+    --route-casing: #121214;
+    --lap-fill: #1f2024;
+    --lap-stroke: #ececf0;
+    --lap-text: #ececf0;
+    --start: #66bb6a;
+    --finish: #ef5350;
+    --marker-stroke: #121214;
+  }
+}
+/* The background sits on the root: iOS Safari paints the notch strips it reserves in landscape
+   (default viewport-fit) with the root's colour (F-17 follow-up, user 28 Oct 2026). */
+html {
+  background: var(--bg);
+  /* F-18 L-7: the laps enhancer keeps a tapped row in place; native anchoring would move it too. */
+  overflow-anchor: none;
+}
+body {
+  margin: 0;
+  font: 15px/1.4 system-ui, sans-serif;
+  color: var(--fg);
+}
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+a {
+  color: var(--accent);
+}
+
+/* Header (AP-1) */
+.head {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+.sport {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--muted);
+}
+.head-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.head p {
+  margin: 2px 0 0;
+}
+.when,
+.expires {
+  color: var(--muted);
+  font-size: 14px;
+}
+.desc {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.copy {
+  flex: none;
+  box-sizing: border-box;
+  min-width: 84px;
+  height: 32px;
+  padding: 0 10px;
+  line-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--fg);
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+}
+/* Control group (D-8): Copy link and the units slot; under each other on narrow phones, side by side
+   from 560 px. The slot reserves its size, so the select's arrival moves nothing. */
+.ctl {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.units-slot {
+  display: block;
+  box-sizing: border-box;
+  width: 104px;
+  height: 32px;
+}
+.units-slot select {
+  width: 100%;
+  height: 100%;
+  font: inherit;
+  font-size: 14px;
+}
+@media (min-width: 560px) {
+  .ctl {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+.copy-url {
+  flex: 1 0 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+}
+
+/* Summary (AP-2) and the privacy notice (SH-9) */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 8px 0;
+}
+.metric {
+  padding: 8px 10px;
+  background: var(--card);
+  border-radius: 6px;
+}
+.k {
+  color: var(--muted);
+  font-size: 12px;
+}
+.v {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.u {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.max {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.notice,
+.hint {
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Reserved slots (D-10): the client fills them without moving anything. */
+.map-slot {
+  position: relative;
+  height: 320px;
+  background: var(--map-bg);
+  overflow: hidden;
+}
+/* The range panel's slot (F-17 R-9): zero height until filled, hidden by the glue while there is
+   no range. In one column it sticks to the bottom of the screen; its containing block is .layout,
+   which reaches above the charts. Two columns from 1024 px: in place (below). */
+.range-slot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 4px 0;
+  background: var(--bg);
+}
+.range-slot:empty {
+  padding: 0;
+}
+/* Value cards (user 29 Oct 2026): the cursor readout (F-05) and the range panel (F-17 R-9) share
+   one look, a card of cells with a muted label line (13 px) over a value line (16 px), so a row is
+   29 px. Each component keeps its own grid tracks; the readout's are fixed (below). */
+#charts-slot .readout,
+.range-panel {
+  display: grid;
+  column-gap: 8px;
+  padding: 4px 10px;
+  background: var(--card);
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.readout .cell,
+.range-panel .cell {
+  white-space: nowrap;
+}
+.readout .label,
+.range-panel .label {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 13px;
+}
+.readout .val,
+.range-panel .val {
+  font-size: 13px;
+  line-height: 16px;
+}
+.readout .value,
+.range-panel .value {
+  font-weight: 600;
+}
+/* A line height under the value line's, so the smaller unit never makes that line taller. */
+.readout .unit,
+.range-panel .unit {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 13px;
+}
+/* Charts: axis toolbar (--bar, F-17 R-8: only with a distance stream) + readout rows (--r) + chart
+   area (--area, F-05 chartAreaHeight(n, 120)) + the selection hint (--hint, F-17 R-12: 4 px gap and
+   one 20 px line). The readout grid has fixed tracks, so its row count is known before the bundle
+   runs: 4 columns below 640 px and in the short-landscape right column, 8 (one row) otherwise. */
+.charts {
+  --r: var(--r4);
+  --bar: 0px;
+  --hint: 24px;
+  height: calc(var(--bar) + var(--r) * 29px + 8px + var(--area) + var(--hint)); /* + the readout card's 4 px padding top and bottom */
+}
+.charts.has-distance {
+  --bar: 32px;
+}
+#charts-slot .readout {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .charts {
+    --r: 1;
+  }
+  #charts-slot .readout {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+.charts.load-failed {
+  height: auto;
+}
+.charts-1 { --area: 172px; }
+.charts-2 { --area: 316px; }
+.charts-3 { --area: 460px; }
+.charts-4 { --area: 604px; }
+.charts-5 { --area: 748px; }
+.charts-6 { --area: 892px; }
+.cells-1 { --r4: 1; }
+.cells-2 { --r4: 1; }
+.cells-3 { --r4: 1; }
+.cells-4 { --r4: 1; }
+.cells-5 { --r4: 2; }
+.cells-6 { --r4: 2; }
+.cells-7 { --r4: 2; }
+.cells-8 { --r4: 2; }
+.load-error {
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Laps (AP-8). The heading row has a fixed height, so the bundle's switch moves nothing (F-18 L-6). */
+.laps-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
+  margin: 12px 0 4px;
+}
+.laps h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.laps-switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.laps-switch button {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+}
+.laps-switch button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+/* Rows select their range (F-18 L-3); the selected row is marked by its background only. */
+.laps.live tbody tr {
+  cursor: pointer;
+}
+.laps tbody tr.on {
+  background: var(--range-shade);
+}
+.laps-scroll {
+  overflow-x: auto;
+}
+.laps-none {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+th,
+td {
+  padding: 4px 8px;
+  text-align: right;
+  white-space: nowrap;
+}
+th {
+  color: var(--muted);
+  font-weight: 400;
+  border-bottom: 1px solid var(--line);
+}
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+tbody tr:nth-child(even) {
+  background: var(--card);
+}
+
+/* Footer (INF-1, INF-2) */
+.foot {
+  margin: 24px 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.foot a {
+  margin-right: 12px;
+}
+
+/* Map pin toggle (D-19, AP-18): created by the bundle, a sibling of the map's container. */
+.map-pin {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+}
+.map-pin[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Phone in portrait (or any one-column window that is not a short landscape one): the pinned map
+   (D-19). The map box sticks inside .layout, which reaches to the end of the laps; the readout
+   sticks under it. 35 % of the large viewport (so the browser bar never resizes it) stays under
+   40 % of the screen height (AP-18). Short landscape screens have two columns and no toggle (F-17). */
+@media (max-width: 1023.98px) and (orientation: portrait), (max-width: 1023.98px) and (min-height: 500.02px) {
+  .layout {
+    --pin-h: 35vh;
+  }
+  @supports (height: 1lvh) {
+    .layout {
+      --pin-h: 35lvh;
+    }
+  }
+  .layout.pinned .map-slot {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: var(--pin-h);
+  }
+  .layout.pinned #charts-slot .readout {
+    top: var(--pin-h);
+  }
+}
+
+/* Phone in landscape, a map: two columns (F-17, user 27 Oct 2026; F-13 AP-17), about 40 % map and
+   60 % content, CSS only. The map is fixed on the left, as tall as the window (like the desktop's
+   sticky map over a column as long as the page); .layout keeps one block flow, so the range slot's
+   containing block reaches above the charts and the panel sticks to the bottom of the right
+   column. The readout is the 4-column card: the right column is narrower than 608 px. */
+@media (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  .page.has-map {
+    max-width: none;
+    padding: 0;
+  }
+  .has-map .layout {
+    padding-left: var(--map-w, 40%);
+  }
+  .has-map .layout > * {
+    min-width: 0;
+    padding: 0 12px 0 16px;
+  }
+  .has-map .head {
+    padding: 12px 12px 8px 16px;
+  }
+  .has-map .layout > .range-slot {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .has-map .layout > .range-slot:empty {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .has-map .map-slot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--map-w, 40%);
+    padding: 0;
+    height: 100vh;
+    height: 100lvh;
+    /* Safari 26 tints the edge strips from a fixed element's own background colour; div.route-map
+       inside carries the map colour instead (F-17 follow-up). */
+    background: none;
+  }
+  .has-map .charts {
+    --r: var(--r4);
+  }
+  .has-map #charts-slot .readout {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .map-pin {
+    display: none;
+  }
+}
+
+/* Desktop, a map: two columns (D-17), the map sticky in the left one, as tall as the window and
+   flush with the page edges (D-18). The header is the first item of the right column, so the map
+   starts at the window's top edge; the footer is the last item of the right column. The right column is never narrower than 608 px and keeps the padding. The last row
+   is flexible so that the tall map box adds its height to that row only. */
+@media (min-width: 1024px) {
+  .page.has-map {
+    max-width: none;
+    padding: 0;
+  }
+  .has-map .layout {
+    display: grid;
+    /* Map track at most --map-w (the splitter), the minimums win; unset it is 1:1 as before. */
+    grid-template-columns: minmax(320px, var(--map-w, 50%)) minmax(608px, 1fr);
+    grid-template-rows: repeat(6, auto) 1fr;
+  }
+  .has-map .layout > * {
+    grid-column: 2;
+    min-width: 0;
+    padding: 0 16px 0 24px;
+  }
+  .has-map .head {
+    padding: 16px 16px 8px 24px;
+  }
+  .has-map .map-slot {
+    grid-column: 1;
+    grid-row: 1 / 8;
+    align-self: start;
+    position: sticky;
+    top: 0;
+    padding: 0;
+    height: 100vh;
+    height: 100lvh;
+  }
+  /* The panel sits in place above the laps; they move down when it appears (user 27 Oct 2026). */
+  .has-map .layout > .range-slot {
+    position: static;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .has-map .layout > .range-slot:empty {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .map-pin {
+    display: none;
+  }
+}
+
+/* Splitter between map and content in both two-column layouts (user 28 Oct 2026; splitter.ts).
+   Inside the map box at its right edge; below the map's controls (z-index 2), above the canvas. */
+.splitter {
+  display: none;
+}
+@media (min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  .has-map .splitter {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 12px;
+    cursor: col-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .has-map .splitter::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 3px;
+    width: 4px;
+    height: 40px;
+    margin-top: -20px;
+    border-radius: 2px;
+    background: var(--muted);
+  }
+}
+@media (pointer: coarse) {
+  .has-map .splitter {
+    width: 28px;
+  }
+}

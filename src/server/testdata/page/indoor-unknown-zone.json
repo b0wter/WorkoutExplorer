@@ -1,0 +1,81 @@
+{
+  "Page": {
+    "Title": "Training, 7 Jun 2026",
+    "ViewPath": "/w/indoor-unknown-zone",
+    "DataURL": "/w/indoor-unknown-zone/data.b39c8d780871fdae.bin"
+  },
+  "Header": {
+    "Title": "Training, 7 Jun 2026",
+    "SportName": "Training",
+    "SportIcon": "generic",
+    "Start": "7 Jun 2026, 05:00 UTC",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "30:00",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "30:00",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "125",
+      "Unit": "bpm",
+      "Max": "153"
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "300",
+      "Unit": "kcal",
+      "Max": ""
+    }
+  ],
+  "Route": {
+    "Map": "",
+    "NoLocation": "yes",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-1 cells-2",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "30:00",
+        "125"
+      ]
+    ],
+    "None": ""
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

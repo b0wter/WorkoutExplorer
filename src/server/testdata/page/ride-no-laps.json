@@ -1,0 +1,104 @@
+{
+  "Page": {
+    "Title": "Ride, 7 Jul 2026",
+    "ViewPath": "/w/ride-no-laps",
+    "DataURL": "/w/ride-no-laps/data.65f1fc9b293e1f9e.bin"
+  },
+  "Header": {
+    "Title": "Ride, 7 Jul 2026",
+    "SportName": "Ride",
+    "SportIcon": "cycling",
+    "Start": "7 Jul 2026, 06:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "6.75",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "14:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "14:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "59",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg speed",
+      "Value": "27.0",
+      "Unit": "km/h",
+      "Max": "28.8"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "151",
+      "Unit": "bpm",
+      "Max": "159"
+    },
+    {
+      "Key": "power",
+      "Label": "Avg power",
+      "Value": "215",
+      "Unit": "W",
+      "Max": "290"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "89",
+      "Unit": "rpm",
+      "Max": "93"
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "18",
+      "Unit": "°C",
+      "Max": "19"
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "149",
+      "Unit": "kcal",
+      "Max": ""
+    }
+  ],
+  "Route": {
+    "Map": "yes",
+    "NoLocation": "",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-6 cells-8 has-distance",
+  "Laps": {
+    "Columns": [],
+    "Rows": [],
+    "None": "yes"
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

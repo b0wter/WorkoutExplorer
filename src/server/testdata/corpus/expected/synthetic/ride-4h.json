@@ -1,0 +1,536 @@
+{
+  "report_version": 2,
+  "file_type": "activity",
+  "device": {
+    "manufacturer": "development",
+    "product_id": 1,
+    "product_name": "corpusgen"
+  },
+  "sport": "cycling",
+  "start_time": "2026-06-14T05:00:00Z",
+  "time_zone": {
+    "known": true,
+    "offset_seconds": 7200
+  },
+  "integrity": {
+    "truncated": false,
+    "crc_failed": false,
+    "sequences": 1,
+    "skipped_sequences": 0,
+    "ignored_bytes": 0
+  },
+  "sessions": [
+    {
+      "sport": "cycling",
+      "sub_sport": "road",
+      "start": 0,
+      "end": 14399,
+      "totals": {
+        "elapsed_time": 14399.000,
+        "timer_time": 14399.000,
+        "distance": 101000.020,
+        "ascent": 1631.000,
+        "descent": 1569.000,
+        "calories": 2399.000,
+        "avg_speed": 7.014,
+        "max_speed": 8.998,
+        "avg_heart_rate": 138.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 89.000,
+        "max_cadence": 93.000,
+        "avg_power": 201.000,
+        "max_power": 340.000,
+        "avg_temperature": 20.000,
+        "max_temperature": 22.000
+      }
+    }
+  ],
+  "laps": [
+    {
+      "start": 0,
+      "end": 900,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 6824.700,
+        "ascent": 118.000,
+        "descent": 81.000,
+        "avg_speed": 7.583,
+        "max_speed": 8.574,
+        "avg_heart_rate": 151.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 89.062,
+        "max_cadence": 93.000,
+        "avg_power": 197.000,
+        "max_power": 337.000,
+        "avg_temperature": 18.000,
+        "max_temperature": 19.000
+      }
+    },
+    {
+      "start": 900,
+      "end": 1800,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 7536.310,
+        "ascent": 90.000,
+        "descent": 118.000,
+        "avg_speed": 8.374,
+        "max_speed": 8.998,
+        "avg_heart_rate": 133.000,
+        "max_heart_rate": 154.000,
+        "avg_cadence": 89.070,
+        "max_cadence": 93.000,
+        "avg_power": 201.000,
+        "max_power": 339.000,
+        "avg_temperature": 19.000,
+        "max_temperature": 20.000
+      }
+    },
+    {
+      "start": 1800,
+      "end": 2700,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 7470.280,
+        "ascent": 72.000,
+        "descent": 126.000,
+        "avg_speed": 8.300,
+        "max_speed": 8.992,
+        "avg_heart_rate": 127.000,
+        "max_heart_rate": 147.000,
+        "avg_cadence": 89.102,
+        "max_cadence": 93.000,
+        "avg_power": 203.000,
+        "max_power": 337.000,
+        "avg_temperature": 20.000,
+        "max_temperature": 21.000
+      }
+    },
+    {
+      "start": 2700,
+      "end": 3600,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 6663.540,
+        "ascent": 100.000,
+        "descent": 92.000,
+        "avg_speed": 7.404,
+        "max_speed": 8.423,
+        "avg_heart_rate": 153.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 89.078,
+        "max_cadence": 93.000,
+        "avg_power": 200.000,
+        "max_power": 339.000,
+        "avg_temperature": 21.000,
+        "max_temperature": 21.000
+      }
+    },
+    {
+      "start": 3600,
+      "end": 4500,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 5614.600,
+        "ascent": 142.000,
+        "descent": 73.000,
+        "avg_speed": 6.238,
+        "max_speed": 7.274,
+        "avg_heart_rate": 127.000,
+        "max_heart_rate": 147.000,
+        "avg_cadence": 88.922,
+        "max_cadence": 93.000,
+        "avg_power": 204.000,
+        "max_power": 338.000,
+        "avg_temperature": 22.000,
+        "max_temperature": 22.000
+      }
+    },
+    {
+      "start": 4500,
+      "end": 5400,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 5007.490,
+        "ascent": 116.000,
+        "descent": 81.000,
+        "avg_speed": 5.564,
+        "max_speed": 6.231,
+        "avg_heart_rate": 134.000,
+        "max_heart_rate": 154.000,
+        "avg_cadence": 89.047,
+        "max_cadence": 93.000,
+        "avg_power": 203.000,
+        "max_power": 335.000,
+        "avg_temperature": 22.000,
+        "max_temperature": 22.000
+      }
+    },
+    {
+      "start": 5400,
+      "end": 6300,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 5232.080,
+        "ascent": 74.000,
+        "descent": 132.000,
+        "avg_speed": 5.813,
+        "max_speed": 6.645,
+        "avg_heart_rate": 151.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 88.906,
+        "max_cadence": 93.000,
+        "avg_power": 203.000,
+        "max_power": 339.000,
+        "avg_temperature": 22.000,
+        "max_temperature": 22.000
+      }
+    },
+    {
+      "start": 6300,
+      "end": 7200,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 6118.720,
+        "ascent": 64.000,
+        "descent": 144.000,
+        "avg_speed": 6.799,
+        "max_speed": 7.887,
+        "avg_heart_rate": 122.000,
+        "max_heart_rate": 138.000,
+        "avg_cadence": 89.047,
+        "max_cadence": 93.000,
+        "avg_power": 202.000,
+        "max_power": 337.000,
+        "avg_temperature": 22.000,
+        "max_temperature": 22.000
+      }
+    },
+    {
+      "start": 7200,
+      "end": 8100,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 7118.740,
+        "ascent": 96.000,
+        "descent": 88.000,
+        "avg_speed": 7.910,
+        "max_speed": 8.798,
+        "avg_heart_rate": 141.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 88.938,
+        "max_cadence": 93.000,
+        "avg_power": 201.000,
+        "max_power": 338.000,
+        "avg_temperature": 21.000,
+        "max_temperature": 22.000
+      }
+    },
+    {
+      "start": 8100,
+      "end": 9000,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 7604.280,
+        "ascent": 146.000,
+        "descent": 54.000,
+        "avg_speed": 8.449,
+        "max_speed": 8.997,
+        "avg_heart_rate": 146.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 89.031,
+        "max_cadence": 93.000,
+        "avg_power": 204.000,
+        "max_power": 340.000,
+        "avg_temperature": 21.000,
+        "max_temperature": 21.000
+      }
+    },
+    {
+      "start": 9000,
+      "end": 9900,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 7265.470,
+        "ascent": 123.000,
+        "descent": 67.000,
+        "avg_speed": 8.073,
+        "max_speed": 8.900,
+        "avg_heart_rate": 121.000,
+        "max_heart_rate": 131.000,
+        "avg_cadence": 88.875,
+        "max_cadence": 93.000,
+        "avg_power": 202.000,
+        "max_power": 336.000,
+        "avg_temperature": 20.000,
+        "max_temperature": 20.000
+      }
+    },
+    {
+      "start": 9900,
+      "end": 10800,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 6316.270,
+        "ascent": 70.000,
+        "descent": 122.000,
+        "avg_speed": 7.018,
+        "max_speed": 8.101,
+        "avg_heart_rate": 148.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 89.094,
+        "max_cadence": 93.000,
+        "avg_power": 199.000,
+        "max_power": 336.000,
+        "avg_temperature": 19.000,
+        "max_temperature": 20.000
+      }
+    },
+    {
+      "start": 10800,
+      "end": 11700,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 5353.400,
+        "ascent": 56.000,
+        "descent": 147.000,
+        "avg_speed": 5.948,
+        "max_speed": 6.864,
+        "avg_heart_rate": 139.000,
+        "max_heart_rate": 158.000,
+        "avg_cadence": 89.164,
+        "max_cadence": 93.000,
+        "avg_power": 197.000,
+        "max_power": 339.000,
+        "avg_temperature": 18.000,
+        "max_temperature": 19.000
+      }
+    },
+    {
+      "start": 11700,
+      "end": 12600,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 4990.710,
+        "ascent": 95.000,
+        "descent": 106.000,
+        "avg_speed": 5.545,
+        "max_speed": 6.124,
+        "avg_heart_rate": 123.000,
+        "max_heart_rate": 140.000,
+        "avg_cadence": 88.945,
+        "max_cadence": 93.000,
+        "avg_power": 199.000,
+        "max_power": 339.000,
+        "avg_temperature": 17.000,
+        "max_temperature": 18.000
+      }
+    },
+    {
+      "start": 12600,
+      "end": 13500,
+      "totals": {
+        "elapsed_time": 900.000,
+        "timer_time": 900.000,
+        "distance": 5445.810,
+        "ascent": 137.000,
+        "descent": 62.000,
+        "avg_speed": 6.051,
+        "max_speed": 6.955,
+        "avg_heart_rate": 152.000,
+        "max_heart_rate": 159.000,
+        "avg_cadence": 88.828,
+        "max_cadence": 93.000,
+        "avg_power": 197.000,
+        "max_power": 340.000,
+        "avg_temperature": 16.000,
+        "max_temperature": 17.000
+      }
+    },
+    {
+      "start": 13500,
+      "end": 14399,
+      "totals": {
+        "elapsed_time": 899.000,
+        "timer_time": 899.000,
+        "distance": 6437.620,
+        "ascent": 131.000,
+        "descent": 75.000,
+        "avg_speed": 7.161,
+        "max_speed": 8.227,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 153.000,
+        "avg_cadence": 88.930,
+        "max_cadence": 93.000,
+        "avg_power": 198.000,
+        "max_power": 335.000,
+        "avg_temperature": 15.000,
+        "max_temperature": 16.000
+      }
+    }
+  ],
+  "timer_events": [
+    {
+      "offset": 0,
+      "kind": "start"
+    },
+    {
+      "offset": 14399,
+      "kind": "stop"
+    }
+  ],
+  "samples": {
+    "count": 14400,
+    "last_offset": 14399,
+    "filled": 0,
+    "gaps": {
+      "count": 0,
+      "total_seconds": 0,
+      "longest_seconds": 0
+    },
+    "offsets_digest": "53dfb3c90e49c4b8"
+  },
+  "streams": {
+    "latitude": {
+      "present": 14400,
+      "missing": 0,
+      "min": 46.9481366,
+      "max": 47.1118218,
+      "first": 47.0500114,
+      "last": 46.9736004,
+      "mean": 47.0296398,
+      "digest": "95c3eac5b3ce6347"
+    },
+    "longitude": {
+      "present": 14400,
+      "missing": 0,
+      "min": 8.2999826,
+      "max": 8.5205607,
+      "first": 8.3000178,
+      "last": 8.4788091,
+      "mean": 8.4183628,
+      "digest": "800e086a8441f815"
+    },
+    "altitude": {
+      "present": 14400,
+      "missing": 0,
+      "min": 341.60,
+      "max": 505.20,
+      "first": 419.80,
+      "last": 482.20,
+      "mean": 423.94,
+      "digest": "22a07e94cda4673a"
+    },
+    "distance": {
+      "present": 14400,
+      "missing": 0,
+      "min": 0.00,
+      "max": 101000.02,
+      "first": 0.00,
+      "last": 101000.02,
+      "mean": 51983.31,
+      "digest": "0459ead0538ce474"
+    },
+    "speed": {
+      "present": 14400,
+      "missing": 0,
+      "min": 5.005,
+      "max": 8.998,
+      "first": 7.103,
+      "last": 7.266,
+      "mean": 7.014,
+      "digest": "013e7693b82bde20"
+    },
+    "heart_rate": {
+      "present": 14400,
+      "missing": 0,
+      "min": 115.00,
+      "max": 159.00,
+      "first": 136.00,
+      "last": 117.00,
+      "mean": 137.62,
+      "digest": "58703c6f3ba207e9"
+    },
+    "cadence": {
+      "present": 14400,
+      "missing": 0,
+      "min": 85.00,
+      "max": 93.00,
+      "first": 89.00,
+      "last": 89.00,
+      "mean": 89.00,
+      "digest": "3b67640bb4754740"
+    },
+    "power": {
+      "present": 14400,
+      "missing": 0,
+      "min": 60.00,
+      "max": 340.00,
+      "first": 148.00,
+      "last": 289.00,
+      "mean": 200.65,
+      "digest": "5e31d449d91edd49"
+    },
+    "temperature": {
+      "present": 14400,
+      "missing": 0,
+      "min": 15.00,
+      "max": 22.00,
+      "first": 18.00,
+      "last": 15.00,
+      "mean": 19.67,
+      "digest": "c500b77ef030c8de"
+    }
+  },
+  "derived": {
+    "elapsed_time": 14399.000,
+    "moving_time": 14399.000,
+    "moving_time_source": "timer",
+    "elevation_gain": 767.987,
+    "distance": 101000.020,
+    "elevation_loss": 705.587,
+    "avg_speed": 7.014,
+    "max_speed": 8.998,
+    "avg_heart_rate": 137.625,
+    "max_heart_rate": 159.000,
+    "avg_cadence": 89.003,
+    "max_cadence": 93.000,
+    "avg_power": 200.652,
+    "max_power": 340.000,
+    "avg_temperature": 19.669,
+    "max_temperature": 22.000
+  },
+  "summary": {
+    "elapsed_time": 14399.000,
+    "timer_time": 14399.000,
+    "distance": 101000.020,
+    "ascent": 1631.000,
+    "descent": 1569.000,
+    "calories": 2399.000,
+    "avg_speed": 7.014,
+    "max_speed": 8.998,
+    "avg_heart_rate": 138.000,
+    "max_heart_rate": 159.000,
+    "avg_cadence": 89.000,
+    "max_cadence": 93.000,
+    "avg_power": 201.000,
+    "max_power": 340.000,
+    "avg_temperature": 20.000,
+    "max_temperature": 22.000,
+    "moving_time": 14399.000
+  }
+}

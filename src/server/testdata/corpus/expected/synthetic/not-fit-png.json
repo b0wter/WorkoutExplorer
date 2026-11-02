@@ -1,0 +1,7 @@
+{
+  "report_version": 2,
+  "rejected": {
+    "kind": "not_fit",
+    "message": "This file is not a FIT file."
+  }
+}

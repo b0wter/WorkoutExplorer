@@ -1,0 +1,70 @@
+@import '../theme/plain.css';
+
+.intro {
+  color: var(--muted);
+  margin: 0 0 1.5rem;
+}
+.drop {
+  display: none;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.drop p {
+  margin: 0 0 1rem;
+}
+[data-state='ready'] .drop.over {
+  border-color: var(--accent);
+}
+[data-state='ready'] .drop,
+[data-state='uploading'] .drop,
+[data-state='processing'] .drop {
+  display: block;
+}
+[data-state='uploading'] .drop,
+[data-state='processing'] .drop {
+  opacity: 0.5;
+}
+.pick {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+.button {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+.pick:disabled + .button {
+  cursor: not-allowed;
+}
+.pick:focus-visible + .button {
+  outline: 2px solid var(--fg);
+  outline-offset: 2px;
+}
+.notice,
+.progress {
+  display: none;
+}
+[data-state='paused'] .notice,
+[data-state='uploading'] .progress,
+[data-state='processing'] .progress {
+  display: block;
+}
+.notice {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.message {
+  color: var(--error);
+}
+.message:empty {
+  display: none;
+}

@@ -1,0 +1,161 @@
+# Workout Explorer: Caddy config (F-15 design P-13, F-22 design H-1 to H-10,
+# ADR-032). TLS, paths and the deployment (Docker) are F-31's; it extends this file.
+#
+# Environment (no defaults for the paths, so a missing one fails loudly; the
+# Compose file, deploy/compose.yaml, sets all of them, F-31 DP-1, DP-6, DP-9):
+#   WX_DATA  the data directory (serve -data), e.g. /srv/workouts; only
+#            {WX_DATA}/public is ever served
+#   WX_WEB   the web build (serve -web), e.g. build/web
+#   WX_API   the Go server's address (default 127.0.0.1:8080)
+#   WX_SITE  the site address (default http://127.0.0.1:8088, plain HTTP; the
+#            Compose file uses http://:8088, any host, behind the operator's proxy)
+#   WX_TRUSTED_PROXIES  addresses or CIDR prefixes whose X-Forwarded-For Caddy
+#            believes (the operator's proxy). Default: none (empty). The client
+#            address is then the peer, and Go gets it as the only
+#            X-Forwarded-For entry (ADR-021 rev. 6 item 6)
+#   WX_ADMIN the admin API address (default off; Compose: localhost:2019, for
+#            `caddy reload` inside the container)
+#
+# Caddy version: the pin in deploy/caddy.env (F-22 H-7), a downloaded release
+# binary that is never committed; `make caddy` fetches it into build/tools/.
+# `make caddy-check` runs this file against a real server (F-22 H-12).
+# Local run:
+#   WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web build/tools/caddy-<version>/caddy run --config deploy/Caddyfile --adapter caddyfile
+#
+# Never served: build/web/index.html (the page template), private/, tmp/, the
+# database, public.lock, dot files, anything above public/ (H-10).
+{
+	admin {$WX_ADMIN:off}
+	auto_https off # plain HTTP only: TLS is the operator's proxy's (ADR-034 rev. 2)
+
+	servers {
+		trusted_proxies static {$WX_TRUSTED_PROXIES:}
+		trusted_proxies_strict
+	}
+
+	# DP-9: no `log` directive, so no access log; Caddy 2.11.7 writes nothing per
+	# request (not even a 502 with Go down); TestCaddyLogsNoRequests guards a pin bump.
+}
+
+# H-2 (and OQ-89: X-Robots-Tag site-wide) on every response. Deferred, so it
+# replaces what a handler or Go set instead of adding a second value.
+(security) {
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		Strict-Transport-Security max-age=31536000
+		X-Robots-Tag "noindex, nofollow, noarchive"
+		defer
+	}
+}
+
+{$WX_SITE:http://127.0.0.1:8088} {
+	import security
+
+	# H-7: on the fly for everything without a .br sidecar, draft.bin (octet-stream) included.
+	encode zstd gzip {
+		match {
+			header Content-Type text/*
+			header Content-Type application/json*
+			header Content-Type application/javascript*
+			header Content-Type image/svg+xml*
+			header Content-Type application/octet-stream*
+		}
+	}
+
+	# /w/{public_id}: the page if public/{public_id}/index.html is a file,
+	# else the generic page with 404 (a folder without index.html is a first
+	# publish in progress or a remove-first build).
+	@view path_regexp view ^/w/([0-9A-Za-z]{22})$
+	handle @view {
+		header Cache-Control no-cache
+		@page file {
+			root {$WX_DATA}/public
+			try_files /{re.view.1}/index.html
+		}
+		handle @page {
+			root * {$WX_DATA}/public
+			rewrite * /{re.view.1}/index.html
+			file_server
+		}
+		handle {
+			root * {$WX_WEB}
+			rewrite * /generic.html
+			file_server {
+				status 404
+			}
+		}
+	}
+
+	# /w/{public_id}/{name}: one file of the folder, brotli when the client
+	# takes it. A name never starts with a dot (temporary files). H-6: only a
+	# content-hashed name (F-15 P-5) is immutable; a missing one goes to
+	# handle_errors, which makes it no-cache again.
+	@file path_regexp file ^/w/([0-9A-Za-z]{22})/([0-9A-Za-z_-][0-9A-Za-z._-]*)$
+	handle @file {
+		@hashed path_regexp \.[0-9a-f]{16}\.
+		@plain not path_regexp \.[0-9a-f]{16}\.
+		header @hashed Cache-Control "private, max-age=31536000, immutable"
+		header @plain Cache-Control no-cache
+		root * {$WX_DATA}/public
+		rewrite * /{re.file.1}/{re.file.2}
+		file_server {
+			precompressed br
+		}
+	}
+
+	# Every other /w/ path: the generic page.
+	handle /w/* {
+		header Cache-Control no-cache
+		root * {$WX_WEB}
+		rewrite * /generic.html
+		file_server {
+			status 404
+		}
+	}
+
+	# /edit/* and /published/*: the static owner page (F-19 E-1, F-20 C-1); it
+	# reads the token from the fragment, which never reaches a server.
+	@owner path /edit/* /published/*
+	handle @owner {
+		header Cache-Control no-store
+		root * {$WX_WEB}
+		rewrite * /edit.html
+		file_server
+	}
+
+	# Go's Cache-Control (no-store) stays untouched.
+	handle /api/* {
+		# Go gets the client Caddy resolved as the only X-Forwarded-For entry
+		# (DP-1b); never the operator's proxy, never a client-supplied list.
+		reverse_proxy {$WX_API:127.0.0.1:8080} {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+
+	# The bundle (Vite-hashed names); the upload page at /.
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		root * {$WX_WEB}
+		file_server
+	}
+	handle / {
+		header Cache-Control no-cache
+		root * {$WX_WEB}
+		rewrite * /upload.html
+		file_server
+	}
+
+	handle {
+		header Cache-Control no-cache
+		respond 404
+	}
+
+	# Caddy's own errors (a missing file, Go down): same headers, never cached.
+	handle_errors {
+		import security
+		header Cache-Control no-cache
+		respond {err.status_code}
+	}
+}
