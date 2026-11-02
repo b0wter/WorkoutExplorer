@@ -1,6 +1,6 @@
 # F-24 Viewer download of the published data
 
-- **Phase:** 1 MVP
+- **Phase:** 3 Later (deferred on 2 Nov 2026; design kept as written)
 - **Owner:** backend
 - **Requirements:** SH-8 (Should), NFR Security (originals never public); Technical design: Publish and view flow (Publish 5), Security and privacy (Originals)
 - **Depends on:** F-16

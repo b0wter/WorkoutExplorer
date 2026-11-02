@@ -3,7 +3,7 @@
 - **Phase:** 1 MVP
 - **Owner:** backend
 - **Requirements:** SH-10 (old files deleted), UP-7 (workout ends early when the new version rejects its file), AC-4 (delete routine), NFR Reliability, NFR Operations; Technical design: Workout data file (Versioning)
-- **Depends on:** F-21, F-23, F-24, F-31
+- **Depends on:** F-21, F-23, F-31 (export file only once F-24 ships in phase 3)
 
 ## Goal
 `workout-explorer regenerate` rebuilds every live workout from its original, so only one data format and one bundle are ever live, except for workouts kept after a failed rebuild, which keep their previous files and bundle until a later run rebuilds them.

@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -39,20 +39,20 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
 | [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | waiting on user | AC 3 loop-route check; AC 8/9 messengers (deployed) |
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
-| [F-24](F-24-viewer-download.md) | Viewer download of the published data | 1 | backend | F-16 | in progress | |
 | [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | not started | |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | not started | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | not started | |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | not started | |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | not started | |
-| [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-24, F-31 | not started | |
-| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-31 | not started | |
+| [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | not started | |
+| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-31 (except F-24) | not started | |
+| [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features.
+Phase 0: 7 features. Phase 1: 24 features. Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
-Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8, DS-4) as MVP, and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
+Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8 owner download, DS-4) as MVP; the SH-8 viewer download is Later (phase 3), and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
 
 | Requirement | Priority | Covered by |
 | --- | --- | --- |
@@ -81,9 +81,9 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | SH-4 Start and end hiding | Should | F-16, F-19 |
 | SH-5 Preview card | Must | F-23, F-32 |
 | SH-6 Share and copy-link buttons | Must | F-13, F-20 |
-| SH-8 Download setting and original | Should | F-12, F-20, F-24 |
+| SH-8 Download setting and original | Should | F-12, F-20 (owner original); F-24 (viewer download, phase 3) |
 | SH-9 Privacy notice | Must | F-13 |
-| SH-10 Fast removal, recall notice | Must | F-15, F-16, F-20, F-21, F-22, F-24, F-30 |
+| SH-10 Fast removal, recall notice | Must | F-15, F-16, F-20, F-21, F-22, F-30; F-24 in phase 3 |
 | AC-1 Edit link shown only on the published page | Must | F-09, F-11, F-20 |
 | AC-2, AC-3 | Removed | — (removed in the spec) |
 | AC-4 Delete removes everything | Must | F-12, F-20, F-21 |
@@ -105,7 +105,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | NFR Privacy: `noindex` | — | F-15, F-23 |
 | NFR Security: 128-bit IDs, hashed tokens | — | F-09, F-12 |
 | NFR Security: upload size, rate, uploads at once, parse limits | — | F-08, F-09, F-11, F-31 |
-| NFR Security: originals never public | — | F-12, F-22, F-24 |
+| NFR Security: originals never public | — | F-12, F-22; F-24 in phase 3 |
 | NFR Privacy: no data outlives its workout | — | F-12, F-21, F-27 |
 | NFR Accessibility | — | **Deliberately not covered**: not a goal. Only Esc to leave fullscreen (F-26). |
 | NFR Compatibility | — | F-11, F-13, F-26, F-32 |
@@ -115,7 +115,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 ## Phase 2 (not broken down)
 
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1
-- Trim start and end, with totals recomputed and trims in the viewer download — UP-6, AP-2, SH-8, AC-5
+- Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5
 - Multisport legs and transitions as sections — AP-12
 - Pool swims: lengths and stroke type instead of a map; pool length and number of lengths in the summary (needs a workout data file format change: backend and frontend) — AP-13, AP-16
 - Device and sensor info — AP-14
@@ -381,6 +381,13 @@ Updated: F-31 (scope), technical design (Hosting and operations: Deploys).
 - **Open, with suggestions in the spec's open question "Range in the link":** elapsed seconds rather than sample numbers; live link update plus the copy-link button (SH-6) rather than a separate "copy link to this selection" button; cursor position and x axis not included; no scroll or map zoom on opening.
 
 Updated: spec (viewer story 12, scope table, AP-19, Open questions, Roadmap phase 2), Phase 2 list (with acceptance criteria). No MVP feature changes. Technical design: link formats (ADR-020) gain the viewing-page fragment once phase 2 is designed.
+
+**Decided on 2 Nov 2026, viewer download deferred** (user, F-24):
+
+- **The viewer download (SH-8 viewer part, F-24) moves to phase 3 (Later).** The owner's download of the original stays in the MVP (F-12, F-20). The F-24 feature file, design and ADR-036 are kept as written for phase 3.
+- **Build order:** F-24 leaves phase 1 and is listed last; F-30 no longer depends on it; F-32 covers F-08 to F-31 except F-24. The MVP cut order for Should items no longer names SH-8.
+
+Updated: spec (scope table, SH-8, Should cut order), technical design (Publish 4 and 5, public files, Publishing module, glossary: export marked phase 3), F-24 (phase), F-30 and F-32 (depends on), feature index (order, F-24 row, counts, coverage, Phase 2 list).
 
 The original questions follow for reference.
 

@@ -79,7 +79,8 @@ The MVP is one workout, one link: upload, explore, share, delete. Connecting wor
 | Device and sensor info (AP-14) |  | Yes |  |
 | Selected range kept in the page link, to share a section (AP-19) |  | Yes |  |
 | Start and end hiding, publish step (draft, then unlisted) | Yes |  |  |
-| Viewer download of the published data, off by default (SH-8) | Yes |  |  |
+| Owner download of the original FIT file (SH-8) | Yes |  |  |
+| Viewer download of the published data, off by default (SH-8) |  |  | Yes |
 | Privacy notice and fast removal of changed content (SH-9, SH-10) | Yes |  |  |
 | Units, sport-specific pace or speed, English, light and dark theme (DS-1 to DS-4) | Yes |  |  |
 | Privacy zones around chosen places |  | Yes |  |
@@ -107,7 +108,7 @@ The MVP is one workout, one link: upload, explore, share, delete. Connecting wor
 
 ## Functional requirements
 
-Priorities: **Must** ships in the MVP, **Should** ships in the MVP if time allows, **Could** waits for phase 2. If time runs short, Should items are dropped in this order: SH-8, DS-4, AP-15, AP-9. SH-4 is not dropped.
+Priorities: **Must** ships in the MVP, **Should** ships in the MVP if time allows, **Could** waits for phase 2. If time runs short, Should items are dropped in this order: DS-4, AP-15, AP-9. SH-4 is not dropped.
 
 ### Upload and processing
 
@@ -174,7 +175,7 @@ Dragging along any chart moves the marker on the map and updates every value; a 
 | SH-5 | Open Graph and Twitter-card preview image showing the route, a sport icon (run, ride, swim, walk/hike, generic) in front of the workout's name (cut at 40 characters plus "…"); below it distance and duration (moving time; elapsed time when the workout has no GPS); elevation gain only when altitude was recorded and the gain is above zero; pace for runs, walks and hikes (min/km), speed for rides (km/h), pace per 100 m for swims; average heart rate when present. Distance, pace or speed only when the workout has a distance. The card renders in WhatsApp, Signal, Slack, Telegram and X. Draft and expired links have no workout preview card (no image, no workout values); edit and published-page links get the fixed warning card of SH-11. | Must |
 | SH-6 | The edit page has a Share button that shows the viewing link with a copy button, once the workout is published (hidden on a draft). The published page (AC-6) also shows the viewing link with a copy button. The viewing page has a copy-link button. | Must |
 | SH-7 | iframe embed code with a compact layout. | Could |
-| SH-8 | The owner can always download the original FIT file, which is the upload with identifying data removed (UP-9). On the draft page that opens right after upload (UP-4), and later through the edit link, the sharer chooses whether viewers may download the workout; the default is no download. Viewers who may download get a FIT file built from the published data, with trims applied and hidden points removed. The original file, which contains every point, is never offered to viewers. | Should |
+| SH-8 | The owner's download ships in the MVP; the download setting and the viewer download are Later (phase 3, decided 2 Nov 2026). The owner can always download the original FIT file, which is the upload with identifying data removed (UP-9). On the draft page that opens right after upload (UP-4), and later through the edit link, the sharer chooses whether viewers may download the workout; the default is no download. Viewers who may download get a FIT file built from the published data, with trims applied and hidden points removed. The original file, which contains every point, is never offered to viewers. | Should |
 | SH-9 | Every workout page says clearly, next to the map and summary: "Parts of the route, such as the start and end, may be hidden for privacy. Totals include them." It is shown whether or not anything is hidden, so viewers cannot tell which routes were changed. The one exception is a route hidden entirely, which the page states (AP-3). | Must |
 | SH-10 | After a delete, expiry, or any edit that hides more of the route, the old content stops being served within 60 s, and no cache under the app's control keeps it longer. The edit panel tells the sharer that copies viewers already downloaded, or previews messengers already made, cannot be recalled. | Must |
 | SH-11 | The edit page (`/edit/{id}`) and the published page (`/published/{id}`) carry fixed link-preview tags (Open Graph and Twitter), the same for every workout: title "Edit link: do not share" and one short sentence saying that anyone with this link can change or delete the workout; optionally a static warning image. The tags contain nothing about the workout (no name, values, route or ID), so a messenger shows a warning when an edit link is pasted. The edit token stays in the link fragment and never reaches the preview fetcher. | Must |
