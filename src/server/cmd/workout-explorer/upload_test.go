@@ -325,6 +325,7 @@ func TestUploadIdentifyingData(t *testing.T) {
 	if len(files) < 4 {
 		t.Fatalf("only %d files: %v", len(files), files)
 	}
+	logs := logValues(t, a.logs.String())
 	for _, m := range identifyingMarkers() {
 		// The 2-byte ANT forms are searched in the FIT file only: the other
 		// files hold random IDs, so a 2-byte pattern there is chance.
@@ -336,7 +337,7 @@ func TestUploadIdentifyingData(t *testing.T) {
 				t.Errorf("marker %q in %s", m, p)
 			}
 		}
-		if len(m) >= 5 && strings.Contains(a.logs.String(), string(m)) {
+		if len(m) >= 5 && strings.Contains(logs, string(m)) {
 			t.Errorf("marker %q in the log", m)
 		}
 	}
@@ -344,6 +345,25 @@ func TestUploadIdentifyingData(t *testing.T) {
 	if !strings.Contains(a.logs.String(), `"blanked_fields":16`) || !strings.Contains(a.logs.String(), `"removed_messages":5`) {
 		t.Errorf("log lacks the strip counts: %s", a.logs.String())
 	}
+}
+
+// logValues returns the JSON log lines without "time" and "id": both are
+// made by the server (clock, crypto/rand), so a short marker in them is chance.
+func logValues(t *testing.T, logs string) string {
+	t.Helper()
+	var out strings.Builder
+	for _, line := range strings.Split(strings.TrimSpace(logs), "\n") {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Fatalf("log line %q: %v", line, err)
+		}
+		delete(m, "time")
+		delete(m, "id")
+		b, _ := json.Marshal(m)
+		out.Write(b)
+		out.WriteByte('\n')
+	}
+	return out.String()
 }
 
 func reportZeroed(t *testing.T, b []byte) []byte {

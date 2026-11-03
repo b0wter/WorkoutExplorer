@@ -57,7 +57,7 @@ lint-web: deps-web
 test: test-server test-web
 
 test-server: deps-server
-	cd $(SERVER_DIR) && go test ./...
+	cd $(SERVER_DIR) && go test -count=1 ./...
 
 test-web: deps-web
 	cd $(WEB_DIR) && npm run test

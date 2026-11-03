@@ -27,7 +27,7 @@ Go and Caddy run in one Docker Compose setup with restart policies, without host
 
 ## Consequences
 
-- Go has no outbound route unless notifications are configured (rev. 4, ADR-039), and nothing outside `backend` reaches port 8080. Caddy's port is reachable from the host only.
+- Go has no outbound route unless notifications are configured (rev. 4, ADR-039), and nothing outside `backend` reaches port 8080, except the host over `egress` when the notify override is on (ADR-039). Caddy's port is reachable from the host only.
 - The rate limit is per real client as long as the operator's proxy appends the client's address and `WX_TRUSTED_PROXIES` names only that proxy (runbook, F-31 Verification). Every host process shares the proxy's source address and is trusted with it; the host is the operator's.
 - No TLS keys, certificates or ACME account in our setup; TLS is the operator's proxy's.
 - A deploy is a file copy and a container restart. There are no image tags to roll back to (ADR-019 forbids rollback anyway).

@@ -33,7 +33,7 @@ browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy, in Docker
 | CPU | **linux/amd64 (x86-64).** arm64 (Raspberry Pi, Apple silicon servers) is not supported: the Caddy pin has only an amd64 checksum |
 | RAM | 2 GB. The `app` container is capped at 1200 MB (`compose.yaml`); leave room for the OS, Docker and Caddy. Building the image also needs memory (see "Updating", tip for small hosts) |
 | Disk | About 3 GB for the image and build cache, plus the storage cap you set (default 1000 MB), plus Docker logs (at most 5 x 10 MB per container). Local disk, one file system |
-| Docker | Docker Engine with the Compose plugin, **Compose 2.24 or newer** (`docker compose version`). Default daemon settings |
+| Docker | **Docker Engine 28 or newer** (ADR-039 relies on it to block direct access to unpublished container ports) with the Compose plugin, **Compose 2.24 or newer** (`docker compose version`). Default daemon settings |
 | Git | To clone the repository |
 | `sqlite3` | Only to read reports from visitors (section 10). Debian: `apt install sqlite3` |
 | Domain and proxy | A domain name pointing at your host, and a reverse proxy **on the same host** that terminates TLS (section 5) |
@@ -43,7 +43,7 @@ browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy, in Docker
 Check:
 
 ```sh
-docker version --format '{{.Server.Version}}'
+docker version --format '{{.Server.Version}}'   # 28.0 or newer
 docker compose version          # Docker Compose version v2.24.0 or newer
 uname -m                        # x86_64
 ```
