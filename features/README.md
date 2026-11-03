@@ -39,8 +39,8 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
 | [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | waiting on user | AC 3 loop-route check; AC 8/9 messengers (deployed) |
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
-| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | built, QA r1 ready | user: AC 5 60 fps on phone; minors QA-25-r1-1, r1-2 |
-| [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | built, QA r2 ready | user: desktop overlay check (no chart line over map), phone checks (back gesture, 60 fps, rotation), OQ-100 |
+| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done | minors QA-25-r1-1, r1-2 |
+| [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | not started | |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | not started | |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | not started | |
@@ -422,6 +422,10 @@ Updated: spec (viewer story 14, scope table, AP-20, Open questions, Roadmap phas
 - **In fullscreen (AP-15), the route colour drop-down and its legend stay visible** while colouring is available, since a coloured route cannot be read without its legend.
 
 Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
+
+**Decided on 3 Nov 2026, fullscreen bars** (user, OQ-100, F-26):
+
+- **Address and system bars stay visible in fullscreen** on Android Chrome and desktop (CSS overlay, ADR-038); accepted. The browser Fullscreen API may be added later as an extra layer.
 
 The original questions follow for reference.
 
