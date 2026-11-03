@@ -1,7 +1,7 @@
 # F-25 Route colouring by metric: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (2 Nov 2026). Normal lane. OQ-99 open, not blocking
+- **Status:** accepted (2 Nov 2026). Normal lane. OQ-99 decided 3 Nov 2026 (keep both in fullscreen, decision log)
 - **Date:** 2 Nov 2026
 - **Feature:** [`features/F-25-route-colouring.md`](../features/F-25-route-colouring.md)
 - **Requirements:** AP-9, AP-3, AP-4 (transitions), DS-1, DS-2, DS-4, NFR Performance (60 fps); F-08 hand-offs to F-25 (user answer 6, R-14)
@@ -65,11 +65,11 @@
 
 | To | What |
 | --- | --- |
-| F-26 | The control and legend are part of the map container and follow it into fullscreen, pending OQ-99. `wx-range` stays above `wx-colour-line` (F-17) |
+| F-26 | The control and legend are part of the map container and follow it into fullscreen (OQ-99 decided; F-26 FS-3). `wx-range` stays above `wx-colour-line` (F-17) |
 | Requirements | TD Code structure: add `lib/colouring` to the layout and the front-end dependency rules; `components/map` may import `lib/units` |
 
 ## Open questions
 
 | ID | Question | Suggestion |
 | --- | --- | --- |
-| OQ-99 | AP-15's fullscreen keeps "the route, markers, zoom controls and an exit button"; the colour selector and legend are not listed. Keep them in fullscreen? | Keep both: a coloured route without its legend cannot be read. Blocks F-26 only |
+| OQ-99 | AP-15's fullscreen keeps "the route, markers, zoom controls and an exit button"; the colour selector and legend are not listed. Keep them in fullscreen? | Decided 3 Nov 2026: keep both (decision log) |
