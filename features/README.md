@@ -42,7 +42,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done | minors QA-25-r1-1, r1-2 |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with sudo) |
-| [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | design | architect |
+| [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | building | frontend engineer |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | not started | |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | not started | |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-31 (except F-24) | not started | |
