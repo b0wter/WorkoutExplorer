@@ -48,14 +48,9 @@
   --div-4: #dfc27d;
   --div-5: #bf812d;
   --div-6: #8c510a;
-  /* The selected range with colouring on: class k in blue k, light → dark (dark theme: dark → light, as --seq). */
-  --range-0: #b5d5f5;
-  --range-1: #8fbdec;
-  --range-2: #66a3e0;
-  --range-3: #3f88d2;
-  --range-4: #1f6fc5;
-  --range-5: #17559a;
-  --range-6: #0e3a6e;
+  /* The selected range with colouring on (F-25 C-9): its outline, and the opacity of the route outside it. */
+  --range-outline: #1a1a1a;
+  --route-fade: 0.35;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -99,13 +94,8 @@
     --div-4: #a67a32;
     --div-5: #d9a54e;
     --div-6: #f2d28a;
-    --range-0: #1d4f8a;
-    --range-1: #2a64aa;
-    --range-2: #3b7ccb;
-    --range-3: #5294e3;
-    --range-4: #6aa9f0;
-    --range-5: #93c2f5;
-    --range-6: #c0dcfa;
+    --range-outline: #f2f2f2;
+    --route-fade: 0.4;
   }
 }
 /* The background sits on the root: iOS Safari paints the notch strips it reserves in landscape

@@ -53,10 +53,12 @@ import {
   COLOUR_SOURCE,
   DIVERGING,
   HIDDEN_SOURCE,
+  NO_VALUE,
   RANGE_SOURCE,
   baseStyle,
   classColours,
   colourData,
+  emphasise,
   isStyle,
   linesData,
   mapColours,
@@ -157,7 +159,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   // style's own load and a style swap (merge) carry it.
   const rangeLines = (a: number, b: number) => (a < 0 ? { recorded: [], bridges: [] } : routeLinesIn(data, route, a, b));
   const initialRange = rangeLines(selection ? selection.start() : -1, selection ? selection.end() : -1);
-  let range: unknown = linesData(initialRange);
+  let range: { readonly features: readonly unknown[] } = linesData(initialRange);
   const markers = routeMarkers(data, route);
   const lat = position.latitude;
   const lon = position.longitude;
@@ -264,20 +266,20 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let unsubscribeUnits: (() => void) | null = null;
   // Route colouring (F-25 C-7): the latest wx-colour data, re-applied on 'style.load' like the range.
   let colour = colourData([]);
-  // The current metric's class per sample, no class as CLASS_COUNT (null = plain route), and the recorded
-  // edges' ends: kept, so a range update only partitions the range's edges, never recomputes values or bounds.
+  // The current metric's class colour index c per sample, no class as NO_VALUE (null = plain route), and the
+  // recorded edges' ends: kept, so a range update only partitions the range's edges, never recomputes values or bounds.
   let classes: Uint8Array | null = null;
   let ends: Uint32Array | null = null;
-  // The range highlight's data: with colouring on, its classed edges in the range blues (F-25); edges
-  // without a class and the bridges as without colouring. O(log N + range).
-  const rangeOf = (a: number, b: number): unknown => {
+  // The range highlight's data: with colouring on, its edges by class (F-25 C-9). O(log N + range).
+  const rangeOf = (a: number, b: number): typeof range => {
     const l = rangeLines(a, b);
     if (classes === null || ends === null || a < 0) return linesData(l);
     const inRange = ends.subarray(lowerBound(ends, a + 1), lowerBound(ends, b + 1));
-    // The extra last class holds the edges without a class, drawn plain.
-    const byClass = classLines(data, inRange, classes, CLASS_COUNT + 1);
-    return rangeData({ recorded: byClass.pop()!, bridges: l.bridges }, byClass);
+    return rangeData(classLines(data, inRange, classes, NO_VALUE + 1), l.bridges);
   };
+  // F-25 C-9: the route outside a coloured range fades; re-applied with the range and on a scheme change.
+  let emphasised = false;
+  const applyEmphasis = (): void => emphasise(map, mapColours(container), emphasised);
   const applyColour = (): void => {
     (map.getSource(COLOUR_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(colour);
   };
@@ -347,6 +349,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     // ---- range highlight (F-17 R-10): one setData after the range settles, never per frame ----
     const applyRange = (): void => {
       (map.getSource(RANGE_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(range);
+      emphasised = classes !== null && range.features.length > 0;
+      applyEmphasis();
     };
     if (selection) {
       let first = true;
@@ -422,12 +426,11 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
           ends ??= recordedEdgeEnds(data, route);
           const values = metricValues(data, metric);
           const scale = colourScale(metric, values, ends, sport);
-          const c = classify(values, scale);
-          classes = c.map((k) => Math.min(k, CLASS_COUNT));
-          let missing = false;
-          for (let k = 0; k < ends.length && !missing; k++) missing = c[ends[k]] >= CLASS_COUNT;
-          shown = { scale, missing };
-          colour = colourData(classLines(data, ends, c, CLASS_COUNT), metric === 'gradient' ? DIVERGING : 0);
+          const offset = metric === 'gradient' ? DIVERGING : 0;
+          const cs = classify(values, scale).map((k) => (k < CLASS_COUNT ? offset + k : NO_VALUE));
+          classes = cs;
+          shown = { scale, missing: ends.some((i) => cs[i] === NO_VALUE) };
+          colour = colourData(classLines(data, ends, cs, NO_VALUE));
         }
         applyColour();
         renderLegend();
@@ -600,6 +603,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       // Our layers first, so the merge below carries the new colours over; the base style
       // keeps drawing if the other style never arrives ("where available", question 28).
       recolour(map, mapColours(container), classColours(container));
+      applyEmphasis();
       if (options.styleUrl !== undefined) return; // an override has no other scheme
       void fetchStyle(styleUrlFor(next)).then((style) => {
         if (style === null || scheme !== next || destroyed) return;

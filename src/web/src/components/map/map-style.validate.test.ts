@@ -16,7 +16,7 @@ import { buildRoute, classLines, recordedEdgeEnds, routeLines, routeLinesIn, rou
 import { CLASS_COUNT, classify, colourScale, metricValues } from '../../lib/colouring';
 import type { WorkoutData } from '../../lib/datafile';
 import { golden, positioned } from '../../lib/route/testing/fixtures';
-import { COLOUR_SOURCE, DIVERGING, GLYPHS_URL, ROUTE_SOURCE, TILE_HOST, baseStyle, colourData, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, GLYPHS_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, TILE_HOST, baseStyle, colourData, mergeStyle, rangeData } from './map-style';
 
 const N = Number.NaN;
 
@@ -97,16 +97,17 @@ describe('style-spec validation (QA-06-r3-2)', () => {
     expect(errors(mergeStyle(style, remote()))).toEqual([]);
   });
 
-  it('F-25: wx-colour with class features (sequential and diverging), also merged', () => {
+  it('F-25: wx-colour and the coloured wx-range with class features (sequential and diverging), also merged', () => {
     const data = golden('gps-dropout');
     const route = buildRoute(data);
     if (route === null) throw new Error('expected a route');
     const ends = recordedEdgeEnds(data, route);
     for (const [metric, offset] of [['speed', 0], ['gradient', DIVERGING]] as const) {
       const values = metricValues(data, metric);
-      const classes = classify(values, colourScale(metric, values, ends, data.meta.sport));
+      const classes = classify(values, colourScale(metric, values, ends, data.meta.sport)).map((k) => (k < CLASS_COUNT ? offset + k : NO_VALUE));
       const style = base(data);
-      style.sources[COLOUR_SOURCE] = { type: 'geojson', data: colourData(classLines(data, ends, classes, CLASS_COUNT), offset) as never };
+      style.sources[COLOUR_SOURCE] = { type: 'geojson', data: colourData(classLines(data, ends, classes, NO_VALUE)) as never };
+      style.sources[RANGE_SOURCE] = { type: 'geojson', data: rangeData(classLines(data, ends, classes, NO_VALUE + 1), routeLines(data, route).bridges) as never };
       const src = style.sources[COLOUR_SOURCE];
       if (src?.type !== 'geojson' || typeof src.data !== 'object' || src.data.type !== 'FeatureCollection') throw new Error('no wx-colour');
       expect(src.data.features.length).toBeGreaterThan(1);

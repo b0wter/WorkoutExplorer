@@ -11,7 +11,7 @@ import { createSelectionStore } from '../../lib/selection';
 import type { WorkoutData } from '../../lib/datafile';
 import { buildRoute, mercatorX } from '../../lib/route';
 import { positioned } from '../../lib/route/testing/fixtures';
-import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, RANGE_BLUES, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
 import { RANGE_SETTLE_MS, mountRouteMap, type RouteMapHandle } from './map-view';
 import { createUnitsStore } from '../../lib/units';
 import { recorder, resetRecorder, type FakeMap, type FakeMarker } from './testing/maplibre-fake';
@@ -1311,7 +1311,7 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     ]);
   });
 
-  it('with colouring on, the range draws its classed edges in the range blues; no class and bridges stay plain', async () => {
+  it('with colouring on, the range keeps the class colours, outlined, the rest faded; no value and bridges stay in the range (C-9)', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     type Range = { features: { properties: { kind: string; c?: number }; geometry: { coordinates: number[][][] } }[] };
     const d = coloured();
@@ -1321,35 +1321,38 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     selection.set(0, 7);
     const { map, box } = await withControl({ ...d, metrics: { ...d.metrics, heart_rate: hr } }, undefined, selection);
     const ranges = () => map.sourceData.filter(([id]) => id === RANGE_SOURCE).map(([, r]) => r as Range);
-    const colours = () => map.sourceData.filter(([id]) => id === COLOUR_SOURCE).length;
+    const colours = () => map.sourceData.filter(([id]) => id === COLOUR_SOURCE);
+    const opacity = (id: string) => map.paints.filter(([l, p]) => l === id && p === 'line-opacity').at(-1)?.[2];
 
     pick(box!, 'heart_rate'); // applies the coloured range at once
     let f = ranges().at(-1)!.features;
-    expect(f.filter((x) => x.properties.c === undefined).map((x) => [x.properties.kind, x.geometry.coordinates])).toEqual([
+    expect(f.filter((x) => x.properties.c === NO_VALUE || x.properties.kind === 'bridge').map((x) => [x.properties.kind, x.geometry.coordinates])).toEqual([
       ['recorded', [[[8.05, 47], [8.06, 47]]]],
       ['bridge', [[[8.02, 47], [8.05, 47]]]],
     ]);
-    const classed = f.filter((x) => x.properties.c !== undefined);
-    expect(classed.every((x) => x.properties.kind === 'recorded')).toBe(true);
-    expect(classed.flatMap((x) => x.geometry.coordinates).reduce((n, l) => n + l.length - 1, 0)).toBe(3); // 0–1, 1–2, 6–7
-    const cs = classed.map((x) => x.properties.c!);
-    expect(Math.min(...cs)).toBe(RANGE_BLUES); // 110 bpm, the lower bound
-    expect(Math.max(...cs)).toBe(RANGE_BLUES + 6); // 170 bpm, the upper bound
+    // The classed edges keep the classes (and so the colours) of wx-colour.
+    const classed = (c: Range) => c.features.filter((x) => x.properties.c !== NO_VALUE && x.properties.kind === 'recorded').map((x) => [x.properties.c, x.geometry.coordinates]);
+    expect(classed(ranges().at(-1)!)).toEqual(classed(colours().at(-1)![1] as Range));
+    expect(f.filter((x) => x.properties.c === undefined).map((x) => x.properties.kind)).toEqual(['bridge']); // the outline takes all but the bridges
+    expect(opacity('wx-colour-line')).toBe(0.35);
+    expect(opacity('wx-route-line')).toBe(0.35);
 
     // A range update partitions the kept classes: wx-colour is never rewritten.
-    const before = colours();
+    const before = colours().length;
     selection.set(5, 7);
     queue.splice(0).forEach((g) => g());
     vi.advanceTimersByTime(RANGE_SETTLE_MS);
     f = ranges().at(-1)!.features;
     expect(f.map((x) => [x.properties.c, x.geometry.coordinates])).toEqual([
-      [undefined, [[[8.05, 47], [8.06, 47]]]],
-      [RANGE_BLUES + 6, [[[8.06, 47], [8.07, 47]]]],
+      [6, [[[8.06, 47], [8.07, 47]]]],
+      [NO_VALUE, [[[8.05, 47], [8.06, 47]]]],
     ]);
-    expect(colours()).toBe(before);
+    expect(colours()).toHaveLength(before);
 
-    pick(box!, ''); // colouring off: the range as without colouring
+    pick(box!, ''); // colouring off: the range as before F-25
     expect(ranges().at(-1)!.features.map((x) => x.properties)).toEqual([{ kind: 'recorded' }]);
+    expect(opacity('wx-colour-line')).toBe(1);
+    expect(opacity('wx-route-bridge')).toBe(0.85);
   });
 
   it('the cursor never touches wx-colour; style.load re-applies the latest colouring; the scheme rebuilds the class colours', async () => {

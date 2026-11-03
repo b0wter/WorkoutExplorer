@@ -60,6 +60,10 @@ export const MAP_COLOURS = {
   start: '#2e7d32',
   finish: '#c62828',
   markerStroke: '#ffffff',
+  /** The selected range's outline with colouring on (F-25 C-9). */
+  rangeOutline: '#1a1a1a',
+  /** Not a colour: the opacity of the route outside the range with colouring on (F-25 C-9). */
+  fade: '0.35',
 } as const;
 
 type MapColours = { readonly [K in keyof typeof MAP_COLOURS]: string };
@@ -77,23 +81,22 @@ const COLOUR_PROPERTIES: Readonly<Record<keyof typeof MAP_COLOURS, string>> = {
   start: '--start',
   finish: '--finish',
   markerStroke: '--marker-stroke',
+  rangeOutline: '--range-outline',
+  fade: '--route-fade',
 };
 
-/** The colour classes' light values, the fallback of `--seq-0…6` (speed, pace, heart rate, power: low → high),
- *  `--div-0…6` (gradient: descent, flat, climb) and `--range-0…6` (the selected range's blues, any metric,
- *  class k → blue k) in page.css (F-25 C-5). Feature property `c` of wx-colour and wx-range indexes this list:
- *  0–6 sequential, 7–13 diverging, 14–20 range. */
+/** The colour classes' light values, the fallback of `--seq-0…6` (speed, pace, heart rate, power: low → high)
+ *  and `--div-0…6` (gradient: descent, flat, climb) in page.css (F-25 C-5). Feature property `c` of wx-colour
+ *  and wx-range indexes this list: 0–6 sequential, 7–13 diverging; in wx-range, NO_VALUE is an edge without one. */
 export const CLASS_COLOURS: readonly string[] = [
   '#f0c43c', '#eba337', '#e18231', '#cc632a', '#ad4823', '#86321b', '#5c2112',
   '#01665e', '#35978f', '#80cdc1', '#cfc6b0', '#dfc27d', '#bf812d', '#8c510a',
-  '#b5d5f5', '#8fbdec', '#66a3e0', '#3f88d2', '#1f6fc5', '#17559a', '#0e3a6e',
 ];
 /** Offset of the diverging palette in CLASS_COLOURS. */
 export const DIVERGING = 7;
-/** Offset of the range blues in CLASS_COLOURS. */
-export const RANGE_BLUES = 14;
-const classProperty = (k: number): string =>
-  k < DIVERGING ? '--seq-' + k : k < RANGE_BLUES ? '--div-' + (k - DIVERGING) : '--range-' + (k - RANGE_BLUES);
+/** Class `c` of a wx-range edge without a value while colouring is on: drawn in the route colour. */
+export const NO_VALUE = 14;
+const classProperty = (k: number): string => (k < DIVERGING ? '--seq-' + k : '--div-' + (k - DIVERGING));
 
 /** The class colours of the current theme, read from `el`; the light values where unset. */
 export function classColours(el: Element): string[] {
@@ -127,6 +130,7 @@ const PAINT: readonly [layer: string, property: string, colour: keyof typeof MAP
   ['wx-route-line', 'line-color', 'route'],
   ['wx-hidden-bridge', 'line-color', 'hidden'],
   ['wx-hidden-line', 'line-color', 'hidden'],
+  ['wx-range-casing', 'line-color', 'rangeOutline'],
   ['wx-range-bridge', 'line-color', 'range'],
   ['wx-lap-circle', 'circle-color', 'lapFill'],
   ['wx-lap-circle', 'circle-stroke-color', 'lapStroke'],
@@ -139,18 +143,33 @@ const PAINT: readonly [layer: string, property: string, colour: keyof typeof MAP
 
 /** Repaints our layers (and the base background, while it exists) in place after a scheme change; the class
  *  colour expressions are rebuilt from `classes` (F-25 C-5). */
+type PaintTarget = { getLayer(id: string): unknown; setPaintProperty(id: string, name: string, value: unknown): void };
+
 export function recolour(
-  map: { getLayer(id: string): unknown; setPaintProperty(id: string, name: string, value: unknown): void },
+  map: PaintTarget,
   colours: MapColours,
   classes: readonly string[] = CLASS_COLOURS,
 ): void {
   for (const [layer, property, colour] of PAINT) if (map.getLayer(layer)) map.setPaintProperty(layer, property, colours[colour]);
   if (map.getLayer('wx-colour-line')) map.setPaintProperty('wx-colour-line', 'line-color', classColourExpression(classes, colours.route));
-  if (map.getLayer('wx-range-line')) map.setPaintProperty('wx-range-line', 'line-color', classColourExpression(classes, colours.range));
+  if (map.getLayer('wx-range-line')) map.setPaintProperty('wx-range-line', 'line-color', rangeColourExpression(classes, colours));
+}
+
+/** wx-range-line's line-color: a classed edge in its class colour, NO_VALUE in the route colour, else the range colour. */
+export const rangeColourExpression = (classes: readonly string[], colours: MapColours): unknown[] =>
+  classColourExpression([...classes, colours.route], colours.range);
+
+/** F-25 C-9: `on` (colouring on, a range on the route) fades the route outside the range; off, every opacity
+ *  is as before F-25. */
+export function emphasise(map: PaintTarget, colours: MapColours, on: boolean): void {
+  const fade = on ? +colours.fade : 1;
+  for (const [id, opacity] of [['wx-route-bridge', 0.85 * fade], ['wx-route-casing', fade], ['wx-route-line', fade], ['wx-colour-line', fade]] as const) {
+    if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', opacity);
+  }
 }
 
 /** Bottom → top, as in the design's layer table. */
-export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish'] as const;
+export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish'] as const;
 
 const kindIs = (kind: string): FilterSpecification => ['==', ['get', 'kind'], kind];
 
@@ -176,20 +195,20 @@ export function linesData(lines: RouteLines): { type: 'FeatureCollection'; featu
 
 const NO_LINES: RouteLines = { recorded: [], bridges: [] };
 
-/** The GeoJSON of wx-colour: one MultiLineString per non-empty class k of `lines`, properties c = offset + k
+/** The GeoJSON of wx-colour: one MultiLineString per non-empty class k of `lines`, properties c = k
  *  and kind 'recorded' (so the range layers' filter takes them too). */
-export function colourData(lines: readonly [number, number][][][], offset = 0): { type: 'FeatureCollection'; features: unknown[] } {
+export function colourData(lines: readonly [number, number][][][]): { type: 'FeatureCollection'; features: unknown[] } {
   const features: unknown[] = [];
   lines.forEach((coordinates, k) => {
-    if (coordinates.length > 0) features.push({ type: 'Feature', properties: { kind: 'recorded', c: offset + k }, geometry: { type: 'MultiLineString', coordinates } });
+    if (coordinates.length > 0) features.push({ type: 'Feature', properties: { kind: 'recorded', c: k }, geometry: { type: 'MultiLineString', coordinates } });
   });
   return { type: 'FeatureCollection', features };
 }
 
-/** The GeoJSON of wx-range with colouring on (F-25): `lines` as linesData (edges without a class, bridges),
- *  then the classed recorded edges, class k in blue k (c = RANGE_BLUES + k). */
-export function rangeData(lines: RouteLines, classed: readonly [number, number][][][]): { type: 'FeatureCollection'; features: unknown[] } {
-  return { type: 'FeatureCollection', features: [...linesData(lines).features, ...colourData(classed, RANGE_BLUES).features] };
+/** The GeoJSON of wx-range with colouring on (F-25 C-9): the recorded edges by class (c = k, NO_VALUE included),
+ *  then the bridges. */
+export function rangeData(classed: readonly [number, number][][][], bridges: RouteLines['bridges']): { type: 'FeatureCollection'; features: unknown[] } {
+  return { type: 'FeatureCollection', features: [...colourData(classed).features, ...linesData({ recorded: [], bridges }).features] };
 }
 
 /** Local style: background, glyphs URL, sources wx-route and wx-markers (inline GeoJSON), and
@@ -267,6 +286,15 @@ export function baseStyle(
       paint: { 'line-color': colours.hidden, 'line-width': 4 },
     },
     {
+      // F-25 C-9: the range's outline, only with colouring on: only rangeData's recorded edges carry a class.
+      id: 'wx-range-casing',
+      type: 'line',
+      source: RANGE_SOURCE,
+      filter: ['has', 'c'],
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': colours.rangeOutline, 'line-width': 9 },
+    },
+    {
       id: 'wx-range-bridge',
       type: 'line',
       source: RANGE_SOURCE,
@@ -280,8 +308,7 @@ export function baseStyle(
       source: RANGE_SOURCE,
       filter: kindIs('recorded'),
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      // F-25: a classed edge (colouring on) in its blue; any other in the range colour.
-      paint: { 'line-color': classColourExpression(classes, colours.range) as never, 'line-width': 5 },
+      paint: { 'line-color': rangeColourExpression(classes, colours) as never, 'line-width': 5 },
     },
   );
   layers.push(
