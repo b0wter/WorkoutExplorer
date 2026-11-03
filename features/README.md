@@ -230,7 +230,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 **Decided on 29 Oct 2026** (viewer preferences):
 
 - **Units remembered on the device (DS-1, F-14):** viewer preferences are remembered in the viewer's browser in `localStorage`, never in a cookie, and the server never sees them. The units choice is stored when the viewer uses the drop-down; it applies to every workout and edit page in that browser and wins over the browser-language default; broken or unavailable storage falls back silently to the default. Replaces "the choice is not stored" (DS-1, and "like the units" in the 24 Oct layout entry). The other viewer settings are decided in the next entry. Updated: spec (viewer story 7, DS-1, AP-18 wording, INF-1, NFR Privacy "no data outlives its workout"), F-14 (requirements line, scope, ACs), F-29 (scope, AC), technical design (Front end implementation notes).
-- **Other viewer settings (same day, the suggestions):** the x-axis choice (AP-5) and the map/content splitter (AP-17) are remembered in `localStorage` like the units. A workout without distance shows time without overwriting the stored axis. The splitter, built as an F-17 follow-up on 28 Oct 2026, is now in AP-17: both two-column layouts, 30–70 %, on desktop also limited by the column minimums, double click or double tap restores the default and clears the stored split. Assumed: the split is stored separately for wide and short landscape screens, as their defaults differ. Not stored: the pinned map (AP-18) and the route colouring metric (AP-9, question 27). Theme (DS-4) follows the OS, nothing to store. Pin legend visibility (PIN-6) is decided with the phase-2 pin details. Updated: spec (AP-5, AP-17, INF-1), F-17 (requirements line, scope, ACs), F-29 (scope, AC), coverage row AP-17.
+- **Other viewer settings (same day, the suggestions):** the x-axis choice (AP-5) and the map/content splitter (AP-17) are remembered in `localStorage` like the units. A workout without distance shows time without overwriting the stored axis. The splitter, built as an F-17 follow-up on 28 Oct 2026, is now in AP-17: both two-column layouts, 30–70 %, on desktop also limited by the column minimums, double click or double tap restores the default and clears the stored split. Assumed: the split is stored separately for wide and short landscape screens, as their defaults differ. Not stored: the pinned map (AP-18) and the route colouring metric (AP-9, question 27). ~~Theme (DS-4) follows the OS, nothing to store.~~ Superseded 3 Nov 2026 (theme drop-down, entry below). Pin legend visibility (PIN-6) is decided with the phase-2 pin details. Updated: spec (AP-5, AP-17, INF-1), F-17 (requirements line, scope, ACs), F-29 (scope, AC), coverage row AP-17.
 - **Layout jump with a remembered split (AP-17, 29 Oct 2026):** when a stored map/content split differs from the default, the layout may jump while the page loads, also on a cached reload; accepted for now. Possible later fix: an inline head script allowed by a CSP hash.
 
 **Decided on 27 Oct 2026** (F-17 layout follow-up):
@@ -401,6 +401,14 @@ Updated: spec (viewer story 13, scope table, DS-5, Open questions, Roadmap phase
 - **Build order:** F-24 leaves phase 1 and is listed last; F-30 no longer depends on it; F-32 covers F-08 to F-31 except F-24. The MVP cut order for Should items no longer names SH-8.
 
 Updated: spec (scope table, SH-8, Should cut order), technical design (Publish 4 and 5, public files, Publishing module, glossary: export marked phase 3), F-24 (phase), F-30 and F-32 (depends on), feature index (order, F-24 row, counts, coverage, Phase 2 list).
+
+**Decided on 3 Nov 2026, theme drop-down** (user, F-14):
+
+- **Theme drop-down on the activity and edit pages:** in the header's control row, next to the units drop-down and Copy link; a small drop-down like the units one with System, Light and Dark; System is the default.
+- **Remembered** in `localStorage` like the units choice and applied before first paint, so the page does not flash.
+- **Upload, About and generic "expired" pages** stay CSS-only and follow the system setting.
+
+Updated: spec (DS-4), F-14 (requirements line, goal, scope, ACs), "Other viewer settings" entry (theme now stored). Technical design unchanged (it does not tie the theme to the system setting).
 
 The original questions follow for reference.
 
