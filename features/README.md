@@ -417,6 +417,12 @@ Updated: spec (DS-4), F-14 (requirements line, goal, scope, ACs), "Other viewer 
 
 Updated: spec (viewer story 14, scope table, AP-20, Open questions, Roadmap phase 3). No feature file (Later items are not broken down). No MVP feature changes.
 
+**Decided on 3 Nov 2026, fullscreen map keeps route colouring** (user, OQ-99, F-26):
+
+- **In fullscreen (AP-15), the route colour drop-down and its legend stay visible** while colouring is available, since a coloured route cannot be read without its legend.
+
+Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
+
 The original questions follow for reference.
 
 **Contradictions**
