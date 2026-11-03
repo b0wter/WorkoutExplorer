@@ -96,6 +96,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | INF-1 About page | Must | F-29 |
 | INF-2 Report form, stored reports | Must | F-27, F-28 |
 | INF-3 Operator delete | Must | F-27 |
+| INF-4 Report notifications (Pushover, opt-in) | Must | F-27 |
 | NFR Performance: LCP under 2.5 s | — | F-13, F-32 |
 | NFR Performance: 60 fps on 12-hour workout | — | F-05, F-06, F-07, F-25, F-32 |
 | NFR Performance: data file under 500 KB | — | F-03, F-07, F-32 |

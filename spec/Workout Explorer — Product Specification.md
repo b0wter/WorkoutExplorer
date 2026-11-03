@@ -22,7 +22,7 @@ Workout Explorer turns a FIT file from any device into a shareable web page wher
 - Long-term storage or an archive of workouts: a workout lives for 7 days by default and at most one month.
 - User accounts: an upload returns a viewing link and an edit link, and nothing identifies the sharer.
 - A social network: feeds, followers, kudos, comments.
-- Live tracking, automatic device sync, or imports from other services (Strava, device clouds, Intervals.icu, Dropbox). This is a viewer for FIT files; the only way in is uploading one.
+- Live tracking, automatic device sync, or imports from other services (Strava, device clouds, Intervals.icu, Dropbox). This is a viewer for FIT files; the only way in is uploading one. The server uses no external service, with one operator-only, opt-in exception: report notifications through Pushover (INF-4).
 - Special handling for virtual rides (Zwift and similar). They are processed like any other file; their map may show nonsense.
 
 ## Users and user stories
@@ -96,7 +96,7 @@ The MVP is one workout, one link: upload, explore, share, delete. Connecting wor
 | Published page with the viewing link and the edit link (AC-6) | Yes |  |  |
 | About page: data we use, how, and attributions | Yes |  |  |
 | Report link and form; reports reviewed by the operator | Yes |  |  |
-| Push notification to the operator for new reports (e.g. Pushover) |  |  | Yes |
+| Push notification to the operator for new reports (Pushover, opt-in, off by default; INF-4) | Yes |  |  |
 | Zones, power curve, best efforts |  | Yes |  |
 | Embed on a blog via iframe |  | Yes |  |
 | Map pins, placed in the edit view: points of interest, dangers, difficult sections, with notes |  | Yes |  |
@@ -230,9 +230,10 @@ What the site tells people about itself, and how anyone can flag a workout to th
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| INF-1 | An About page, linked from the footer of every page, explains what data the site stores (FIT file, workout data, settings, reports), what the viewer's own browser keeps (the units choice, DS-1; the x axis, AP-5; the map/content split, AP-17; never sent to the server, no cookie) and lists, concretely, what is removed from every FIT file on upload (UP-9): device and sensor serial numbers and ANT+ IDs (wherever the file records them), the user profile (name, gender, age, height, weight, heart-rate settings), saved locations, segment leaderboard entries, the segment leaders' activity IDs and segment account keys, and raw ANT radio messages. It also explains how the data is used, who else sees what (the map tile host sees viewers' IP addresses), and how long it is kept (UP-7), including, exactly: "Workouts are not archived: after an app update, a damaged file may show less than before or be removed." The page also lists the attribution and licence of every library and data source used, including the map data and the place-name data. This page is the privacy policy and names the operator with a contact address. | Must |
-| INF-2 | Every workout page has a Report link that opens a short form: a reason (spam, illegal content, someone else's personal data, other) and an optional message of up to 1,000 characters. No contact details or IP address are stored with a report. Reports are saved in the database for the operator to review, and are deleted with their workout. | Must |
+| INF-1 | An About page, linked from the footer of every page, explains what data the site stores (FIT file, workout data, settings, reports), what the viewer's own browser keeps (the units choice, DS-1; the x axis, AP-5; the map/content split, AP-17; never sent to the server, no cookie) and lists, concretely, what is removed from every FIT file on upload (UP-9): device and sensor serial numbers and ANT+ IDs (wherever the file records them), the user profile (name, gender, age, height, weight, heart-rate settings), saved locations, segment leaderboard entries, the segment leaders' activity IDs and segment account keys, and raw ANT radio messages. It also explains how the data is used, who else sees what (the map tile host sees viewers' IP addresses; if the operator turns on notifications, Pushover learns that a report with a given reason arrived, INF-4), and how long it is kept (UP-7), including, exactly: "Workouts are not archived: after an app update, a damaged file may show less than before or be removed." The page also lists the attribution and licence of every library and data source used, including the map data and the place-name data. This page is the privacy policy and names the operator with a contact address. | Must |
+| INF-2 | Every workout page has a Report link that opens a short form: a reason (spam, illegal content, someone else's personal data, other) and an optional message of up to 1,000 characters. No contact details or IP address are stored with a report. Reports are saved in the database for the operator to review, and are deleted with their workout, at the latest 30 days after they were filed. | Must |
 | INF-3 | The operator can delete any workout after reviewing a report, without its edit link. | Must |
+| INF-4 | If the operator turns them on, each new report sends the operator a Pushover notification giving only the report number and reason: never the workout's link, title or public ID, nor the reporter's message. Off by default; notifications are for the operator only, and a report is stored and confirmed whether or not its notification is sent. | Must |
 
 ## Technical design
 
@@ -248,6 +249,7 @@ How the app is built (stack, architecture, FIT parsing, data file format, data m
 | Performance | Reference for these targets: iPhone 13 mini, iOS 27, Orion browser, Low Power Mode off, portrait, production build; scrubbing is measured on the synthetic 12-hour ride with the map in view, and the in-page scrub record counts as the performance trace. Desktop reference: Firefox on Linux. Android is checked before launch. |
 | Privacy | Location history is personal data under GDPR: EU hosting, a privacy policy (the About page, INF-1), a data-processing record. Deletion is through the edit link (AC-4). Export on request is covered by downloading the original FIT file as stored (SH-8, UP-9); no further export is offered. |
 | Privacy | Store as little as possible: no accounts, no email addresses, no device identifiers or user profile from the file (UP-9), no backups, nothing kept past a workout's lifetime. |
+| Privacy | The server contacts no third party, with one operator-only, opt-in exception: Pushover for new-report notifications, off by default, carrying the report number and reason only (INF-4). |
 | Privacy | No advertising or cross-site tracking cookies; privacy-friendly, cookie-less analytics only. |
 | Privacy | Unlisted pages carry `noindex` so search engines do not list them. |
 | Security | Public IDs and edit tokens are 128-bit random values; edit tokens are stored hashed. |
