@@ -132,13 +132,13 @@ func TestSamplePages(t *testing.T) {
 			if hasMap := strings.Contains(page, `class="page has-map"`); hasMap != (route["Map"] != "") {
 				t.Errorf("has-map class %v, Route.Map %q", hasMap, route["Map"])
 			}
-			if strings.Contains(page, "map-pin") || strings.Contains(page, "<button") {
+			if strings.Contains(page, "map-pin") || strings.Count(page, "<button") != 1 {
 				t.Error("pin toggle in the server markup")
 			}
 
-			// AC 10: About and Report in the footer.
+			// AC 10: About and Report in the footer; Report is a button the bundle unhides (F-28 RF-1, RF-9).
 			foot := page[strings.Index(page, `<footer`):]
-			if !strings.Contains(foot, `href="/about">About</a>`) || !strings.Contains(foot, ">Report</a>") {
+			if !strings.Contains(foot, `href="/about">About</a>`) || !strings.Contains(foot, `<button type="button" data-report hidden>Report</button>`) {
 				t.Error("footer lacks About or Report")
 			}
 

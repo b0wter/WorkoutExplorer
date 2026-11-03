@@ -146,6 +146,22 @@ describe('load failure (AC 9, D-13, OQ-10)', () => {
     expect(slot('map-slot')).toBeNull();
     expect(slot('charts-slot')?.textContent).toBe('The workout data could not be loaded.');
   });
+
+  it('F-28 RF-2: Report works while the data file hangs and after it failed', async () => {
+    let fail: (r: Response) => void = () => {};
+    respond = (() => new Promise<Response>((r) => (fail = r))) as unknown as () => Response;
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-30min');
+    document.querySelector('a[data-copy-link]')!.setAttribute('href', '/w/AbCdEfGhIjKlMnOpQrStUv');
+    const report = document.querySelector<HTMLButtonElement>('footer button[data-report]')!;
+    expect(report.hidden).toBe(true);
+    const started = startPage(document);
+    expect(report.hidden).toBe(false);
+    fail(new Response('', { status: 500 }));
+    await started;
+    expect(slot('map-slot')?.textContent).toBe('The workout data could not be loaded.');
+    expect(report.hidden).toBe(false);
+  });
 });
 
 describe('adoption, not hydration (D-8, ADR-026 item 4)', () => {

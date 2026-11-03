@@ -496,6 +496,19 @@ tbody tr:nth-child(even) {
 .foot a {
   margin-right: 12px;
 }
+/* F-28 RF-1: Report opens a dialog, so it is a button, drawn like the About link. */
+.foot button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.report-fail {
+  margin-left: 12px;
+}
 
 /* Map pin toggle (D-19, AP-18): created by the bundle, a sibling of the map's container. */
 .map-pin {

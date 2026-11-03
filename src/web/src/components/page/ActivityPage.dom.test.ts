@@ -77,15 +77,15 @@ describe('ActivityPage', () => {
     expect(fx.target.querySelector('.laps table')).toBeNull();
   });
 
-  it('AC 10: the footer has About; Report only where asked (the edit page has none)', () => {
+  it('AC 10: the footer has About; Report (a hidden button, F-28 RF-1) only where asked (the edit page has none)', () => {
     fx = renderSample('ride-30min', { report: true });
     expect(fx.target.querySelector('footer a[href="/about"]')?.textContent).toBe('About');
-    expect(fx.target.querySelector('footer a[data-report]')?.textContent).toBe('Report');
+    expect(fx.target.querySelector('footer button[data-report]')?.textContent).toBe('Report');
     fx.remove();
     document.head.innerHTML = '';
     // ActivityPage defaults to no Report link (the edit page, question 21).
     fx = renderSample('ride-30min', { report: false });
-    expect(fx.target.querySelector('footer a[data-report]')).toBeNull();
+    expect(fx.target.querySelector('footer button[data-report]')).toBeNull();
     expect(fx.target.querySelector('footer a[href="/about"]')).not.toBeNull();
   });
 

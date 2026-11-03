@@ -439,7 +439,8 @@ func TestCaddy(t *testing.T) {
 			t.Error("the page names the API or the edit entry")
 		}
 		// Every chunk the page reaches loads; none but the edit chunk (loaded
-		// only for #wx-edit, F-19) names the API.
+		// only for #wx-edit, F-19) and the report form (loaded only on a click on
+		// Report, F-28 RF-2) names the API.
 		// shortcut: a static scan, not a browser network log; the H-12 browser check covers the rest.
 		owner := ownerChunks(t, r.web)
 		seen := map[string]bool{}
@@ -473,8 +474,8 @@ func TestCaddy(t *testing.T) {
 	})
 }
 
-// ownerChunks returns the file names (under assets/) of the edit-flow chunks
-// in the Vite manifest; they may name the API (QA-22-r1-4).
+// ownerChunks returns the file names (under assets/) of the edit-flow and
+// report-form chunks in the Vite manifest; they may name the API (QA-22-r1-4).
 func ownerChunks(t *testing.T, web string) map[string]bool {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(web, ".vite", "manifest.json"))
@@ -487,7 +488,7 @@ func ownerChunks(t *testing.T, web string) map[string]bool {
 	}
 	out := map[string]bool{}
 	for k, v := range m {
-		if strings.HasPrefix(k, "src/edit/") {
+		if strings.HasPrefix(k, "src/edit/") || strings.HasPrefix(k, "src/report/") {
 			out[strings.TrimPrefix(v.File, "assets/")] = true
 		}
 	}

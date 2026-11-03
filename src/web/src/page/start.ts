@@ -17,7 +17,7 @@ import RouteMap from '../components/map/RouteMap.svelte';
 import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
-import { enhanceCopyLink, enhanceExpiry, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { enhanceCopyLink, enhanceExpiry, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
@@ -84,6 +84,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   // The stored split before any await (QA-17-r1-2, F-13 D-10): it must not wait for the data file.
   restoreSplit(root, split);
   enhanceCopyLink(root, win.location.origin, win.navigator);
+  enhanceReport(root); // F-28 RF-2: before any await, so a failing data file still leaves Report working
   enhanceExpiry(root, Date.now());
   // One units store per page (D-3): a remembered drop-down choice, else the browser language (D-4,
   // DS-1). The server markup is metric: swapped once the data file is decoded (D-5).

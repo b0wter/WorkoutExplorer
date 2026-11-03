@@ -211,7 +211,7 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expect($('h1')?.textContent).toMatch(/^Ride, /);
     expect(document.title).toBe($('h1')?.textContent);
     expect(field('title').placeholder).toBe($('h1')?.textContent);
-    expect($('footer a[data-report]')).toBeNull();
+    expect($('footer button[data-report]')).toBeNull();
     expect($<HTMLSelectElement>('header #theme-slot select')?.value).toBe('system'); // DS-4
     expect(stubLog.calls).toEqual(['RouteMap', 'ChartStack']);
     expectNoTokenOutsideTheFragment();

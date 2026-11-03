@@ -143,6 +143,27 @@ export function enhanceCopyLink(root: ParentNode, origin: string, nav: { clipboa
   });
 }
 
+/** The Report button (F-28 RF-1, RF-2, RF-5): shown only with JavaScript and a valid public ID,
+ *  taken from the copy link's view path, never `location`. The form is a lazy chunk (ADR-011). */
+export function enhanceReport(root: ParentNode, load = () => import('../report/form')): void {
+  const button = root.querySelector<HTMLButtonElement>('button[data-report]');
+  const id = root.querySelector('a[data-copy-link]')?.getAttribute('href')?.split('/').pop();
+  if (!button || !id || !/^[0-9A-Za-z]{22}$/.test(id)) return;
+  button.hidden = false;
+  button.addEventListener('click', () => {
+    load().then(
+      (m) => m.openReport(button.ownerDocument, id),
+      () => {
+        if (button.nextElementSibling?.className === 'report-fail') return;
+        const p = button.ownerDocument.createElement('span');
+        p.className = 'report-fail';
+        p.textContent = 'The report form could not be loaded. Reload the page and try again.';
+        button.after(p);
+      },
+    );
+  });
+}
+
 const PIN_TEXT = 'Pin map';
 const UNPIN_TEXT = 'Unpin map';
 

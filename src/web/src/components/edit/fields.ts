@@ -3,6 +3,7 @@
 
 import { formatClock, formatDate } from '../../lib/format/dates';
 import type { Settings, SettingsPatch } from '../../lib/owner';
+import { cleanText } from '../../lib/text';
 
 /** What the panel edits. */
 export type Form = Required<SettingsPatch>;
@@ -21,11 +22,7 @@ export function formOf(s: Settings): Form {
   };
 }
 
-/** Unicode control characters (Cc) become spaces, so the rest of the text is never lost (UP-4);
- *  the description keeps its line feeds. */
-export function cleanText(text: string, keepLineFeed: boolean): string {
-  return text.replace(keepLineFeed ? /[\0-\t\v-\x1f\x7f-\x9f]/g : /[\0-\x1f\x7f-\x9f]/g, ' ');
-}
+export { cleanText };
 
 /** At most `max` code points (F-12 O-4); `maxlength` already holds typing to UTF-16 units. */
 const cut = (text: string, max: number): string => [...text].slice(0, max).join('');

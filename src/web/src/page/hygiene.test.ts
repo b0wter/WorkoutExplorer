@@ -36,7 +36,9 @@ describe('template', () => {
   it('marks the map case from Route.Map only and has no pin toggle (D-17, D-19)', () => {
     expect(template).toContain('<div class="page{{if .Route.Map}} has-map{{end}}">');
     expect(template).toMatch(/<div class="layout">[\s\S]*<footer class="foot">[\s\S]*<\/footer>\s*<\/div>/);
-    expect(template).not.toMatch(/map-pin|<button|aria-pressed|pinned/);
+    expect(template).not.toMatch(/map-pin|aria-pressed|pinned/);
+    // The one button: Report, hidden without JavaScript (F-28 RF-1, RF-9).
+    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" data-report hidden>']);
   });
 
   it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6)', () => {

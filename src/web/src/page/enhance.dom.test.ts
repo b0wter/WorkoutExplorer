@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The enhancers (F-13 design D-8, D-14; AC 1 expiry, AC 6 copy link). Synthetic markup only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, viewingUrl } from './enhance';
+import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, enhanceReport, viewingUrl } from './enhance';
 
 const ORIGIN = 'https://example.test';
 let root: HTMLElement;
@@ -114,5 +114,54 @@ describe('copy link (AC 6, D-14)', () => {
     enhanceCopyLink(root, ORIGIN, { clipboard: { writeText } });
     link().click();
     expect(writeText).not.toHaveBeenCalled();
+  });
+});
+
+describe('report button (F-28 RF-1, RF-2, RF-5, RF-9)', () => {
+  const ID = 'AbCdEfGhIjKlMnOpQrStUv';
+  const footer = (href: string): HTMLButtonElement => {
+    markup(href);
+    root.insertAdjacentHTML('beforeend', '<footer class="foot"><a href="/about">About</a> <button type="button" data-report hidden>Report</button></footer>');
+    return root.querySelector('button[data-report]')!;
+  };
+  const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+
+  it('hidden in the markup; shown with a 22-character public ID; the chunk loads only on click', async () => {
+    const button = footer('/w/' + ID);
+    expect(button.hidden).toBe(true); // no JavaScript, no Report control (OQ-103)
+    const openReport = vi.fn();
+    const load = vi.fn(async () => ({ openReport }));
+    enhanceReport(root, load);
+    expect(button.hidden).toBe(false);
+    expect(load).not.toHaveBeenCalled();
+    button.click();
+    await flush();
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(openReport).toHaveBeenCalledWith(document, ID);
+  });
+
+  it.each(['/w/abc123', '/w/' + ID + 'x', '/w/' + ID.slice(1) + '-', ''])('stays hidden for the view path %j', (href) => {
+    const button = footer(href);
+    enhanceReport(root, vi.fn());
+    expect(button.hidden).toBe(true);
+  });
+
+  it('stays hidden without a copy link', () => {
+    const button = footer('/w/' + ID);
+    root.querySelector('a[data-copy-link]')!.remove();
+    enhanceReport(root, vi.fn());
+    expect(button.hidden).toBe(true);
+  });
+
+  it('a failed chunk shows one fixed line beside the button, however often it fails', async () => {
+    const button = footer('/w/' + ID);
+    enhanceReport(root, () => Promise.reject(new Error('offline')));
+    button.click();
+    button.click();
+    await flush();
+    const lines = root.querySelectorAll('.report-fail');
+    expect(lines.length).toBe(1);
+    expect(button.nextElementSibling).toBe(lines[0]);
+    expect(lines[0].textContent).toBe('The report form could not be loaded. Reload the page and try again.');
   });
 });
