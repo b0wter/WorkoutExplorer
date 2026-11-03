@@ -1,10 +1,14 @@
-# Continue here (state of 2 Nov 2026)
+# Continue here (state of 3 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current: F-31 built, waiting on the first deploy; F-24 next
+## Current: F-25 done (waiting on the phone 60 fps check); F-26 next
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>` (HEAD must be the tag's commit).
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). Local commits since v0.1.0 are not pushed or tagged.
+
+3 Nov 2026: F-25 route colouring built (ADR-037), QA r1 ready. Selection while coloured = metric colours with an outline and the rest of the route faded (design C-9); palettes approved by the user. Waiting on: AC 5 60 fps scrub on the phone (`/w/ride-12h?measure`); minors QA-25-r1-1 (static budget figure) and r1-2 (record pace-stop removal in the design), small lane. F-25 lazy chunk is 6 B under its 3,000 B cap. Also done: theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash in deploy/Caddyfile), header controls on their own line below the title on narrow screens, F-19 download toggle hidden until F-24. Phase-2 ideas recorded: DS-5 summary tints, AP-19 range in URL.
+
+Next: F-26 fullscreen map. Open first: OQ-99, do the colour selector and legend stay visible in fullscreen (suggestion: yes). The user will host on a 2 GB VPS, so the 1 GB sizing ideas (configurable memory cap) are dropped.
 
 F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks. Report notifications via HTTP callbacks (Pushover) are a later idea (decision log).
 
