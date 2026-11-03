@@ -245,7 +245,9 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
       eager: true,
     }) as Record<string, string>;
     expect(Object.keys(all).length).toBeGreaterThan(40);
-    for (const [file, code] of Object.entries(all)) {
+    for (const [file, text] of Object.entries(all)) {
+      // F-26 (ADR-038 item 3): the fullscreen map's one entry holds no state and no URL.
+      const code = file === '../components/map/map-view.ts' ? text.replace("history.pushState(null, '')", '') : text;
       expect(code, file).not.toMatch(/sessionStorage|document\.cookie|cookieStore|indexedDB|history\.(push|replace)State/);
       if (file === '../lib/prefs/index.ts') continue;
       // The page glue hands lib/prefs its storage getter, nothing else.

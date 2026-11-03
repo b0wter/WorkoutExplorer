@@ -19,7 +19,7 @@
 // So stopPropagation() in a capture-phase touchmove listener on the outer element keeps a
 // route scrub's moves from MapLibre: it neither pans nor shows its two-finger hint.
 
-import { LngLat, Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl, type StyleSpecification } from 'maplibre-gl';
+import { FullscreenControl, LngLat, Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl, type StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import './map-view.css';
@@ -283,7 +283,10 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   const applyColour = (): void => {
     (map.getSource(COLOUR_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(colour);
   };
+  // F-26 FS-7: leaves fullscreen through the control's button; a no-op until the control exists.
+  let exitFullscreen = swallow;
   const teardown = (): void => {
+    exitFullscreen(); // FS-7: root class, scroll lock, listeners and history entry go before the map
     destroyed = true;
     clearTimeout(attribTimer);
     clearTimeout(rangeTimer);
@@ -316,6 +319,49 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     // touchZoomRotate.enable() again re-enables it.
     map.touchZoomRotate._tapDragZoom.disable();
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+
+    // ---- fullscreen (F-26, ADR-038): MapLibre's control on our container, CSS only -------------
+    // The control owns the state, the button, the resize and the cooperative-gesture switch; Esc
+    // and back press its button, so every exit is the same one (FS-1, FS-7).
+    const fullscreen = new FullscreenControl({ container, pseudo: true });
+    map.addControl(fullscreen, 'top-right'); // its own group, under the zoom buttons (FS-3)
+    const fsButton = container.querySelector<HTMLButtonElement>('button.maplibregl-ctrl-fullscreen');
+    const root = document.documentElement;
+    let fsOn = false;
+    let popped = false;
+    let scrollX0 = 0;
+    let scrollY0 = 0;
+    const press = (): void => fsButton?.click();
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') press();
+    };
+    const onPop = (): void => {
+      popped = true; // our entry is already gone
+      press();
+    };
+    exitFullscreen = (): void => {
+      if (fsOn) press();
+    };
+    fullscreen.on('fullscreenstart', () => {
+      fsOn = true;
+      scrollX0 = window.scrollX;
+      scrollY0 = window.scrollY;
+      root.classList.add('wx-fs');
+      // Inside the button's click (user activation), no URL: the fragment stays (ADR-038 item 3).
+      history.pushState(null, '');
+      document.addEventListener('keydown', onKey);
+      window.addEventListener('popstate', onPop);
+    });
+    fullscreen.on('fullscreenend', () => {
+      fsOn = false;
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('popstate', onPop);
+      root.classList.remove('wx-fs');
+      // FS-4 guard: nothing reflowed, but a browser may still have moved the hidden page.
+      if (window.scrollX !== scrollX0 || window.scrollY !== scrollY0) window.scrollTo(scrollX0, scrollY0);
+      if (!popped) history.back(); // the entry goes exactly once
+      popped = false;
+    });
     const canvas = map.getCanvas();
 
     // ---- cursor marker (D-8, D-11): one DOM Marker, moved in the cursor listener ----------

@@ -96,3 +96,17 @@ div.wx-map {
 .wx-c12 { background: var(--div-5); }
 .wx-c13 { background: var(--div-6); }
 .wx-cn { background: var(--route); }
+
+/* F-26 FS-4 (ADR-038): in fullscreen the page is hidden by inherited visibility, not removed, and
+   does not scroll; only the map's container (MapLibre's pseudo-fullscreen box) shows. The gutter
+   keeps a classic scrollbar's width, so nothing on the page resizes. */
+html.wx-fs {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+html.wx-fs body {
+  visibility: hidden;
+}
+html.wx-fs .maplibregl-pseudo-fullscreen {
+  visibility: visible;
+}

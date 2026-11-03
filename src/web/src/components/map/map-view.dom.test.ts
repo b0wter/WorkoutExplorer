@@ -205,9 +205,12 @@ describe('mountRouteMap: start-up', () => {
     expect(Object.keys((o.style as { sources: object }).sources)).toContain(ROUTE_SOURCE);
     expect(map.rotationDisabled).toBe(true);
     expect(map.tapDragZoomDisabled).toBe(true); // one-finger tap-and-drag zoom off (v1.2)
-    expect(map.controls).toHaveLength(1);
+    expect(map.controls).toHaveLength(2);
     expect(map.controls[0][1]).toBe('top-right');
     expect((map.controls[0][0] as { options: unknown }).options).toEqual({ showCompass: false });
+    // F-26 FS-1: the fullscreen button under the zoom buttons, CSS overlay on our container.
+    expect(map.controls[1][1]).toBe('top-right');
+    expect((map.controls[1][0] as { options: unknown }).options).toEqual({ container: s.container, pseudo: true });
   });
 
   it('a single positioned sample: center and zoom 15, no bounds, no route source', async () => {
@@ -1367,5 +1370,99 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     expect(map.sourceData.filter(([id], k) => k >= count && id === COLOUR_SOURCE)).toEqual([latest]);
     handle.setScheme('dark');
     expect(map.paints.some(([id, prop]) => id === 'wx-colour-line' && prop === 'line-color')).toBe(true);
+  });
+});
+
+describe('fullscreen (F-26, ADR-038)', () => {
+  async function full() {
+    const s = setup();
+    const { handle, map } = await mounted(s);
+    const button = s.container.querySelector<HTMLButtonElement>('button.maplibregl-ctrl-fullscreen')!;
+    const push = vi.spyOn(history, 'pushState').mockImplementation(() => {});
+    const back = vi.spyOn(history, 'back').mockImplementation(() => {});
+    const root = document.documentElement;
+    const isOn = (): boolean => root.classList.contains('wx-fs') && s.container.classList.contains('maplibregl-pseudo-fullscreen');
+    const esc = (key = 'Escape'): void => void document.dispatchEvent(new KeyboardEvent('keydown', { key }));
+    return { s, handle, map, button, push, back, root, isOn, esc };
+  }
+
+  it('the button enters: root class, overlay on our container, one history entry without a URL argument', async () => {
+    const { button, push, back, isOn } = await full();
+    expect(button).not.toBeNull();
+    button.click();
+    expect(isOn()).toBe(true);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push.mock.calls[0]).toEqual([null, '']); // the URL and its fragment stay (ADR-020)
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it('the button exits: classes go, the entry is removed once', async () => {
+    const { root, button, back, isOn } = await full();
+    button.click();
+    button.click();
+    expect(isOn()).toBe(false);
+    expect(root.classList.contains('wx-fs')).toBe(false);
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it('Esc exits and removes the entry once; other keys and Esc outside fullscreen do nothing', async () => {
+    const { button, back, isOn, esc, push } = await full();
+    esc();
+    expect(isOn()).toBe(false);
+    button.click();
+    esc('Enter');
+    expect(isOn()).toBe(true);
+    esc();
+    expect(isOn()).toBe(false);
+    expect(back).toHaveBeenCalledTimes(1);
+    esc(); // the listener is gone with fullscreen
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it('back (popstate) exits without a second history step; the next entry is removed again', async () => {
+    const { button, back, isOn } = await full();
+    button.click();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(isOn()).toBe(false);
+    expect(back).not.toHaveBeenCalled();
+    window.dispatchEvent(new PopStateEvent('popstate')); // outside fullscreen: the page's own back
+    expect(isOn()).toBe(false);
+    button.click();
+    button.click();
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-applies the scroll offset taken on entry only if it moved (FS-4 guard)', async () => {
+    const { button } = await full();
+    const to = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const y = (v: number) => Object.defineProperty(window, 'scrollY', { value: v, configurable: true, writable: true });
+    try {
+      y(500);
+      button.click();
+      button.click();
+      expect(to).not.toHaveBeenCalled();
+      button.click();
+      y(0);
+      button.click();
+      expect(to).toHaveBeenCalledWith(0, 500);
+    } finally {
+      y(0);
+    }
+  });
+
+  it('destroy while fullscreen exits first: classes, entry and listeners go before map.remove()', async () => {
+    const { handle, map, back, root, isOn, esc } = await full();
+    (map.controls[1][0] as { button: HTMLButtonElement }).button.click();
+    const removeBefore = map.removeCount;
+    handle.destroy();
+    expect(isOn()).toBe(false);
+    expect(root.classList.contains('wx-fs')).toBe(false);
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(map.resizes).toBe(2); // exited while the map still existed
+    expect(map.removeCount).toBe(removeBefore + 1);
+    esc();
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(back).toHaveBeenCalledTimes(1);
   });
 });

@@ -4,7 +4,7 @@
 // Mirrors the API of maplibre-gl 6.14.0, and only the members map-view.ts calls: LngLat,
 // Map (constructor, on, once, addControl, getCanvas, getZoom, unproject, setStyle, getLayer, getSource, setPaintProperty, setPixelRatio, remove,
 // touchZoomRotate.disableRotation, touchZoomRotate._tapDragZoom.disable), Marker (constructor, setLngLat, addTo, remove),
-// NavigationControl, setWorkerUrl. No logic beyond recording calls and emitting the events a
+// NavigationControl, FullscreenControl (pseudo path: onAdd, on, the button's click), setWorkerUrl. No logic beyond recording calls and emitting the events a
 // test triggers. unproject is a plain linear map of the point it receives (`recorder.view`,
 // set by the test; v1.3, QA-06-r1-3) and records that point; a test may make one named call
 // throw (`recorder.throwIn`). The fake builds just the DOM a test dispatches events on
@@ -144,6 +144,16 @@ export class FakeMap {
   addControl(control: unknown, position?: string): this {
     maybeThrow('Map.addControl');
     this.controls.push([control, position]);
+    // As MapLibre: the control's element goes into the map's container (one place, not per corner).
+    const el = (control as { onAdd?: (map: FakeMap) => HTMLElement }).onAdd?.(this);
+    if (el) (this.options.container as HTMLElement).appendChild(el);
+    return this;
+  }
+
+  /** Every resize() call (the fullscreen control's toggle). */
+  resizes = 0;
+  resize(): this {
+    this.resizes++;
     return this;
   }
 
@@ -229,6 +239,43 @@ export class FakeMarker {
 
 export class NavigationControl {
   constructor(public readonly options: unknown) {}
+}
+
+/** maplibre-gl 6.14.0 FullscreenControl, its pseudo path only (F-26, ADR-038): onAdd builds one group with
+ *  the button; a click toggles maplibregl-pseudo-fullscreen on the container, swaps the button class,
+ *  fires fullscreenstart / fullscreenend and resizes the map (real: _togglePseudoFullScreen). */
+export class FullscreenControl {
+  readonly listeners = new Map<string, (() => void)[]>();
+  readonly button = document.createElement('button');
+  private on_ = false;
+  private map: FakeMap | null = null;
+
+  constructor(public readonly options: { container?: HTMLElement; pseudo?: boolean }) {}
+
+  onAdd(map: FakeMap): HTMLElement {
+    this.map = map;
+    const group = document.createElement('div');
+    group.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    this.button.className = 'maplibregl-ctrl-fullscreen';
+    this.button.type = 'button';
+    this.button.addEventListener('click', () => {
+      this.options.container?.classList.toggle('maplibregl-pseudo-fullscreen');
+      this.on_ = !this.on_;
+      this.button.classList.toggle('maplibregl-ctrl-shrink');
+      this.button.classList.toggle('maplibregl-ctrl-fullscreen');
+      for (const l of this.listeners.get(this.on_ ? 'fullscreenstart' : 'fullscreenend') ?? []) l();
+      this.map?.resize();
+    });
+    group.appendChild(this.button);
+    return group;
+  }
+
+  on(type: string, listener: () => void): this {
+    const list = this.listeners.get(type) ?? [];
+    list.push(listener);
+    this.listeners.set(type, list);
+    return this;
+  }
 }
 
 export { FakeMap as Map, FakeMarker as Marker };
