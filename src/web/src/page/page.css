@@ -195,7 +195,7 @@ a {
 }
 .head-text {
   flex: 1 1 0;
-  /* The title keeps 160 px beside the stacked controls (240 px beside the row from 560 px); with
+  /* From 560 px the title keeps 240 px beside the controls (below 560 px they always get their own line); with
      less room .head wraps the controls onto their own line. Fixed values, so the wrap is the same
      before and after the bundle (no layout shift). The 100% term keeps it beside the icon. */
   min-width: min(160px, 100% - 44px);
@@ -232,13 +232,14 @@ h1 {
   text-align: center;
   text-decoration: none;
 }
-/* Control group (D-8): Copy link, the units and the theme slot (DS-4); under each other on narrow
-   phones, side by side from 560 px. The slots reserve their size, so a select's arrival moves nothing. */
+/* Control group (D-8): Copy link, the units and the theme slot (DS-4); on their own line below the title
+   on narrow phones, beside it from 560 px when the title keeps its width. The slots reserve their size,
+   so a select's arrival moves nothing. */
 .ctl {
-  flex: none;
+  flex: 1 0 100%;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 8px;
 }
 .units-slot,
@@ -260,8 +261,7 @@ h1 {
     min-width: min(240px, 100% - 44px);
   }
   .ctl {
-    flex-direction: row;
-    align-items: flex-start;
+    flex: none;
   }
 }
 .copy-url {
