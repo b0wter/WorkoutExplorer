@@ -410,6 +410,13 @@ Updated: spec (scope table, SH-8, Should cut order), technical design (Publish 4
 
 Updated: spec (DS-4), F-14 (requirements line, goal, scope, ACs), "Other viewer settings" entry (theme now stored). Technical design unchanged (it does not tie the theme to the system setting).
 
+**Recorded on 3 Nov 2026, split distance** (new request from the user, phase 3; not yet decided in detail):
+
+- **Split distance (AP-20, Could, phase 3):** the splits view (AP-8, F-18) gets a drop-down of preset split distances per sport, with today's default (1 km or 1 mi) preselected. In the user's words: "We currently have splits but no way to choose the 'chunk size'. The defaults are fine but I think users will want to set them explicitly (based on a combobox with preselected distances for each sport)."
+- **Open, with suggestions in the spec's open question "Split distance":** the viewer chooses per visit, no sharer default; not remembered; presets per sport in the current unit system, back to the default on a units switch; no server needed, since splits are computed in the browser (F-18 L-4).
+
+Updated: spec (viewer story 14, scope table, AP-20, Open questions, Roadmap phase 3). No feature file (Later items are not broken down). No MVP feature changes.
+
 The original questions follow for reference.
 
 **Contradictions**
