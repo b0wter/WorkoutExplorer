@@ -1,7 +1,7 @@
 # ADR-034 Docker Compose on two bridge networks, with bind-mounted binaries on one pinned base image
 
-- **Status:** accepted (1 Nov 2026), rev. 3 with the F-31 design v0.4
-- **Date:** 31 Oct 2026; rev. 1 of 1 Nov 2026 (bridge networks instead of the host network); rev. 2 of 1 Nov 2026 (behind the operator's reverse proxy, user decision); rev. 3 of 1 Nov 2026 (self-built image for self-hosters, user decision)
+- **Status:** accepted (1 Nov 2026), rev. 3 with the F-31 design v0.4; rev. 4 with ADR-039
+- **Date:** 31 Oct 2026; rev. 1 of 1 Nov 2026 (bridge networks instead of the host network); rev. 2 of 1 Nov 2026 (behind the operator's reverse proxy, user decision); rev. 3 of 1 Nov 2026 (self-built image for self-hosters, user decision); rev. 4 of 3 Nov 2026 (opt-in egress for report notifications, ADR-039)
 - **History:** [history/ADR-034-compose-bridge-networks-with-mounted-binaries.md](history/ADR-034-compose-bridge-networks-with-mounted-binaries.md)
 - **Features:** F-31 (introduces it); F-27, F-30 (subcommands through `docker compose exec app`)
 - **Supersedes:** "Go binary under systemd" (TD before 31 Oct 2026) and every systemd reference listed in the F-31 design ("Earlier text this design replaces")
@@ -18,7 +18,7 @@ Go and Caddy run in one Docker Compose setup with restart policies, without host
 
 ## Decision
 
-1. **Two bridge networks.** `edge` carries Caddy only, IPv4, fixed subnet, and publishes one plain HTTP port on a host address from the env file, default `127.0.0.1` (never public). `backend` is internal (no route out) and carries Caddy and `app`, with Caddy at a fixed address. `app` publishes no port. No `depends_on`.
+1. **Two bridge networks.** `edge` carries Caddy only, IPv4, fixed subnet, and publishes one plain HTTP port on a host address from the env file, default `127.0.0.1` (never public). `backend` is internal (no route out) and carries Caddy and `app`, with Caddy at a fixed address. `app` publishes no port. No `depends_on`. (rev. 4) Only when report notifications are configured, the override `compose.notify.yaml` adds a third network `egress` (not internal) to `app` alone, for outbound HTTPS to Pushover (ADR-039 item 5); inbound is unchanged.
 2. **A chain of exactly two trusted hops.** Caddy trusts the forwarded client address only from the operator's proxy (`WX_TRUSTED_PROXIES`, default the `edge` gateway, the source of a host-local proxy) and hands Go the resolved client as the only `X-Forwarded-For` entry. Go trusts exactly Caddy's `backend` address (`WORKOUT_EXPLORER_TRUSTED_PROXY`), which the Compose file sets on both sides.
 3. **No Docker daemon settings required.** Clients never reach a published port directly, so the userland proxy and ip6tables do not affect client addresses.
 4. **The operator runs no image of ours; self-hosters build one, nobody publishes one.** On the operator's server both services run one third-party base image (distroless static, Debian), pinned by digest; the Go binary and `web/` (GitHub Release, ADR-035) and Caddy (`deploy/fetch-caddy.sh`, `caddy.env` checksums) are bind-mounted read-only. Self-hosters build one local image from `deploy/Dockerfile` on the same base digest, holding the same files at the same paths, and select it with the override `deploy/compose.build.yaml`; `compose.yaml` stays the one service definition for both. No registry, no CI push; `make ci` builds the image (F-31 DP-16, DP-17).
@@ -27,7 +27,7 @@ Go and Caddy run in one Docker Compose setup with restart policies, without host
 
 ## Consequences
 
-- Go has no outbound route, and nothing outside `backend` reaches port 8080. Caddy's port is reachable from the host only.
+- Go has no outbound route unless notifications are configured (rev. 4, ADR-039), and nothing outside `backend` reaches port 8080. Caddy's port is reachable from the host only.
 - The rate limit is per real client as long as the operator's proxy appends the client's address and `WX_TRUSTED_PROXIES` names only that proxy (runbook, F-31 Verification). Every host process shares the proxy's source address and is trusted with it; the host is the operator's.
 - No TLS keys, certificates or ACME account in our setup; TLS is the operator's proxy's.
 - A deploy is a file copy and a container restart. There are no image tags to roll back to (ADR-019 forbids rollback anyway).
