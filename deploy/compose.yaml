@@ -71,7 +71,7 @@ networks:
   edge: # IPv4 only, fixed subnet so its gateway is known (DP-1)
     driver: bridge
     ipam: {config: [{subnet: 10.250.0.0/29, gateway: 10.250.0.1}]}
-  backend: # no route out; app has no outbound connection
+  backend: # no route out; app has no outbound connection unless compose.notify.yaml adds one (ADR-039)
     driver: bridge
     internal: true
     ipam: {config: [{subnet: 10.250.1.0/29}]}

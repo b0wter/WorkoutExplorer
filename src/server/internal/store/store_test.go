@@ -39,8 +39,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 3 {
-		t.Errorf("user_version = %d, want 3", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 4 {
+		t.Errorf("user_version = %d, want 4", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -75,7 +75,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 3 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 4 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -147,9 +147,46 @@ func TestSchema(t *testing.T) {
 		trows.Scan(&n)
 		tables = append(tables, n)
 	}
-	if len(tables) != 1 || tables[0] != "workouts" {
+	if !reflect.DeepEqual(tables, []string{"workouts", "reports"}) {
 		t.Errorf("tables = %v", tables)
 	}
+	// F-27 R-2, R-3: reason, message and time only; nothing about the request.
+	if got := columnsOf(t, db, "reports"); !reflect.DeepEqual(got, []string{
+		"id INTEGER pk", "workout_id TEXT notnull", "reason TEXT notnull", "message TEXT notnull", "created_at INTEGER notnull",
+	}) {
+		t.Errorf("reports columns %v", got)
+	}
+	var fk string
+	if err := db.db.QueryRowContext(ctx, `SELECT "table" || '.' || "to" || ' ' || on_delete FROM pragma_foreign_key_list('reports')`).Scan(&fk); err != nil || fk != "workouts.id CASCADE" {
+		t.Errorf("reports foreign key %q, %v", fk, err)
+	}
+}
+
+// columnsOf lists a table's columns as "name TYPE[ notnull][ pk]".
+func columnsOf(t *testing.T, db *DB, table string) []string {
+	t.Helper()
+	rows, err := db.db.QueryContext(ctx, "SELECT name, type, \"notnull\", pk FROM pragma_table_info(?)", table)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var name, typ string
+		var notNull, pk int
+		if err := rows.Scan(&name, &typ, &notNull, &pk); err != nil {
+			t.Fatal(err)
+		}
+		c := name + " " + typ
+		if notNull == 1 {
+			c += " notnull"
+		}
+		if pk > 0 {
+			c += " pk"
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 func TestNewerSchemaRefused(t *testing.T) {
@@ -552,7 +589,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 3 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 4 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -624,7 +661,7 @@ func TestMigrateNoPrivate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 3 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 4 {
 		t.Errorf("user_version = %d", v)
 	}
 	if got := dump(db.db, ""); len(want) != 3 || fmt.Sprint(got) != fmt.Sprint(want) {
@@ -733,6 +770,134 @@ func TestDeadlineBoundary(t *testing.T) {
 			if _, ok := live[r.PublicID]; ok != (r.Visibility == lifecycle.Unlisted && r.Live(now)) {
 				t.Errorf("%s at deadline %+v: live public %v", c.name, now.Sub(d), ok)
 			}
+			// F-27 R-5: a report is accepted exactly when the page is live.
+			_, _, found, err := db.AddReport(ctx, r.PublicID, "spam", "", now, 1000)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if found != (r.Visibility == lifecycle.Unlisted && r.Live(now)) {
+				t.Errorf("%s at deadline %+v: report accepted %v", c.name, now.Sub(d), found)
+			}
 		}
+	}
+}
+
+func published(n int) lifecycle.Record {
+	r := record(n)
+	r.Visibility = lifecycle.Unlisted
+	p := r.CreatedAt
+	r.PublishedAt = &p
+	return r
+}
+
+// TestReports (F-27 R-2 to R-4): stored with reason, message and time; at
+// most max per workout; deleted with their row; pruned by filing time.
+func TestReports(t *testing.T) {
+	db, _ := openTemp(t)
+	a, b := published(1), published(2)
+	for _, r := range []lifecycle.Record{a, b} {
+		if err := db.InsertWorkout(ctx, r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	now := a.CreatedAt.Add(time.Hour)
+	for i := 0; i < 3; i++ {
+		id, wid, found, err := db.AddReport(ctx, a.PublicID, "other", "msg", now.Add(time.Duration(i)*time.Second), 3)
+		if err != nil || !found || id != int64(i+1) || wid != a.ID {
+			t.Fatalf("report %d: %d %q %v %v", i, id, wid, found, err)
+		}
+	}
+	if id, wid, found, err := db.AddReport(ctx, a.PublicID, "spam", "fourth", now, 3); err != nil || !found || id != 0 || wid != a.ID {
+		t.Errorf("over the cap: %d %v %v", id, found, err)
+	}
+	if _, _, _, err := db.AddReport(ctx, b.PublicID, "spam", "", now, 3); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := db.ReportCount(ctx, a.ID); n != 3 {
+		t.Errorf("count %d", n)
+	}
+	var reason, msg string
+	var at int64
+	if err := db.db.QueryRowContext(ctx, "SELECT reason, message, created_at FROM reports WHERE id = 1").Scan(&reason, &msg, &at); err != nil || reason != "other" || msg != "msg" || at != now.Unix() {
+		t.Errorf("row %q %q %d %v", reason, msg, at, err)
+	}
+	// The CHECKs back the Go rule up.
+	for _, q := range []string{
+		"INSERT INTO reports (workout_id, reason, created_at) VALUES ('" + a.ID + "', 'rude', 1)",
+		"INSERT INTO reports (workout_id, reason, message, created_at) VALUES ('" + a.ID + "', 'spam', '" + strings.Repeat("ü", 1001) + "', 1)",
+		"INSERT INTO reports (workout_id, reason, created_at) VALUES ('" + strings.Repeat("f", 32) + "', 'spam', 1)",
+	} {
+		if _, err := db.db.ExecContext(ctx, q); err == nil {
+			t.Errorf("accepted: %.80s", q)
+		}
+	}
+	if _, err := db.db.ExecContext(ctx, "INSERT INTO reports (workout_id, reason, message, created_at) VALUES (?, 'spam', ?, 1)", b.ID, strings.Repeat("ü", 1000)); err != nil {
+		t.Errorf("1000 code points refused: %v", err)
+	}
+
+	// Cascade: the row's delete takes its reports, and only its.
+	if _, err := db.DeleteWorkout(ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	if n := scalar[int](t, db, "SELECT count(*) FROM reports WHERE workout_id = '"+a.ID+"'"); n != 0 {
+		t.Errorf("%d reports outlived their workout", n)
+	}
+	if n := scalar[int](t, db, "SELECT count(*) FROM reports"); n != 2 {
+		t.Errorf("%d reports left, want b's 2", n)
+	}
+
+	// Pruning: at or before the cut-off.
+	if n, err := db.DeleteReportsFiledBy(ctx, time.Unix(0, 0)); err != nil || n != 0 {
+		t.Errorf("pruned %d before 1: %v", n, err)
+	}
+	if n, err := db.DeleteReportsFiledBy(ctx, time.Unix(1, 0)); err != nil || n != 1 {
+		t.Errorf("pruned %d at 1: %v", n, err)
+	}
+	if n, err := db.DeleteReportsFiledBy(ctx, now.Add(-time.Second)); err != nil || n != 0 {
+		t.Errorf("pruned %d younger: %v", n, err)
+	}
+	if n, err := db.DeleteReportsFiledBy(ctx, now); err != nil || n != 1 {
+		t.Errorf("pruned %d at now: %v", n, err)
+	}
+}
+
+// TestOpenExisting (F-27 R-8): never creates a file, never migrates, and
+// refuses any schema version but the binary's.
+func TestOpenExisting(t *testing.T) {
+	dir := t.TempDir()
+	missing := filepath.Join(dir, "workouts.db")
+	if _, err := OpenExisting(ctx, missing); err != ErrNoDatabase {
+		t.Errorf("missing: %v", err)
+	}
+	if _, err := os.Stat(missing); !os.IsNotExist(err) {
+		t.Errorf("created: %v", err)
+	}
+	if _, err := OpenExisting(ctx, dir); err != ErrNoDatabase {
+		t.Errorf("directory: %v", err)
+	}
+	db, path := openTemp(t)
+	db.Close()
+	ok, err := OpenExisting(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ok.Close()
+	for _, v := range []int{3, 5} {
+		raw, err := sql.Open("sqlite", "file:"+path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
+		raw.Close()
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (4)", v)) {
+			t.Errorf("version %d: %v", v, err)
+		}
+	}
+	raw, _ := sql.Open("sqlite", "file:"+path)
+	defer raw.Close()
+	var n int
+	raw.QueryRow("SELECT count(*) FROM sqlite_master WHERE name = 'reports'").Scan(&n)
+	if n != 1 {
+		t.Error("schema changed")
 	}
 }

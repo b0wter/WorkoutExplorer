@@ -128,6 +128,10 @@ var (
 	dummyHash       = HashToken("11111111111111111111111111111111")
 )
 
+// ValidPublicID reports whether s has the form of a public ID (22 base62
+// characters); it says nothing about whether the workout exists.
+func ValidPublicID(s string) bool { return isBase62Id(s) }
+
 func isBase62Id(s string) bool {
 	if len(s) != base62Width {
 		return false
@@ -364,5 +368,19 @@ func (s *Service) DeleteByOwner(ctx context.Context, publicID, token string) err
 	}
 	s.d.Logger.Info("workout deleted", "id", rec.ID, "by", "owner")
 	s.checkpoint(context.WithoutCancel(ctx))
+	return nil
+}
+
+// DeleteByOperator deletes the workout of this row in any state through
+// Delete, under the O-7 lock, then checkpoints (F-27 R-8). A failed
+// checkpoint is logged and not an error.
+func (s *Service) DeleteByOperator(ctx context.Context, r Record) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.Delete(ctx, r.ID, r.PublicID); err != nil {
+		return err
+	}
+	s.d.Logger.Info("workout deleted", "id", r.ID, "by", "operator")
+	s.checkpoint(ctx)
 	return nil
 }

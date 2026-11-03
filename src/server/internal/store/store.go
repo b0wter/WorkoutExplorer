@@ -33,6 +33,23 @@ func Open(ctx context.Context, path string) (*DB, error) {
 	if err := f.Close(); err != nil {
 		return nil, fmt.Errorf("store: %w", err)
 	}
+	return open(ctx, path, migrate)
+}
+
+// ErrNoDatabase: OpenExisting found no file at the path.
+var ErrNoDatabase = errors.New("store: no database file")
+
+// OpenExisting opens the database at path for an operator command (F-27
+// R-8): the file must exist (it is never created) and its schema version
+// must be this binary's; nothing is migrated, since serve migrates at start.
+func OpenExisting(ctx context.Context, path string) (*DB, error) {
+	if st, err := os.Stat(path); err != nil || !st.Mode().IsRegular() {
+		return nil, ErrNoDatabase
+	}
+	return open(ctx, path, sameVersion)
+}
+
+func open(ctx context.Context, path string, schema func(context.Context, *sql.DB) error) (*DB, error) {
 
 	u := url.URL{Scheme: "file", Opaque: (&url.URL{Path: path}).EscapedPath()}
 	q := url.Values{}
@@ -58,7 +75,7 @@ func Open(ctx context.Context, path string) (*DB, error) {
 	if !strings.EqualFold(mode, "wal") {
 		return fail(fmt.Errorf("store: journal mode is %q, want wal", mode))
 	}
-	if err := migrate(ctx, db); err != nil {
+	if err := schema(ctx, db); err != nil {
 		return fail(err)
 	}
 	return &DB{db}, nil

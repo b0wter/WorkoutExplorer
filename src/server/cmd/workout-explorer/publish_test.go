@@ -322,6 +322,7 @@ func TestMigrationDropsPrivate(t *testing.T) {
 		}
 		v2 = append(v2, string(b))
 	}
+	a.sql("DROP TABLE reports") // schema v4 (F-27)
 	a.sql("DROP INDEX workouts_expires_at")
 	a.sql("ALTER TABLE workouts RENAME TO v3")
 	a.sql(strings.Join(v2, "\n"))

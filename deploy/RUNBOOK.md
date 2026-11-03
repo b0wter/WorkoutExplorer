@@ -19,7 +19,7 @@ Design background: `architect/F-31-server-deploy-and-monitoring.md` (DP-1 to DP-
 ```
 browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy, in Docker)
                                                    |-- /w/..., /assets/...: files from disk
-                                                   '-- /api/*  --> Go server (in Docker, no internet)
+                                                   '-- /api/*  --> Go server (in Docker, no internet unless notifications are on, section 4a)
 ```
 
 - Your reverse proxy (Caddy, nginx, Traefik, ...) handles the domain and TLS. This project does not get certificates and opens no public port.
@@ -35,6 +35,7 @@ browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy, in Docker
 | Disk | About 3 GB for the image and build cache, plus the storage cap you set (default 1000 MB), plus Docker logs (at most 5 x 10 MB per container). Local disk, one file system |
 | Docker | Docker Engine with the Compose plugin, **Compose 2.24 or newer** (`docker compose version`). Default daemon settings |
 | Git | To clone the repository |
+| `sqlite3` | Only to read reports from visitors (section 10). Debian: `apt install sqlite3` |
 | Domain and proxy | A domain name pointing at your host, and a reverse proxy **on the same host** that terminates TLS (section 5) |
 | Port | `8088/tcp` free on the host loopback (or another port, see `WX_LISTEN`) |
 | Location | For GDPR purposes, host in the EU if your visitors are there. No analytics or third-party trackers are used. The map tiles come from `tiles.openfreemap.org` (the visitor's browser fetches them) |
@@ -96,11 +97,39 @@ Unset or empty keys use the default. An invalid value stops the server at start 
 | `WX_WEB` | `/srv/workout-explorer/web` | Web files. **Leave as is when self-hosting**; they come from the image |
 | `WX_LISTEN` | `127.0.0.1:8088` | Where Caddy's HTTP port is published on the host. Your proxy forwards here. **Never a public address**: Docker publishes ports around the host firewall, and this port is plain HTTP. Change it only for a proxy in a container (section 5) |
 | `WX_TRUSTED_PROXIES` | `10.250.0.1` (when unset) | Source address(es) of your reverse proxy as Caddy sees them. Separate several by spaces, not commas. See section 5 |
-| `COMPOSE_FILE` | unset | Self-hosters: `compose.yaml:compose.build.yaml` |
+| `WORKOUT_EXPLORER_PUSHOVER_TOKEN` | unset (off) | Pushover application token for report notifications, section 4a. **A secret** |
+| `WORKOUT_EXPLORER_PUSHOVER_USER` | unset (off) | Pushover user key, section 4a. **A secret** |
+| `COMPOSE_FILE` | unset | Self-hosters: `compose.yaml:compose.build.yaml`; with notifications add `:compose.notify.yaml` (section 4a) |
 
 `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`.
 
-The file holds no secret today. Still, do not commit it.
+With notifications on, the file holds two secrets. Keep it mode `0600` and never commit it.
+
+## 4a. Notifications (optional)
+
+When a visitor reports a workout, the server can send you a push message through [Pushover](https://pushover.net). Off by default. The message is only `New report #<number>: <reason>` (title "Workout Explorer"), never the link, the workout's ID or title, or the visitor's text. Pushover is a third party outside the EU, and its messages pass through Apple's or Google's push services. At most 10 messages per hour are sent; the rest are counted into the next one ("(+3 more)"). A message can be lost (Pushover down, restart); the reports table is the record.
+
+Turning it on needs **both** steps; one without the other does not work:
+
+1. In Pushover, create an application and note its API token; your user key is on your Pushover dashboard. Both are 30 letters and digits. In `.env`, remove the `#` from the two lines and fill them in:
+
+   ```
+   WORKOUT_EXPLORER_PUSHOVER_TOKEN=<application token>
+   WORKOUT_EXPLORER_PUSHOVER_USER=<user key>
+   ```
+
+2. Give the server a route out by adding `compose.notify.yaml` to `COMPOSE_FILE` in `.env`:
+
+   ```
+   COMPOSE_FILE=compose.yaml:compose.build.yaml:compose.notify.yaml   # self-hosters
+   COMPOSE_FILE=compose.yaml:compose.notify.yaml                      # operator (section 13); release users (section 6a) copy compose.notify.yaml next to compose.yaml
+   ```
+
+Then `docker compose up -d`. Check: `docker compose logs app | grep 'server started'` shows `"notifications":true`. Report one of your own published workouts from its page; a message arrives within seconds.
+
+Without the override the server has no internet access at all. With it, the server can reach any host on the internet, not only Pushover (Docker cannot filter by name); that is the price of turning notifications on. Only one of the two settings, or a value that is not 30 letters and digits, stops the server at start (exit code 2, the message names the setting but never prints its value).
+
+To turn it off: comment out both settings, remove `:compose.notify.yaml` from `COMPOSE_FILE`, `docker compose up -d`.
 
 ## 5. Reverse proxy
 
@@ -279,7 +308,33 @@ sudo rm -rf /srv/workouts
 docker rmi workout-explorer:local
 ```
 
-Delete one workout by hand: the `delete` command is planned (F-27, not yet built). Reports from users (INF-2, INF-3) will be read with `sqlite3` on `workouts.db` in the data directory; that command and the report table do not exist yet either.
+### Reports from visitors
+
+Visitors can report a published workout (reason and an optional message, no contact details, no address). A report is deleted with its workout, and at the latest 30 days after it was filed. There is no admin page: read them with `sqlite3` on the host, **read-only and as the server's user ID 10001**:
+
+```sh
+sudo -u '#10001' sqlite3 -readonly -line /srv/workouts/workouts.db "
+  SELECT r.id AS report, datetime(r.created_at, 'unixepoch') AS filed_utc, r.reason, r.message,
+         w.public_id, w.visibility AS state, datetime(w.expires_at, 'unixepoch') AS expires_utc, w.title
+  FROM reports r JOIN workouts w ON w.id = r.workout_id
+  ORDER BY r.id;"
+```
+
+- Never run it as root: a database side file created by root stops the server from opening its database.
+- **Never change anything with `sqlite3`** (no `DELETE`, no `UPDATE`). It knows nothing of the workout's files. Delete a workout only with the command below.
+- The page of a reported workout is `https://<your site>/w/<public_id>`.
+
+### Delete one workout
+
+Any workout (published, draft or past its deadline), with its reports and files, exactly like the owner's delete:
+
+```sh
+docker compose exec app /srv/workout-explorer/bin/workout-explorer delete -data /srv/workouts <public_id>
+```
+
+It prints the workout's ID, state, created and expiry times, title and number of reports, and asks `Delete? [y/N]`. Add `-y` to skip the question (needed when there is no terminal, for example `docker compose exec -T` or a script). While `app` is stopped use `docker compose run --rm app delete -data /srv/workouts <public_id>` instead. Use your `WX_DATA` path if you changed it.
+
+The page is gone as soon as the command finishes (nothing is cached). Exit status: `0` deleted; `1` not deleted or not completely (the message says which; a leftover public folder goes within about a minute, a private folder at the next start of `app`), also when you answered no; `2` wrong usage or a malformed ID; `3` no workout with this ID (also when it was already deleted). The storage total shown to uploads frees the space only at the next restart of `app`; restart it if uploads are refused as full.
 
 ## 11. Logs
 
@@ -311,6 +366,8 @@ docker compose logs --tail 100 caddy
 | Build fails with "exec format error" or on arm64 | Only linux/amd64 is supported |
 | Build is killed (out of memory) | Stop `app` while building, or build elsewhere (section 8) |
 | Styles missing on old workouts after an update | See section 8: regenerate is not yet available; those workouts expire |
+| No notification; `docker compose logs app` shows `"notification failed","class":"network"` | `compose.notify.yaml` is missing from `COMPOSE_FILE`, or the host has no internet route (section 4a). `"status":400` means a wrong token or user key, `"status":429` Pushover's monthly quota |
+| `delete` says "database schema N is not this binary's" | `app` has not yet run with this version. Start it once (`docker compose up -d`), then delete |
 
 ## 13. Operator deploy (for the project operator only)
 
@@ -322,7 +379,7 @@ Shape: `deploy.sh` downloads the GitHub Release of a version tag (binary and web
 
 - EU data centre, **linux/amd64**, at least 2 GB RAM, Debian stable, local disk. About 600 MB of RAM stays free for the OS, Docker and Caddy next to the 1200 MB cap of the app.
 - **Provider backups and snapshots off.** No backup job, no off-server copy of `/srv/workouts`.
-- SSH by key only; unattended security upgrades on (`unattended-upgrades`). Packages: `curl`, `tar`.
+- SSH by key only; unattended security upgrades on (`unattended-upgrades`). Packages: `curl`, `tar`, `sqlite3` (reports, section 10).
 - Firewall: this setup opens nothing. Docker's own rules bypass a host firewall, which is why `WX_LISTEN` stays on loopback.
 - Docker Engine and the Compose plugin from Docker's Debian repository, default daemon settings. Docker starts at boot; there is no unit of ours.
 
@@ -337,7 +394,7 @@ install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public
 install -m 0600 -o deploy -g deploy /dev/null /srv/workout-explorer/.env
 ```
 
-Copy `deploy/example.env` to `/srv/workout-explorer/.env` and edit it as in section 4, but **do not** enable `COMPOSE_FILE` (the operator path has no build override). The file must stay readable by `deploy` (`0600`). Your reverse proxy: section 5.
+Copy `deploy/example.env` to `/srv/workout-explorer/.env` and edit it as in section 4, but **do not** enable the build override (the operator path has none); with notifications set `COMPOSE_FILE=compose.yaml:compose.notify.yaml` (section 4a; `deploy.sh` copies the file). The file must stay readable by `deploy` (`0600`). Your reverse proxy: section 5.
 
 ### 13.3 First and later deploys
 
@@ -366,8 +423,8 @@ API downtime is the `app` restart. A new Caddy binary, a changed `compose.yaml`,
 ### 13.4 Day to day
 
 - Stop: `docker compose stop app` stays stopped across reboots. Start: `docker compose start app`. Run `docker compose` in `/srv/workout-explorer`.
-- Delete a workout (once F-27 adds the subcommand): `docker compose exec app /srv/workout-explorer/bin/workout-explorer delete <public_id>`.
-- Reports: `sqlite3` on the database in `/srv/workouts` (INF-2, INF-3).
+- Delete a workout: `docker compose exec app /srv/workout-explorer/bin/workout-explorer delete -data /srv/workouts <public_id>` (section 10, "Delete one workout").
+- Reports: the read-only `sqlite3` query of section 10, as user ID 10001 (INF-2, INF-3). With notifications on (section 4a) each new report also arrives as a Pushover message with its number.
 - Uptime monitor (yours, later): check `/api/health` and `/`, never a workout page.
 - Links go to friends only after F-29 (privacy policy).
 

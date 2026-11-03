@@ -1,0 +1,15 @@
+# Report notifications (F-27 R-11, ADR-039 item 5, ADR-034 rev. 4): gives `app` alone a
+# route out, for HTTPS to api.pushover.net. Select it together with the two
+# WORKOUT_EXPLORER_PUSHOVER_* settings in .env, by adding it to COMPOSE_FILE:
+#   operator:    COMPOSE_FILE=compose.yaml:compose.notify.yaml
+#   self-hoster: COMPOSE_FILE=compose.yaml:compose.build.yaml:compose.notify.yaml
+# Without this file `app` has no outbound connection. Inbound is unchanged: no port is published.
+services:
+  app:
+    networks:
+      egress: {}
+
+networks:
+  egress: # not internal; IPv4, fixed subnet; app is its only member
+    driver: bridge
+    ipam: {config: [{subnet: 10.250.2.0/29}]}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/ingest"
+	"workout-explorer/internal/pushover"
 )
 
 // The settings read from the environment (Technical Design, Conventions:
@@ -22,6 +23,8 @@ const (
 	envTrustedProxy         = "WORKOUT_EXPLORER_TRUSTED_PROXY"
 	envUploadsIPv4          = "WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV4"
 	envUploadsIPv6          = "WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV6"
+	envPushoverToken        = "WORKOUT_EXPLORER_PUSHOVER_TOKEN"
+	envPushoverUser         = "WORKOUT_EXPLORER_PUSHOVER_USER"
 )
 
 const (
@@ -146,6 +149,27 @@ func uploadsPerHour(getenv func(string) string, name string, bad error) (int, er
 	return n, nil
 }
 
+// pushoverKeys reads the two notification secrets (ADR-039 item 1): both
+// unset or empty is off ("", ""); one without the other, or a value that is
+// not 30 ASCII letters and digits, is an error naming the variable, never
+// its value.
+func pushoverKeys(getenv func(string) string) (token, user string, err error) {
+	token, user = getenv(envPushoverToken), getenv(envPushoverUser)
+	switch {
+	case token == "" && user == "":
+		return "", "", nil
+	case token == "":
+		return "", "", errors.New(envPushoverToken + " must be set when " + envPushoverUser + " is set")
+	case user == "":
+		return "", "", errors.New(envPushoverUser + " must be set when " + envPushoverToken + " is set")
+	case !pushover.ValidKey(token):
+		return "", "", errors.New(envPushoverToken + " must be 30 letters and digits (a Pushover application token)")
+	case !pushover.ValidKey(user):
+		return "", "", errors.New(envPushoverUser + " must be 30 letters and digits (a Pushover user key)")
+	}
+	return token, user, nil
+}
+
 // trustedProxy reads Caddy's address (ADR-021 rev. 6 item 6): unset or empty
 // is the zero Addr (loopback only); otherwise exactly one IP address, no zone,
 // no prefix. IPv4-mapped IPv6 is unmapped to match the peer comparison.
@@ -192,7 +216,12 @@ func readSettings(getenv func(string) string) (settings, error) {
 	if err != nil {
 		return settings{}, err
 	}
-	return settings{maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6}, nil
+	pt, pu, err := pushoverKeys(getenv)
+	if err != nil {
+		return settings{}, err
+	}
+	return settings{maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
+		pushoverToken: pt, pushoverUser: pu}, nil
 }
 
 // newParser is the one place cmd builds an ingest.Parser: the default limits

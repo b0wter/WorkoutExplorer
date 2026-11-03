@@ -52,6 +52,7 @@ put "$tmp/a/web/index.html" web/index.html 644 # the page template Go reads at p
 put "$tmp/a/workout-explorer" bin/workout-explorer 755
 [ "$caddy_new" = "$caddy_old" ] || put "$tmp/caddy" bin/caddy 755
 put deploy/compose.yaml compose.yaml 644
+put deploy/compose.notify.yaml compose.notify.yaml 644 # used only when .env's COMPOSE_FILE names it (F-27)
 [ "$conf_new" = "$conf_old" ] || put deploy/Caddyfile conf/Caddyfile 644
 
 # 3. Start what is missing or changed, restart app, wait for the new version.

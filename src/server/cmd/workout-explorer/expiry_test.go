@@ -44,8 +44,8 @@ func (a *app) setTimes(pub string, created, expires, publishedAfter int64) {
 // database and every entry of the data directory is either classified and
 // checked for the workout, or reported. The database files are also searched
 // byte for byte for id, pub and the workout's texts in more, so a deleted row
-// left in a free page or the WAL is found (QA-21-r1-1). F-27 adds reports,
-// phase 2 pins.
+// left in a free page or the WAL is found (QA-21-r1-1). Reports (F-27) are
+// checked; phase 2 adds pins.
 func dataLeft(t *testing.T, dir, id, pub string, more ...string) []string {
 	t.Helper()
 	var left []string
@@ -88,6 +88,14 @@ func dataLeft(t *testing.T, dir, id, pub string, more ...string) []string {
 			}
 			if c > 0 {
 				left = append(left, "table workouts")
+			}
+		case "reports": // F-27: deleted with the row (ON DELETE CASCADE)
+			var c int
+			if err := db.QueryRow("SELECT count(*) FROM reports WHERE workout_id = ?", id).Scan(&c); err != nil {
+				t.Fatal(err)
+			}
+			if c > 0 {
+				left = append(left, "table reports")
 			}
 		default:
 			left = append(left, "unclassified table "+n)

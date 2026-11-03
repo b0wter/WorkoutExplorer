@@ -82,3 +82,19 @@ func migrate(ctx context.Context, db *sql.DB) error {
 	}
 	return nil
 }
+
+// sameVersion refuses a database whose schema version is not this binary's.
+func sameVersion(ctx context.Context, db *sql.DB) error {
+	ms, err := migrations()
+	if err != nil {
+		return err
+	}
+	var cur int
+	if err := db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&cur); err != nil {
+		return fmt.Errorf("store: read schema version: %w", err)
+	}
+	if cur != len(ms) {
+		return fmt.Errorf("store: database schema %d is not this binary's (%d); start serve with this binary first", cur, len(ms))
+	}
+	return nil
+}

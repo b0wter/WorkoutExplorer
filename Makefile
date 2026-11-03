@@ -115,7 +115,7 @@ docker-check:
 	grep -q "^FROM node:$$(cut -d. -f1 $(WEB_DIR)/.nvmrc)-" deploy/Dockerfile || { echo "docker-check: Dockerfile Node builder differs from $(WEB_DIR)/.nvmrc"; exit 1; }; \
 	made=; [ -e deploy/.env ] || { cp deploy/example.env deploy/.env; made=1; }; \
 	trap '[ -z "$$made" ] || rm -f deploy/.env; docker rm -f wx-ci >/dev/null 2>&1; docker rmi -f $(DOCKER_IMAGE) >/dev/null 2>&1' EXIT; \
-	docker compose -f deploy/compose.yaml config -q && $(COMPOSE_CI) config -q || exit 1; \
+	docker compose -f deploy/compose.yaml config -q && $(COMPOSE_CI) config -q && $(COMPOSE_CI) -f deploy/compose.notify.yaml config -q || exit 1; \
 	docker build --no-cache -f deploy/Dockerfile -t $(DOCKER_IMAGE) . || exit 1; \
 	ctx=$$(mktemp -d); mkdir -p $$ctx/src/web $$ctx/src/server/x/testdata; touch $$ctx/src/web/P.FIT $$ctx/src/server/p.Bin $$ctx/src/server/p.br $$ctx/src/web/.env.local $$ctx/src/server/x/testdata/t; \
 	printf 'FROM scratch\nCOPY . /c\n' > $$ctx/Dockerfile; cp deploy/Dockerfile.dockerignore $$ctx/Dockerfile.dockerignore; \

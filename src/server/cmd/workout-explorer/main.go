@@ -4,6 +4,7 @@
 //
 //	workout-explorer serve -data <dir> -web <dir> [-addr 127.0.0.1:8080]
 //	workout-explorer parse [-datafile <path>] [-original <path>] <file.fit>
+//	workout-explorer delete -data <dir> [-y] <public_id>
 //
 // main only parses flags, builds the logger and handler, and runs the
 // server; no logic beyond wiring (Technical Design, Code structure:
@@ -41,6 +42,7 @@ const usage = `usage: workout-explorer <command> [flags]
 commands:
   serve    run the HTTP API server (-data <dir> and -web <dir> are required)
   parse    print the normalised workout of a FIT file, or why it is rejected (diagnostic)
+  delete   delete one workout, its reports and files (operator; -data <dir> [-y] <public_id>)
 `
 
 func main() {
@@ -58,6 +60,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return serve(args[1:], stderr)
 	case "parse":
 		return parse(args[1:], stdout, stderr)
+	case "delete":
+		return deleteCmd(args[1:], os.Stdin, isTerminal(os.Stdin), stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown command %q\n\n%s", args[0], usage)
 		return 2
@@ -148,7 +152,8 @@ func serve(args []string, stderr io.Writer) int {
 
 // startedFields are the limits logged on "server started" (ADR-021 rev. 6 item 7).
 func startedFields(cfg settings) []any {
-	return []any{"max_concurrent_uploads", cfg.maxConcurrentUploads, "parse_timeout_s", int(cfg.parseTimeout / time.Second), "uploads_per_hour_ipv4", cfg.uploadsIPv4, "uploads_per_hour_ipv6", cfg.uploadsIPv6}
+	return []any{"max_concurrent_uploads", cfg.maxConcurrentUploads, "parse_timeout_s", int(cfg.parseTimeout / time.Second), "uploads_per_hour_ipv4", cfg.uploadsIPv4, "uploads_per_hour_ipv6", cfg.uploadsIPv6,
+		"notifications", cfg.pushoverToken != ""}
 }
 
 // runServer serves on ln until ctx is cancelled, then shuts down with a

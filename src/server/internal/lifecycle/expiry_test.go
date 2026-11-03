@@ -194,8 +194,8 @@ func TestExpire(t *testing.T) {
 	}
 }
 
-// TestExpireCheckpoint (QA-21-r1-1): a pass that deleted a row checkpoints the
-// WAL, an idle pass does not; a failed checkpoint is logged, fails nothing,
+// TestExpireCheckpoint (QA-21-r1-1, F-27 R-10): every pass checkpoints the
+// WAL, an idle one too; a failed checkpoint is logged, fails nothing,
 // and the next pass retries it. The owner's delete checkpoints too.
 func TestExpireCheckpoint(t *testing.T) {
 	r, f, l := newRepo(), newFiles(), &lines{}
@@ -213,20 +213,20 @@ func TestExpireCheckpoint(t *testing.T) {
 			t.Fatalf("checkpoints %d, want %d", r.checkpoints, wantCheckpoints)
 		}
 	}
-	pass(0)
+	pass(1) // every pass, also with nothing due (F-27 R-10)
 	due("a")
-	pass(1)
-	pass(1)
+	pass(2)
+	pass(3)
 	due("b")
 	r.checkpointErr = errors.New("busy")
-	pass(2)
+	pass(4)
 	if len(r.rows) != 0 || !strings.Contains(l.buf.String(), `"msg":"checkpoint failed"`) {
 		t.Errorf("rows %v log %s", r.rows, l.buf.String())
 	}
-	pass(3) // retried with nothing due
+	pass(5) // retried with nothing due
 	r.checkpointErr = nil
-	pass(4)
-	pass(4)
+	pass(6)
+	pass(7)
 
 	s2, r2, _, _, c, _ := owned(t, &fakeHook{})
 	r2.checkpointErr = errors.New("busy")

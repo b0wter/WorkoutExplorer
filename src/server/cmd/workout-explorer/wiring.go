@@ -16,6 +16,8 @@ import (
 	"workout-explorer/internal/lifecycle"
 	"workout-explorer/internal/privatedir"
 	"workout-explorer/internal/publish"
+	"workout-explorer/internal/pushover"
+	"workout-explorer/internal/reports"
 	"workout-explorer/internal/store"
 )
 
@@ -29,6 +31,9 @@ type settings struct {
 	trustedProxy         netip.Addr    // Caddy's address (F-31 DP-1a); zero: loopback only
 	uploadsIPv4          int           // uploads per hour per IPv4 address; 0: 60 (tests)
 	uploadsIPv6          int           // per IPv6 /64; 0: 60 (tests)
+	pushoverToken        string        // both set: report notifications on (ADR-039); secrets, never logged or printed
+	pushoverUser         string
+	pushoverEndpoint     string // "": pushover.Endpoint; tests point it at a fake
 	// onParser is called with the parser newApp built; nil in production.
 	onParser func(*ingest.Parser)
 	// onService is called with the service and the storage total newApp
@@ -101,12 +106,28 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	if err := svc.Recover(ctx); err != nil {
 		return fail(err)
 	}
+	// Reports (F-27): notifications only when both secrets are set.
+	var notifier reports.Notifier
+	notifyCtx, stopNotify := context.WithCancel(context.WithoutCancel(ctx))
+	if s.pushoverToken != "" {
+		n := pushover.New(s.pushoverToken, s.pushoverUser, s.pushoverEndpoint, logger)
+		go n.Run(notifyCtx) // pending notifications are dropped at shutdown (ADR-039 item 3)
+		notifier = n
+	}
+	reps := reports.New(db, notifier, nil, logger)
+	// expire is one pass: reports past R-3's ceiling, then the workouts,
+	// whose checkpoint also takes the pruned reports out of the WAL.
+	expire := func(ctx context.Context) {
+		reps.Prune(ctx)
+		_ = svc.Expire(ctx) // Expire logs; the next tick retries
+	}
 	// Before the total is measured and the listener opens (F-21 AC 6). A
 	// failure is logged by Expire and retried by the timer: the owner API
 	// answers a due row as not found, and the sweep removes its public folder.
-	_ = svc.Expire(ctx)
+	expire(ctx)
 	used, err := privatedir.Usage(dataDir)
 	if err != nil {
+		stopNotify()
 		return fail(fmt.Errorf("storage usage: %w", err))
 	}
 	storage.Add(used)
@@ -122,6 +143,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		Version:              version,
 		Uploads:              uploads,
 		Owner:                svc,
+		Reports:              reps,
 		Storage:              storage,
 		Logger:               logger,
 		MaxConcurrentUploads: s.maxConcurrentUploads,
@@ -148,13 +170,13 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 			case <-ctx.Done():
 				return
 			case <-t.C:
-				_ = svc.Expire(context.WithoutCancel(ctx)) // Expire logs; the next tick retries
+				expire(context.WithoutCancel(ctx))
 			}
 		}
 	}()
 	var once sync.Once
 	closeApp := func() error {
-		once.Do(func() { close(done) })
+		once.Do(func() { close(done); stopNotify() })
 		wg.Wait() // a running pass finishes before the database closes
 		return db.Close()
 	}

@@ -297,6 +297,7 @@ func (s *Service) SweepPublic(ctx context.Context) (int, int64, error) {
 // Expire is the expiry pass (F-21 X-4): every row past its deadline (drafts
 // after 48 h too) is deleted through Delete, then the public sweep runs and
 // its freed bytes are released, then the WAL is checkpointed if a row went.
+// The WAL is checkpointed on every pass (F-27 R-10).
 // Each step holds the O-7 lock, so no owner write can revive a due row (X-3).
 // A failed row or list is logged and the pass goes on; the next pass
 // retries. The returned error joins every failure.
@@ -331,6 +332,9 @@ func (s *Service) Expire(ctx context.Context) error {
 			s.d.Logger.Info("public sweep", "removed", n)
 		}
 	}
+	// Every pass checkpoints, so a delete by another process (F-27's delete
+	// command, F-30) leaves the WAL within one pass (F-27 R-10).
+	s.uncheckpointed.Store(true)
 	s.checkpoint(ctx)
 	if len(errs) > 0 {
 		return fmt.Errorf("lifecycle: expire: %w", errors.Join(errs...))
