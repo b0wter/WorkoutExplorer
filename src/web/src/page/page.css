@@ -195,7 +195,10 @@ a {
 }
 .head-text {
   flex: 1 1 0;
-  min-width: 0;
+  /* The title keeps 160 px beside the stacked controls (240 px beside the row from 560 px); with
+     less room .head wraps the controls onto their own line. Fixed values, so the wrap is the same
+     before and after the bundle (no layout shift). The 100% term keeps it beside the icon. */
+  min-width: min(160px, 100% - 44px);
 }
 h1 {
   margin: 0;
@@ -253,6 +256,9 @@ h1 {
   font-size: 14px;
 }
 @media (min-width: 560px) {
+  .head-text {
+    min-width: min(240px, 100% - 44px);
+  }
   .ctl {
     flex-direction: row;
     align-items: flex-start;

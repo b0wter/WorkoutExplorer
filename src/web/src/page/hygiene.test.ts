@@ -117,6 +117,13 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(rule('.copy-url')).toContain('flex: 1 0 100%');
   });
 
+  it('the header controls wrap below the title at fixed widths, so the title never gets squeezed', () => {
+    expect(rule('.head-text')).toContain('min-width: min(160px, 100% - 44px)');
+    expect(css).toMatch(/@media \(min-width: 560px\) \{\s*\.head-text \{\s*min-width: min\(240px, 100% - 44px\);/);
+    expect(rule('.units-slot,\n.theme-slot')).toMatch(/width: 104px;\s*height: 32px;/);
+    expect(rule('.copy')).toMatch(/min-width: 84px;\s*height: 32px;/);
+  });
+
   it('viewport units only in the desktop and landscape maps and the pinned phone map, never dvh/svh', () => {
     const rest = css
       .replace(/(\.has-map \.map-slot \{[^}]*\})/g, (m) => m.replace(/height: 100l?vh;/g, ''))
