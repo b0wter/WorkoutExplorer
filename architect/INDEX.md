@@ -106,8 +106,8 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-100 | **Resolved 3 Nov 2026: accepted (user).** The fullscreen map is a CSS overlay (ADR-038), so Android Chrome and desktop keep their address and system bars. Suggestion: accept; the browser API can be added later as a layer without a layout change | Nothing (suggestion built unless the user objects) | user (product) |
 | OQ-101 | **Resolved 3 Nov 2026: `204`, not stored (user).** Reports per workout are capped at 10 (F-27 R-4). Suggestion: answer further reports as received, do not store them | Nothing (suggestion built unless the user objects) | user (product) |
 | OQ-102 | **Resolved 3 Nov 2026: no, reports go with their workout (user).** Should a report outlive its workout (the 30-day retention of 3 Nov 2026)? Suggestion: no, INF-2 "deleted with their workout" stands; the 30 days are an upper bound (F-27 R-3) | Nothing unless yes (then F-27 R-2, R-3) | user (product) |
-| OQ-103 | Report control without JavaScript (INF-2 "every workout page"; the API takes JSON only). Suggestion: show nothing, no "needs JavaScript" line (F-28 RF-9) | Nothing (suggestion built unless the user objects) | user (product) |
-| OQ-104 | Wording of the report dialog texts. Suggestion: as in F-28 RF-8, reviewed on screen | Nothing (wording only) | user (product) |
+| OQ-103 | **Resolved 3 Nov 2026: accepted, nothing shown without JS (user).** Report control without JavaScript (INF-2 "every workout page"; the API takes JSON only). Suggestion: show nothing, no "needs JavaScript" line (F-28 RF-9) | Nothing (suggestion built unless the user objects) | user (product) |
+| OQ-104 | **Resolved 3 Nov 2026: RF-8 wording, user reviews on screen.** Wording of the report dialog texts. Suggestion: as in F-28 RF-8, reviewed on screen | Nothing (wording only) | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

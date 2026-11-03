@@ -440,6 +440,11 @@ Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
 - **(OQ-102)** Reports never outlive their workout; the 30-day rule is a ceiling (no data outlives its workout, INF-2).
 - **Notification content:** report number and reason only, no link or public id.
 
+**Decided on 3 Nov 2026, report form** (user, OQ-103, OQ-104, F-28):
+
+- **(OQ-103)** Without JavaScript the Report button is not shown, with no "needs JavaScript" note (INF-2's "on every workout page" holds with JavaScript).
+- **(OQ-104)** The dialog texts are the F-28 design's RF-8 set; the user reviews them on screen.
+
 The original questions follow for reference.
 
 **Contradictions**
