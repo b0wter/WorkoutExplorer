@@ -41,7 +41,7 @@
 # replaces what a handler or Go set instead of adding a second value.
 (security) {
 	header {
-		Content-Security-Policy "default-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 		Referrer-Policy no-referrer
 		X-Content-Type-Options nosniff
 		Strict-Transport-Security max-age=31536000

@@ -6,10 +6,14 @@
   --danger: #c0392b;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --hidden: #7d828c;
     --danger: #e5675a;
   }
+}
+:root[data-theme='dark'] {
+  --hidden: #7d828c;
+  --danger: #e5675a;
 }
 
 /* The panel (E-10, OQ-81): first item of the content column, always open. */

@@ -156,12 +156,12 @@ describe('adoption, not hydration (D-8, ADR-026 item 4)', () => {
     const html = nodes.map((n) => n.outerHTML);
     await startPage(document);
     await settle();
-    // Only the expiry text changes (enhancer), the units select and the laps switch arrive in their
+    // Only the expiry text changes (enhancer), the units and theme selects and the laps switch arrive in their
     // reserved slots, nothing else (the laps module's 'live' class comes with the taps, after onready).
     const after = [...document.querySelectorAll('header, .summary, .notice, .laps, footer')];
     expect(after).toEqual(nodes);
     const strip = (h: string): string =>
-      h.replace(/Expires in [^<]+/, 'X').replace(/<select.*<\/select>/, '').replace(/<span class="laps-switch">.*?<\/span>/, '').replace('class="laps live"', 'class="laps"');
+      h.replace(/Expires in [^<]+/, 'X').replace(/<select.*?<\/select>/g, '').replace(/<span class="laps-switch">.*?<\/span>/, '').replace('class="laps live"', 'class="laps"');
     expect(after.map((n) => strip(n.outerHTML))).toEqual(html.map((h) => h.replace(/Expires around [^<]+/, 'X')));
   });
 });

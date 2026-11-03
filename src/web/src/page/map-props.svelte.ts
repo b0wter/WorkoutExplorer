@@ -7,19 +7,23 @@ import type { SelectionStore } from '../lib/selection';
 import type { WorkoutData } from '../lib/datafile';
 import type { Units } from '../lib/format';
 import type { UnitsStore } from '../lib/units';
+import type { ThemeChoice } from '../lib/prefs';
 
 /** The viewer's units and colour scheme as reactive state (F-14 D-10): the one scheme listener
- *  of the page. The glue passes both to ChartStack and RouteMap. */
+ *  of the page. The glue passes both to ChartStack and RouteMap. A forced theme (DS-4) wins over
+ *  the system's scheme; the caller sets <html data-theme> first, so the CSS already matches. */
 export interface Look {
   readonly units: Units;
   readonly scheme: 'light' | 'dark';
+  theme: ThemeChoice;
   /** The store itself, for consumers that subscribe (the map's colouring legend, F-25 C-6). */
   readonly store: UnitsStore;
 }
 
-export function createLook(units: UnitsStore, dark: MediaQueryList | null): Look {
+export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme: ThemeChoice = 'system'): Look {
   let u = $state(units.get());
   let isDark = $state(dark?.matches ?? false);
+  let t = $state(theme);
   units.subscribe((next) => (u = next));
   dark?.addEventListener('change', (e) => (isDark = e.matches));
   return {
@@ -27,7 +31,13 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null): Look
       return u;
     },
     get scheme() {
-      return isDark ? 'dark' : 'light';
+      return t === 'system' ? (isDark ? 'dark' : 'light') : t;
+    },
+    get theme() {
+      return t;
+    },
+    set theme(next) {
+      t = next;
     },
     store: units,
   };

@@ -9,6 +9,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -27,7 +29,7 @@ import (
 
 // Asserted exactly, so a loosened policy fails the build (H-2, H-12).
 var securitySet = map[string]string{
-	"Content-Security-Policy":   "default-src 'self'; script-src 'self'; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+	"Content-Security-Policy":   "default-src 'self'; script-src 'self' 'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 	"Referrer-Policy":           "no-referrer",
 	"X-Content-Type-Options":    "nosniff",
 	"Strict-Transport-Security": "max-age=31536000",
@@ -291,6 +293,19 @@ func TestCaddy(t *testing.T) {
 		if bytes.Contains(edit, []byte("og:image")) || bytes.Contains(edit, []byte("og:url")) || bytes.Contains(edit, []byte("{{")) ||
 			regexp.MustCompile(`[0-9A-Za-z]{22}`).Match(edit) {
 			t.Error("edit.html has an image, a URL, a template action or an ID")
+		}
+		// DS-4: the theme head script, as built and as html/template wrote it, is allowed by its hash (ADR-032 item 3).
+		for name, body := range map[string][]byte{"page": page.body, "edit.html": edit} {
+			scripts := regexp.MustCompile(`<script>([^<]*)</script>`).FindAllSubmatch(body, -1)
+			if len(scripts) != 1 {
+				t.Errorf("%s: %d inline scripts, want the theme script", name, len(scripts))
+			}
+			for _, s := range scripts {
+				sum := sha256.Sum256(s[1])
+				if !strings.Contains(securitySet["Content-Security-Policy"], "'sha256-"+base64.StdEncoding.EncodeToString(sum[:])+"'") {
+					t.Errorf("%s: inline script %q has no hash in the CSP", name, s[1])
+				}
+			}
 		}
 		// F-23 AC 5 (PC-11): no robots.txt, so nothing disallows /w/.
 		r.check("robots.txt", r.get("/robots.txt"), 404, ccNoCache)

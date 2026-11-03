@@ -1,5 +1,6 @@
 // Viewer preferences remembered on the viewer's device (decision log 29 Oct 2026: DS-1 units,
-// AP-5 x axis, AP-17 map/content split). The only module that touches browser storage. Each
+// AP-5 x axis, AP-17 map/content split; DS-4 theme, 3 Nov 2026). The only module that touches browser
+// storage, apart from the read-only theme script in the page heads (theme-script.test.ts). Each
 // preference is its own localStorage entry, written only on an explicit choice by the caller.
 // Every access is guarded: unavailable, blocked or throwing storage, and any value that is not
 // one this module wrote, read as "nothing stored", silently. No cookie; nothing goes to the server.
@@ -15,6 +16,8 @@ export interface KeyValueStore {
 }
 
 export type AxisChoice = 'time' | 'distance';
+/** DS-4 (user, 3 Nov 2026): 'system' follows prefers-color-scheme and is stored as no entry. */
+export type ThemeChoice = 'system' | 'light' | 'dark';
 /** The two two-column layouts have separate splits (their defaults differ): desktop, phone in landscape. */
 export type SplitLayout = 'wide' | 'landscape';
 
@@ -23,6 +26,8 @@ export interface ViewerPrefs {
   setUnits(units: Units): void;
   axis(): AxisChoice | null;
   setAxis(axis: AxisChoice): void;
+  theme(): ThemeChoice;
+  setTheme(theme: ThemeChoice): void;
   /** The stored map share in percent, any finite number (the splitter decides what it accepts). */
   split(layout: SplitLayout): number | null;
   setSplit(layout: SplitLayout, percent: number): void;
@@ -32,6 +37,8 @@ export interface ViewerPrefs {
 export const PREF_KEYS = {
   units: 'wx.units',
   axis: 'wx.axis',
+  /** Also read by the inline head script of index.html and edit.html, before the first paint. */
+  theme: 'wx.theme',
   wide: 'wx.split.wide',
   landscape: 'wx.split.landscape',
 } as const;
@@ -63,6 +70,8 @@ export function createViewerPrefs(storage: () => KeyValueStore | null | undefine
     setUnits: (units) => write(PREF_KEYS.units, units),
     axis: () => oneOf(PREF_KEYS.axis, ['time', 'distance'] as const),
     setAxis: (axis) => write(PREF_KEYS.axis, axis),
+    theme: () => oneOf(PREF_KEYS.theme, ['light', 'dark'] as const) ?? 'system',
+    setTheme: (theme) => write(PREF_KEYS.theme, theme === 'system' ? null : theme),
     split(layout) {
       const v = read(PREF_KEYS[layout]);
       if (v === null || !/^\d{1,3}(\.\d{1,2})?$/.test(v)) return null;

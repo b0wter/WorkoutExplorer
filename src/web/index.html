@@ -15,6 +15,7 @@
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>{{.Page.Title}}</title>
     <link rel="preload" id="wx-data" href="{{.Page.DataURL}}" as="fetch" crossorigin />
+    <script>try{var t=localStorage.getItem("wx.theme");if(t=="light"||t=="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -37,7 +38,7 @@
           {{if .Header.Description}}<p class="desc">{{.Header.Description}}</p>{{end}}
           <p class="expires"><time data-expires datetime="{{.Header.ExpiresAt}}">{{.Header.ExpiresText}}</time></p>
         </div>
-        <div class="ctl"><a class="copy" href="{{.Page.ViewPath}}" data-copy-link>Copy link</a><span class="units-slot" id="units-slot"></span></div>
+        <div class="ctl"><a class="copy" href="{{.Page.ViewPath}}" data-copy-link>Copy link</a><span class="units-slot" id="units-slot"></span><span class="theme-slot" id="theme-slot"></span></div>
       </header>
       <section class="summary">{{range .Summary}}
         <div class="metric" data-k="{{.Key}}"><div class="k">{{.Label}}</div><div class="v"><span class="n">{{.Value}}</span>{{if .Unit}}&nbsp;<span class="u">{{.Unit}}</span>{{end}}{{if .Max}}<span class="max">max {{.Max}}</span>{{end}}</div></div>{{end}}

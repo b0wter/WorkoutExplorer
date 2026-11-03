@@ -20,5 +20,5 @@
     {#if header.Description}<p class="desc">{header.Description}</p>{/if}
     <p class="expires"><time data-expires datetime={header.ExpiresAt}>{header.ExpiresText}</time></p>
   </div>
-  <div class="ctl"><a class="copy" href={page.ViewPath} hidden={!copy} data-copy-link>Copy link</a><span class="units-slot" id="units-slot"></span></div>
+  <div class="ctl"><a class="copy" href={page.ViewPath} hidden={!copy} data-copy-link>Copy link</a><span class="units-slot" id="units-slot"></span><span class="theme-slot" id="theme-slot"></span></div>
 </header>

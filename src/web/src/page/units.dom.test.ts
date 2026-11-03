@@ -7,7 +7,7 @@ import { flushSync } from 'svelte';
 import { loadGolden } from '../../test-support/golden.mjs';
 import { decodeDataFile } from '../lib/datafile';
 import { createUnitsStore } from '../lib/units';
-import { enhanceUnits, addUnitsSelect } from './enhance';
+import { enhanceUnits, addThemeSelect, addUnitsSelect } from './enhance';
 import { startPage } from './start';
 import { renderSample, type Fixture } from './testing/fixture';
 import { resetStubLog, stubLog } from './testing/stub-log';
@@ -247,6 +247,63 @@ describe('colour scheme (AC 7, D-10)', () => {
     for (const f of mqListeners) f({ matches: false });
     flushSync();
     expect(stubLog.chartStack[0].scheme).toBe('light');
+  });
+});
+
+describe('theme drop-down (DS-4, user 3 Nov 2026)', () => {
+  const theme = (): HTMLSelectElement => document.querySelector('#theme-slot select')!;
+  const choose = (v: string): void => {
+    theme().value = v;
+    theme().dispatchEvent(new Event('change'));
+    flushSync();
+  };
+  afterEach(() => delete document.documentElement.dataset.theme);
+
+  it('System by default; a forced theme wins over the system and is remembered; System forgets it', async () => {
+    setLanguages(['de-DE']);
+    await open();
+    expect([...theme().options].map((o) => [o.value, o.text])).toEqual([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]);
+    expect(theme().value).toBe('system');
+    expect(stubLog.chartStack[0].scheme).toBe('light');
+    choose('dark');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('wx.theme')).toBe('dark');
+    expect(stubLog.chartStack[0].scheme).toBe('dark');
+    for (const f of mqListeners) f({ matches: false }); // the system says light: ignored
+    flushSync();
+    expect(stubLog.chartStack[0].scheme).toBe('dark');
+    matches = true;
+    for (const f of mqListeners) f({ matches: true });
+    choose('light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(stubLog.chartStack[0].scheme).toBe('light');
+    choose('system');
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(localStorage.getItem('wx.theme')).toBeNull();
+    expect(stubLog.chartStack[0].scheme).toBe('dark');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens with the remembered choice', async () => {
+    localStorage.setItem('wx.theme', 'dark');
+    await open();
+    expect(theme().value).toBe('dark');
+    expect(stubLog.chartStack[0].scheme).toBe('dark');
+  });
+
+  it('is there even when the data file fails to load', async () => {
+    fetchMock.mockImplementation(async () => new Response('', { status: 500 }));
+    await open();
+    expect(theme().value).toBe('system');
+    expect(select()).toBeNull();
+  });
+
+  it('fills the empty slot once; without the slot nothing happens', () => {
+    page = renderSample('ride-30min');
+    expect(addThemeSelect(document.body, 'light', () => {})?.value).toBe('light');
+    expect(addThemeSelect(document.body, 'light', () => {})).toBeNull();
+    document.getElementById('theme-slot')?.remove();
+    expect(addThemeSelect(document.body, 'light', () => {})).toBeNull();
   });
 });
 

@@ -3,7 +3,8 @@
    width below 1024 px and without a map; two columns from 1024 px with a map (D-17), and on short
    landscape screens with a map (F-17, user 27 Oct 2026). No viewport units in reserved heights: phone browser bars change them. Exceptions: the desktop and landscape maps (D-18) and the pinned phone map (D-19), all large-viewport units. */
 /* Theme (F-14 D-9): every colour of the page, the charts and our map layers is a custom property
-   here; light on :root, dark under prefers-color-scheme. Components and script read them (D-10). */
+   here; light on :root, dark under prefers-color-scheme unless <html data-theme> forces one (DS-4).
+   Components and script read them (D-10). */
 :root {
   color-scheme: light dark;
   --fg: #111;
@@ -52,8 +53,11 @@
   --range-outline: #4d4d4d;
   --route-fade: 0.35;
 }
+:root[data-theme='light'] {
+  color-scheme: light;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --fg: #ececf0;
     --bg: #121214;
     --muted: #a3a3ab;
@@ -97,6 +101,52 @@
     --range-outline: #b8b8b8;
     --route-fade: 0.4;
   }
+}
+/* The forced dark theme (DS-4): the same values as the block above. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --fg: #ececf0;
+  --bg: #121214;
+  --muted: #a3a3ab;
+  --line: #3d3e44;
+  --card: #1f2024;
+  --accent: #6aa9f0;
+  --on-accent: #0b0b0d;
+  --grid: rgba(255, 255, 255, 0.12);
+  --cursor: #ececf0;
+  --range: #6aa9f0;
+  --range-shade: rgba(106, 169, 240, 0.22);
+  --c-altitude: #8cc063;
+  --c-speed: #5aa2f0;
+  --c-heart_rate: #f26b66;
+  --c-power: #b78cff;
+  --c-cadence: #3fc1c3;
+  --c-temperature: #f0a03c;
+  --map-bg: #1b1c1f;
+  --route: #ff5cae;
+  --route-casing: #121214;
+  --lap-fill: #1f2024;
+  --lap-stroke: #ececf0;
+  --lap-text: #ececf0;
+  --start: #66bb6a;
+  --finish: #ef5350;
+  --marker-stroke: #121214;
+  --seq-0: #8a3a1c;
+  --seq-1: #a9481f;
+  --seq-2: #c85d24;
+  --seq-3: #e07a2c;
+  --seq-4: #ee9a3a;
+  --seq-5: #f5bb4e;
+  --seq-6: #f9d96c;
+  --div-0: #93dcc8;
+  --div-1: #5fbfb4;
+  --div-2: #2f8f86;
+  --div-3: #5c5850;
+  --div-4: #a67a32;
+  --div-5: #d9a54e;
+  --div-6: #f2d28a;
+  --range-outline: #b8b8b8;
+  --route-fade: 0.4;
 }
 /* The background sits on the root: iOS Safari paints the notch strips it reserves in landscape
    (default viewport-fit) with the root's colour (F-17 follow-up, user 28 Oct 2026). */
@@ -179,8 +229,8 @@ h1 {
   text-align: center;
   text-decoration: none;
 }
-/* Control group (D-8): Copy link and the units slot; under each other on narrow phones, side by side
-   from 560 px. The slot reserves its size, so the select's arrival moves nothing. */
+/* Control group (D-8): Copy link, the units and the theme slot (DS-4); under each other on narrow
+   phones, side by side from 560 px. The slots reserve their size, so a select's arrival moves nothing. */
 .ctl {
   flex: none;
   display: flex;
@@ -188,13 +238,15 @@ h1 {
   align-items: stretch;
   gap: 8px;
 }
-.units-slot {
+.units-slot,
+.theme-slot {
   display: block;
   box-sizing: border-box;
   width: 104px;
   height: 32px;
 }
-.units-slot select {
+.units-slot select,
+.theme-slot select {
   width: 100%;
   height: 100%;
   font: inherit;

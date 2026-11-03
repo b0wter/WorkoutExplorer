@@ -212,6 +212,7 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expect(document.title).toBe($('h1')?.textContent);
     expect(field('title').placeholder).toBe($('h1')?.textContent);
     expect($('footer a[data-report]')).toBeNull();
+    expect($<HTMLSelectElement>('header #theme-slot select')?.value).toBe('system'); // DS-4
     expect(stubLog.calls).toEqual(['RouteMap', 'ChartStack']);
     expectNoTokenOutsideTheFragment();
   });
@@ -983,13 +984,14 @@ describe('the token stays in lib/owner (E-2 source scan)', () => {
     expect(owner).not.toMatch(/^import .* from '\./m); // imports nothing of ours
   });
 
-  it('the edit page has the head of the template, no inline script or style, no data preload', () => {
+  it('the edit page has the head of the template, no inline script but the theme script, no inline style, no data preload', () => {
     const edit = sources['../../edit.html'].replace(/<!--[\s\S]*?-->/g, '');
     expect(edit).toContain('<meta name="referrer" content="no-referrer"');
     expect(edit).toContain('<meta name="robots" content="noindex, nofollow, noarchive"');
     expect(edit).toContain('<script type="module" src="/src/main.ts"></script>');
     expect(edit).toContain('<div id="wx-edit"></div>');
-    expect(edit).not.toMatch(/<style[\s>]|\sstyle\s*=|\son[a-z]+\s*=|preload|<script(?![^>]*\ssrc=)[^>]*>/i);
+    expect(edit).not.toMatch(/<style[\s>]|\sstyle\s*=|\son[a-z]+\s*=|preload/i);
+    expect(edit.match(/<script(?![^>]*\ssrc=)[^>]*>/gi)).toEqual(['<script>']); // DS-4, theme-script.test.ts
     const sprite = (html: string): string => html.slice(html.indexOf('<svg class="sprite"'), html.indexOf('</defs></svg>'));
     expect(sprite(edit)).toBe(sprite(sources['../../index.html'])); // the copy of the template's icons
     expect(sprite(edit)).toContain('sport-generic');

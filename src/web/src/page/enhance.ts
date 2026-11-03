@@ -6,6 +6,7 @@ import type { WorkoutMeta } from '../lib/datafile';
 import { formatTimeLeft, type Units } from '../lib/format';
 import { lapsGroup, summaryItems } from '../lib/page';
 import type { UnitsStore } from '../lib/units';
+import type { ThemeChoice } from '../lib/prefs';
 
 /** Rewrites the summary and laps text of the server markup (metric) into the store's units (F-14
  *  D-5, ADR-027): the page builders run over the data file's metadata and write strings into the
@@ -60,17 +61,27 @@ export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' |
  *  once the data file is decoded. Never in the template. Wording: plain 'Metric' and 'Imperial'.
  *  `onchoose` hears only the viewer's own choices (DS-1: only those are remembered). */
 export function addUnitsSelect(root: ParentNode, store: UnitsStore, onchoose?: (units: Units) => void): HTMLSelectElement | null {
-  const slot = root.querySelector('#units-slot');
-  if (!slot || slot.firstChild) return null;
-  const select = slot.ownerDocument.createElement('select');
-  select.setAttribute('aria-label', 'Units');
-  select.innerHTML = '<option value="metric">Metric</option><option value="imperial">Imperial</option>';
-  select.value = store.get();
-  select.addEventListener('change', () => {
-    const units: Units = select.value === 'imperial' ? 'imperial' : 'metric';
+  return addSelect(root, '#units-slot', 'Units', ['Metric', 'Imperial'], store.get(), (v) => {
+    const units: Units = v === 'imperial' ? 'imperial' : 'metric';
     store.set(units);
     onchoose?.(units);
   });
+}
+
+/** The theme drop-down (DS-4, user 3 Nov 2026), beside the units one; System by default. */
+export function addThemeSelect(root: ParentNode, value: ThemeChoice, onchoose: (theme: ThemeChoice) => void): HTMLSelectElement | null {
+  return addSelect(root, '#theme-slot', 'Theme', ['System', 'Light', 'Dark'], value, (v) => onchoose(v as ThemeChoice));
+}
+
+/** A native select in an empty reserved header slot (D-8); the option values are the labels in lower case. */
+function addSelect(root: ParentNode, slotQuery: string, label: string, labels: string[], value: string, onchange: (value: string) => void): HTMLSelectElement | null {
+  const slot = root.querySelector(slotQuery);
+  if (!slot || slot.firstChild) return null;
+  const select = slot.ownerDocument.createElement('select');
+  select.setAttribute('aria-label', label);
+  select.innerHTML = labels.map((l) => `<option value="${l.toLowerCase()}">${l}</option>`).join('');
+  select.value = value;
+  select.addEventListener('change', () => onchange(select.value));
   slot.appendChild(select);
   return select;
 }

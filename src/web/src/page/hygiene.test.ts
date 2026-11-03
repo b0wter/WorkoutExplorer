@@ -18,9 +18,10 @@ describe('template', () => {
     expect(svelte).toContain('<span class="n">{item.Value}</span>{#if item.Unit}&nbsp;<span class="u">');
   });
 
-  it('has no inline script, no inline style, no style attribute, no on* handler', () => {
+  it('has no inline script but the theme script, no inline style, no style attribute, no on* handler', () => {
     expect(template).not.toMatch(/<style[\s>]/i);
-    expect(template).not.toMatch(/<script(?![^>]*\ssrc=)[^>]*>/i);
+    // DS-4: the one allowed by its CSP hash (ADR-032 item 3), checked in theme-script.test.ts.
+    expect(template.match(/<script(?![^>]*\ssrc=)[^>]*>/gi)).toEqual(['<script>']);
     expect(template).not.toMatch(/\sstyle\s*=/i);
     expect(template).not.toMatch(/\son[a-z]+\s*=/i);
   });
@@ -184,7 +185,9 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
   const css = readWebFile('src/page/page.css');
   const block = (re: RegExp): string => css.match(re)?.[1] ?? '';
   const light = block(/^:root \{([^}]*)\}/m);
-  const dark = block(/@media \(prefers-color-scheme: dark\) \{\s*:root \{([^}]*)\}/);
+  const dark = block(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \{([^}]*)\}/);
+  const forced = block(/^:root\[data-theme='dark'\] \{\s*color-scheme: dark;([^}]*)\}/m);
+  const values = (b: string): string => b.replace(/\s+/g, ' ').trim();
   const names = (b: string): string[] => [...b.matchAll(/(--[a-z_-]+):/g)].map((m) => m[1]);
 
   it('every colour is a custom property; the dark block overrides only existing ones', () => {
@@ -194,8 +197,21 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
     expect(light).toContain('color-scheme: light dark');
   });
 
+  it('a forced theme (DS-4) wins both ways; the forced dark block repeats the system dark block exactly', () => {
+    expect(values(forced)).toBe(values(dark));
+    expect(css).toMatch(/^:root\[data-theme='light'\] \{\s*color-scheme: light;\s*\}/m);
+    const edit = readWebFile('src/edit/edit.css');
+    const editDark = edit.match(/:root:not\(\[data-theme='light'\]\) \{([^}]*)\}/)?.[1] ?? '';
+    expect(values(editDark)).toContain('--hidden');
+    expect(values(edit.match(/^:root\[data-theme='dark'\] \{([^}]*)\}/m)?.[1] ?? '')).toBe(values(editDark));
+    expect(css + edit).not.toMatch(/prefers-color-scheme: dark\) \{\s*:root \{/);
+  });
+
   it('the rest of the stylesheet has no colour literal', () => {
-    const rest = css.replace(/^:root \{[^}]*\}/m, '').replace(/@media \(prefers-color-scheme: dark\) \{\s*:root \{[^}]*\}\s*\}/, '');
+    const rest = css
+      .replace(/^:root \{[^}]*\}/m, '')
+      .replace(/@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \{[^}]*\}\s*\}/, '')
+      .replace(/^:root\[data-theme='dark'\] \{[^}]*\}/m, '');
     expect(rest).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
 

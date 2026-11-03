@@ -36,6 +36,23 @@ describe('createViewerPrefs', () => {
     expect(s.map.size).toBe(3);
   });
 
+  it('theme: System is the default and is stored as no entry (DS-4)', () => {
+    const s = memory();
+    const p = createViewerPrefs(() => s);
+    expect(p.theme()).toBe('system');
+    p.setTheme('dark');
+    expect([...s.map]).toEqual([[PREF_KEYS.theme, 'dark']]);
+    expect(p.theme()).toBe('dark');
+    p.setTheme('light');
+    expect(p.theme()).toBe('light');
+    p.setTheme('system');
+    expect(s.map.size).toBe(0);
+    for (const v of ['system', 'Dark', 'auto', '']) {
+      s.map.set(PREF_KEYS.theme, v);
+      expect(p.theme(), v).toBe('system');
+    }
+  });
+
   it.each([
     ['wx.units', 'furlongs'],
     ['wx.units', 'Imperial'],
@@ -64,8 +81,10 @@ describe('createViewerPrefs', () => {
         p.setAxis('time');
         p.setSplit('wide', 40);
         p.clearSplit('landscape');
+        p.setTheme('dark');
+        p.setTheme('system');
       }).not.toThrow();
-      expect([p.units(), p.axis(), p.split('wide')]).toEqual([null, null, null]);
+      expect([p.units(), p.axis(), p.split('wide'), p.theme()]).toEqual([null, null, null, 'system']);
     }
   });
 });

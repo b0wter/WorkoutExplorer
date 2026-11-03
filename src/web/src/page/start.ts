@@ -17,7 +17,7 @@ import RouteMap from '../components/map/RouteMap.svelte';
 import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
-import { enhanceCopyLink, enhanceExpiry, enhanceUnits, addPinToggle, addUnitsSelect } from './enhance';
+import { enhanceCopyLink, enhanceExpiry, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
@@ -85,6 +85,19 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   restoreSplit(root, split);
   enhanceCopyLink(root, win.location.origin, win.navigator);
   enhanceExpiry(root, Date.now());
+  // One units store per page (D-3): a remembered drop-down choice, else the browser language (D-4,
+  // DS-1). The server markup is metric: swapped once the data file is decoded (D-5).
+  const units = createUnitsStore(prefs.units() ?? defaultUnits(win.navigator.languages, win.navigator.language));
+  const look = createLook(units, typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-color-scheme: dark)') : null, prefs.theme());
+  // DS-4: the head script applied the stored theme before the first paint; a choice sets the
+  // attribute first, so the charts and the map read the new CSS when the scheme prop changes.
+  addThemeSelect(root, look.theme, (theme) => {
+    const html = win.document.documentElement;
+    if (theme === 'system') delete html.dataset.theme;
+    else html.dataset.theme = theme;
+    prefs.setTheme(theme);
+    look.theme = theme;
+  });
 
   const url = edit ? '' : dataFileUrl(root);
   if (url === null) {
@@ -110,12 +123,8 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     return;
   }
   const data = result.data;
-  // One units store per page (D-3): a remembered drop-down choice, else the browser language (D-4,
-  // DS-1). The server markup is metric: swapped now when that is imperial, and on every later change (D-5).
-  const units = createUnitsStore(prefs.units() ?? defaultUnits(win.navigator.languages, win.navigator.language));
   enhanceUnits(root, data.meta, units);
   addUnitsSelect(root, units, prefs.setUnits);
-  const look = createLook(units, typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-color-scheme: dark)') : null);
   const cursor = createCursorStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   // F-18: the row mark, the laps / splits switch and the splits table; row taps once the range

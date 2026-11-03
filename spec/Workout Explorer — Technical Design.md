@@ -199,7 +199,7 @@ The numbers appear with the HTML, the charts follow, and the map comes last, so 
 
 **Load order**
 
-1. HTML with the summary strip and laps table already rendered by the server, and one stylesheet from the site; no inline CSS or script (ADR-026). The client adopts this markup and never re-renders it: there is no Svelte hydration; Svelte mounts only into empty, size-reserved slots (map, charts, range panel), and framework-free enhancers attach behaviour to the server markup (ADR-026).
+1. HTML with the summary strip and laps table already rendered by the server, and one stylesheet from the site; no inline CSS, and one inline script only: the theme line that sets `<html data-theme>` before first paint, allowed by its hash in the CSP (ADR-026, DS-4). The client adopts this markup and never re-renders it: there is no Svelte hydration; Svelte mounts only into empty, size-reserved slots (map, charts, range panel), and framework-free enhancers attach behaviour to the server markup (ADR-026).
 2. App bundle (Svelte + uPlot) and `data.bin` fetched in parallel; the HTML preloads both.
 3. Charts render; cursor, range selection and laps interaction work.
 4. MapLibre loaded with a dynamic `import()`, then tiles; the route is added as one GeoJSON source with two features, recorded segments (solid) and bridges (dashed), and the cursor marker as a single feature updated on each cursor move. In the MVP the route simply connects every sample that has a position; GPS dropouts and time gaps are crossed by straight, dashed bridges (AP-3).
