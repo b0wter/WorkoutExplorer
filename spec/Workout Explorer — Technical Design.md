@@ -336,6 +336,7 @@ Go (arrows mean "may import"):
 cmd/workout-explorer ──▶ httpapi, lifecycle, publish, store, privatedir, ingest   (wiring only); datafile, precompress, workout for the parse subcommand only
 httpapi ──▶ lifecycle, reports, publish (application operations); ingest for the *ingest.Error type and kinds only (F-09)
 lifecycle, reports ──▶ workout, ingest, datafile; I/O through small interfaces they define
+reports ──▶ lifecycle for ValidPublicID only (F-27)
 publish ──▶ lifecycle, page, workout, datafile, precompress; I/O and parsing through small interfaces it defines (F-15 P-3)
 page ──▶ datafile (standard library otherwise, no I/O)
 store (SQLite), privatedir, filesystem adapters ──▶ implement those interfaces (and import the package that defines them)

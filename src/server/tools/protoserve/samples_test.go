@@ -142,9 +142,9 @@ func TestSamplePages(t *testing.T) {
 				t.Error("footer lacks About or Report")
 			}
 
-			// AC 5: user text is escaped; the module script is the only script.
-			if c := strings.Count(page, "<script"); c != 1 {
-				t.Errorf("%d script elements", c)
+			// AC 5: user text is escaped; the module script and DS-4's inline theme script are the only scripts.
+			if c := strings.Count(page, "<script"); c != 2 || strings.Count(page, `<script type="module"`) != 1 || !strings.Contains(page, `<script>try{var t=localStorage.getItem("wx.theme")`) {
+				t.Errorf("%d script elements, or not the module and theme scripts", c)
 			}
 			if name == "hostile-text" {
 				for _, bad := range []string{"<b>Bold", "<script>alert", "<img", "onerror=alert(3)>"} {

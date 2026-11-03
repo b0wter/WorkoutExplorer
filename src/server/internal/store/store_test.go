@@ -859,6 +859,10 @@ func TestReports(t *testing.T) {
 	if n, err := db.DeleteReportsFiledBy(ctx, now); err != nil || n != 1 {
 		t.Errorf("pruned %d at now: %v", n, err)
 	}
+	// Numbers are never reused, also once the highest ones are gone.
+	if id, _, _, err := db.AddReport(ctx, b.PublicID, "spam", "", now, 3); err != nil || id != 6 {
+		t.Errorf("number after deletes %d, want 6: %v", id, err)
+	}
 }
 
 // TestOpenExisting (F-27 R-8): never creates a file, never migrates, and

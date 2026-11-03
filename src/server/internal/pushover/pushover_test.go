@@ -170,11 +170,11 @@ func TestCap(t *testing.T) {
 	}
 	now = now.Add(time.Second)
 	n.handle(ctx, item{15, "other"})
-	if g := <-reqs; g.form.Get("message") != "New report #15: other (+4 more)" {
+	if g := wait(t, reqs); g.form.Get("message") != "New report #15: other (+4 more)" {
 		t.Errorf("message %q", g.form.Get("message"))
 	}
 	n.handle(ctx, item{16, "spam"})
-	if g := <-reqs; g.form.Get("message") != "New report #16: spam" {
+	if g := wait(t, reqs); g.form.Get("message") != "New report #16: spam" {
 		t.Errorf("message %q", g.form.Get("message"))
 	}
 }

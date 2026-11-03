@@ -313,14 +313,15 @@ docker rmi workout-explorer:local
 Visitors can report a published workout (reason and an optional message, no contact details, no address). A report is deleted with its workout, and at the latest 30 days after it was filed. There is no admin page: read them with `sqlite3` on the host, **read-only and as the server's user ID 10001**:
 
 ```sh
-sudo -u '#10001' sqlite3 -readonly -line /srv/workouts/workouts.db "
-  SELECT r.id AS report, datetime(r.created_at, 'unixepoch') AS filed_utc, r.reason, r.message,
-         w.public_id, w.visibility AS state, datetime(w.expires_at, 'unixepoch') AS expires_utc, w.title
+sudo setpriv --reuid=10001 --regid=10001 --clear-groups sqlite3 -readonly -line /srv/workouts/workouts.db "
+  SELECT r.id AS report, datetime(r.created_at, 'unixepoch') AS filed_utc, r.reason,
+         w.public_id, w.visibility AS state, datetime(w.expires_at, 'unixepoch') AS expires_utc, w.title,
+         quote(replace(r.message, char(10), '\n')) AS message
   FROM reports r JOIN workouts w ON w.id = r.workout_id
   ORDER BY r.id;"
 ```
 
-- Never run it as root: a database side file created by root stops the server from opening its database.
+- `setpriv` (util-linux, part of every Debian install) runs it as user ID 10001, which needs no account on the host; `sudo -u` does not work, because that ID has no account. Plain `sudo sqlite3` would not break the server either (SQLite gives side files it creates as root the database's owner), but reading needs no root. The message comes last, in quotes and with line breaks shown as `\n`, so a reporter's text cannot pose as another line of the output.
 - **Never change anything with `sqlite3`** (no `DELETE`, no `UPDATE`). It knows nothing of the workout's files. Delete a workout only with the command below.
 - The page of a reported workout is `https://<your site>/w/<public_id>`.
 
