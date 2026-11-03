@@ -2,15 +2,19 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current: F-25 done (waiting on the phone 60 fps check); F-26 next
+## Current: F-28 built (QA r1 ready, browser check pending); F-29 next
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). Local commits since v0.1.0 are not pushed or tagged.
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). Local commits since v0.1.0 are not pushed or tagged. `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
-3 Nov 2026: F-25 route colouring built (ADR-037), QA r1 ready. Selection while coloured = metric colours with an outline and the rest of the route faded (design C-9); palettes approved by the user. Waiting on: AC 5 60 fps scrub on the phone (`/w/ride-12h?measure`); minors QA-25-r1-1 (static budget figure) and r1-2 (record pace-stop removal in the design), small lane. F-25 lazy chunk is 6 B under its 3,000 B cap. Also done: theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash in deploy/Caddyfile), header controls on their own line below the title on narrow screens, F-19 download toggle hidden until F-24. Phase-2 ideas recorded: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance drop-down (open questions in the spec, not yet answered).
+Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline, route faded) and F-26 fullscreen map (CSS overlay, ADR-038; OQ-100 accepted: bars stay visible), both checked by the user. Theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash); header controls on their own line on narrow screens; F-19 download toggle hidden until F-24.
 
-Next: F-26 fullscreen map. Open first: OQ-99, do the colour selector and legend stay visible in fullscreen (suggestion: yes). The user will host on a 2 GB VPS, so the 1 GB sizing ideas (configurable memory cap) are dropped.
+F-27 reports API, operator `delete` command and Pushover notifications (INF-4, ADR-039, opt-in via `compose.notify.yaml` + two env secrets): QA r2 ready. Reports kept at most 30 days and never outlive their workout; 11th report per workout answered 204, not stored; notification = report number + reason only; no auto-hide. Waiting on the user's VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with `sudo setpriv`).
 
-F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks. Report notifications via HTTP callbacks (Pushover) are a later idea (decision log).
+F-28 report form (native dialog, lazy; no button without JS, OQ-103/104 accepted): QA r1 ready. Waiting on: browser check through Go + Caddy with a real published workout (sample pages keep the button hidden): dialog on phone and desktop, wording review, no CSP error, one real report and one 429. Minors QA-28-r1-1 (confirmation may not be announced by screen readers), r1-2 (unused re-export); QA-25-r1-1, r1-2 too, for a small-lane batch.
+
+Next: F-29 About page and attributions, then F-30 regenerate, F-32 launch checks. The user hosts on a 2 GB VPS. Phase-2 ideas: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance, F-24 viewer download.
+
+F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks.
 
 
 F-23 built, card v2 approved by the user, QA r3 ready. Waiting on the user: AC 3 loop-route check and AC 8/9 messenger checks (needs a deployed instance). F-21 done. F-22 built (Caddy headers, pinned Caddy 2.11.7 via `make caddy`, `caddy-check` in `make ci`); QA r1 ready with conditions, minors fixed (40169a3). Waiting on the user: F-22 browser check through Caddy (no CSP errors, tiles, Copy/download, published page with Go stopped makes no /api request) and F-20's network log. For the browser check use the pinned binary `build/tools/caddy-2.11.7/caddy`, not /usr/bin/caddy (2.10.2). The pinned binary hash in deploy/caddy.env was taken from the downloaded binary, not verified independently.
