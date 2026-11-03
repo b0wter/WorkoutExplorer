@@ -103,8 +103,8 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-98 | Label of the viewer download button. Suggestion: "Download FIT file" (F-24 FE-1) | Nothing (wording only) | user (product) |
 | OQ-99 | Fullscreen map (AP-15) does not list the route colouring's selector and legend among what stays visible. Suggestion: keep both, a coloured route without its legend cannot be read (F-25 hand-off to F-26) | F-26 only. **Resolved 3 Nov 2026: keep both** (decision log; F-26 FS-3) | user (product) |
 | OQ-100 | **Resolved 3 Nov 2026: accepted (user).** The fullscreen map is a CSS overlay (ADR-038), so Android Chrome and desktop keep their address and system bars. Suggestion: accept; the browser API can be added later as a layer without a layout change | Nothing (suggestion built unless the user objects) | user (product) |
-| OQ-101 | Reports per workout are capped at 10 (F-27 R-4). Suggestion: answer further reports as received, do not store them | Nothing (suggestion built unless the user objects) | user (product) |
-| OQ-102 | Should a report outlive its workout (the 30-day retention of 3 Nov 2026)? Suggestion: no, INF-2 "deleted with their workout" stands; the 30 days are an upper bound (F-27 R-3) | Nothing unless yes (then F-27 R-2, R-3) | user (product) |
+| OQ-101 | **Resolved 3 Nov 2026: `204`, not stored (user).** Reports per workout are capped at 10 (F-27 R-4). Suggestion: answer further reports as received, do not store them | Nothing (suggestion built unless the user objects) | user (product) |
+| OQ-102 | **Resolved 3 Nov 2026: no, reports go with their workout (user).** Should a report outlive its workout (the 30-day retention of 3 Nov 2026)? Suggestion: no, INF-2 "deleted with their workout" stands; the 30 days are an upper bound (F-27 R-3) | Nothing unless yes (then F-27 R-2, R-3) | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

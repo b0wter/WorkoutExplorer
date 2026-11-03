@@ -41,7 +41,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
 | [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done | minors QA-25-r1-1, r1-2 |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
-| [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | design | architect |
+| [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | building | backend engineer |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | not started | |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | not started | |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | not started | |
@@ -431,6 +431,13 @@ Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
 
 - **Reports are kept for 30 days**, so they survive the operator's long holiday, then deleted automatically.
 - **Pushover notifications on a new report are in the MVP** (replaces "HTTP callbacks later" for Pushover; other callback targets stay later). The application token and user key are set by env; unset means no notifications. This is an operator-only, opt-in exception to "no external services"; the app container gets outbound access only for it (F-27 design).
+
+**Decided on 3 Nov 2026, F-27 open questions** (user, OQ-101, OQ-102):
+
+- **No auto-hiding of reported workouts.** There is no general fixed EU takedown deadline for reports (DSA: timely handling, expeditious removal of clearly illegal content); the operator acts on the Pushover notification with the delete command. Revisit if a fixed deadline applies.
+- **(OQ-101)** An 11th report on one workout is answered `204` and not stored.
+- **(OQ-102)** Reports never outlive their workout; the 30-day rule is a ceiling (no data outlives its workout, INF-2).
+- **Notification content:** report number and reason only, no link or public id.
 
 The original questions follow for reference.
 
