@@ -61,7 +61,7 @@ export const MAP_COLOURS = {
   finish: '#c62828',
   markerStroke: '#ffffff',
   /** The selected range's outline with colouring on (F-25 C-9). */
-  rangeOutline: '#1a1a1a',
+  rangeOutline: '#4d4d4d',
   /** Not a colour: the opacity of the route outside the range with colouring on (F-25 C-9). */
   fade: '0.35',
 } as const;
