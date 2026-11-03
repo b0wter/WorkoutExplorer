@@ -98,14 +98,18 @@ div.wx-map {
 .wx-cn { background: var(--route); }
 
 /* F-26 FS-4 (ADR-038): in fullscreen the page is hidden by inherited visibility, not removed, and
-   does not scroll; only the map's container (MapLibre's pseudo-fullscreen box) shows. The gutter
-   keeps a classic scrollbar's width, so nothing on the page resizes. */
+   does not scroll; only the map's container (MapLibre's pseudo-fullscreen box) shows. map-view.ts
+   pads the root by a classic scrollbar's width, so nothing on the page resizes. */
 html.wx-fs {
   overflow: hidden;
-  scrollbar-gutter: stable;
 }
 html.wx-fs body {
   visibility: hidden;
+}
+/* QA-26-r1-1: a sticky or fixed map slot is a stacking context that would trap the overlay's
+   z-index; lifting every ancestor keeps page boxes that are visible inline (chart cursor) below. */
+html.wx-fs :has(.maplibregl-pseudo-fullscreen) {
+  z-index: 2147483647;
 }
 html.wx-fs .maplibregl-pseudo-fullscreen {
   visibility: visible;

@@ -329,6 +329,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     const root = document.documentElement;
     let fsOn = false;
     let popped = false;
+    let backPending = false; // QA-26-r1-3: our history.back() has not landed yet
     let scrollX0 = 0;
     let scrollY0 = 0;
     const press = (): void => fsButton?.click();
@@ -342,10 +343,15 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     exitFullscreen = (): void => {
       if (fsOn) press();
     };
+    // A re-entry before the pending back lands would be undone by its popstate: ignore it. Capture
+    // listeners run first at the target; the button goes with the map.
+    fsButton?.addEventListener('click', (e) => backPending && e.stopImmediatePropagation(), true);
     fullscreen.on('fullscreenstart', () => {
       fsOn = true;
       scrollX0 = window.scrollX;
       scrollY0 = window.scrollY;
+      // QA-26-r1-2: a classic scrollbar's width, so hiding it resizes nothing and leaves no strip.
+      root.style.paddingRight = `${window.innerWidth - root.clientWidth}px`;
       root.classList.add('wx-fs');
       // Inside the button's click (user activation), no URL: the fragment stays (ADR-038 item 3).
       history.pushState(null, '');
@@ -357,9 +363,14 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('popstate', onPop);
       root.classList.remove('wx-fs');
+      root.style.paddingRight = '';
       // FS-4 guard: nothing reflowed, but a browser may still have moved the hidden page.
       if (window.scrollX !== scrollX0 || window.scrollY !== scrollY0) window.scrollTo(scrollX0, scrollY0);
-      if (!popped) history.back(); // the entry goes exactly once
+      if (!popped) {
+        backPending = true;
+        window.addEventListener('popstate', () => (backPending = false), { once: true });
+        history.back(); // the entry goes exactly once
+      }
       popped = false;
     });
     const canvas = map.getCanvas();

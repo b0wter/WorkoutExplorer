@@ -1379,7 +1379,8 @@ describe('fullscreen (F-26, ADR-038)', () => {
     const { handle, map } = await mounted(s);
     const button = s.container.querySelector<HTMLButtonElement>('button.maplibregl-ctrl-fullscreen')!;
     const push = vi.spyOn(history, 'pushState').mockImplementation(() => {});
-    const back = vi.spyOn(history, 'back').mockImplementation(() => {});
+    // The traversal lands at once (real: a task later; the pending case is its own test).
+    const back = vi.spyOn(history, 'back').mockImplementation(() => void window.dispatchEvent(new PopStateEvent('popstate')));
     const root = document.documentElement;
     const isOn = (): boolean => root.classList.contains('wx-fs') && s.container.classList.contains('maplibregl-pseudo-fullscreen');
     const esc = (key = 'Escape'): void => void document.dispatchEvent(new KeyboardEvent('keydown', { key }));
@@ -1448,6 +1449,33 @@ describe('fullscreen (F-26, ADR-038)', () => {
       expect(to).toHaveBeenCalledWith(0, 500);
     } finally {
       y(0);
+    }
+  });
+
+  it('a re-entry before the pending back lands is ignored, then works (QA-26-r1-3)', async () => {
+    const { button, back, push, isOn } = await full();
+    back.mockImplementation(() => {}); // the popstate is still queued
+    button.click();
+    button.click();
+    button.click(); // the queued popstate would undo this entry: ignored
+    expect(isOn()).toBe(false);
+    expect(push).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new PopStateEvent('popstate')); // our back lands
+    button.click();
+    expect(isOn()).toBe(true);
+    expect(push).toHaveBeenCalledTimes(2);
+  });
+
+  it('pads the root by a classic scrollbar width while fullscreen, so the page keeps its width (QA-26-r1-2)', async () => {
+    const { button, root } = await full();
+    Object.defineProperty(root, 'clientWidth', { value: window.innerWidth - 15, configurable: true });
+    try {
+      button.click();
+      expect(root.style.paddingRight).toBe('15px');
+      button.click();
+      expect(root.style.paddingRight).toBe('');
+    } finally {
+      delete (root as { clientWidth?: number }).clientWidth;
     }
   });
 
