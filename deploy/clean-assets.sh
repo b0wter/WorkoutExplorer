@@ -3,7 +3,8 @@
 # deploy directory, only after `regenerate` exited 0:
 #   sh clean-assets.sh <tag> < names     (names: the assets the served pages use, one per line)
 # A bundle is the list bundles/<tag> of one release's web/assets. Kept: the
-# current release's list and every list that names an asset in use. Every other
+# current release's list and every list that names an asset in use that is not
+# on the current list. Every other
 # list and every file in web/assets on no kept list is removed.
 # Prints "files_removed=N" and "bundles_removed=N".
 set -eu
@@ -12,7 +13,9 @@ tag=${1:?usage: clean-assets.sh <tag> < names}
 used=$(mktemp)
 keep=$(mktemp)
 trap 'rm -f "$used" "$keep"' EXIT
-grep -v '^$' > "$used" || true
+# Names on the current list keep no old list: they are content hashes, so a page
+# naming only those loads only current chunks (QA-30-r1-1).
+grep -v '^$' | grep -Fvx -f "bundles/$tag" > "$used" || true
 cat "bundles/$tag" > "$keep"
 lists=0
 for l in bundles/*; do

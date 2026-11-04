@@ -1,7 +1,7 @@
 # ADR-017 Parse isolation and limits: in-process `ingest.Parser` with a decode deadline, counted budgets and parse slots
 
 - **Status:** accepted
-- **Revision:** 7 (22 Oct 2026). First version 15 Oct 2026. Labels "rev. N" and "rev. N item M" below are the stable IDs that code and other documents cite; each marks a decision made in that revision, stated here in its current form.
+- **Revision:** 8 (4 Nov 2026; rev. 8: QA-30-r1-6, a deploy's `regenerate` is not added to the cap, see rev. 4 item 3). First version 15 Oct 2026. Labels "rev. N" and "rev. N item M" below are the stable IDs that code and other documents cite; each marks a decision made in that revision, stated here in its current form.
 - **History:** [architect/history/ADR-017-parse-isolation-and-limits.md](history/ADR-017-parse-isolation-and-limits.md) (revision list, findings, the revision sections as written)
 - **Features:** F-08 (introduces it), F-09 (calls it per upload), F-30 (regenerate), F-31 (machine sizing), F-32
 - **Supersedes:** the F-02 entry point `ingest.Parse(ctx, io.Reader)` (F-02 design, Public surface; TD Code structure, Bounded contexts and modules)
@@ -103,9 +103,9 @@ Uploads go through `(*Parser).Accept`: parse, strip identifying data (UP-9), and
    - So M(4) is about 0.85 to 1.05 GB, plus L.
 
    N = 16 allows up to 2·A + 14·B + L in the worst case. In practice, requests waiting for a slot hold only U. Every later in-memory table that clients can grow (for example F-27's report limiter) states its own bound and adds it to M(N) the same way.
-5. **Runtime variables are F-31's.** `GOMEMLIMIT` is read by the Go runtime, not by our code. If F-31 sets it, the systemd unit sets it, next to `MemoryMax` and below it, sized from the measured M(N) plus a `regenerate` process (F-30) during deploys. Every stop rule in this ADR is measured without it.
+5. **Runtime variables are F-31's.** `GOMEMLIMIT` is read by the Go runtime, not by our code. If F-31 sets it, the systemd unit sets it, next to `MemoryMax` and below it, sized from the measured M(N) (rev. 8: not plus `regenerate`). Every stop rule in this ADR is measured without it.
 
-(rev. 4 item 3) **Machine (OQ-51, decided by the user, 16 Oct 2026):** the VPS has at least 2 GB RAM, and N stays at its default of 4. F-31 sets systemd `MemoryMax` at or above the measured M(4) + L. During a deploy, a `regenerate` process (F-30), with its own parser and two slots, adds up to 2·A if it runs next to `serve` (item 5). F-31 either adds 2·A to the cap or never runs the two at once. `GOMEMLIMIT`, if used, goes below `MemoryMax`.
+(rev. 4 item 3) **Machine (OQ-51, decided by the user, 16 Oct 2026):** the VPS has at least 2 GB RAM, and N stays at its default of 4. F-31 sets systemd `MemoryMax` at or above the measured M(4) + L. (rev. 8) During a deploy, `regenerate` (F-30) runs next to `serve` in the same cgroup, one workout at a time (about 365 MB max RSS on the all-caps file, QA-30-r1-6). It is **not** added to the cap: going over needs a deploy to coincide with 4 uploads at the caps, and the result is an OOM kill inside the cgroup that is recovered (ADR-022, F-30 RG-7, RG-11 retry). The gate of 2 (Would choose differently, rev. 3) is no remedy for this: at N = 4 it does not lower M(4). `GOMEMLIMIT`, if used, goes below `MemoryMax`.
 
 ### Definition listener (rev. 5)
 
@@ -185,7 +185,7 @@ It buys protection against exactly one class of failure: unbounded growth that o
 
 ## Consequences
 
-- One parser per process. `serve` and `regenerate` (F-30) are separate processes, so during a deploy up to four parses can run on the machine. F-31 sizes the VPS and its `MemoryMax` with that in mind, using the model of rev. 3 item 4. Both read the same `WORKOUT_EXPLORER_PARSE_TIMEOUT`, so F-31 gives them one environment (rev. 7 item 5).
+- One parser per process. `serve` and `regenerate` (F-30) are separate processes, so during a deploy up to three parses can run on the machine (regenerate uses one slot at a time). The cap covers `serve` only; the deploy-time overlap is accepted (rev. 4 item 3, rev. 8). Both read the same `WORKOUT_EXPLORER_PARSE_TIMEOUT`, so F-31 gives them one environment (rev. 7 item 5).
 - `ingest.Parse(ctx, io.Reader)` is gone. Callers (CLI `parse`, corpus tests, data-file tests, later F-09 and F-30) read the file into memory first, the CLI through `io.LimitReader(f, MaxBytes+1)`.
 - A file over a budget is rejected, never cut to fit: over 138 h at 1 Hz, the sharer gets the `limit` message (OQ-31).
 - Library upgrades must re-check the table in Context (retained state, recursion, goroutines, super-linear paths). The check is part of the upgrade hand-off (ADR-003 item 1).
@@ -200,6 +200,7 @@ It buys protection against exactly one class of failure: unbounded growth that o
 - (rev. 1) The all-caps measurement exceeds the stop rule with the complexity bound met: lower `MaxSessions` or `MaxLaps` in a revision first. F-31 measures decode + normalise above half of T on the production VPS: give `Normalise` a cancellation check per stage, not per sample.
 - (rev. 3) `parse -original` is above 400 MB with `TestAcceptReleasesFirstParse` green: profile the heap at the reparse first, next reduce the peak inside `workout` (point above), and only then lower caps, in a revision.
 - (rev. 3) The measured M(4) is above 1 GB and F-31's machine cannot hold it, or the operator needs N above 4 on a small machine: put lifecycle steps 2 and 3 behind a gate of 2, so only two reparsed workouts are being encoded at once. That gives M(N) ≤ 2·A + 2·B + (N − 4)·(U + stripped copy + data file) + L.
+- (rev. 8) `docker inspect` shows an OOM kill of `app` during a deploy, or friends really upload files near the caps: `regenerate` takes one of `serve`'s parse slots across processes (a `flock` per slot in the data directory, as ADR-031), so at most two parses run at once in the cgroup. Not raising the cap: on 2 GB it would leave under 600 MB for the host.
 - (rev. 4) F-27's report limiter, or any later in-memory table that clients can grow, has no bound of its own: each such table states its bound and adds it to M(N).
 - (rev. 5) The definition flood exceeds 4.5 s per `Accept`: add a definition budget to `Limits` (a revision of item 4), counted in the counter's `OnMesgDef`, which cancels the decode like the other budgets.
 - (rev. 6) A later change to the strip can grow its output by more than ADR-023 item 7 says: the reparse gets an explicit byte bound again, `MaxBytes` plus the new growth.

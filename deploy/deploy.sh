@@ -33,11 +33,11 @@ sh deploy/fetch-caddy.sh "$tmp/caddy" # the pinned release, checksums from deplo
 
 # 2. Copy. Every file goes to a temporary name and is renamed; web/assets only adds.
 if [ "$host" = local ]; then
-	r() { sh -c "cd '$dir' && $1"; }
+	r() { sh -c "cd '$dir' || exit 1; $1"; }
 	cp_to() { cp "$1" "$dir/$2"; }
 	tar_to() { tar -C "$dir/web/assets" --no-same-owner -xf -; }
 else
-	r() { ssh "$host" "cd '$dir' && $1"; }
+	r() { ssh "$host" "cd '$dir' || exit 1; $1"; }
 	cp_to() { scp -q "$1" "$host:$dir/$2"; }
 	tar_to() { ssh "$host" "tar -C '$dir/web/assets' --no-same-owner -xf -"; }
 fi

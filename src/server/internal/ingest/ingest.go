@@ -153,6 +153,9 @@ func (p *Parser) parse(ctx context.Context, data []byte, o *outcome) (workout.Wo
 		case errors.Is(cause, errUnsupportedType):
 			return workout.Workout{}, p.errorOf(o, KindUnsupportedType, "", fmt.Errorf("file type %s", l.rec.FileType))
 		}
+		if ctx.Err() != nil { // cancelled after the check above (QA-30-r1-2)
+			return workout.Workout{}, p.errorOf(o, KindCanceled, "", ctx.Err())
+		}
 		return workout.Workout{}, p.errorOf(o, KindInternal, "", fmt.Errorf("decode stopped: %w", cause))
 	}
 

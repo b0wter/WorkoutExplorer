@@ -1,0 +1,3 @@
+# F-30 design history
+
+- **v0.2 (4 Nov 2026, QA-30-r1-6):** RG-13 said "DP-8's `memory.peak` run gains one regenerate run over the largest synthetic file. If the cap then leaves less than DP-8's 600 MB free, ADR-017's gate of 2 applies." The trigger ended "run two at a time (the parser's two slots) and measure again". Verification row AC 8, 10, RG-13 required "`memory.peak` with a run alongside DP-8's load, recorded in the runbook"; the F-31 hand-off named "DP-8's re-measurement (RG-13)". Replaced by ADR-017 rev. 8: regenerate is not added to the cap, the overlap is accepted, no VPS memory measurement for it; the gate of 2 does not lower M(4) at N = 4.

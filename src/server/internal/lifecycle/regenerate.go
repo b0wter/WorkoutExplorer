@@ -46,7 +46,8 @@ func RejectedByFile(err error) bool {
 // failure keeps it. After Accept succeeded, the commit steps run to the end
 // even when ctx is cancelled (RG-7): private files, the derived columns,
 // then the public build of an unlisted workout. The error is the failure of
-// a kept workout, already free of coordinates and public paths.
+// a kept workout, or of a deleted one's leftover folder, already free of
+// coordinates and public paths.
 func (s *Service) Regenerate(ctx context.Context, publicID string, p Parser) (Outcome, error) {
 	before, found, err := s.d.Repo.WorkoutByPublicID(ctx, publicID)
 	if err != nil {
@@ -65,15 +66,24 @@ func (s *Service) Regenerate(ctx context.Context, publicID string, p Parser) (Ou
 		if !RejectedByFile(err) {
 			return Kept, err
 		}
-		// ingest has logged the rejection with the device model and id.
-		s.mu.Lock()
-		err := s.Delete(context.WithoutCancel(ctx), id, before.PublicID)
-		s.mu.Unlock()
-		if err != nil {
+		// A stopped run never deletes, whatever the parse made of the stop (QA-30-r1-2).
+		if ctx.Err() != nil {
 			return Kept, err
 		}
+		// ingest has logged the rejection with the device model and id.
+		dctx := context.WithoutCancel(ctx)
+		s.mu.Lock()
+		err := s.Delete(dctx, id, before.PublicID)
+		s.mu.Unlock()
+		if err != nil {
+			// Only a failure of the row step keeps the workout; after it, a
+			// leftover folder goes at serve's next start (QA-30-r1-3).
+			if _, found, rerr := s.d.Repo.WorkoutByPublicID(dctx, before.PublicID); rerr != nil || found {
+				return Kept, err
+			}
+		}
 		s.d.Logger.Info("workout deleted", "id", id, "by", "regenerate")
-		return Deleted, nil
+		return Deleted, err
 	}
 	cctx := context.WithoutCancel(ctx)
 	w := acc.Workout

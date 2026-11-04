@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -77,19 +80,31 @@ func TestCleanAssets(t *testing.T) {
 		t.Errorf("assets %v bundles %v", names("web/assets"), names("bundles"))
 	}
 
-	// A used name that an old list shares keeps that list too (over-keeping is the safe side).
+	// A JS-only release: the page names the new entry and the unchanged stylesheet,
+	// which an old list shares. That name keeps no old list (QA-30-r1-1).
 	write("bundles/pre-f30", "a.js\nshared.css\n")
 	write("web/assets/a.js", "a")
-	if out, err = clean("v1.1.0", "shared.css"); err != nil || !slices.Contains(names("web/assets"), "a.js") || !slices.Contains(names("bundles"), "pre-f30") {
-		t.Errorf("shared name: %v %q", err, out)
+	if out, err = clean("v1.1.0", "c.js", "shared.css"); err != nil || slices.Contains(names("web/assets"), "a.js") ||
+		!slices.Equal(names("bundles"), []string{"v1.1.0"}) || out != "files_removed=1\nbundles_removed=1\n" {
+		t.Errorf("shared name: %v %q assets %v bundles %v", err, out, names("web/assets"), names("bundles"))
 	}
-	os.Remove(filepath.Join(dir, "web/assets/a.js"))
-	os.Remove(filepath.Join(dir, "bundles/pre-f30"))
 
 	// No page at all: only the current release stays; a list with no file left goes.
 	write("bundles/old", "gone.js\n")
 	if out, err = clean("v1.1.0"); err != nil || !slices.Equal(names("web/assets"), []string{"c-map.js", "c.js", "shared.css"}) ||
 		!slices.Contains(strings.Split(out, "\n"), "bundles_removed=1") {
 		t.Errorf("%v %q assets %v bundles %v", err, out, names("web/assets"), names("bundles"))
+	}
+}
+
+// pathless keeps no path of either error type (RG-3).
+func TestPathless(t *testing.T) {
+	for _, err := range []error{
+		fmt.Errorf("x: %w", &fs.PathError{Op: "open", Path: "/srv/workouts/private/w1/draft.bin", Err: syscall.ENOSPC}),
+		fmt.Errorf("x: %w", &os.LinkError{Op: "rename", Old: "/srv/a", New: "/srv/b", Err: syscall.EACCES}),
+	} {
+		if got := pathless(err); strings.Contains(got, "/srv") || got == "" {
+			t.Errorf("%q", got)
+		}
 	}
 }

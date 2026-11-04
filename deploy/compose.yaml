@@ -28,7 +28,8 @@ services:
       # Caddy's address on `backend`: the one proxy Go believes (DP-1a). Same value as Caddy's ipv4_address below.
       WORKOUT_EXPLORER_TRUSTED_PROXY: 10.250.1.2
     # DP-8: memory.peak of 4 uploads at the parse limits (F-09 QA: 620 to 861 MB) + one publish
-    # + the rate table at its maximum (112 MB) + 20 %, rounded up to 100 MB. The runbook records the
+    # + the rate table at its maximum (112 MB) + 20 %, rounded up to 100 MB. A `regenerate` run
+    # beside it is not included (overlap accepted, F-30 RG-13). The runbook records the
     # peak measured on the VPS; change this value only together with that record.
     mem_limit: 1200m
     memswap_limit: 1200m

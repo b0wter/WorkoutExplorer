@@ -110,7 +110,11 @@ func regenerate(ctx context.Context, dataDir string, s settings, stdout, stderr 
 		counts[o]++
 		done++
 		if err != nil {
-			l.Warn("workout kept", "error", pathless(err))
+			msg := "workout kept"
+			if o == lifecycle.Deleted {
+				msg = "workout deleted, files left until serve's next start"
+			}
+			l.Warn(msg, "error", pathless(err))
 		}
 		if each != nil {
 			each(o)

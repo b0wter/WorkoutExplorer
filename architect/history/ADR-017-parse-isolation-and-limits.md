@@ -12,6 +12,13 @@ History of [architect/ADR-017-parse-isolation-and-limits.md](../ADR-017-parse-is
 - **Revision 6:** 21 Oct 2026, F-09 v1.6 (QA-09-r3-1): `MaxBytes` bounds the client's input, not the reparse of the strip's output; a reparse time limit is the upload's. No limit values change. See Revision 6
 - **Revision 7:** 22 Oct 2026, the user's decision, F-09 v1.11: `Timeout` becomes the server setting `WORKOUT_EXPLORER_PARSE_TIMEOUT` (whole seconds, default 10, 5 to 60, invalid → exit 2), read by `serve`, `parse` and `regenerate`. Every other limit stays fixed. Peak memory unchanged; the upload write deadline scales with it (ADR-021 rev. 4). See Revision 7
 
+## Revision 8 (4 Nov 2026, QA-30-r1-6): replaced wording
+
+- Header: "**Revision:** 7 (22 Oct 2026)."
+- Rev. 4 item 3, end: "During a deploy, a `regenerate` process (F-30), with its own parser and two slots, adds up to 2·A if it runs next to `serve` (item 5). F-31 either adds 2·A to the cap or never runs the two at once." F-31 did neither (cap 1,200m from `serve` alone); QA measured `regenerate` at 365 MB, giving about 1,338 MB worst case. Rev. 8 accepts the overlap instead.
+- Item 5: "sized from the measured M(N) plus a `regenerate` process (F-30) during deploys."
+- Consequences, first bullet: "so during a deploy up to four parses can run on the machine. F-31 sizes the VPS and its `MemoryMax` with that in mind, using the model of rev. 3 item 4."
+
 ## Item 4, closing paragraph (rev. 7 wording)
 
 Every limit is a field of `Limits`, so tests can pass small values. Production uses `DefaultLimits` unchanged. A different value needs a revision of this ADR. (rev. 7: except `Timeout`, which production takes from the server setting `WORKOUT_EXPLORER_PARSE_TIMEOUT`; `DefaultLimits.Timeout` stays 10 s and is that setting's default. See Revision 7.)

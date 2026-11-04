@@ -109,6 +109,55 @@ func TestRegenerateDeletesRejected(t *testing.T) {
 	}
 }
 
+// cancelParser stops the run while its parse is in progress.
+type cancelParser struct {
+	*fakeParser
+	cancel func()
+}
+
+func (c cancelParser) Accept(ctx context.Context, b []byte) (ingest.Accepted, error) {
+	c.cancel()
+	return c.fakeParser.Accept(ctx, b)
+}
+
+// TestRegenerateStoppedNeverDeletes (QA-30-r1-2): a parse stopped by the
+// run's cancellation keeps the workout even when it reads as a rejection.
+func TestRegenerateStoppedNeverDeletes(t *testing.T) {
+	s, p, r, f, _, pub, _, rec := regenFixture(t, Unlisted)
+	p.err = &ingest.Error{Kind: ingest.KindInternal}
+	ctx, cancel := context.WithCancel(context.Background())
+	if o, err := s.Regenerate(ctx, rec.PublicID, cancelParser{p, cancel}); o != Kept || err == nil {
+		t.Fatalf("%s %v", o, err)
+	}
+	if len(r.deleted) != 0 || len(f.removed) != 0 || len(pub.removed) != 0 {
+		t.Errorf("deleted something: %v %v %v", r.deleted, f.removed, pub.removed)
+	}
+}
+
+// TestRegenerateDeleteLeftover (QA-30-r1-3): a delete that fails after the
+// row is gone counts as deleted, with the error and the O-10 line; when the
+// row may still be there, the workout is kept.
+func TestRegenerateDeleteLeftover(t *testing.T) {
+	s, p, r, f, _, pub, l, rec := regenFixture(t, Unlisted)
+	p.err = &ingest.Error{Kind: ingest.KindNotFIT}
+	pub.err = errors.New("permission denied")
+	o, err := s.Regenerate(context.Background(), rec.PublicID, p)
+	if o != Deleted || !errors.Is(err, pub.err) || len(r.rows) != 0 || !reflect.DeepEqual(f.removed, []string{"w1"}) {
+		t.Fatalf("%s %v rows %v private %v", o, err, r.rows, f.removed)
+	}
+	if got := l.all(t); len(got) != 1 || got[0]["msg"] != "workout deleted" || got[0]["by"] != "regenerate" {
+		t.Errorf("log %v", got)
+	}
+
+	s, p, r, _, _, pub, _, rec = regenFixture(t, Unlisted)
+	p.err = &ingest.Error{Kind: ingest.KindNotFIT}
+	pub.err = errors.New("permission denied")
+	pub.onRm = func(string) { r.lookupErr = errors.New("database") } // the re-read cannot tell
+	if o, err := s.Regenerate(context.Background(), rec.PublicID, p); o != Kept || err == nil {
+		t.Errorf("%s %v", o, err)
+	}
+}
+
 // TestRegenerateKeeps (AC 6, RG-3, RG-4): canceled, a time limit, a server
 // error before or at any commit step: counted kept, never deleted; a failure
 // at (a) leaves row and files unchanged; at (b) and (c) the private side is
@@ -139,6 +188,9 @@ func TestRegenerateKeeps(t *testing.T) {
 		}, true, false, false, true},
 		{"(c) public build", func(_ *fakeParser, _ *fakeRepo, _ *fakeFiles, h *fakeHook) {
 			h.err = errors.New("build")
+		}, true, true, true, true},
+		{"(c) public build rejected by its parse", func(_ *fakeParser, _ *fakeRepo, _ *fakeFiles, h *fakeHook) {
+			h.err = &ingest.Error{Kind: ingest.KindNoData} // only Accept's error decides a delete (QA-30-r1-5)
 		}, true, true, true, true},
 	} {
 		t.Run(c.name, func(t *testing.T) {
