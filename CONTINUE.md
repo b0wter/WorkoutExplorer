@@ -1,8 +1,8 @@
-# Continue here (state of 3 Nov 2026)
+# Continue here (state of 4 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current: F-28 built (QA r1 ready, browser check pending); F-29 next
+## Current: F-29 built (QA r2 ready, user checks pending); F-30 next
 
 Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). Local commits since v0.1.0 are not pushed or tagged. `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
@@ -10,9 +10,11 @@ Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline,
 
 F-27 reports API, operator `delete` command and Pushover notifications (INF-4, ADR-039, opt-in via `compose.notify.yaml` + two env secrets): QA r2 ready. Reports kept at most 30 days and never outlive their workout; 11th report per workout answered 204, not stored; notification = report number + reason only; no auto-hide. Waiting on the user's VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with `sudo setpriv`).
 
-F-28 report form (native dialog, lazy; no button without JS, OQ-103/104 accepted): QA r1 ready. Waiting on: browser check through Go + Caddy with a real published workout (sample pages keep the button hidden): dialog on phone and desktop, wording review, no CSP error, one real report and one 429. Minors QA-28-r1-1 (confirmation may not be announced by screen readers), r1-2 (unused re-export); QA-25-r1-1, r1-2 too, for a small-lane batch.
+F-28 report form (native dialog, lazy; no button without JS, OQ-103/104 accepted): QA r1 ready. Waiting on: browser check through Go + Caddy with a real published workout (sample pages keep the button hidden): dialog on phone and desktop, wording review, no CSP error, one real report and one 429. Minors QA-28-r1-1 (confirmation may not be announced by screen readers), r1-2 (unused re-export); QA-25-r1-1, r1-2 and QA-29-r2-1, r2-2 too, for a small-lane batch.
 
-Next: F-29 About page and attributions, then F-30 regenerate, F-32 launch checks. The user hosts on a 2 GB VPS. Phase-2 ideas: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance, F-24 viewer download.
+F-29 About page (4 Nov 2026): Go serves `/about`, filled at start from the template (app facts only) and the per-deployment operator file `WORKOUT_EXPLORER_OPERATOR_FILE` (example `deploy/operator.example.txt`; the user's own lives on the VPS in `/srv/workout-explorer/operator/`, never in the repo). Attribution list generated in every `make build` (Vite licence file + bundled dependency walk + Go build info + `tools/attributions/sources.json`, incl. FIT Protocol licence). QA r2 ready. Waiting on the user: browser check of /about (phone, dark mode, licence details), edit the privacy draft, open the Garmin FIT licence page once, write the operator file on the VPS (incl. what the proxy logs). Minors QA-29-r2-1 (murmurhash-js copyright line), r2-2 (two docs still say deploy.sh never creates operator/).
+
+Next: F-30 regenerate, then F-32 launch checks. The user hosts on a 2 GB VPS. Phase-2 ideas: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance, F-24 viewer download.
 
 F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks.
 
