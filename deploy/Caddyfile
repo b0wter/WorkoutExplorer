@@ -22,7 +22,7 @@
 # Local run:
 #   WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web build/tools/caddy-<version>/caddy run --config deploy/Caddyfile --adapter caddyfile
 #
-# Never served: build/web/index.html (the page template), private/, tmp/, the
+# Never served: build/web/index.html (the page template), build/web/about.html (Go serves /about), private/, tmp/, the
 # database, public.lock, dot files, anything above public/ (H-10).
 {
 	admin {$WX_ADMIN:off}
@@ -132,6 +132,13 @@
 		reverse_proxy {$WX_API:127.0.0.1:8080} {
 			header_up X-Forwarded-For {client_ip}
 		}
+	}
+
+	# /about: the About page, filled by Go at start (F-29 AB-4); 502 while Go is down.
+	# Caddy never serves build/web/about.html itself (/about.html is the 404 below).
+	handle /about {
+		header >Cache-Control no-cache
+		reverse_proxy {$WX_API:127.0.0.1:8080}
 	}
 
 	# The bundle (Vite-hashed names); the upload page at /.

@@ -2,7 +2,7 @@
 # operator's reverse proxy, and the Go server on an internal network. Lives at
 # /srv/workout-explorer/compose.yaml next to .env (deploy/example.env), bin/, web/, conf/.
 # No image is built: both services run one pinned distroless base image with the
-# binaries bind-mounted read-only (DP-2). Nothing here creates a host path (DP-3).
+# binaries bind-mounted read-only (DP-2). Nothing here creates a host path (DP-3); the runbook creates operator/ (F-29).
 name: workout-explorer
 
 x-common: &common
@@ -36,6 +36,7 @@ services:
       - {type: bind, source: ./bin, target: /srv/workout-explorer/bin, read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: "${WX_WEB:-/srv/workout-explorer/web}", target: "${WX_WEB:-/srv/workout-explorer/web}", read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: "${WX_DATA:-/srv/workouts}", target: "${WX_DATA:-/srv/workouts}", bind: {create_host_path: false}}
+      - {type: bind, source: "${WX_OPERATOR:-/srv/workout-explorer/operator}", target: "${WX_OPERATOR:-/srv/workout-explorer/operator}", read_only: true, bind: {create_host_path: false}} # the operator file of the About page (F-29 AB-8), public content
     networks:
       backend: {ipv4_address: 10.250.1.3}
 

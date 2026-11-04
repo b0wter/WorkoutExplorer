@@ -324,6 +324,13 @@ func TestCaddy(t *testing.T) {
 		r.check("missing asset", r.get("/assets/main-00000000.js"), 404, ccNoCache)
 		r.check("unknown path", r.get("/about-nothing"), 404, ccNoCache)
 		r.check("template", r.get("/index.html"), 404, ccNoCache)
+		// F-29 AB-4: Go's filled page through Caddy; the build's file is never served.
+		about := r.get("/about")
+		r.check("about", about, 200, ccNoCache)
+		if bytes.Contains(about.body, []byte("<!--wx:")) || !bytes.Contains(about.body, []byte("[OPERATOR DETAILS")) {
+			t.Error("/about is not the filled page")
+		}
+		r.check("about.html", r.get("/about.html"), 404, ccNoCache)
 
 		// /api/*: Go's Cache-Control, once; Go's own nosniff not doubled.
 		r.check("api health", r.get("/api/health"), 200, ccNoStore)
@@ -547,6 +554,7 @@ func TestCaddyForwardedFor(t *testing.T) {
 func TestCaddyLogsNoRequests(t *testing.T) {
 	r := startRigWith(t, freeAddr(t), "127.0.0.1") // nothing listens there
 	r.check("api down", r.get("/api/workouts?q=secret-query", "Authorization", "Bearer secret-token", "X-Forwarded-For", "203.0.113.77"), 502, ccNoCache)
+	r.check("about down", r.get("/about"), 502, ccNoCache) // F-29 AB-4
 	r.check("missing", r.get("/w/0123456789abcdefABCDEF/secret-name.bin", "X-Forwarded-For", "203.0.113.77"), 404, ccNoCache)
 	time.Sleep(200 * time.Millisecond)
 	out := r.logs.String()

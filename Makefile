@@ -25,7 +25,7 @@ DEV_BASE_URL ?= http://127.0.0.1:8088
 .PHONY: deps deps-server deps-web \
         lint lint-server lint-web \
         test test-server test-web \
-        build build-server build-web \
+        build build-server build-web attributions \
         size ci caddy caddy-check docker-check corpus corpus-update corpus-gen prototype-data prototype-serve dev-server dev-web clean
 
 # ---- dependencies ---------------------------------------------------------
@@ -65,6 +65,7 @@ test-web: deps-web
 # ---- build ----------------------------------------------------------------
 
 build: build-server build-web
+	$(MAKE) attributions
 
 build-server:
 	cd $(SERVER_DIR) && CGO_ENABLED=0 go build \
@@ -73,6 +74,13 @@ build-server:
 
 build-web: deps-web
 	cd $(WEB_DIR) && npm run build
+
+# The attribution list into build/web/about.html (F-29 AB-5, AB-6): run after build-server and
+# build-web (`make build` does; the Dockerfile's Go stage calls it alone). Reads the web bundle's
+# licence file and the binary's build info; fails on a missing licence or an unclaimed CSP origin.
+attributions:
+	cd $(SERVER_DIR) && go run ./tools/attributions -web '$(CURDIR)/$(BUILD_DIR)/web' -binary '$(CURDIR)/$(BINARY)' \
+		-caddy-env '$(CURDIR)/deploy/caddy.env' -caddyfile '$(CURDIR)/deploy/Caddyfile'
 
 # Bundle budget check (ADR-002). Depends only on build-web, never on test,
 # so the size is printed even when a test fails under `make -k ci`.

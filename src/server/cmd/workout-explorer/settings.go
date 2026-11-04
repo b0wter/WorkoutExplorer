@@ -2,13 +2,18 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/netip"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
 
+	"workout-explorer/internal/about"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/pushover"
 )
@@ -25,6 +30,7 @@ const (
 	envUploadsIPv6          = "WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV6"
 	envPushoverToken        = "WORKOUT_EXPLORER_PUSHOVER_TOKEN"
 	envPushoverUser         = "WORKOUT_EXPLORER_PUSHOVER_USER"
+	envOperatorFile         = "WORKOUT_EXPLORER_OPERATOR_FILE"
 )
 
 const (
@@ -170,6 +176,32 @@ func pushoverKeys(getenv func(string) string) (token, user string, err error) {
 	return token, user, nil
 }
 
+// operatorBlock reads the operator file (F-29 AB-8) and returns it rendered.
+// Unset, empty or a file that does not exist is "" (the page shows its
+// placeholder); a relative path, any other read error or invalid content is an
+// error naming the setting.
+func operatorBlock(getenv func(string) string) (string, error) {
+	path := getenv(envOperatorFile)
+	if path == "" {
+		return "", nil
+	}
+	if !filepath.IsAbs(path) {
+		return "", errors.New(envOperatorFile + " must be an absolute path")
+	}
+	b, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("%s: cannot read the file: %v", envOperatorFile, err)
+	}
+	block, err := about.ParseOperator(b)
+	if err != nil {
+		return "", fmt.Errorf("%s: the file %v", envOperatorFile, err)
+	}
+	return block, nil
+}
+
 // trustedProxy reads Caddy's address (ADR-021 rev. 6 item 6): unset or empty
 // is the zero Addr (loopback only); otherwise exactly one IP address, no zone,
 // no prefix. IPv4-mapped IPv6 is unmapped to match the peer comparison.
@@ -220,7 +252,11 @@ func readSettings(getenv func(string) string) (settings, error) {
 	if err != nil {
 		return settings{}, err
 	}
-	return settings{maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
+	op, err := operatorBlock(getenv)
+	if err != nil {
+		return settings{}, err
+	}
+	return settings{operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
 		pushoverToken: pt, pushoverUser: pu}, nil
 }
 

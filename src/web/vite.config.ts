@@ -49,11 +49,13 @@ export default defineConfig({
     emptyOutDir: true,
     // Read by scripts/check-bundle-size.mjs (ADR-002).
     manifest: true,
-    // Four entries: the activity page, the edit page (F-19 E-1, the same entry module), the upload
+    // Attribution list input (F-29 AB-5): per bundled package name, version, SPDX id and text. Not served.
+    license: { fileName: '.vite/license.json' },
+    // Five entries (F-29 AB-1: the About page, CSS only): the activity page, the edit page (F-19 E-1, the same entry module), the upload
     // page (ADR-024) and the static generic page (F-15 P-12, CSS only). Relative to the project root.
     // No module-preload polyfill: it would become a chunk both entries share (ADR-024 item 3).
     modulePreload: { polyfill: false },
-    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html' } },
+    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html' } },
   },
   test: {
     environment: 'node',

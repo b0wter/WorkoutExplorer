@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"workout-explorer/internal/about"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/lifecycle"
 )
@@ -31,9 +32,131 @@ func envOf(m map[string]string) func(string) string {
 // testBaseURL is the base URL of every test run (TestMain sets it for serve).
 const testBaseURL = "http://wx.test:8088"
 
+// TestMain points testWeb at a copy of the source page template and a fixture
+// About page that has the generated list, so Go tests need neither the web
+// build nor the frontend's about.html (F-15 P-10, F-29 AB-4).
 func TestMain(m *testing.M) {
 	os.Setenv(envBaseURL, testBaseURL)
-	os.Exit(m.Run())
+	dir, err := os.MkdirTemp("", "wx-web")
+	if err != nil {
+		panic(err)
+	}
+	idx, err := os.ReadFile(filepath.Join(testWeb, "index.html"))
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), idx, 0o644); err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "about.html"), []byte(aboutFixture), 0o644); err != nil {
+		panic(err)
+	}
+	testWeb = dir
+	code := m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
+}
+
+// aboutFixture is a finished About page: the list is generated, every marker is present.
+const aboutFixture = `<main><!--wx:operator-->|<!--wx:version-->
+<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:generated-->{{ list <!--wx:version--> }}</main>`
+
+// TestAboutTemplateContract: the frontend's source template carries every
+// marker serve and the generator fill (F-29 AB-3, AB-5).
+func TestAboutTemplateContract(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join("..", "..", "..", "web", "about.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->"} {
+		if !strings.Contains(string(src), m) {
+			t.Errorf("about.html lacks %s", m)
+		}
+	}
+}
+
+// TestOperatorFileSetting (F-29 AB-8): unset or missing is the placeholder; a
+// relative path, an unreadable path, a long, empty or control-character file is an error.
+func TestOperatorFileSetting(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, content string) string {
+		p := filepath.Join(dir, name)
+		os.WriteFile(p, []byte(content), 0o644)
+		return p
+	}
+	if s, err := readSettings(envOf(map[string]string{envOperatorFile: write("ok", "## Who\nJane <b>\n")})); err != nil || s.operatorHTML != "<h2>Who</h2>\n<p>Jane &lt;b&gt;</p>\n" {
+		t.Errorf("ok = %+v, %v", s.operatorHTML, err)
+	}
+	for _, v := range []string{"", filepath.Join(dir, "nope")} {
+		if s, err := readSettings(envOf(map[string]string{envOperatorFile: v})); err != nil || s.operatorHTML != "" {
+			t.Errorf("%q = %q, %v", v, s.operatorHTML, err)
+		}
+	}
+	for name, v := range map[string]string{"relative": "about.txt", "directory": dir, "big": write("big", strings.Repeat("a", 16<<10+1)),
+		"blank": write("blank", " \n\n"), "control": write("ctl", "a\x00b"), "utf8": write("u8", "a\xffb")} {
+		if _, err := readSettings(envOf(map[string]string{envOperatorFile: v})); err == nil || !strings.Contains(err.Error(), envOperatorFile) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}
+
+// TestAboutRoute (F-29 AB-4): GET and HEAD /about, values filled and escaped,
+// the Pushover block only with both secrets, other methods not served.
+func TestAboutRoute(t *testing.T) {
+	get := func(s settings, method string) *httptest.ResponseRecorder {
+		s.webDir, s.baseURL, s.maxConcurrentUploads = testWeb, testBaseURL, 4
+		h, closeApp, err := newApp(context.Background(), t.TempDir(), s, slog.New(slog.DiscardHandler))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer closeApp()
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(method, "/about", nil))
+		return rec
+	}
+	rec := get(settings{operatorHTML: "<p>x</p>"}, "GET")
+	want := "<p>x</p>|" + version + "\n{{ list " + version + " }}"
+	if rec.Code != 200 || rec.Header().Get("Cache-Control") != "no-cache" || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/html") ||
+		!strings.Contains(rec.Body.String(), want) {
+		t.Errorf("GET = %d %v %q", rec.Code, rec.Header(), rec.Body)
+	}
+	if strings.Contains(rec.Body.String(), "PUSH") {
+		t.Error("Pushover block present without secrets")
+	}
+	if rec := get(settings{}, "GET"); !strings.Contains(rec.Body.String(), about.Placeholder+"|") {
+		t.Errorf("placeholders: %q", rec.Body)
+	}
+	on := get(settings{pushoverToken: testPushToken, pushoverUser: testPushUser}, "GET").Body.String()
+	if !strings.Contains(on, "PUSH") || strings.Contains(on, "<!--/wx:pushover-->") {
+		t.Errorf("Pushover block: %q", on)
+	}
+	if h := get(settings{}, "HEAD"); h.Code != 200 || h.Body.Len() != 0 {
+		t.Errorf("HEAD = %d, %d body bytes", h.Code, h.Body.Len())
+	}
+	if p := get(settings{}, "POST"); p.Code != 404 && p.Code != 405 {
+		t.Errorf("POST = %d", p.Code)
+	}
+}
+
+// TestAboutMissingOrUngenerated (F-29 AB-4): a missing page, one without the
+// generated list, and one without a marker stop the start.
+func TestAboutMissingOrUngenerated(t *testing.T) {
+	for name, page := range map[string]string{
+		"missing":            "",
+		"not generated":      strings.ReplaceAll(aboutFixture, "<!--wx:generated-->", "<!--wx:attributions-->"),
+		"no operator marker": strings.ReplaceAll(aboutFixture, "<!--wx:operator-->", ""),
+		"no block":           strings.ReplaceAll(aboutFixture, "<!--wx:pushover-->", ""),
+	} {
+		dir := t.TempDir()
+		idx, _ := os.ReadFile(filepath.Join(testWeb, "index.html"))
+		os.WriteFile(filepath.Join(dir, "index.html"), idx, 0o644)
+		if page != "" {
+			os.WriteFile(filepath.Join(dir, "about.html"), []byte(page), 0o644)
+		}
+		if _, _, err := newApp(context.Background(), t.TempDir(), settings{webDir: dir, baseURL: testBaseURL}, slog.New(slog.DiscardHandler)); err == nil {
+			t.Errorf("%s: started", name)
+		}
+	}
 }
 
 // TestBaseURL (F-23 PC-8): origin only, re-serialised unchanged; no default.

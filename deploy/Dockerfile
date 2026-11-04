@@ -15,10 +15,12 @@ FROM golang:1.26.8-bookworm@sha256:dc9ad6c05acc7a88e5b71bde60a5fe3bd4b9f0db20901
 ARG VERSION=unknown
 WORKDIR /src
 COPY Makefile ./
-COPY deploy/caddy.env deploy/fetch-caddy.sh deploy/
+COPY deploy/caddy.env deploy/fetch-caddy.sh deploy/Caddyfile deploy/
 COPY src/server src/server
 RUN make VERSION="$VERSION" build-server && sh deploy/fetch-caddy.sh build/caddy
 COPY --from=web /src/build/web build/web
+# The attribution list into about.html (F-29 AB-5): needs the web build, the binary, the module cache and the Caddyfile.
+RUN make attributions
 COPY deploy/Caddyfile conf/Caddyfile
 RUN chmod -R a+rX build conf && chmod 755 build/workout-explorer build/caddy
 

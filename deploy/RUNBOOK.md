@@ -69,6 +69,17 @@ You should see: `ls -ld /srv/workouts /srv/workouts/public` shows `drwxr-x---` a
 
 Keep it on the local disk. To use another path, set `WX_DATA` (section 4) to it.
 
+### The About page: operator file
+
+The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` mounts the folder `/srv/workout-explorer/operator` read-only (`deploy.sh` never writes there). Create it once, then write the file:
+
+```sh
+sudo install -d -o "$USER" -m 0755 /srv/workout-explorer/operator
+cp deploy/operator.example.txt /srv/workout-explorer/operator/about.txt   # fill every [bracketed prompt], including your proxy's logging
+```
+
+Set `WORKOUT_EXPLORER_OPERATOR_FILE=/srv/workout-explorer/operator/about.txt` in `.env` (section 4) and restart `app` after every edit (`docker compose restart app`). Format: `## Heading`, `- list item`, other lines are paragraphs, a blank line ends a block; no links or markup (everything is shown as plain text); at most 16 KiB. Without the file the page shows `[OPERATOR DETAILS: ...]` and `app` logs a warning: replace it before you send links to anyone. Never commit this file.
+
 ## 4. Configure
 
 ```sh
@@ -99,6 +110,7 @@ Unset or empty keys use the default. An invalid value stops the server at start 
 | `WX_TRUSTED_PROXIES` | `10.250.0.1` (when unset) | Source address(es) of your reverse proxy as Caddy sees them. Separate several by spaces, not commas. See section 5 |
 | `WORKOUT_EXPLORER_PUSHOVER_TOKEN` | unset (off) | Pushover application token for report notifications, section 4a. **A secret** |
 | `WORKOUT_EXPLORER_PUSHOVER_USER` | unset (off) | Pushover user key, section 4a. **A secret** |
+| `WORKOUT_EXPLORER_OPERATOR_FILE` | unset (placeholder) | Absolute path of your About page text, see "The About page: operator file" above. `WX_OPERATOR` (default `/srv/workout-explorer/operator`) is the host folder mounted for it |
 | `COMPOSE_FILE` | unset | Self-hosters: `compose.yaml:compose.build.yaml`; with notifications add `:compose.notify.yaml` (section 4a) |
 
 `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`.
@@ -392,6 +404,7 @@ Shape: `deploy.sh` downloads the GitHub Release of a version tag (binary and web
 adduser --disabled-password deploy && usermod -aG docker deploy      # add your SSH key to ~deploy/.ssh/authorized_keys
 install -d -o deploy -g deploy -m 0755 /srv/workout-explorer /srv/workout-explorer/bin /srv/workout-explorer/conf /srv/workout-explorer/web /srv/workout-explorer/web/assets
 install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public
+install -d -o deploy -g deploy -m 0755 /srv/workout-explorer/operator   # About page text (public), copy deploy/operator.example.txt there
 install -m 0600 -o deploy -g deploy /dev/null /srv/workout-explorer/.env
 ```
 

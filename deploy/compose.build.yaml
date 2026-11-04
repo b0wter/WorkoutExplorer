@@ -9,6 +9,7 @@ services:
     build: {context: .., dockerfile: deploy/Dockerfile}
     volumes: !override
       - {type: bind, source: "${WX_DATA:-/srv/workouts}", target: "${WX_DATA:-/srv/workouts}", bind: {create_host_path: false}}
+      - {type: bind, source: "${WX_OPERATOR:-/srv/workout-explorer/operator}", target: "${WX_OPERATOR:-/srv/workout-explorer/operator}", read_only: true, bind: {create_host_path: false}} # the operator file of the About page (F-29 AB-8), public content
   caddy:
     image: *image # built once, by app
     platform: linux/amd64

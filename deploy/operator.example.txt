@@ -1,0 +1,13 @@
+## Who runs this site
+[Your name or organisation, and a contact address visitors can write to.]
+[Your hosting provider (a name, or a category such as "a hosting provider"), and the country of the data centre. State that the provider processes the data on your behalf.]
+
+## Web server logs
+[What the web server or proxy in front of this app logs (addresses, how long they are kept), or that it keeps no log.]
+
+## Backups
+[Whether your server or provider keeps backups or snapshots of this site's data. The app itself makes none.]
+
+## Legal basis and complaints
+[The legal basis on which you process the data.]
+[Your right-to-complain statement: the supervisory authority by name, or the general right to complain to one.]

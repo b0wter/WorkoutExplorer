@@ -49,6 +49,7 @@ conf_new=$(sha256sum deploy/Caddyfile | cut -d' ' -f1)
 conf_old=$(r "sha256sum conf/Caddyfile 2>/dev/null | cut -d' ' -f1" || true)
 tar -C "$tmp/a/web/assets" -cf - . | tar_to
 put "$tmp/a/web/index.html" web/index.html 644 # the page template Go reads at publish
+put "$tmp/a/web/about.html" web/about.html 644 # the About page Go fills at start (F-29 AB-4); never touches operator/
 put "$tmp/a/workout-explorer" bin/workout-explorer 755
 [ "$caddy_new" = "$caddy_old" ] || put "$tmp/caddy" bin/caddy 755
 put deploy/compose.yaml compose.yaml 644

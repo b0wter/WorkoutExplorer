@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"workout-explorer/internal/about"
 	"workout-explorer/internal/httpapi"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/lifecycle"
@@ -34,6 +35,8 @@ type settings struct {
 	pushoverToken        string        // both set: report notifications on (ADR-039); secrets, never logged or printed
 	pushoverUser         string
 	pushoverEndpoint     string // "": pushover.Endpoint; tests point it at a fake
+	operatorFile         string // WORKOUT_EXPLORER_OPERATOR_FILE, for the missing-file warning
+	operatorHTML         string // the rendered operator file (F-29 AB-8); "": the placeholder
 	// onParser is called with the parser newApp built; nil in production.
 	onParser func(*ingest.Parser)
 	// onService is called with the service and the storage total newApp
@@ -60,6 +63,13 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	tmpl, err := publish.LoadTemplate(s.webDir)
 	if err != nil {
 		return nil, nil, err
+	}
+	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != ""})
+	if err != nil {
+		return nil, nil, err
+	}
+	if s.operatorHTML == "" {
+		logger.Warn("operator file missing: the About page shows a placeholder", "setting", envOperatorFile, "set", s.operatorFile != "")
 	}
 	if s.baseURL == "" {
 		return nil, nil, errBaseURL
@@ -180,5 +190,8 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		wg.Wait() // a running pass finishes before the database closes
 		return db.Close()
 	}
-	return h, closeApp, nil
+	mux := http.NewServeMux()
+	mux.Handle("GET /about", about.Handler(aboutPage)) // F-29 AB-4; no access log
+	mux.Handle("/", h)
+	return mux, closeApp, nil
 }
