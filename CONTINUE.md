@@ -4,7 +4,7 @@ Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask whe
 
 ## Current: F-29 built (QA r2 ready, user checks pending); F-30 next
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; release v0.1.0 exists. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). Local commits since v0.1.0 are not pushed or tagged. `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0 and v0.2.0 (4 Nov 2026, up to F-29) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
 Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline, route faded) and F-26 fullscreen map (CSS overlay, ADR-038; OQ-100 accepted: bars stay visible), both checked by the user. Theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash); header controls on their own line on narrow screens; F-19 download toggle hidden until F-24.
 
