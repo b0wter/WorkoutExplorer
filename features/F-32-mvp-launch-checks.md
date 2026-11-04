@@ -3,7 +3,7 @@
 - **Phase:** 1 MVP
 - **Owner:** both
 - **Requirements:** NFR Performance (all three), NFR Compatibility, NFR Privacy (GDPR, data-processing record), NFR Reliability, SH-5 (messenger check), SH-10; Roadmap gate 1
-- **Depends on:** F-08 to F-34, except F-24 (phase 3)
+- **Depends on:** F-08 to F-33, except F-24 (phase 3); F-34 is phase 2
 
 ## Goal
 Verify the whole MVP end to end on the live server before the operator and friends start using it for real workouts.

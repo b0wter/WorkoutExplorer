@@ -2,7 +2,7 @@
 
 - **Phase:** 1 MVP
 - **Owner:** frontend
-- **Requirements:** AP-21 (Should), AP-15, AP-6; extends F-26 (design ADR-038)
+- **Requirements:** AP-21 (Must), AP-15, AP-6; extends F-26 (design ADR-038)
 - **Depends on:** F-26
 
 ## Goal

@@ -1,8 +1,8 @@
 # F-34 iOS Shortcut upload link
 
-- **Phase:** 1 MVP
+- **Phase:** 2
 - **Owner:** both (backend first)
-- **Requirements:** INF-5 (Should), INF-1, UP-1, UP-10, AC-1; extends F-29
+- **Requirements:** INF-5 (Could), INF-1, UP-1, UP-10, AC-1; extends F-29
 - **Depends on:** F-29, F-31
 
 ## Goal
