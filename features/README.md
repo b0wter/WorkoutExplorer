@@ -45,7 +45,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov); minors QA-28-r1-1, r1-2 |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once, operator file on the VPS; minors QA-29-r2-1, r2-2 |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy; minors QA-30-r2-1 (ADR-017 line 202), runbook OOM check should also read RestartCount (OOMKilled resets on restart) |
-| [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | in progress | design |
+| [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | in progress | frontend build, then QA |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | not started | |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
