@@ -30,5 +30,5 @@ Verify the whole MVP end to end on the live server before the operator and frien
 - [ ] Preview cards render in WhatsApp, Signal, Slack, Telegram and X; draft links show no route or numbers.
 - [ ] Delete, expiry and hiding-on each stop old content within 60 s on the live server.
 - [ ] The data-processing record exists.
-- [ ] The About page's operator name and contact placeholders are filled in.
+- [ ] The About page's operator placeholder is gone: the operator file answers every prompt of `deploy/operator.example.txt`, including what the TLS proxy logs.
 - [ ] Gate 1 starts: the operator and friends use the site for real workouts for a few weeks.

@@ -448,10 +448,11 @@ Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
 **Decided on 4 Nov 2026, About page** (user, OQ-105, OQ-106, F-29):
 
 - **(OQ-105)** The theme choice is listed on the About page among what the viewer's browser keeps.
-- **(OQ-106)** FE-1 drafts the privacy text from F-29 PT-1 to PT-17; the user edits it on screen before launch. (a) Legal basis: GDPR Art. 6(1)(b) for workouts and settings, Art. 6(1)(f) for reports, rate limiting, logs and map tiles. (b) "Keeps no access log"; the user confirms at F-32 that this holds for their proxy. (c) Hosting provider as a category: "a hosting provider in an EU data centre". (d) The general right to complain to a supervisory authority, no named authority.
-- OQ-5 (FIT Protocol Licence) stays open for F-32.
+- **(OQ-106)** FE-1 drafts the privacy text from F-29 PT-1 to PT-17; the user edits it on screen before launch. (a) Legal basis: GDPR Art. 6(1)(b) for workouts and settings, Art. 6(1)(f) for reports, rate limiting, logs and map tiles. (b) withdrawn: the page makes no access-log claim; the proxy's logging is stated in the operator file. (c) Hosting provider as a category: "a hosting provider in an EU data centre". (d) The general right to complain to a supervisory authority, no named authority.
+- **Page split:** the About page has an app part (committed template, true for every deployment) and an operator part from a file supplied per deployment (`WORKOUT_EXPLORER_OPERATOR_FILE`); the repository ships only `deploy/operator.example.txt`. The operator name and contact settings are dropped.
+- **(OQ-5)** The FIT Protocol licence gets an entry in the attribution list.
 
-Updated: spec (INF-1), technical design (Hosting: About page; Configuration: operator name and contact; Repository layout: `about.html`, `tools/attributions`), F-29 (scope, AC 2), F-29 design (Status, PT-14, open questions), architect index.
+Updated: spec (INF-1), technical design (Hosting: About page; Configuration: `WORKOUT_EXPLORER_OPERATOR_FILE`; Repository layout: `about.html`, `tools/attributions`, `deploy/operator.example.txt`), F-29 (scope, ACs), F-32 (AC), F-29 design (Status, PT-14, open questions), architect index.
 
 The original questions follow for reference.
 
