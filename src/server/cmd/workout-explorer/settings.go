@@ -261,7 +261,12 @@ func readSettings(getenv func(string) string) (settings, error) {
 }
 
 // newParser is the one place cmd builds an ingest.Parser: the default limits
-// with only the time limit replaced. Zero t means the default.
-func newParser(t time.Duration, logger *slog.Logger) *ingest.Parser {
-	return ingest.NewParser(ingest.Limits{Timeout: t}, logger)
+// with only the time limit replaced. Zero t means the default. stored raises
+// MaxBytes by the strip's growth, for regenerate's stored originals (F-30 RG-1).
+func newParser(t time.Duration, stored bool, logger *slog.Logger) *ingest.Parser {
+	lim := ingest.Limits{Timeout: t}
+	if stored {
+		lim.MaxBytes = ingest.DefaultLimits.MaxBytes + ingest.MaxStripGrowth
+	}
+	return ingest.NewParser(lim, logger)
 }

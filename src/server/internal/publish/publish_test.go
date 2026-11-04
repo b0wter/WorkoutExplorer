@@ -342,8 +342,15 @@ func TestHidesMore(t *testing.T) {
 		{"hiding on", p, hidden, true},
 		{"download off", download, p, true},
 		{"back to draft", p, with(p, func(r *lifecycle.Record) { r.Visibility = lifecycle.Draft }), true},
-		{"sport (unclassified)", p, with(p, func(r *lifecycle.Record) { r.Sport = "running" }), true},
-		{"summary (unclassified)", p, with(p, func(r *lifecycle.Record) { r.SummaryJSON = "{}" }), true},
+		// F-30 RG-6: derived from the original, never read by the public build.
+		{"sport", p, with(p, func(r *lifecycle.Record) { r.Sport = "running" }), false},
+		{"summary", p, with(p, func(r *lifecycle.Record) { r.SummaryJSON = "{}" }), false},
+		{"start", p, with(p, func(r *lifecycle.Record) { t := r.CreatedAt; r.StartTime = &t }), false},
+		{"time zone", p, with(p, func(r *lifecycle.Record) { o := 3600; r.TimeZoneOffsetS = &o }), false},
+		{"data end", p, with(p, func(r *lifecycle.Record) { e := 60; r.DataEndS = &e }), false},
+		{"hidden ranges", p, with(p, func(r *lifecycle.Record) { r.HiddenRanges = [][2]int{{0, 5}} }), false},
+		{"derived and hiding on", p, with(hidden, func(r *lifecycle.Record) { r.SummaryJSON = "{}" }), true},
+		{"created (unclassified)", p, with(p, func(r *lifecycle.Record) { r.CreatedAt = r.CreatedAt.Add(time.Second) }), true},
 		{"token (unclassified)", p, with(p, func(r *lifecycle.Record) { r.EditTokenHash[0] ^= 1 }), true},
 		{"title and hiding on", p, with(hidden, func(r *lifecycle.Record) { r.Title = "x" }), true},
 	} {

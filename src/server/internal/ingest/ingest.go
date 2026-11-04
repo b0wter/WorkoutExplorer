@@ -38,6 +38,14 @@ func NewParser(lim Limits, logger *slog.Logger) *Parser {
 	return &Parser{lim: lim, logger: logger, slots: make(chan struct{}, lim.MaxConcurrent)}
 }
 
+// WithLogger returns a Parser that shares p's limits and parse slots and
+// writes its log lines to logger (F-30: the line gains the workout's id).
+func (p *Parser) WithLogger(logger *slog.Logger) *Parser {
+	q := *p
+	q.logger = logger
+	return &q
+}
+
 // Limits returns the effective limits, defaults filled in.
 func (p *Parser) Limits() Limits { return p.lim }
 

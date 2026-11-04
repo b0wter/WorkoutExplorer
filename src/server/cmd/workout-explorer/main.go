@@ -5,6 +5,7 @@
 //	workout-explorer serve -data <dir> -web <dir> [-addr 127.0.0.1:8080]
 //	workout-explorer parse [-datafile <path>] [-original <path>] <file.fit>
 //	workout-explorer delete -data <dir> [-y] <public_id>
+//	workout-explorer regenerate -data <dir> -web <dir>
 //
 // main only parses flags, builds the logger and handler, and runs the
 // server; no logic beyond wiring (Technical Design, Code structure:
@@ -43,6 +44,7 @@ commands:
   serve    run the HTTP API server (-data <dir> and -web <dir> are required)
   parse    print the normalised workout of a FIT file, or why it is rejected (diagnostic)
   delete   delete one workout, its reports and files (operator; -data <dir> [-y] <public_id>)
+  regenerate  rebuild every live workout with this version (after a deploy; -data <dir> -web <dir>)
 `
 
 func main() {
@@ -62,6 +64,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return parse(args[1:], stdout, stderr)
 	case "delete":
 		return deleteCmd(args[1:], os.Stdin, isTerminal(os.Stdin), stdout, stderr)
+	case "regenerate":
+		return regenerateCmd(args[1:], os.Getenv, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "unknown command %q\n\n%s", args[0], usage)
 		return 2

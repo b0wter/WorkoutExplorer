@@ -25,6 +25,10 @@ type Repository interface {
 	// is returned unchanged and nothing is stored; a missing row is found=false
 	// and apply is not called.
 	UpdateWorkout(ctx context.Context, id string, apply func(Record) (Record, error)) (r Record, found bool, err error)
+	// UpdateDerived writes only the columns derived from the original, from
+	// r, in one statement that changes nothing when the row is gone or not Live
+	// at now, and returns the row afterwards (F-30 RG-4 (b)).
+	UpdateDerived(ctx context.Context, id string, r Record, now time.Time) (Record, bool, error)
 	// LivePublicIDs is the public_id of every unlisted row that is Live at
 	// now: the only folders allowed under public/ (F-15 P-8, F-21 X-2).
 	LivePublicIDs(ctx context.Context, now time.Time) (map[string]struct{}, error)
@@ -57,6 +61,7 @@ type PrivateFiles interface {
 	Create(id string, files []File) error                             // fails if private/{id} exists; staged, fsynced, renamed; cleans its own staging on error
 	Remove(id string) (freed int64, err error)                        // private/{id}; freed = the sizes of its files (F-10); nil and 0 if absent
 	Read(id, name string) (body io.ReadCloser, size int64, err error) // an open file of private/{id}; an error wrapping fs.ErrNotExist if absent (F-12 O-8)
+	Replace(id, name string, data []byte) error                       // temp and rename into an existing private/{id}, never creating it (F-30 RG-4)
 	IDs() (ids []string, unknown int, err error)
 	ClearStaging() (removed int, err error)
 }

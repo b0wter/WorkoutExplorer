@@ -4,8 +4,11 @@
 #   deploy/deploy.sh vX.Y.Z user@host   (needs git, gh, ssh, scp, tar, curl, sha256sum, sha512sum; linux/amd64 only)
 #   deploy/deploy.sh vX.Y.Z local        (on the server itself: same steps, no ssh/scp)
 # DEPLOY_DIR on the server defaults to /srv/workout-explorer; the SSH user owns it
-# and is in the docker group (RUNBOOK.md). No regenerate step (F-30 adds it
-# after the health wait); no rollback (ADR-019): a failed health wait exits 1.
+# and is in the docker group (RUNBOOK.md). After the health wait it runs
+# `regenerate` in the app container, then removes old bundles (F-30 RG-10, RG-11).
+# No rollback (ADR-019). Exit 0: healthy and regenerate finished (whatever it
+# deleted or kept); 1: refused or not healthy; 3: regenerate did not finish
+# (nothing removed; run deploy.sh again with the same tag); 4: the clean-up failed.
 set -eu
 tag=${1:?usage: deploy/deploy.sh vX.Y.Z user@host}
 host=${2:?usage: deploy/deploy.sh vX.Y.Z user@host}
@@ -43,6 +46,12 @@ put() { # put <local> <remote relative path> <mode>
 	cp_to "$1" "$tn"
 	r "chmod $3 '$tn' && mv '$tn' '$2'"
 }
+# Bundle lists (RG-10), before anything is copied: the files already in web/assets
+# when the first list is written form one list of their own (releases before F-30).
+r '[ -d bundles ] || { rm -rf bundles.new && mkdir bundles.new && ls -A web/assets > bundles.new/pre-f30 && mv bundles.new bundles; }'
+(cd "$tmp/a/web/assets" && ls -A) > "$tmp/bundle"
+put "$tmp/bundle" "bundles/$tag" 644
+put deploy/clean-assets.sh clean-assets.sh 644
 caddy_new=$(sha256sum "$tmp/caddy" | cut -d' ' -f1)
 caddy_old=$(r "sha256sum bin/caddy 2>/dev/null | cut -d' ' -f1" || true)
 conf_new=$(sha256sum deploy/Caddyfile | cut -d' ' -f1)
@@ -67,11 +76,30 @@ r "docker compose restart app"
 for f in upload.html edit.html generic.html; do put "$tmp/a/web/$f" "web/$f" 644; done
 
 want=$tag
+up=no
 for i in $(seq 1 30); do
 	got=$(r 'l=$(sed -n "s/^WX_LISTEN=//p" .env); curl -fsS --max-time 3 "http://${l:-127.0.0.1:8088}/api/health"' 2>/dev/null || true)
-	case $got in *'"version":"'"$want"'"'*) echo "deploy: $want is up"; exit 0 ;; esac
+	case $got in *'"version":"'"$want"'"'*) echo "deploy: $want is up"; up=yes; break ;; esac
 	sleep 2
 done
-echo "deploy: no healthy $want after 60 s; service state and last log lines (app, caddy):" >&2
-r "docker compose ps; docker compose logs --tail 30 app; docker compose logs --tail 15 caddy" >&2 || true
-exit 1
+if [ "$up" != yes ]; then
+	echo "deploy: no healthy $want after 60 s; service state and last log lines (app, caddy):" >&2
+	r "docker compose ps; docker compose logs --tail 30 app; docker compose logs --tail 15 caddy" >&2 || true
+	exit 1
+fi
+
+# 5. Regenerate every live workout with the new version (F-30): its log lines go
+# to stderr, the report (key=value lines) to stdout. Then the old bundles.
+echo "deploy: regenerating workouts"
+if report=$(r 'd=$(sed -n "s/^WX_DATA=//p" .env); w=$(sed -n "s/^WX_WEB=//p" .env); docker compose exec -T app /srv/workout-explorer/bin/workout-explorer regenerate -data "${d:-/srv/workouts}" -web "${w:-/srv/workout-explorer/web}"'); then rc=0; else rc=$?; fi
+count() { printf '%s\n' "$report" | sed -n "s/^$1=//p"; }
+summary="rebuilt=$(count rebuilt) deleted=$(count deleted) kept=$(count kept) skipped=$(count skipped)"
+if [ "$rc" != 0 ]; then
+	echo "deploy: $want is live, but regenerate did not finish (exit $rc; $summary); nothing removed. Run deploy.sh $want again." >&2
+	exit 3
+fi
+if ! clean=$(printf '%s\n' "$report" | sed -n 's/^asset=//p' | r "sh clean-assets.sh '$tag'"); then
+	echo "deploy: $want is live and regenerated ($summary), but removing old bundles failed" >&2
+	exit 4
+fi
+echo "deploy: $want done: $summary $(printf '%s' "$clean" | tr '\n' ' ')"

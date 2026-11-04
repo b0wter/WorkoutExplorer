@@ -108,7 +108,7 @@ func parseFile(path, dataPath, originalPath string, timeout time.Duration, stdou
 	if err != nil {
 		return err
 	}
-	parser := newParser(timeout, nil)
+	parser := newParser(timeout, false, nil)
 	var w workout.Workout
 	var original []byte
 	if originalPath != "" {

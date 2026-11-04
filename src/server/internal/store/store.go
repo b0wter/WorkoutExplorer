@@ -331,3 +331,50 @@ func (d *DB) UpdateWorkout(ctx context.Context, id string, apply func(lifecycle.
 	}
 	return next, true, nil
 }
+
+// liveWhere is the SQL form of lifecycle.Record.Live at ?1 with ?2 =
+// lifecycle.DraftLifetime in seconds: the negation of DueWorkouts' condition.
+const liveWhere = `expires_at > ?1 AND NOT (visibility = 'draft' AND created_at <= ?1 - ?2)`
+
+// LiveWorkouts returns every row that is Live at now, drafts included, oldest
+// first (F-30 RG-2).
+func (d *DB) LiveWorkouts(ctx context.Context, now time.Time) ([]lifecycle.Record, error) {
+	rows, err := d.db.QueryContext(ctx, "SELECT "+columns+" FROM workouts WHERE "+liveWhere+" ORDER BY created_at, id",
+		unix(now), int64(lifecycle.DraftLifetime/time.Second))
+	if err != nil {
+		return nil, fmt.Errorf("store: live workouts: %w", err)
+	}
+	defer rows.Close()
+	var out []lifecycle.Record
+	for rows.Next() {
+		r, err := scanRecord(rows)
+		if err != nil {
+			return nil, fmt.Errorf("store: live workouts: %w", err)
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: live workouts: %w", err)
+	}
+	return out, nil
+}
+
+// UpdateDerived writes the columns derived from the original (sport,
+// start_time, time_zone_offset_s, summary_json, data_end_s, the hidden
+// ranges) from r, in one statement that changes nothing when the row is gone
+// or not Live at now, and returns the row as it is afterwards (F-30 RG-4
+// (b)). Settings columns are never written.
+func (d *DB) UpdateDerived(ctx context.Context, id string, r lifecycle.Record, now time.Time) (lifecycle.Record, bool, error) {
+	got, err := scanRecord(d.db.QueryRowContext(ctx, `UPDATE workouts SET sport = ?3, start_time = ?4, time_zone_offset_s = ?5,
+		summary_json = ?6, data_end_s = ?7, hidden1_first = ?8, hidden1_last = ?9, hidden2_first = ?10, hidden2_last = ?11
+		WHERE id = ?12 AND `+liveWhere+` RETURNING `+columns,
+		append([]any{unix(now), int64(lifecycle.DraftLifetime / time.Second), r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
+			r.SummaryJSON, intPtr(r.DataEndS)}, append(rangeColumns(r.HiddenRanges), id)...)...))
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return lifecycle.Record{}, false, nil
+	case err != nil:
+		return lifecycle.Record{}, false, fmt.Errorf("store: update derived: %w", err)
+	}
+	return got, true, nil
+}

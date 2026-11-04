@@ -248,3 +248,33 @@ func TestRead(t *testing.T) {
 		}
 	}
 }
+
+// TestReplace (F-30 RG-4 (a)): the file is replaced through tmp/, nothing is
+// left in tmp/, and a missing folder is never created.
+func TestReplace(t *testing.T) {
+	d, root := open(t)
+	id := "0123456789abcdef0123456789abcdef"
+	if err := d.Create(id, []lifecycle.File{{Name: lifecycle.OriginalName, Data: []byte("a")}, {Name: lifecycle.DraftName, Data: []byte("b")}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Replace(id, lifecycle.DraftName, []byte("new")); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(root, "private", id, lifecycle.DraftName))
+	info, _ := os.Stat(filepath.Join(root, "private", id, lifecycle.DraftName))
+	if string(b) != "new" || info.Mode().Perm() != 0o600 || len(entries(t, filepath.Join(root, "tmp"))) != 0 {
+		t.Errorf("%q %v tmp %v", b, info.Mode(), entries(t, filepath.Join(root, "tmp")))
+	}
+	gone := "fedcba9876543210fedcba9876543210"
+	if err := d.Replace(gone, lifecycle.DraftName, []byte("x")); err == nil {
+		t.Error("replaced into a missing folder")
+	}
+	if _, err := os.Lstat(filepath.Join(root, "private", gone)); !os.IsNotExist(err) || len(entries(t, filepath.Join(root, "tmp"))) != 0 {
+		t.Errorf("created the folder or left staging: %v", err)
+	}
+	for _, c := range [][2]string{{"../x", lifecycle.DraftName}, {id, "other"}} {
+		if err := d.Replace(c[0], c[1], nil); err == nil {
+			t.Errorf("%v accepted", c)
+		}
+	}
+}

@@ -38,6 +38,12 @@ var DefaultLimits = Limits{
 	MaxConcurrent:        2,
 }
 
+// MaxStripGrowth is how much longer a stored original can be than its upload
+// (ADR-023 rev. 5 item 7): per sequence 2 bytes and at most 130,051 bytes of
+// an overlapping last record. F-30 reads stored originals with MaxBytes
+// raised by it, so that our own output is never refused for its size.
+const MaxStripGrowth = 64 * (2 + 130_051)
+
 // Limit names, as they appear in Error.Limit and in the log (ADR-018).
 const (
 	limitBytes             = "bytes"

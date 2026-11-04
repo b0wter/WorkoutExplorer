@@ -51,6 +51,7 @@ type fakeRepo struct {
 
 	checkpoints   int
 	checkpointErr error
+	derivedErr    error // UpdateDerived fails with this (F-30)
 }
 
 func newRepo() *fakeRepo { return &fakeRepo{rows: map[string]Record{}} }
@@ -148,6 +149,9 @@ type fakeFiles struct {
 	removed   []string
 	staging   int
 	unknown   int
+	// F-30: Replace fails with replaceErr; replaced lists the files written.
+	replaceErr error
+	replaced   []string
 }
 
 func newFiles() *fakeFiles { return &fakeFiles{dirs: map[string][]File{}} }

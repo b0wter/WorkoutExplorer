@@ -87,6 +87,46 @@ func (d *Dir) Create(id string, files []lifecycle.File) (err error) {
 	return syncDir(d.private)
 }
 
+// Replace writes data as private/{id}/{name} (F-30 RG-4 (a)): staged in tmp/
+// under a unique name, fsynced and renamed over the old file, so the file is
+// old or new. It never creates private/{id}: when the folder is gone (the
+// workout was deleted meanwhile) the rename fails and nothing is left behind.
+func (d *Dir) Replace(id, name string, data []byte) (err error) {
+	if !ValidID(id) || !validName(name) {
+		return errors.New("privatedir: invalid workout ID or file name")
+	}
+	f, err := os.CreateTemp(d.tmp, "replace-*")
+	if err != nil {
+		return fmt.Errorf("privatedir: %w", err)
+	}
+	tmp := f.Name()
+	defer func() {
+		if err != nil {
+			_ = os.Remove(tmp)
+		}
+	}()
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
+		return fmt.Errorf("privatedir: %w", err)
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return fmt.Errorf("privatedir: %w", err)
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return fmt.Errorf("privatedir: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("privatedir: %w", err)
+	}
+	folder := filepath.Join(d.private, id)
+	if err := os.Rename(tmp, filepath.Join(folder, name)); err != nil {
+		return fmt.Errorf("privatedir: %w", err)
+	}
+	return syncDir(folder)
+}
+
 func writeSynced(path string, data []byte) error {
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {

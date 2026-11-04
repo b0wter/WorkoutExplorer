@@ -30,8 +30,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"syscall"
+	"time"
 
 	"workout-explorer/internal/datafile"
 	"workout-explorer/internal/lifecycle"
@@ -60,6 +62,14 @@ type Deps struct {
 	Storage   *lifecycle.Storage // nil: no total (tests)
 	Logger    *slog.Logger       // nil: no log lines (tests)
 	BaseURL   string             // origin of absolute links, checked by cmd (F-23 PC-8)
+	// Rows reads the row again inside the lock before a write phase (F-30
+	// RG-5); nil: no re-read (tests).
+	Rows Rows
+}
+
+// Rows reads one workout row (internal/store).
+type Rows interface {
+	WorkoutByPublicID(ctx context.Context, publicID string) (lifecycle.Record, bool, error)
 }
 
 // Area is the public area of one data directory.
@@ -218,7 +228,46 @@ func (a *Area) WorkoutChanged(ctx context.Context, before, after lifecycle.Recor
 	if err != nil {
 		return err
 	}
-	return a.locked(func() error { return a.write(dir, b) })
+	return a.locked(func() error {
+		// RG-5: a row changed since the build was written by another process
+		// (serve after regenerate read it), which builds from it itself; a
+		// stale page must never overwrite a newer, possibly more hidden one.
+		if a.d.Rows != nil {
+			cur, found, err := a.d.Rows.WorkoutByPublicID(ctx, after.PublicID)
+			if err != nil {
+				return fmt.Errorf("publish: recheck: %w", err)
+			}
+			if !found || !cur.Live(time.Now()) || !sameRecord(cur, after) {
+				return nil
+			}
+		}
+		return a.write(dir, b)
+	})
+}
+
+// sameRecord reports whether every field of a and b is equal, times by
+// instant.
+func sameRecord(a, b lifecycle.Record) bool {
+	av, bv := reflect.ValueOf(a), reflect.ValueOf(b)
+	for i := 0; i < av.NumField(); i++ {
+		x, y := av.Field(i).Interface(), bv.Field(i).Interface()
+		switch x := x.(type) {
+		case time.Time:
+			if !x.Equal(y.(time.Time)) {
+				return false
+			}
+		case *time.Time:
+			y := y.(*time.Time)
+			if (x == nil) != (y == nil) || x != nil && !x.Equal(*y) {
+				return false
+			}
+		default:
+			if !reflect.DeepEqual(x, y) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // HidesMore is the pure rule of P-7: a change may be written in place only
@@ -234,6 +283,9 @@ func HidesMore(before, after lifecycle.Record) bool {
 		}
 		switch t.Field(i).Name {
 		case "Title", "Description", "ExpiresAt", "PublishedAt":
+		// Derived from the original, never read by the public build (F-30
+		// RG-6); a build that starts reading one must take it off this list.
+		case "Sport", "StartTime", "TimeZoneOffsetS", "SummaryJSON", "DataEndS", "HiddenRanges":
 		case "Visibility":
 			if before.Visibility != lifecycle.Draft || after.Visibility != lifecycle.Unlisted { // only draft → unlisted
 				return true
@@ -643,4 +695,48 @@ func usage(root string) (int64, error) {
 		return nil
 	})
 	return total, err
+}
+
+// Assets returns every name that a page under public/ links as
+// /assets/{name}, sorted and without repeats (F-30 RG-9). It takes no lock:
+// a page written meanwhile names only the current bundle, so the list can
+// only keep too much. A page removed while it is read is skipped.
+func (a *Area) Assets() ([]string, error) {
+	entries, err := os.ReadDir(a.root)
+	if err != nil {
+		return nil, fail("list", "public area", err)
+	}
+	seen := map[string]bool{}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		page, err := os.ReadFile(filepath.Join(a.root, e.Name(), indexName))
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, fail("read", "page", err)
+		}
+		for rest := page; ; {
+			i := bytes.Index(rest, []byte("/assets/"))
+			if i < 0 {
+				break
+			}
+			rest = rest[i+len("/assets/"):]
+			n := 0
+			for n < len(rest) && nameChar(rest[n]) {
+				n++
+			}
+			if n > 0 && rest[0] != '.' {
+				seen[string(rest[:n])] = true
+			}
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for n := range seen {
+		out = append(out, n)
+	}
+	slices.Sort(out)
+	return out, nil
 }

@@ -519,6 +519,38 @@ func TestUpdateWorkout(t *testing.T) {
 	}
 }
 
+// TestUpdateDerived (F-30 RG-4 (b)): only the derived columns change, and
+// the row afterwards is returned; a missing row is not found.
+func TestUpdateDerived(t *testing.T) {
+	db, _ := openTemp(t)
+	r := published(3)
+	r.Title, r.HideEnds, r.AllowDownload = "kept", true, true
+	if err := db.InsertWorkout(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	d := lifecycle.Record{Title: "ignored", Sport: "running", SummaryJSON: `{"n":2}`, HiddenRanges: [][2]int{{1, 2}, {8, 9}}}
+	st, off, end := r.CreatedAt.Add(-time.Hour), 3600, 42
+	d.StartTime, d.TimeZoneOffsetS, d.DataEndS = &st, &off, &end
+	got, found, err := db.UpdateDerived(ctx, r.ID, d, r.CreatedAt)
+	if err != nil || !found {
+		t.Fatal(found, err)
+	}
+	want := r
+	want.Sport, want.SummaryJSON, want.HiddenRanges = d.Sport, d.SummaryJSON, d.HiddenRanges
+	want.StartTime, want.TimeZoneOffsetS, want.DataEndS = &st, &off, &end
+	back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID)
+	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(back, want) {
+		t.Errorf("got\n%+v\nstored\n%+v\nwant\n%+v", got, back, want)
+	}
+	// Back to no start time and no ranges: NULLs.
+	if got, _, err = db.UpdateDerived(ctx, r.ID, lifecycle.Record{Sport: "x", SummaryJSON: "{}"}, r.CreatedAt); err != nil || got.StartTime != nil || got.HiddenRanges != nil || got.DataEndS != nil {
+		t.Errorf("%+v %v", got, err)
+	}
+	if _, found, err := db.UpdateDerived(ctx, "missing", d, r.CreatedAt); found || err != nil {
+		t.Errorf("missing: %v %v", found, err)
+	}
+}
+
 // TestHiddenRanges (ADR-030): the ranges round-trip, are kept by
 // UpdateWorkout, and malformed column values are refused.
 func TestHiddenRanges(t *testing.T) {
@@ -769,6 +801,17 @@ func TestDeadlineBoundary(t *testing.T) {
 			}
 			if _, ok := live[r.PublicID]; ok != (r.Visibility == lifecycle.Unlisted && r.Live(now)) {
 				t.Errorf("%s at deadline %+v: live public %v", c.name, now.Sub(d), ok)
+			}
+			// F-30 RG-2, RG-4 (b): the run's list and its row update use the same rule.
+			all, err := db.LiveWorkouts(ctx, now)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if inLive := len(all) == 1 && all[0].ID == r.ID; inLive != r.Live(now) {
+				t.Errorf("%s at deadline %+v: live workouts %v", c.name, now.Sub(d), inLive)
+			}
+			if _, found, err := db.UpdateDerived(ctx, r.ID, r, now); err != nil || found != r.Live(now) {
+				t.Errorf("%s at deadline %+v: update derived %v %v", c.name, now.Sub(d), found, err)
 			}
 			// F-27 R-5: a report is accepted exactly when the page is live.
 			_, _, found, err := db.AddReport(ctx, r.PublicID, "spam", "", now, 1000)

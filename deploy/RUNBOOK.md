@@ -283,13 +283,13 @@ docker compose build
 docker compose up -d
 ```
 
-Both containers are recreated, so pages are unreachable for a moment. Published pages may lose their styles and scripts after an update that changes the web files, until the `regenerate` command exists (F-30, not yet built). When it exists, run it afterwards:
+Both containers are recreated, so pages are unreachable for a moment. Then rebuild every stored workout with the new version (published pages, drafts, preview images):
 
 ```sh
-docker compose exec app /srv/workout-explorer/bin/workout-explorer regenerate
+docker compose exec -T app /srv/workout-explorer/bin/workout-explorer regenerate -data /srv/workouts -web /srv/workout-explorer/web
 ```
 
-Until then, such workouts expire on their own (at most 30 days).
+(use your `WX_DATA` and `WX_WEB` if you changed them). It prints `rebuilt=`, `deleted=`, `kept=` and `skipped=` counts and the asset names pages still use; its log lines go to stderr. Exit 0 means every workout was processed. A workout whose file the new version cannot read at all is deleted (as if it had expired); one that failed for another reason (load, disk) is kept unchanged and rebuilt by the next run, so simply run it again. Exit 1: it stopped early or could not start; run it again. With your own image build, old web files are replaced, so pages of kept workouts may lose their styles until a later run rebuilds them.
 
 Small hosts (2 GB): stop the app while building (`docker compose stop app`, then build, then `docker compose up -d`), or build on another amd64 machine and move the image: `docker save workout-explorer:local | ssh host docker load`.
 
@@ -369,7 +369,7 @@ docker compose logs --tail 100 caddy
 | `docker compose up` says port is already allocated | Something else uses 8088. Find it with `ss -ltnp 'sport = :8088'`. Set another port in `.env`, for example `WX_LISTEN=127.0.0.1:8090`, and point the proxy there |
 | Everyone gets "too many uploads" / limit hits quickly | The server sees your proxy as the client. `X-Forwarded-For` is missing, or `WX_TRUSTED_PROXIES` does not match the proxy's source address, so Caddy ignores the header. Fix the proxy header and the setting, then `docker compose up -d` |
 | People can bypass the limit | `WX_TRUSTED_PROXIES` is too wide. List only the proxy's own address or its network |
-| Preview cards (WhatsApp, Telegram, ...) show no image or a wrong link | `WORKOUT_EXPLORER_BASE_URL` differs from the public address (http vs https, `www`, port). Fix it, `docker compose up -d`, and republish or wait: pages published before keep the old links until they are regenerated (F-30 not yet built) |
+| Preview cards (WhatsApp, Telegram, ...) show no image or a wrong link | `WORKOUT_EXPLORER_BASE_URL` differs from the public address (http vs https, `www`, port). Fix it, `docker compose up -d`, and republish or wait: pages published before keep the old links until `regenerate` runs (section 8) |
 | `app` exits at start, `docker compose logs app` shows "must be ..." | A setting is invalid or `WORKOUT_EXPLORER_BASE_URL` is missing. Fix `.env` |
 | Upload fails with permission errors, or `app` cannot create files | The data directory is not owned by 10001: `sudo chown -R 10001:10001 /srv/workouts && sudo chmod 0750 /srv/workouts /srv/workouts/public` |
 | Published pages give 404 from the container but exist | Caddy cannot read `public/`: mode must be 0750 with group 10001 (section 3) |
@@ -378,7 +378,7 @@ docker compose logs --tail 100 caddy
 | `docker compose` complains about `!override` or unknown tag | Compose is older than 2.24. Upgrade the plugin |
 | Build fails with "exec format error" or on arm64 | Only linux/amd64 is supported |
 | Build is killed (out of memory) | Stop `app` while building, or build elsewhere (section 8) |
-| Styles missing on old workouts after an update | See section 8: regenerate is not yet available; those workouts expire |
+| Styles missing on old workouts after an update | Run `regenerate` (section 8); a workout it reports as kept is rebuilt by a later run |
 | No notification; `docker compose logs app` shows `"notification failed","class":"network"` | `compose.notify.yaml` is missing from `COMPOSE_FILE`, or the host has no internet route (section 4a). `"status":400` means a wrong token or user key, `"status":429` Pushover's monthly quota |
 | `delete` says "database schema N is not this binary's" | `app` has not yet run with this version. Start it once (`docker compose up -d`), then delete |
 
@@ -418,6 +418,8 @@ Copy `deploy/example.env` to `/srv/workout-explorer/.env` and edit it as in sect
 git tag v1.4.0 && git push origin v1.4.0
 ```
 
+**CSP hash of the inline theme script** (ADR-032 item 3, F-30 RG-14): a release that changes the script adds its new hash to `deploy/Caddyfile` and keeps the old one, because Caddy reloads before `regenerate` has rebuilt the old pages. Drop the old hash only in a later release, and only if the previous deploy reported `kept=0` and finished with exit 0.
+
 CI builds with that version, and the `release` job publishes `workout-explorer-v1.4.0-linux-amd64.tar.gz` and `SHA256SUMS` (only for plain `vX.Y.Z` tags, and only if the tests pass). A release is never replaced: if it is broken or the job failed, ship the next version (or delete the release by hand and use "Re-run all jobs" on the tag run in GitHub; re-running only `release` fails once the 1-day hand-off artefact has expired).
 
 **Deploy it.** On your machine, from a clean checkout of that tag (`git checkout v1.4.0`; `gh auth login` once):
@@ -430,7 +432,19 @@ Or, when you are logged in on the server itself (clone and `gh` there, running u
 
 Run it from a linux/amd64 machine with `git`, `gh`, `ssh`, `scp`, `tar`, `curl`, `sha256sum` and `sha512sum` (it runs the downloaded Caddy locally to validate the Caddyfile; macOS and arm64 do not work).
 
-It refuses a dirty tree, HEAD not at the tag, a bad checksum, or a release built from another commit. It downloads the release, copies it, starts the services, restarts `app` and waits (60 s) for `/api/health` through Caddy to report exactly the tag as its version. It never connects from CI and has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version). Old `web/assets/` files stay (additive); remove old bundles by hand when you like.
+It refuses a dirty tree, HEAD not at the tag, a bad checksum, or a release built from another commit. It downloads the release, copies it, starts the services, restarts `app` and waits (60 s) for `/api/health` through Caddy to report exactly the tag as its version. It never connects from CI and has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version).
+
+Then it runs `regenerate` in the `app` container (same `.env`, mounts and memory cap as `serve`), which rebuilds every live workout with the new version, and removes old bundles. It ends with one line:
+
+```
+deploy: v1.4.0 done: rebuilt=12 deleted=0 kept=0 skipped=0 files_removed=17 bundles_removed=1
+```
+
+- `deleted`: workouts whose stored file the new version rejects; they are gone, as on expiry. Each has a `fit rejected` log line with the device model.
+- `kept`: workouts whose rebuild failed for a server-side reason (load, time limit, disk); they keep serving their previous files and bundle. `skipped`: expired or deleted during the run.
+- Old bundles: `deploy.sh` keeps one list per release in `bundles/{tag}` (the first deploy with F-30 also writes `bundles/pre-f30` for the files already there). After a successful run it keeps the current release and every release whose files a served page still names, and removes every other file in `web/assets/` and every other list. A viewer who had a page open across the clean-up may need to reload it.
+- Exit codes: 0 healthy and regenerated (whatever was deleted or kept); 1 refused or not healthy; 3 `regenerate` did not finish (the new version is live, nothing was removed); 4 the bundle clean-up failed.
+- **Retry** after exit 3 or 4, or to rebuild kept workouts: run `deploy/deploy.sh` again with the same tag. It is idempotent and costs one `app` restart.
 
 API downtime is the `app` restart. A new Caddy binary, a changed `compose.yaml`, or a changed `.env` value that Caddy itself uses (`WX_LISTEN`, `WX_TRUSTED_PROXIES`, `WX_DATA`, `WX_WEB`) recreates the Caddy container (other `.env` changes recreate only `app`): published pages are unreachable for a moment. A Caddyfile-only change is a graceful reload.
 
@@ -452,5 +466,7 @@ Fill these in on the real VPS; the Compose cap must stay at or above the first v
 | Cap in `compose.yaml` | `mem_limit` = `memswap_limit`: (peak + 112 MB rate table) x 1.2, rounded up to 100 MB | 1200m (from the F-09 range 620 to 861 MB) |
 | `parse` time of the all-caps synthetic file (ADR-017 item 7) | generate the file on a dev machine (`cd src/server && go run ./tools/corpusgen -cap-file /tmp/cap.fit`), copy it into `/srv/workouts`, then `time docker compose exec app /srv/workout-explorer/bin/workout-explorer parse /srv/workouts/cap.fit`; delete it afterwards | not yet measured |
 | Parse time limit `WORKOUT_EXPLORER_PARSE_TIMEOUT` | env file | 10 s (default) |
+| `memory.peak` of `app` with one `regenerate` run alongside the load of the first row (F-30 RG-13) | the first row's load, and at the same time `regenerate` over a data directory whose largest workout is the all-caps synthetic file; read `memory.peak` as above. If the cap then leaves less than 600 MB free, ADR-017's gate of 2 (rev. 3) is needed (a code change: open an issue) | not yet measured on the VPS. Dev machine (8 cores), `regenerate` alone over the all-caps file: max RSS 305 MB, 4.1 s |
+| Time of `regenerate` over 100 synthetic workouts (F-30 AC 10) | `time docker compose exec -T app ... regenerate ...` on a scratch data directory; more than 30 s: run two at a time (RG-13) | not yet measured on the VPS. Dev machine: 10.0 to 10.7 s, max RSS 46 MB (25 each of ride-4h, ride-30min, triathlon, run-30min, all published) |
 
 A fifth simultaneous upload gets "try again in a minute"; `docker inspect -f '{{.State.OOMKilled}}' workout-explorer-app-1` stays `false`.
