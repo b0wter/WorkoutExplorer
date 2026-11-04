@@ -45,14 +45,16 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov); minors QA-28-r1-1, r1-2 |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once, operator file on the VPS; minors QA-29-r2-1, r2-2 |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy; minors QA-30-r2-1 (ADR-017 line 202), runbook OOM check should also read RestartCount (OOMKilled resets on restart) |
-| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-31 (except F-24) | not started | |
+| [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | not started | |
+| [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 1 | both (backend first) | F-29, F-31 | not started | |
+| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-34 (except F-24) | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 24 features. Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 26 features. Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
-Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8 owner download, DS-4) as MVP; the SH-8 viewer download is Later (phase 3), and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
+Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, AP-21, SH-4, SH-8 owner download, DS-4, INF-5) as MVP; the SH-8 viewer download is Later (phase 3), and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
 
 | Requirement | Priority | Covered by |
 | --- | --- | --- |
@@ -76,6 +78,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-15 Fullscreen map (MVP part) | Should | F-26 (pins in fullscreen: phase 2) |
 | AP-17 Two columns on wide screens | Must | F-13, F-17 (splitter), F-19 |
 | AP-18 Pinned map on a phone | Must | F-13, F-19, F-26 |
+| AP-21 Cursor readout in the fullscreen map | Should | F-33 |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -97,6 +100,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | INF-2 Report form, stored reports | Must | F-27, F-28 |
 | INF-3 Operator delete | Must | F-27 |
 | INF-4 Report notifications (Pushover, opt-in) | Must | F-27 |
+| INF-5 iOS Shortcut upload link (opt-in) | Should | F-34 |
 | NFR Performance: LCP under 2.5 s | — | F-13, F-32 |
 | NFR Performance: 60 fps on 12-hour workout | — | F-05, F-06, F-07, F-25, F-32 |
 | NFR Performance: data file under 500 KB | — | F-03, F-07, F-32 |
@@ -460,6 +464,14 @@ Updated: spec (INF-1), technical design (Hosting: About page; Configuration: `WO
 - **(b)** Viewers with a page open while old bundles are removed lose lazily loaded parts until they reload.
 
 Updated: F-30 (AC 6, open points), technical design (code tree, Binary row, settings' "Read by").
+
+**Decided on 4 Nov 2026, fullscreen readout and iOS Shortcut** (user):
+
+- **Cursor readout in fullscreen (AP-21, F-33):** the cursor readout stays visible in the fullscreen map as a compact strip at the bottom, on phone and desktop, hidden without a cursor. The range panel stays hidden in fullscreen.
+- **iOS Shortcut link (INF-5, F-34):** an optional https setting links the hoster's own Shortcut from the About page ("Upload from your iPhone"); unset means no section, a non-https value refuses startup (exit 2). The Shortcut uses the existing upload API and opens the edit link only. Build instructions go in the documentation for every hoster. Not the Later "mobile share sheet" (a share target built into the app).
+- **Build order:** F-33, then F-34, both before F-32.
+
+Updated: spec (stories, scope table, AP-15, AP-21, INF-5), F-33, F-34, F-32 (depends on), feature index (order, counts, coverage, Should list).
 
 The original questions follow for reference.
 
