@@ -17,6 +17,13 @@ div.wx-map {
   pointer-events: none;
 }
 
+/* F-33 CR-4: in fullscreen the bottom corners sit above the readout strip (--wx-strip, set by the
+   page glue). :where keeps this below the two-column rule after it, which moves them to the top. */
+:where(html.wx-fs) .route-map .maplibregl-ctrl-bottom-left,
+:where(html.wx-fs) .route-map .maplibregl-ctrl-bottom-right {
+  bottom: var(--wx-strip, 0px);
+}
+
 /* F-13 D-18: the sticky map is 100lvh tall, so its bottom strip can be out of view. Attribution
    moves to the top, left of the zoom control (top-right), so the credits stay visible. The same
    for the 100lvh map of the short-landscape two-column layout (F-17); it keeps the phone's

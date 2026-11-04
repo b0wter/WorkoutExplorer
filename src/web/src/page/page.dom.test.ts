@@ -336,6 +336,22 @@ describe('range panel (F-17 R-9, AC 4, AC 5)', () => {
   });
 });
 
+describe('fullscreen readout strip (F-33 CR-2)', () => {
+  it('mounted into the map box only after onmapready; none without a map', async () => {
+    await open('ride-30min');
+    const box = document.createElement('div'); // the stub renders no div.route-map
+    box.className = 'route-map';
+    slot('map-slot')?.append(box);
+    expect(document.querySelector('.wx-strip')).toBeNull();
+    stubLog.routeMap[0].onmapready?.();
+    expect(box.querySelector('.wx-strip .readout')).not.toBeNull();
+    page?.remove();
+    resetStubLog();
+    await open('indoor-ride');
+    expect(document.querySelector('.wx-strip')).toBeNull();
+  });
+});
+
 describe('pin toggle (D-19, AP-18)', () => {
   const buttons = (): NodeListOf<Element> => document.querySelectorAll('#map-slot .map-pin');
 

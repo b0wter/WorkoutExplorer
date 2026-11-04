@@ -86,14 +86,14 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
   });
 
   it('the readout shares the range panel card; 29 px rows and its 8 px of padding are in the reserved height', () => {
-    const shared = css.match(/^#charts-slot \.readout,\n\.range-panel \{([^}]*)\}/m)?.[1] ?? '';
+    const shared = css.match(/^#charts-slot \.readout,\n#map-slot \.readout,\n\.range-panel \{([^}]*)\}/m)?.[1] ?? '';
     for (const d of ['display: grid', 'padding: 4px 10px', 'background: var(--card)', 'border-radius: 6px']) expect(shared, d).toContain(d);
     expect(shared).not.toMatch(/row-gap|(?<!column-)gap:/);
     expect(css).toMatch(/^\.readout \.label,\n\.range-panel \.label \{[^}]*line-height: 13px;/m);
     expect(css).toMatch(/^\.readout \.val,\n\.range-panel \.val \{[^}]*line-height: 16px;/m);
     expect(css).toMatch(/^\.readout \.unit,\n\.range-panel \.unit \{[^}]*line-height: 13px;/m);
-    expect(rule('#charts-slot .readout')).toContain('repeat(4, minmax(0, 1fr))');
-    expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: 1;\s*\}\s*#charts-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
+    expect(css).toMatch(/^#charts-slot \.readout,\n#map-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/m); // F-33: the strip shares the tracks
+    expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: 1;\s*\}\s*#charts-slot \.readout,\s*#map-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
     expect(rule('.charts')).toContain('calc(var(--bar) + var(--r) * 29px + 8px + var(--area) + var(--hint))');
   });
 

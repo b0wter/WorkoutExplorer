@@ -210,3 +210,14 @@ All reported by the operator on 15 Oct 2026, commit `9ccd744` ("all seems good s
 - PP7: pass.
 - PP8 (optional): pass; a real long ride was loaded for information. Its results belong in the QA report, not here (design v1.4, PP8; aggregates in the F-07 QA r3 report).
 - Android: not checked.
+
+## F-33: route scrub in fullscreen with the readout strip
+
+ADR-016 recorder (`?measure`) on `ride-12h`, plain route, in fullscreen with the strip shown (cursor set before entering; the strip subscribes before listener Z, so its writes are in "map"). Headless Chromium 141 with SwiftShader WebGL, input driven by Playwright over route pixels taken from a screenshot; working tree on `dbe0450`, 4 Nov 2026. Information only: the reference-phone gate (F-26 "Gate") is the operator's run.
+
+| Input | Window | Frames | Interval median/p95/max ms | Share ≤ 20 ms | Flush total p95/max (n) | Charts p95/max | Map p95/max | Changed % | Counts | PASS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| mouse (route hover) | 1280 CSS px, dpr 1 | 601 | 16.7 / 16.7 / 16.8 | 100 % | 0.4 / 0.7 (581) | 0.3 / 0.5 | 0.2 / 0.3 | 96.67 % | yes | yes |
+| touch (route, 3 runs) | 375 × 667 CSS px, dpr 2 | 601 | 16.7 / 16.7–16.8 / 16.8 | 100 % | 0.5 / 0.6–0.8 (300) | 0.4 / 0.4–0.6 | 0.2 / 0.3 | 49.8–49.9 % | NO (the harness delivers a touch move every second frame) | yes |
+
+Strip layout (same harness, every field present, 8 cells, `ride-12h`, `triathlon`, `ride-30min`): 66 px of a 568 px map at 320 × 568 portrait (0.12), 66 of 320 at 568 × 320 landscape (0.21), 37 of 390 at 844 × 390 landscape (0.09), 37 of 800 on desktop; no map control overlaps the strip; strip values equal the page readout's.

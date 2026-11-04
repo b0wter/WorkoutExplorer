@@ -58,6 +58,7 @@ Six MVP features still add code that viewers would load on the activity page, an
    | F-18 laps and splits interaction | **1,067, final** (rev. 10: F-18 QA r1 entry 55,986 − 54,919; planned 1,500, the rest returned to the reserve) |
    | F-19 edit page switch (owner UI lazy) | **400**; measured 374 at F-19 QA r1 (entry 56,360 − 55,986). Fixes after r1 stay within the 400 |
    | F-20 publish, share, delete, published page (owner UI lazy) | **0 planned, ceiling 100**; measured +7 at F-20 QA r2 (entry 56,367). The published page (F-20 v0.2) is in the lazy chunk and adds nothing static |
+   | F-33 fullscreen readout strip (static glue and CSS) | **300 planned; measured 229** (4 Nov 2026: entry 57,388 − 57,159 on `dbe0450`) |
    | Reserve (architect decides who gets it) | **3,633** (rev. 12: 60,000 − entry 56,367). F-28 takes its call-site share from it in its design |
 
 5. **Review trigger (rev. 7):** the reserve falls **below 1,000**, or a feature cannot fit its share plus the reserve. The architect then revisits this ADR before that feature is implemented.

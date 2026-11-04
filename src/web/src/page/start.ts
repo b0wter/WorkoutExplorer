@@ -1,8 +1,8 @@
 // The activity page's glue (F-13 design D-8, D-12, D-13, D-16): reads the page, loads the data
 // file, mounts Svelte into the empty slots only and attaches the enhancers. The server markup
-// (header, summary, laps) is never re-rendered (ADR-026 item 4). Static: ChartStack, RouteMap and
-// RangePanel (F-17) are the only components; the page components (components/page) are never
-// imported here.
+// (header, summary, laps) is never re-rendered (ADR-026 item 4). Static: ChartStack, RouteMap,
+// RangePanel (F-17) and the fullscreen readout strip (F-33, ./strip) are the only components; the
+// page components (components/page) are never imported here.
 //
 // The scrub recorder (src/measure) is reached ONLY through import() and only with ?measure
 // (ADR-016, ADR-011 rev. 7): nothing here imports it statically, not even a type.
@@ -22,6 +22,7 @@ import { enhanceLaps } from './laps';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
+import { mountStrip } from './strip';
 import type { DataFileResult, WorkoutData } from '../lib/datafile';
 
 type RecorderModule = typeof import('../measure/recorder');
@@ -143,6 +144,8 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const map = hasRoute && mapSlot ? createMapProps(data, cursor, selection, look, () => {
     performance.mark('wx-page:map-ready');
     addPinToggle(root, mapSlot);
+    const box = mapSlot.querySelector<HTMLElement>('.route-map');
+    if (box) mountStrip(box, data, cursor, units); // F-33 CR-2: the fullscreen box holds it
     recorder?.mapReady();
   }, edit) : null;
   if (map && mapSlot) {

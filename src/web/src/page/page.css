@@ -335,6 +335,7 @@ h1 {
    one look, a card of cells with a muted label line (13 px) over a value line (16 px), so a row is
    29 px. Each component keeps its own grid tracks; the readout's are fixed (below). */
 #charts-slot .readout,
+#map-slot .readout,
 .range-panel {
   display: grid;
   column-gap: 8px;
@@ -382,16 +383,34 @@ h1 {
 .charts.has-distance {
   --bar: 32px;
 }
-#charts-slot .readout {
+#charts-slot .readout,
+#map-slot .readout {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 @media (min-width: 640px) {
   .charts {
     --r: 1;
   }
-  #charts-slot .readout {
+  #charts-slot .readout,
+  #map-slot .readout {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
+}
+/* F-33: the readout strip at the bottom of the fullscreen map (CR-3 to CR-7), the same card on
+   the same fixed tracks, opaque, square, taking no input. Shown only in fullscreen with a cursor. */
+.wx-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+html:not(.wx-fs) .wx-strip {
+  display: none;
+}
+#map-slot .readout {
+  background: var(--bg);
+  border-radius: 0;
 }
 .charts.load-failed {
   height: auto;
