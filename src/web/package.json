@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/bundled-licenses.mjs ../../build/web/.vite/license.json",
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "vitest run",
     "size": "node scripts/check-bundle-size.mjs && node scripts/check-upload-entry.mjs"

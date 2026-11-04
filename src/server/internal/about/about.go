@@ -59,7 +59,7 @@ func ParseOperator(b []byte) (string, error) {
 	if !utf8.Valid(b) {
 		return "", errors.New("not valid UTF-8")
 	}
-	text := strings.ReplaceAll(string(b), "\r\n", "\n")
+	text := strings.ReplaceAll(strings.TrimPrefix(string(b), "\ufeff"), "\r\n", "\n") // editors add a BOM
 	if strings.IndexFunc(text, func(r rune) bool { return unicode.IsControl(r) && r != '\n' && r != '\t' }) >= 0 {
 		return "", errors.New("contains a control character")
 	}

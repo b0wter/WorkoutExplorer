@@ -69,3 +69,68 @@ func TestCaddyPackage(t *testing.T) {
 		t.Errorf("%+v %v", p, err)
 	}
 }
+
+func TestCheckCSPAllLinesAndSchemes(t *testing.T) {
+	srcs, _ := loadSources()
+	f := filepath.Join(t.TempDir(), "Caddyfile")
+	for name, body := range map[string]string{
+		"second line":   "Content-Security-Policy \"default-src 'self'\"\nContent-Security-Policy \"img-src 'self' https://evil.example\"",
+		"scheme-less":   `Content-Security-Policy "img-src 'self' cdn.example.org"`,
+		"wss":           `Content-Security-Policy "connect-src 'self' wss://sock.example.org"`,
+		"wss unclaimed": `Content-Security-Policy "connect-src wss://tiles.openfreemap.org.evil.net"`,
+	} {
+		os.WriteFile(f, []byte(body), 0o644)
+		if checkCSP(f, srcs) == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+	os.WriteFile(f, []byte(`Content-Security-Policy "connect-src 'self' wss://tiles.openfreemap.org; img-src data: blob: 'sha256-x' tiles.openfreemap.org"`), 0o644)
+	if err := checkCSP(f, srcs); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestModuleText(t *testing.T) {
+	cache := t.TempDir()
+	os.MkdirAll(filepath.Join(cache, "example.com", "!no@v1.0.0"), 0o755)
+	os.MkdirAll(filepath.Join(cache, "example.com", "ok@v1.0.0"), 0o755)
+	os.WriteFile(filepath.Join(cache, "example.com", "ok@v1.0.0", "LICENSE"), []byte("MIT text"), 0o644)
+	os.WriteFile(filepath.Join(cache, "example.com", "ok@v1.0.0", "main.go"), []byte("x"), 0o644)
+	if _, err := moduleText(cache, "example.com/No", "v1.0.0"); err == nil || !strings.Contains(err.Error(), "no licence file") {
+		t.Errorf("module without licence: %v", err)
+	}
+	if _, err := moduleText(cache, "example.com/gone", "v1.0.0"); err == nil {
+		t.Error("module missing from the cache accepted")
+	}
+	if got, err := moduleText(cache, "example.com/ok", "v1.0.0"); err != nil || !strings.Contains(got, "MIT text") || strings.Contains(got, "main.go") {
+		t.Errorf("%q %v", got, err)
+	}
+}
+
+func TestParseSourcesRejects(t *testing.T) {
+	for name, body := range map[string]string{
+		"no licence": `[{"name":"n","attribution":"a","licence":"","link":"https://x"}]`,
+		"http link":  `[{"name":"n","attribution":"a","licence":"L","link":"http://x"}]`,
+		"no link":    `[{"name":"n","attribution":"a","licence":"L"}]`,
+		"bad json":   `[`,
+	} {
+		if _, err := parseSources([]byte(body)); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+func TestRunFailures(t *testing.T) {
+	web := t.TempDir()
+	page := filepath.Join(web, "about.html")
+	caddyfile := filepath.Join(t.TempDir(), "Caddyfile")
+	os.WriteFile(caddyfile, []byte(`Content-Security-Policy "default-src 'self'"`), 0o644)
+	os.WriteFile(page, []byte("<html>no marker</html>"), 0o644)
+	if err := run(web, "no-binary", "no-env", caddyfile); err == nil || !strings.Contains(err.Error(), markerList) {
+		t.Errorf("template without marker: %v", err)
+	}
+	os.WriteFile(page, []byte("<html>"+markerList+"</html>"), 0o644)
+	if err := run(web, "no-binary", "no-env", caddyfile); err == nil || !strings.Contains(err.Error(), "license.json") {
+		t.Errorf("missing license.json: %v", err)
+	}
+}

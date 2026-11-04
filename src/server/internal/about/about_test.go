@@ -26,3 +26,9 @@ func TestFillNoRescan(t *testing.T) {
 		t.Errorf("%q %v", got, err)
 	}
 }
+
+func TestParseOperatorBOM(t *testing.T) {
+	if got, err := ParseOperator([]byte("\xef\xbb\xbf## Who\nJane\n")); err != nil || got != "<h2>Who</h2>\n<p>Jane</p>\n" {
+		t.Errorf("got %q, %v", got, err)
+	}
+}

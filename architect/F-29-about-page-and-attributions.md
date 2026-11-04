@@ -25,7 +25,7 @@
 
 | What | Read from | Shown |
 | --- | --- | --- |
-| npm packages in any bundle, lazy chunks included | Vite 8 `build.license` with a `.json` file name in `.vite/` (not served) | Name, version, identifier, full text |
+| npm packages in any bundle, lazy chunks included | Vite 8 `build.license` with a `.json` file name in `.vite/` (not served); then `scripts/bundled-licenses.mjs` adds the installed runtime-dependency tree of each (packages like MapLibre ship pre-bundled, invisible to Vite; tree-shaken extras are accepted, same failure rule) | Name, version, identifier, full text |
 | Go modules linked into the binary | The built binary's build info (`debug/buildinfo`), so test-only modules never appear; texts from the module cache | Path, version, every `LICENSE*`, `LICENCE*`, `COPYING*`, `NOTICE*` file at the module root |
 | Go standard library and runtime | The toolchain that built the binary | `GOROOT/LICENSE` |
 | Caddy | Version from `deploy/caddy.env` | Apache-2.0, committed text. Its own dependencies are not listed (we do not ship its binary) |
@@ -52,7 +52,7 @@ The page must state every fact below; QA checks each *app* fact against the temp
 | PT-5 | app | How it is used | Only to show the workout to people with its link, to let the edit-link holder change, download or delete it, and to let the operator act on reports. No advertising, profiling or sale | INF-1, INF-3, AC-5 |
 | PT-6 | app | Who sees a workout | Draft: only the edit-link holder. Published: anyone with the viewing link (unlisted, `noindex`). Hidden start and end sections are removed from the public data | SH-1, SH-2, SH-4, F-22 H-8 |
 | PT-7 | app | Link previews | Messenger services fetch title, headline numbers and route image; previews already made cannot be recalled | SH-5, SH-10 |
-| PT-8 | app | Map tiles | The F-06 hand-off paragraph: OpenFreeMap (possibly through Cloudflare) sees IP address, browser type and map area, not which workout; its statements re-checked at launch | ADR-014, OQ-17, F-06 hand-off |
+| PT-8 | app | Map tiles | The F-06 hand-off paragraph: OpenFreeMap (possibly through Cloudflare) sees IP address, browser type and map area, not which workout; no retention figure or other claim about its practices, only a link to its privacy statement (https://openfreemap.org/privacy/, user decision 4 Nov 2026) | ADR-014, OQ-17, F-06 hand-off |
 | PT-9 | app, conditional | Report notifications | Pushover learns report number and reason only. Rendered only when both Pushover settings are set (AB-3) | INF-4, ADR-039, F-27 hand-off |
 | PT-10 | app | Operator's access | The operator can read reports and delete any workout after a report, without its edit link, and cannot tell who uploaded a workout | INF-3, F-27 R-7, AC-1 |
 | PT-11 | operator | Web server logs | What the TLS proxy in front of the app logs (addresses, how long kept), or that it keeps none. The template makes no claim about it | F-31 DP-15, decision log 4 Nov 2026 |
@@ -72,7 +72,7 @@ The page must state every fact below; QA checks each *app* fact against the temp
 | Requirements | TD Hosting (About page): "app facts and the generated list in the release build; the operator file (AB-8), version and Pushover block filled by `serve` at start; served by Go at `/about`". TD Configuration: drop the two operator rows, add `WORKOUT_EXPLORER_OPERATOR_FILE`. TD Repository layout: `about.html`, `tools/attributions`, the sources file, `deploy/operator.example.txt`. F-29 scope: the page has an app part and an operator part (AB-2); "built at deploy" reads as AB-4, AB-5; the placeholder is one block, not name and contact |
 | F-22 | The H-12 check gains `/about` through Caddy (H-2 set, `no-cache`, `502` with Go stopped) and `/about.html` → `404` |
 | F-31 | DP-3: new host directory `/srv/workout-explorer/operator/` (deploy user, `0755`, file `0644`: its content is public), created by the runbook, **never written by `deploy.sh`**; mounted read-only into `app` at the same path in `compose.yaml` **and** kept in `compose.build.yaml`'s reset mounts. `example.env`: `WORKOUT_EXPLORER_OPERATOR_FILE=/srv/workout-explorer/operator/about.txt`, commented. Runbook: copy `deploy/operator.example.txt`, fill every prompt (including the proxy's logging, PT-11), restart `app` after edits; never commit the file. Dockerfile Go stage: the generation step after the web build |
-| F-32 | The placeholder is gone and every operator PT row is answered in the user's file; PT-8's OpenFreeMap statements re-checked; the user's approval of the template wording |
+| F-32 | The placeholder is gone and every operator PT row is answered in the user's file; PT-8's privacy-statement link checked; the user's approval of the template wording |
 | UP-5 (phase 2) | GeoNames entry (CC BY 4.0) in the sources file when place names ship |
 
 ## Open questions

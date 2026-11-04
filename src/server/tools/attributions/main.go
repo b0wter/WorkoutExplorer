@@ -102,6 +102,10 @@ func run(web, bin, caddyEnv, caddyfile string) error {
 
 func loadSources() ([]source, error) {
 	b, _ := embedded.ReadFile("sources.json")
+	return parseSources(b)
+}
+
+func parseSources(b []byte) ([]source, error) {
 	var s []source
 	if err := json.Unmarshal(b, &s); err != nil {
 		return nil, fmt.Errorf("sources.json: %w", err)
@@ -115,27 +119,41 @@ func loadSources() ([]source, error) {
 }
 
 var cspLine = regexp.MustCompile(`Content-Security-Policy\s+"([^"]*)"`)
-var originRE = regexp.MustCompile(`https?://[^/\s;'"]+`)
 
-// checkCSP: every external origin the Caddyfile's CSP allows is claimed by a sources entry (AB-6).
+// hostOf drops a scheme, so https://h, wss://h and a bare h name the same origin.
+func hostOf(s string) string {
+	if i := strings.Index(s, "://"); i >= 0 {
+		s = s[i+3:]
+	}
+	return strings.TrimSuffix(s, "/")
+}
+
+// checkCSP: every external source in every CSP line of the Caddyfile is claimed by a sources entry (AB-6).
+// Keywords, data:/blob: and hashes are not origins; anything else is, whatever its scheme.
 func checkCSP(caddyfile string, srcs []source) error {
 	b, err := os.ReadFile(caddyfile)
 	if err != nil {
 		return err
 	}
-	m := cspLine.FindSubmatch(b)
-	if m == nil {
+	lines := cspLine.FindAllSubmatch(b, -1)
+	if lines == nil {
 		return fmt.Errorf("%s: no Content-Security-Policy line found", caddyfile)
 	}
 	claimed := map[string]bool{}
 	for _, s := range srcs {
 		for _, o := range s.Origins {
-			claimed[o] = true
+			claimed[hostOf(o)] = true
 		}
 	}
-	for _, o := range originRE.FindAllString(string(m[1]), -1) {
-		if !claimed[o] {
-			return fmt.Errorf("the CSP in %s allows %s but no entry in sources.json claims it (add attribution and licence)", caddyfile, o)
+	for _, m := range lines {
+		for _, dir := range strings.Split(string(m[1]), ";") {
+			f := strings.Fields(dir)
+			for _, tok := range f[min(1, len(f)):] { // f[0] is the directive name
+				if strings.HasPrefix(tok, "'") || tok == "data:" || tok == "blob:" || claimed[hostOf(tok)] {
+					continue
+				}
+				return fmt.Errorf("the CSP in %s allows %s but no entry in sources.json claims it (add attribution and licence)", caddyfile, tok)
+			}
 		}
 	}
 	return nil
@@ -195,6 +213,34 @@ func goEnv(name string) (string, error) {
 	return strings.TrimSpace(string(b)), err
 }
 
+// moduleText is the module root's licence files, or the committed override; none is an error.
+func moduleText(cache, path, version string) (string, error) {
+	dir := filepath.Join(cache, escapePath(path)+"@"+version)
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("go module %s@%s: %w", path, version, err)
+	}
+	var text []string
+	for _, e := range ents {
+		if e.Type().IsRegular() && licenceFile.MatchString(e.Name()) {
+			b, err := os.ReadFile(filepath.Join(dir, e.Name()))
+			if err != nil {
+				return "", err
+			}
+			text = append(text, "--- "+e.Name()+" ---\n"+string(b))
+		}
+	}
+	if len(text) == 0 {
+		if o := override("go", path, version); o != "" {
+			text = append(text, o)
+		}
+	}
+	if len(text) == 0 {
+		return "", fmt.Errorf("go module %s@%s has no licence file", path, version)
+	}
+	return strings.Join(text, "\n"), nil
+}
+
 func goPackages(bin string) ([]pkg, error) {
 	info, err := buildinfo.ReadFile(bin)
 	if err != nil {
@@ -209,30 +255,11 @@ func goPackages(bin string) ([]pkg, error) {
 		if d.Replace != nil {
 			d = d.Replace
 		}
-		dir := filepath.Join(cache, escapePath(d.Path)+"@"+d.Version)
-		ents, err := os.ReadDir(dir)
+		text, err := moduleText(cache, d.Path, d.Version)
 		if err != nil {
-			return nil, fmt.Errorf("go module %s@%s: %w", d.Path, d.Version, err)
+			return nil, err
 		}
-		var text []string
-		for _, e := range ents {
-			if e.Type().IsRegular() && licenceFile.MatchString(e.Name()) {
-				b, err := os.ReadFile(filepath.Join(dir, e.Name()))
-				if err != nil {
-					return nil, err
-				}
-				text = append(text, "--- "+e.Name()+" ---\n"+string(b))
-			}
-		}
-		if len(text) == 0 {
-			if o := override("go", d.Path, d.Version); o != "" {
-				text = append(text, o)
-			}
-		}
-		if len(text) == 0 {
-			return nil, fmt.Errorf("go module %s@%s has no licence file", d.Path, d.Version)
-		}
-		out = append(out, pkg{d.Path, d.Version, "", strings.Join(text, "\n")})
+		out = append(out, pkg{d.Path, d.Version, "", text})
 	}
 	root, err := goEnv("GOROOT")
 	if err != nil || root == "" {

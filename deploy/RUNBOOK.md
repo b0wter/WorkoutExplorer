@@ -71,7 +71,7 @@ Keep it on the local disk. To use another path, set `WX_DATA` (section 4) to it.
 
 ### The About page: operator file
 
-The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` mounts the folder `/srv/workout-explorer/operator` read-only (`deploy.sh` never writes there). Create it once, then write the file:
+The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` mounts the folder `/srv/workout-explorer/operator` read-only (`deploy.sh` never writes there). Create it once (`deploy.sh` also creates the empty folder on the operator server, so an upgrade does not stop `app`), then write the file:
 
 ```sh
 sudo install -d -o "$USER" -m 0755 /srv/workout-explorer/operator
