@@ -3,7 +3,7 @@
 - **Phase:** 1 MVP
 - **Owner:** backend
 - **Requirements:** SH-10 (old files deleted), UP-7 (workout ends early when the new version rejects its file), AC-4 (delete routine), NFR Reliability, NFR Operations; Technical design: Workout data file (Versioning)
-- **Depends on:** F-21, F-23, F-31 (export file only once F-24 ships in phase 3)
+- **Depends on:** F-21, F-23, F-31 (the export file waits for F-24, phase 3)
 
 ## Goal
 `workout-explorer regenerate` rebuilds every live workout from its original, so only one data format and one bundle are ever live, except for workouts kept after a failed rebuild, which keep their previous files and bundle until a later run rebuilds them.
@@ -25,12 +25,11 @@
 - [ ] Running it twice in a row leaves every page working.
 - [ ] A workout whose original is made unparseable (test) is deleted: row, reports, `private/{id}/` and `public/{public_id}/` are gone, and its viewing link shows the generic "expired or not available" page within 60 s (SH-10). The log line names the device model and contains no coordinates. The other workouts are regenerated and the run completes without stopping the deploy.
 - [ ] A workout whose original the new version reads shorter (test: a parser change that stops earlier) is kept and serves the shorter workout.
-- [ ] A workout whose rebuild fails for a server-side reason (test: a disk write fails), or hits the time limit, is kept unchanged (row and files), is not counted as deleted, and the next run rebuilds it.
+- [ ] A workout whose rebuild fails for a server-side reason (test: a disk write fails), or hits the time limit, is kept, is not counted as deleted, and the next run rebuilds it. If the first write fails, it is kept unchanged (row and files); if a later write fails, it may stay partly on the new version until the next run finishes it (decision log, 4 Nov 2026).
 - [ ] A run stopped part-way leaves the unprocessed workouts unchanged; the next run rebuilds them.
 - [ ] When regeneration fails for a workout, the deploy still completes. If the new version rejects the file, the workout is deleted; otherwise it is kept and its old bundle stays. The deploy output reports how many workouts were deleted and how many were kept.
 - [ ] Hiding, visibility, lifetime, download and title settings are preserved exactly.
 - [ ] A run over 100 workouts finishes within seconds on the target server class.
 
 ## Open points for the design
-- **Owner edits a kept workout:** an edit to a workout still on an older version, before a later run rebuilds it, must not mix versions. Suggestion: the edit first rebuilds the workout fully; if that fails, the edit fails with the generic server error (UP-10).
-- **Kept draft on the edit page:** a kept draft is shown through the edit page with the current bundle, so after a format version bump its old `draft.bin` may not be readable. F-30's design decides what it shows meanwhile. See the F-30 row of the hand-offs in `architect/F-09-upload-api-and-storage.md` (section Hand-offs).
+None. Both earlier points (owner edits a kept workout; kept draft on the edit page) are settled by `architect/F-30-regenerate-command.md` RG-12.

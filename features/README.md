@@ -44,7 +44,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with sudo) |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov); minors QA-28-r1-1, r1-2 |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once, operator file on the VPS; minors QA-29-r2-1, r2-2 |
-| [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | in progress | backend build, then QA (high) |
+| [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | in progress | QA r1 (high) |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-31 (except F-24) | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
@@ -453,6 +453,13 @@ Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
 - **(OQ-5)** The FIT Protocol licence gets an entry in the attribution list.
 
 Updated: spec (INF-1), technical design (Hosting: About page; Configuration: `WORKOUT_EXPLORER_OPERATOR_FILE`; Repository layout: `about.html`, `tools/attributions`, `deploy/operator.example.txt`), F-29 (scope, ACs), F-32 (AC), F-29 design (Status, PT-14, open questions), architect index.
+
+**Decided on 4 Nov 2026, regenerate partial states** (user, F-30):
+
+- **(a)** A workout whose rebuild fails after its first write stays partly on the new version until the next run finishes it. F-30 AC 6 "kept unchanged" holds only when the first write fails.
+- **(b)** Viewers with a page open while old bundles are removed lose lazily loaded parts until they reload.
+
+Updated: F-30 (AC 6, open points), technical design (code tree, Binary row, settings' "Read by").
 
 The original questions follow for reference.
 

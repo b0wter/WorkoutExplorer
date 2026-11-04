@@ -272,7 +272,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
 └── src/
     ├── server/                Go module `workout-explorer` (F-01)
     │   ├── go.mod, go.sum
-    │   ├── cmd/workout-explorer/   main: flags, settings, wiring, subcommands (serve; parse (F-02, diagnostic); regenerate, delete later)
+    │   ├── cmd/workout-explorer/   main: flags, settings, wiring, subcommands (serve; parse (F-02, diagnostic); regenerate, F-30; delete, F-27)
     │   ├── internal/httpapi/       HTTP adapter (F-01: health; F-09: upload)
     │   ├── internal/ingest/        FIT anti-corruption layer (F-02)
     │   ├── internal/workout/       normalised workout, pure rules (F-02)
@@ -371,7 +371,7 @@ Front end:
 
 | Concern | Convention |
 | --- | --- |
-| Binary | One binary, `workout-explorer`, with subcommands (`serve`; `parse <file>` as a diagnostic, F-02; `delete -data <dir> <public_id>`, F-27; later `regenerate`). Built with `CGO_ENABLED=0` as a static binary; a later feature that needs cgo must say so in an ADR. |
+| Binary | One binary, `workout-explorer`, with subcommands (`serve`; `parse <file>` as a diagnostic, F-02; `delete -data <dir> <public_id>`, F-27; `regenerate -data <dir> -web <dir>`, F-30). Built with `CGO_ENABLED=0` as a static binary; a later feature that needs cgo must say so in an ADR. |
 | Logging | `log/slog` with the JSON handler to stdout. Never log coordinates, edit tokens or file contents (I-5). Parse outcomes are logged by `ingest` only, one line per rejection or recovery, with an allow-list of keys: the device make and model and where decoding stopped, never coordinates (ADR-018); callers add only random IDs through `logger.With`. `workout` never logs. The upload path logs only the lines and keys of the F-09 design (section Logging): the internal ID may appear, never the public ID, the token or its hash, any request metadata (I-7), or any value the strip removes (I-8). |
 | HTTP | Standard library `net/http` and `ServeMux` method patterns (`GET /api/health`). All API routes under `/api/`. |
 | Versions | Go version pinned in `go.mod` (`go` and `toolchain` lines); Node pinned in `src/web/.nvmrc` and `engines`; npm with committed lockfile, installed with `npm ci`. CI reads both pins from those files, never from its own config. |
@@ -385,9 +385,9 @@ Front end:
   | Setting | Meaning | Default | Range | Read by | Decided in |
   | --- | --- | --- | --- | --- | --- |
   | `WORKOUT_EXPLORER_MAX_CONCURRENT_UPLOADS` | Uploads processed at once (reading, parsing, stripping, storing); the next one gets UP-10's "try again in a minute" | 4 | 1–16 | `serve` | ADR-021 item 4, F-09 |
-  | `WORKOUT_EXPLORER_PARSE_TIMEOUT` | The parser's time limit per decode, in whole seconds; the HTTP write deadline follows it (ADR-021 rev. 4) | `ingest.DefaultLimits.Timeout` = 10 | 5–60 | every subcommand that builds an `ingest.Parser`: `serve`, `parse`, later `regenerate` | ADR-017 rev. 7, F-09 D-30 |
+  | `WORKOUT_EXPLORER_PARSE_TIMEOUT` | The parser's time limit per decode, in whole seconds; the HTTP write deadline follows it (ADR-021 rev. 4) | `ingest.DefaultLimits.Timeout` = 10 | 5–60 | every subcommand that builds an `ingest.Parser`: `serve`, `parse`, `regenerate` | ADR-017 rev. 7, F-09 D-30 |
   | `WORKOUT_EXPLORER_STORAGE_LIMIT_MB` | Storage cap (UP-8): total size of the files under the data directory, in decimal megabytes (1,000,000 bytes); once reached, new uploads get `503` and `GET /api/status` reports `uploads_open: false` | 1,000 (1 GB) | 1–1,000,000 | `serve` | F-10 design S-1 |
-  | `WORKOUT_EXPLORER_BASE_URL` | Origin for absolute links in Open Graph tags; `http(s)://host[:port]`, no path, trailing slash, user info, query or fragment | none (required) | — | `serve`, later `regenerate` | F-23 PC-8 |
+  | `WORKOUT_EXPLORER_BASE_URL` | Origin for absolute links in Open Graph tags; `http(s)://host[:port]`, no path, trailing slash, user info, query or fragment | none (required) | — | `serve`, `regenerate` | F-23 PC-8 |
   | `WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV4` | Uploads per rolling hour per IPv4 client address, refused ones counted (NFR Security) | 60 | 1–240 (the limiter's memory L grows with it, ADR-021 rev. 6 item 7) | `serve` | decision log 1 Nov 2026; F-31 DP-1c |
   | `WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV6` | Uploads per rolling hour per IPv6 /64 prefix, refused ones counted (NFR Security) | 60 | 1–240 | `serve` | decision log 1 Nov 2026; F-31 DP-1c |
   | `WORKOUT_EXPLORER_TRUSTED_PROXY` | The one proxy address, besides loopback, whose `X-Forwarded-For` is trusted; one IP address, no list or prefix. Set by the Compose file, not the operator's env file | none (loopback only) | — | `serve` | ADR-021 rev. 5, F-31 DP-1a |
