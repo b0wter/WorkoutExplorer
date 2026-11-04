@@ -1,0 +1,38 @@
+/* The About page (F-29 AB-1): the plain pages' theme, plus headings, links and the generated
+   licence list (tools/attributions: .attributions with h3, ul, details and pre). CSS only. */
+@import '../theme/plain.css';
+
+main {
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 1.25rem;
+  margin: 2rem 0 0.5rem;
+}
+h3 {
+  font-size: 1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+main a {
+  color: var(--accent);
+}
+.attributions ul {
+  list-style: none;
+  padding: 0;
+}
+.attributions li {
+  margin: 0.4rem 0;
+}
+.attributions summary {
+  cursor: pointer;
+}
+.attributions pre {
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  max-height: 20rem;
+  overflow: auto;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}

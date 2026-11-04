@@ -2,50 +2,57 @@
   {
     "name": "OpenStreetMap",
     "attribution": "Map data © OpenStreetMap contributors",
-    "licence": "Open Database Licence (ODbL) 1.0",
+    "licence": "Open Data Commons Open Database License (ODbL)",
     "link": "https://www.openstreetmap.org/copyright",
     "origins": []
   },
   {
     "name": "OpenFreeMap",
-    "attribution": "Map tiles and styles served by OpenFreeMap",
-    "licence": "OpenFreeMap terms of use",
-    "link": "https://openfreemap.org/tos/",
+    "attribution": "Map tiles, styles and fonts served by OpenFreeMap. The licences of the projects it includes are listed on the linked page",
+    "licence": "MIT",
+    "link": "https://github.com/hyperknot/openfreemap/blob/main/LICENSE.md",
     "origins": ["https://tiles.openfreemap.org"]
   },
   {
     "name": "OpenMapTiles",
-    "attribution": "Tile schema and map design © OpenMapTiles",
+    "attribution": "Tile schema and map design © OpenMapTiles (openmaptiles.org)",
     "licence": "CC BY 4.0",
-    "link": "https://openmaptiles.org/",
+    "link": "https://github.com/openmaptiles/openmaptiles/blob/master/LICENSE.md",
+    "origins": []
+  },
+  {
+    "name": "OSM Liberty (light map style)",
+    "attribution": "Map style by Maputnik, a fork of OSM Bright, adapted by OpenFreeMap",
+    "licence": "BSD 3-Clause (style), CC BY 4.0 (design)",
+    "link": "https://github.com/maputnik/osm-liberty/blob/gh-pages/LICENSE.md",
+    "origins": []
+  },
+  {
+    "name": "Dark Matter (dark map style)",
+    "attribution": "Map style © OpenMapTiles, derived from CartoDB Basemaps designed by Stamen and Paul Norman for CartoDB Inc., adapted by OpenFreeMap",
+    "licence": "BSD 3-Clause (style), CC BY 4.0 (design)",
+    "link": "https://github.com/openmaptiles/dark-matter-gl-style/blob/master/LICENSE.md",
     "origins": []
   },
   {
     "name": "Natural Earth",
-    "attribution": "Low-zoom map data from Natural Earth",
+    "attribution": "Shaded relief at low zoom: made with Natural Earth",
     "licence": "Public domain",
     "link": "https://www.naturalearthdata.com/about/terms-of-use/",
     "origins": []
   },
   {
-    "name": "OpenFreeMap map styles (liberty, dark)",
-    "attribution": "Map styles based on OSM Liberty and OpenFreeMap's dark style",
-    "licence": "See the project page",
-    "link": "https://github.com/hyperknot/openfreemap",
-    "origins": []
-  },
-  {
-    "name": "FIT protocol",
-    "attribution": "FIT file format © Garmin International, Inc., read by an open-source decoder (no Garmin SDK code is used)",
-    "licence": "FIT Protocol License Agreement",
-    "link": "https://developer.garmin.com/fit/download/",
-    "origins": []
-  },
-  {
     "name": "Noto Sans",
     "attribution": "Map label glyphs from the Noto Sans font family, served by the tile host",
-    "licence": "SIL Open Font Licence 1.1",
-    "link": "https://openfontlicense.org/",
+    "licence": "SIL Open Font License 1.1",
+    "link": "https://openfontlicense.org/open-font-license-official-text/",
+    "origins": []
+  },
+  {
+    "name": "FIT Protocol",
+    "attribution": "The FIT protocol and file format are proprietary to Garmin and licensed under the FIT Protocol License. This app reads FIT files with the open-source muktihari/fit library, whose use may require compliance with that licence",
+    "licence": "FIT Protocol License",
+    "link": "https://thisisant.developer.garmin.com/pages/developer/ant/licensing/flexible-and-interoperable-data-transfer-fit-protocol-license/index.html",
     "origins": []
   }
 ]
