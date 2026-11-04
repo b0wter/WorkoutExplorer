@@ -43,7 +43,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with sudo) |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: browser checks via Caddy (dialog on phone and desktop, wording, no CSP error, real report and 429); minors QA-28-r1-1, r1-2 |
-| [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | not started | |
+| [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | in progress | backend build, then frontend |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | not started | |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-31 (except F-24) | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
@@ -444,6 +444,14 @@ Updated: architect/INDEX.md (OQ-99 resolved); F-26 design to follow.
 
 - **(OQ-103)** Without JavaScript the Report button is not shown, with no "needs JavaScript" note (INF-2's "on every workout page" holds with JavaScript).
 - **(OQ-104)** The dialog texts are the F-28 design's RF-8 set; the user reviews them on screen.
+
+**Decided on 4 Nov 2026, About page** (user, OQ-105, OQ-106, F-29):
+
+- **(OQ-105)** The theme choice is listed on the About page among what the viewer's browser keeps.
+- **(OQ-106)** FE-1 drafts the privacy text from F-29 PT-1 to PT-17; the user edits it on screen before launch. (a) Legal basis: GDPR Art. 6(1)(b) for workouts and settings, Art. 6(1)(f) for reports, rate limiting, logs and map tiles. (b) "Keeps no access log"; the user confirms at F-32 that this holds for their proxy. (c) Hosting provider as a category: "a hosting provider in an EU data centre". (d) The general right to complain to a supervisory authority, no named authority.
+- OQ-5 (FIT Protocol Licence) stays open for F-32.
+
+Updated: spec (INF-1), technical design (Hosting: About page; Configuration: operator name and contact; Repository layout: `about.html`, `tools/attributions`), F-29 (scope, AC 2), F-29 design (Status, PT-14, open questions), architect index.
 
 The original questions follow for reference.
 

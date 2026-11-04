@@ -279,6 +279,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
     │   ├── scripts/corpus.sh       `make corpus` driver (F-02)
     │   ├── scripts/prototype-data.sh   `make prototype-data` driver; output only in build/prototype/data (F-07)
     │   ├── tools/corpusgen/        dev-only synthetic FIT generator, not in the binary (F-02, ADR-004)
+    │   ├── tools/attributions/     dev-only attribution list generator, standard library only, run by `make build`, not in the binary (F-29 AB-5)
     │   ├── tools/protoserve/       dev-only static server with in-memory brotli; serves the sample pages (F-07, F-13 B-1); never deployed
     │   ├── internal/datafile/      data file codec, format v2, pure (F-03, ADR-005)
     │   ├── internal/precompress/   brotli pre-compression (F-03, ADR-006)
@@ -297,6 +298,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
         ├── index.html              activity page template: Go `html/template`, logic-free, frontend-owned, executed by the server (F-15); also the Vite activity entry (F-01, F-07, F-13, ADR-026)
         ├── upload.html             upload page entry, plain TypeScript, no chunk shared with index.html (F-11, ADR-024)
         ├── generic.html            generic page entry: static, no script (F-15 P-12)
+        ├── about.html              About page template (privacy text, attribution slot), no script; filled and served by Go at `/about` (F-29 AB-1, AB-4); the committed attribution sources file sits beside it (F-29 AB-5)
         ├── edit.html               edit page: static, no workout data, same entry module as index.html (F-19 E-1)
         ├── scripts/check-bundle-size.mjs   budget check (F-01, ADR-002)
         ├── test-support/golden.mjs     reads the golden data files for tests (F-04)
@@ -391,6 +393,8 @@ Front end:
   | `WORKOUT_EXPLORER_TRUSTED_PROXY` | The one proxy address, besides loopback, whose `X-Forwarded-For` is trusted; one IP address, no list or prefix. Set by the Compose file, not the operator's env file | none (loopback only) | — | `serve` | ADR-021 rev. 5, F-31 DP-1a |
   | `WORKOUT_EXPLORER_PUSHOVER_TOKEN` | Pushover application token for new-report notifications (INF-4); exactly 30 ASCII letters and digits. Set together with the user key or not at all; one without the other exits 2. Error messages and logs never show its value | none (notifications off) | — | `serve` | ADR-039 item 1, F-27 R-11 |
   | `WORKOUT_EXPLORER_PUSHOVER_USER` | Pushover user key that receives the notifications (INF-4); same format and rules as the token | none (notifications off) | — | `serve` | ADR-039 item 1, F-27 R-11 |
+  | `WORKOUT_EXPLORER_OPERATOR_NAME` | The operator named on the About page (controller, INF-1); free text, trimmed, no control characters; invalid exits 2 | none: the page shows `[OPERATOR NAME]` | 1–100 Unicode code points | `serve` | F-29 AB-3 |
+  | `WORKOUT_EXPLORER_OPERATOR_CONTACT` | The operator's contact address on the About page; same rules, shown as escaped text, never as a link | none: the page shows `[CONTACT EMAIL]` | 1–200 Unicode code points | `serve` | F-29 AB-3 |
 
 - **Go runtime variables** such as `GOMEMLIMIT` are not application settings. Our code neither reads nor sets them (no `debug.SetMemoryLimit` or `SetGCPercent`). Only the Compose file may set them (F-31, ADR-017 rev. 3 item 5), and every measured stop rule is taken without them.
 - **Dev tooling:** exactly one environment variable, `DEV_ADDR` (F-01 D-4), set by the Makefile and read only by `vite.config.ts` for the dev proxy target; it never reaches the binary or the build output. No `.env` files.
@@ -409,7 +413,7 @@ One small VPS runs everything. Rebuilding on a fresh server (binary, Caddy confi
 | Monitoring | Not set up by F-31; the operator adds their own monitor later (decision log 1 Nov 2026). Suitable targets: `GET /api/health` (side-effect-free, F-31 DP-12) and the upload page `/`, never a workout page |
 | Storage limit (UP-8) | A config setting for the total size of `/srv/workouts`. The server keeps a running total (recomputed at startup), refuses uploads with `503` and a clear message once the limit is reached, and reports `uploads_open` in `GET /api/status` |
 | Reports (INF-2, INF-3) | `POST /api/reports`, rate-limited per IP in memory like uploads, fixed at 60 per hour (not a setting; decision log 1 Nov 2026). Reports are deleted with their workout, at the latest 30 days after filing. The operator reviews the `reports` table with `sqlite3` on the host, read-only and as the app's user (F-27 R-7), and removes a workout, draft or published, with a CLI subcommand (`workout-explorer delete -data <dir> <public_id>`) that runs the normal delete. No admin web page. Notifications (INF-4): opt-in Pushover message per stored report, number and reason only, at most 10 per hour, with egress for `app` only through a Compose override (ADR-039). Other callback targets stay a later idea |
-| About page (INF-1) | A static page built at deploy time. The attribution list is generated in CI from the Go modules and npm dependencies (e.g. `go-licenses`, `rollup-plugin-license`) plus the data sources (OpenStreetMap via OpenFreeMap, GeoNames), so it cannot fall out of date |
+| About page (INF-1) | Built in the release build with the generated attribution list (from the bundled npm packages, the Go modules linked into the binary and a committed sources file for map data and other sources; F-29 AB-5); operator name, contact and the Pushover block filled by `serve` at start; served by Go at `/about` (F-29 AB-3, AB-4) |
 | Analytics | None at first; later a cookie-less tool if needed |
 | Scaling path | Put a CDN in front of `public/` (purging `index.html` on every change, delete and expiry so SH-10's 60 s still holds), then move files to object storage; the Go process stays the same |
 
