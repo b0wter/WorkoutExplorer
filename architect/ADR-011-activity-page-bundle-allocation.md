@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 11 Oct 2026; revision 7 of 15 Oct 2026, with the F-07 QA r2 close-out; revision 8 of 24 Oct 2026, F-14 design: F-13 closed at 1,717 measured, its unused 3,283 bytes return to the reserve; revision 9 of 29 Oct 2026, F-17 QA r1: F-17 at 4,715 measured, 715 over its share accepted; revision 10 of 29 Oct 2026, F-19 QA r1: F-17 final 4,698, F-18 final 1,067, F-19 374 of 400 measured, reserve 3,640; revision 11 of 30 Oct 2026, F-20 QA r1 (QA-20-r1-4): F-20 +2 of its 100 ceiling, reserve 3,638; revision 12 of 30 Oct 2026, F-20 QA r2 (QA-20-r2-2): F-20 +7, reserve 3,633
 - **History:** [architect/history/ADR-011-activity-page-bundle-allocation.md](history/ADR-011-activity-page-bundle-allocation.md) (revision list, earlier shares and reserves, the retired 45,000 trigger)
-- **Features:** F-05 (triggers it); F-06, F-07, F-13, F-14, F-17, F-18, F-19, F-20, F-25, F-26, F-28 (bound by it); F-32 (checks it)
+- **Features:** F-05 (triggers it); F-06, F-07, F-13, F-14, F-17, F-18, F-19, F-20, F-25, F-26, F-28, F-33 (bound by it); F-32 (checks it)
 - **Supersedes:** none (works within [ADR-002](ADR-002-bundle-size-budget-measurement.md), which stays unchanged)
 - **Requirements:** TD Front end, Budget ("App bundle, Svelte + uPlot + app code: 60 KB") and Load order; NFR Performance (LCP under 2.5 s)
 
@@ -33,7 +33,8 @@ ADR-002 counts the entry chunk plus its static imports plus CSS, gzip -9, 60,000
 | + F-18 laps and splits, measured at F-18 QA r1 → entry 55,986 | +1,067 |
 | + F-19 page switch, owner `import()`, glue data seam, marks prop, measured at F-19 QA r1 → entry 56,360 | +374 |
 | (rev. 12) + F-20, the owner chunk's new hash in the entry, measured at F-20 QA r2 → entry 56,367 | +7 |
-| **Reserve** | **3,633** (rev. 12) |
+| + F-25, F-26, F-28, F-33 and follow-ups, measured 5 Nov 2026 (QA-33-r1-1) → entry 57,399 | +1,032 |
+| **Reserve** | **2,601** (QA-33-r1-1) |
 | **Total** | **60,000** |
 
 Six MVP features still add code that viewers would load on the activity page, and four more add owner or optional UI. Without a plan, the budget is spent first-come, first-served, and the last feature hits the limit. Raising 60 KB is a change to the TD budget, a product decision for the user, not an architecture call.
@@ -58,8 +59,8 @@ Six MVP features still add code that viewers would load on the activity page, an
    | F-18 laps and splits interaction | **1,067, final** (rev. 10: F-18 QA r1 entry 55,986 − 54,919; planned 1,500, the rest returned to the reserve) |
    | F-19 edit page switch (owner UI lazy) | **400**; measured 374 at F-19 QA r1 (entry 56,360 − 55,986). Fixes after r1 stay within the 400 |
    | F-20 publish, share, delete, published page (owner UI lazy) | **0 planned, ceiling 100**; measured +7 at F-20 QA r2 (entry 56,367). The published page (F-20 v0.2) is in the lazy chunk and adds nothing static |
-   | F-33 fullscreen readout strip (static glue and CSS) | **300 planned; measured 229** (4 Nov 2026: entry 57,388 − 57,159 on `dbe0450`) |
-   | Reserve (architect decides who gets it) | **3,633** (rev. 12: 60,000 − entry 56,367). F-28 takes its call-site share from it in its design |
+   | F-33 fullscreen readout strip (static glue and CSS) | **300 planned; measured 229** (4 Nov 2026: entry 57,388 − 57,159 on `dbe0450`); 240 with the QA-33-r1-2 `[hidden]` rule (entry 57,399) |
+   | Reserve (architect decides who gets it) | **2,601** (QA-33-r1-1, 5 Nov 2026: 60,000 − entry 57,399 measured; 792 bytes of F-25, F-26, F-28 call sites and follow-ups were taken from it unbooked) |
 
 5. **Review trigger (rev. 7):** the reserve falls **below 1,000**, or a feature cannot fit its share plus the reserve. The architect then revisits this ADR before that feature is implemented.
    - From F-07 on, the CI line measures the activity page itself, because the prototype page replaced the F-01 placeholder as `index.html`'s entry. The ledger is therefore read from the CI line plus the open shares.

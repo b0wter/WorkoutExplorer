@@ -67,12 +67,14 @@ function build(doc: Document, publicId: string): HTMLDialogElement {
       send.textContent = 'Send report';
       if (text !== null) {
         error.textContent = text; // the reason and the text stay (AC 5)
+        send.focus(); // QA-28-r1-1: focus left the disabled button
         return;
       }
       form.reset();
       counter();
       form.hidden = true;
       done.hidden = false;
+      done.querySelector('button')!.focus(); // QA-28-r1-1: the confirmation is read with the focus move
     });
   });
   doc.body.appendChild(d);

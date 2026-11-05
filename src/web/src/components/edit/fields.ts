@@ -22,8 +22,6 @@ export function formOf(s: Settings): Form {
   };
 }
 
-export { cleanText };
-
 /** At most `max` code points (F-12 O-4); `maxlength` already holds typing to UTF-16 units. */
 const cut = (text: string, max: number): string => [...text].slice(0, max).join('');
 

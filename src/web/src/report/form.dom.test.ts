@@ -105,6 +105,7 @@ describe('sending (RF-5, RF-6, AC 2)', () => {
     expect($('.report-done').hidden).toBe(false);
     expect($('.report-done').getAttribute('role')).toBe('status');
     expect($('.report-done').textContent).toContain('Thank you. The report has been sent.');
+    expect(document.activeElement).toBe($('.report-done button')); // QA-28-r1-1
     $<HTMLButtonElement>('.report-done button').click();
     expect(dialog().open).toBe(false);
     openReport(document, ID);
@@ -166,6 +167,7 @@ describe('errors keep the form (RF-7, AC 5)', () => {
     expect(textarea().value).toBe('my text');
     expect($<HTMLInputElement>('input[value=personal_data]').checked).toBe(true);
     expect(send().disabled).toBe(false);
+    expect(document.activeElement).toBe(send()); // QA-28-r1-1
     // A retry clears the old sentence while it sends.
     respond = async () => new Response(null, { status: 204 });
     await submit();

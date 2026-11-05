@@ -405,7 +405,8 @@ h1 {
   bottom: 0;
   pointer-events: none;
 }
-html:not(.wx-fs) .wx-strip {
+html:not(.wx-fs) .wx-strip,
+.wx-strip[hidden] {
   display: none;
 }
 #map-slot .readout {

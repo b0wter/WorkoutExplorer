@@ -39,13 +39,13 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
 | [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | waiting on user | AC 3 loop-route check; AC 8/9 messengers (deployed) |
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
-| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done | minors QA-25-r1-1, r1-2 |
+| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done | |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with sudo) |
-| [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov); minors QA-28-r1-1, r1-2 |
-| [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once, operator file on the VPS; minors QA-29-r2-1, r2-2 |
-| [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy; minors QA-30-r2-1 (ADR-017 line 202), runbook OOM check should also read RestartCount (OOMKilled resets on restart) |
-| [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov; minors QA-33-r1-1 (ADR-011 reserve row stale), r1-2 (no ResizeObserver/hidden test) |
+| [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov) |
+| [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once, operator file on the VPS |
+| [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
+| [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | not started | |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |

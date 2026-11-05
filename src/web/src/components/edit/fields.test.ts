@@ -1,7 +1,8 @@
 // The edit panel's rules (F-19 design E-6 to E-8; F-12 O-4 to O-6; AC 3, AC 5).
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../lib/owner';
-import { cleanText, expiryText, formOf, incompleteNotice, lifetimeOptions, patchOf } from './fields';
+import { cleanText } from '../../lib/text';
+import { expiryText, formOf, incompleteNotice, lifetimeOptions, patchOf } from './fields';
 
 const STORED: Settings = {
   title: 'Morning loop',

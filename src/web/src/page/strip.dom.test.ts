@@ -3,7 +3,7 @@
 // cursor store, hidden without a cursor and outside fullscreen, remounted per units value.
 // Synthetic golden data only.
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import { loadGolden } from '../../test-support/golden.mjs';
 import { readWebFile } from '../../test-support/source.mjs';
@@ -102,5 +102,32 @@ describe('readout strip (F-33)', () => {
     document.documentElement.classList.add('wx-fs');
     expect(getComputedStyle(strip).display).not.toBe('none');
     expect(getComputedStyle(strip).pointerEvents).toBe('none');
+    // QA-33-r1-2: still hidden in fullscreen without a cursor, by page.css, not only the UA [hidden] rule.
+    cursor.set(null);
+    flush();
+    expect(getComputedStyle(strip).display).toBe('none');
+    // jsdom forces display: none on [hidden] itself, so check the explicit rule that outranks a later `.wx-strip { display }`.
+    const rules = [...style.sheet!.cssRules] as CSSStyleRule[];
+    expect(rules.some((r) => r.selectorText?.split(',').some((x) => x.trim() === '.wx-strip[hidden]') && r.style.display === 'none')).toBe(true);
+  });
+
+  it('its height reaches the bottom control corners as --wx-strip (CR-4)', () => {
+    let report: ResizeObserverCallback = () => {};
+    vi.stubGlobal('ResizeObserver', class { constructor(cb: ResizeObserverCallback) { report = cb; } observe(): void {} disconnect(): void {} unobserve(): void {} });
+    cleanup.push(() => vi.unstubAllGlobals());
+    const style = document.createElement('style');
+    style.textContent = readWebFile('src/components/map/map-view.css');
+    document.head.append(style);
+    cleanup.push(() => style.remove());
+    const { box } = setup();
+    const corner = document.createElement('div');
+    corner.className = 'maplibregl-ctrl-bottom-left';
+    box.append(corner);
+    report([{ contentRect: { height: 57 } } as ResizeObserverEntry], {} as ResizeObserver);
+    expect(box.style.getPropertyValue('--wx-strip')).toBe('57px');
+    // jsdom does not resolve var(): check that the corner takes the property, only in fullscreen.
+    expect(getComputedStyle(corner).bottom).not.toContain('--wx-strip');
+    document.documentElement.classList.add('wx-fs');
+    expect(getComputedStyle(corner).bottom).toBe('var(--wx-strip, 0px)');
   });
 });

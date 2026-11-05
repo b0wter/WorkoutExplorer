@@ -26,7 +26,7 @@
 
 | Option | Offered when | Value per sample | No class when |
 | --- | --- | --- | --- |
-| Speed (pace for pace sports) | the speed stream has a value at a positioned sample | centred mean over 10 s of time | missing; pace sports: speed below `STOP_SPEED` (DS-2: a stop has no pace). Speed sports: a stop is a real 0 and takes the slowest class; the percentile base leaves out samples below `STOP_SPEED` |
+| Speed (pace for pace sports) | the speed stream has a value at a positioned sample | centred mean over 10 s of time | missing; pace sports: **raw** speed below `STOP_SPEED`, removed before the mean so a stop never slows its neighbours (DS-2: a stop has no pace; QA-25-r1-2). Speed sports: a stop is a real 0 and takes the slowest class; the percentile base leaves out samples below `STOP_SPEED` |
 | Heart rate | the stream has a value at a positioned sample | as recorded | missing. Transitions are coloured (AP-9) |
 | Power | the stream has a value at a positioned sample | centred mean over 30 s of time, zeros counted (as F-17 R-2) | missing (transitions have none, F-08 R-13) |
 | Gradient | altitude **and** distance streams both have a value at a positioned sample | altitude change ÷ distance over a centred 100 m distance window, altitude interpolated in distance between valid samples, in % | altitude or distance missing at the sample; **distance not above the previous valid distance** (standstill or held stretch, F-08 R-14); the window spans less than 50 m; the sample lies in a session with sport `transition` (F-08 hand-off, user answer 6) |
@@ -46,7 +46,7 @@
 
 | What | Decision |
 | --- | --- |
-| Static | Only the units prop wiring, expected under 50 bytes gzip, from the reserve; reported |
+| Static | The units prop wiring plus C-5's 28 palette properties in the static theme block: **253 bytes gzip measured** (QA-25-r1-1), from the reserve |
 | Lazy | F-25's own lazy delta at most **3,000** bytes gzip, reported beside F-06's lazy figure. Above: stop and report |
 
 ## Verification

@@ -2,7 +2,7 @@
 # operator's reverse proxy, and the Go server on an internal network. Lives at
 # /srv/workout-explorer/compose.yaml next to .env (deploy/example.env), bin/, web/, conf/.
 # No image is built: both services run one pinned distroless base image with the
-# binaries bind-mounted read-only (DP-2). Nothing here creates a host path (DP-3); the runbook creates operator/ (F-29).
+# binaries bind-mounted read-only (DP-2). Nothing here creates a host path (DP-3); deploy.sh creates the empty operator/ folder, never writes inside it (F-29).
 name: workout-explorer
 
 x-common: &common
