@@ -46,7 +46,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once, operator file on the VPS |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
-| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1), expiry: local enough? ; minor QA-32-r1-1 |
+| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
@@ -473,6 +473,12 @@ Updated: F-30 (AC 6, open points), technical design (code tree, Binary row, sett
 - **Priorities:** AP-21 is Must. INF-5 is nice to have: Could, so phase 2 in the scope table; F-34 keeps its detailed file. The Should cut order (question 29) is unchanged.
 
 Updated: spec (stories, scope table, AP-15, AP-21 Must, INF-5 Could and phase 2), F-33, F-34 (phase 2), F-32 (depends on), feature index (order, counts, coverage, Should list).
+
+**Decided on 5 Nov 2026, expiry check local only** (user, F-32 AC 8, from `qa/F-32-mvp-launch-checks-r1.md`):
+
+- **Expiry (UP-7, SH-10):** checked locally only; QA r1's local measurement (expiry 7.6 s, worst case about 30 s by the expiry interval; draft past 48 h 29.1 s) and `make caddy-check`'s expiry test stand in for the live check. A live check needs at least a one-day wait, and the runbook forbids editing the database by hand. Delete and hiding-on stay live checks.
+
+Updated: F-32 (AC 8).
 
 The original questions follow for reference.
 

@@ -271,7 +271,7 @@ Then, in `run/`, start with `docker compose up -d` (set `WX_WEB` in `.env` to th
 - `ss -ltn`: the only listener of this project is `WX_LISTEN`'s port. Nothing on 80 or 443 comes from it.
 - `curl -sI https://workouts.example.org/ | grep -i strict-transport-security` prints exactly one line.
 - `docker compose logs caddy` and `docker compose logs app` contain no visitor addresses (section 11).
-- Test with your own file first. This project ships its privacy page in a later feature (F-29); until then, tell visitors yourself what is stored (section 9).
+- Test with your own file first. The About page (`/about`) is the privacy page; your part of it comes from the operator file (see "The About page: operator file").
 
 ## 8. Updating
 
@@ -455,7 +455,7 @@ API downtime is the `app` restart. A new Caddy binary, a changed `compose.yaml`,
 - Delete a workout: `docker compose exec app /srv/workout-explorer/bin/workout-explorer delete -data /srv/workouts <public_id>` (section 10, "Delete one workout").
 - Reports: the read-only `sqlite3` query of section 10, as user ID 10001 (INF-2, INF-3). With notifications on (section 4a) each new report also arrives as a Pushover message with its number.
 - Uptime monitor (yours, later): check `/api/health` and `/`, never a workout page.
-- Links go to friends only after F-29 (privacy policy).
+- Links go to friends once the operator file is filled in and `/about` shows your details (F-29).
 
 ### 13.5 Measurements to record (AC 8, 9, 10)
 

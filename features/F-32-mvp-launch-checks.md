@@ -28,7 +28,7 @@ Verify the whole MVP end to end on the live server before the operator and frien
 - [ ] Upload on Android Chrome (F-11 AC 1, moved here): picking a valid `.fit` file with the file picker opens the new draft's edit link.
 - [ ] Workout page, upload, edit and About pages work in the last two versions of Chrome, Safari, Firefox and Edge, iOS Safari and Android Chrome.
 - [ ] Preview cards render in WhatsApp, Signal, Slack, Telegram and X; draft links show no route or numbers.
-- [ ] Delete, expiry and hiding-on each stop old content within 60 s on the live server.
+- [ ] Delete and hiding-on each stop old content within 60 s on the live server. Expiry is checked locally only: QA r1's local measurement and `make caddy-check`'s expiry test stand in for the live check (decided 5 Nov 2026, decision log).
 - [ ] The data-processing record exists.
 - [ ] The About page's operator placeholder is gone: the operator file answers every prompt of `deploy/operator.example.txt`, including what the TLS proxy logs.
 - [ ] Gate 1 starts: the operator and friends use the site for real workouts for a few weeks.
