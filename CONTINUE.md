@@ -1,10 +1,10 @@
-# Continue here (state of 4 Nov 2026)
+# Continue here (state of 5 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current: F-29 built (QA r2 ready, user checks pending); F-30 next
+## Current: F-30 and F-33 done, v0.3.0 released; F-32 launch checks next
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0 and v0.2.0 (4 Nov 2026, up to F-29) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29) and v0.3.0 (5 Nov 2026, F-30, F-33, minors batch) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
 Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline, route faded) and F-26 fullscreen map (CSS overlay, ADR-038; OQ-100 accepted: bars stay visible), both checked by the user. Theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash); header controls on their own line on narrow screens; F-19 download toggle hidden until F-24.
 
@@ -14,7 +14,13 @@ F-28 report form (native dialog, lazy; no button without JS, OQ-103/104 accepted
 
 F-29 About page (4 Nov 2026): Go serves `/about`, filled at start from the template (app facts only) and the per-deployment operator file `WORKOUT_EXPLORER_OPERATOR_FILE` (example `deploy/operator.example.txt`; the user's own lives on the VPS in `/srv/workout-explorer/operator/`, never in the repo). Attribution list generated in every `make build` (Vite licence file + bundled dependency walk + Go build info + `tools/attributions/sources.json`, incl. FIT Protocol licence). QA r2 ready. Waiting on the user: browser check of /about (phone, dark mode, licence details), edit the privacy draft, open the Garmin FIT licence page once, write the operator file on the VPS (incl. what the proxy logs).
 
-Next: F-30 regenerate, then F-32 launch checks. The user hosts on a 2 GB VPS. Phase-2 ideas: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance, F-24 viewer download.
+F-30 regenerate (5 Nov 2026, critical lane, QA r2 ready, done): `deploy.sh` runs `regenerate` after health, then removes old bundles only after exit 0 (exit 3 = regenerate did not finish, nothing removed; retry = same tag again). Memory overlap with serve during a deploy accepted by the user (ADR-017 rev. 8). Waiting on the user at the first F-30 deploy: time AC 10 (100 workouts) on the VPS; after each deploy check `OOMKilled` and `RestartCount` (runbook).
+
+F-33 fullscreen cursor readout strip (AP-21, Must): done, checked by the user 5 Nov.
+
+F-34 iOS Shortcut link on the About page (INF-5, Could, phase 2): specified, not started. The user's Shortcut works against the existing API with Request Body = Form, one File field `file` (a bare File body gets 400); no server change needed for uploads.
+
+Next: F-32 launch checks. The user hosts on a 2 GB VPS. Phase-2 ideas: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance, F-24 viewer download.
 
 F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks.
 
