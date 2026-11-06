@@ -480,6 +480,16 @@ Updated: spec (stories, scope table, AP-15, AP-21 Must, INF-5 Could and phase 2)
 
 Updated: F-32 (AC 8).
 
+**Recorded on 6 Nov 2026, compare two workouts** (user; requested by a friend of the operator; phase 3 idea, picked up after gate 1; no feature file yet):
+
+- **Compare two workouts (Later):** show two workouts together on charts and map, aligned by distance or by time, e.g. start vs end of season.
+- **Conflicts with the maximum lifetime of 30 days (UP-7):** the season case is not possible with two live links. Longer lifetimes are not wanted (store as little as possible).
+- **Variant "two live viewing links":** client only, loads both public data files, no new server storage; hidden ends stay protected because only public data is used (SH-4); limited to workouts at most 30 days apart.
+- **Variant "live workout vs a FIT file opened locally in the browser, never uploaded":** covers the season case without storage, but needs FIT parsing in the browser (cost).
+- **Bundle budget is near its limit:** compare would be a separate lazily loaded chunk.
+
+Updated: spec (scope table row, Roadmap phase 3). No requirement ID or feature file yet. No MVP feature changes.
+
 The original questions follow for reference.
 
 **Contradictions**

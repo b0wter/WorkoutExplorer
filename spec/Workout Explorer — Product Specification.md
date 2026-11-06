@@ -110,7 +110,7 @@ The MVP is one workout, one link: upload, explore, share, delete. Connecting wor
 | German interface |  |  | Yes |
 | Keyboard control of charts |  |  | Yes |
 | GPS dropouts drawn as gaps on the map |  |  | Yes |
-| Compare two workouts or a group ride |  |  | Yes |
+| Compare two workouts or a group ride. Two workouts: shown together on charts and map, aligned by distance or by time (phase 3 idea, picked up after gate 1; notes in the decision log of `features/README.md`, 6 Nov 2026) |  |  | Yes |
 | GPX and TCX upload |  |  | Yes |
 
 ## Functional requirements
@@ -310,6 +310,6 @@ Phases and gates (this table is authoritative where the diagram differs):
 | 0. Prototype | Parse a long FIT file, write the data file, draw charts and map with a synced cursor | Smooth cursor scrubbing on a 12-hour workout on the operator's phone |
 | 1. MVP | Everything marked MVP in the scope table | The operator and friends use it for real workouts for a few weeks |
 | 2. Phase 2 | Everything marked Phase 2: pins, privacy zones, trim, multisport, pool swims, zones and power curve, embed, suggested title, shareable range links, summary colours | Decide which Later items are worth building |
-| 3. Later | Everything marked Later, including the viewer download (SH-8) and chosen split distances (AP-20) | — |
+| 3. Later | Everything marked Later, including the viewer download (SH-8), chosen split distances (AP-20) and comparing two workouts | — |
 
 No dates are set yet; phase lengths depend on how much time you can give the project each week.
