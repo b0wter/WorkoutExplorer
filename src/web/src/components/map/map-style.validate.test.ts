@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import type { StyleSpecification } from 'maplibre-gl';
 import { buildRoute, classLines, recordedEdgeEnds, routeLines, routeLinesIn, routeMarkers, type Route } from '../../lib/route';
-import { CLASS_COUNT, classify, colourScale, metricValues } from '../../lib/colouring';
+import { NO_CLASS, classify, colourScale, metricValues } from '../../lib/colouring';
 import type { WorkoutData } from '../../lib/datafile';
 import { golden, positioned } from '../../lib/route/testing/fixtures';
 import { COLOUR_SOURCE, DIVERGING, GLYPHS_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, TILE_HOST, baseStyle, colourData, mergeStyle, rangeData } from './map-style';
@@ -104,7 +104,7 @@ describe('style-spec validation (QA-06-r3-2)', () => {
     const ends = recordedEdgeEnds(data, route);
     for (const [metric, offset] of [['speed', 0], ['gradient', DIVERGING]] as const) {
       const values = metricValues(data, metric);
-      const classes = classify(values, colourScale(metric, values, ends, data.meta.sport)).map((k) => (k < CLASS_COUNT ? offset + k : NO_VALUE));
+      const classes = classify(values, colourScale(metric, values, ends, data.meta.sport)).map((k) => (k === NO_CLASS ? NO_VALUE : offset + k));
       const style = base(data);
       style.sources[COLOUR_SOURCE] = { type: 'geojson', data: colourData(classLines(data, ends, classes, NO_VALUE)) as never };
       style.sources[RANGE_SOURCE] = { type: 'geojson', data: rangeData(classLines(data, ends, classes, NO_VALUE + 1), routeLines(data, route).bridges) as never };

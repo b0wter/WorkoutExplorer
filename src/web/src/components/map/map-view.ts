@@ -27,7 +27,7 @@ import type { WorkoutData } from '../../lib/datafile';
 import type { CursorIndex, CursorStore } from '../../lib/cursor';
 import type { SelectionStore } from '../../lib/selection';
 import type { UnitsStore } from '../../lib/units';
-import { CLASS_COUNT, classify, colourScale, legend, metricLabel, metricValues, offeredMetrics, type ColourMetric } from '../../lib/colouring';
+import { NO_CLASS, classify, colourScale, legend, metricLabel, metricValues, offeredMetrics, type ColourMetric } from '../../lib/colouring';
 import {
   ROUTE_IDLE,
   TIE_PX,
@@ -440,7 +440,10 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       const legendBox = document.createElement('div');
       legendBox.className = 'wx-legend';
       legendBox.hidden = true;
-      box.append(select, legendBox);
+      // The unit sits beside the select: the bar has no room for it next to three labels (C-6).
+      const unitBox = document.createElement('span');
+      unitBox.className = 'wx-unit';
+      box.append(select, unitBox, legendBox);
       let shown: { scale: ReturnType<typeof colourScale>; missing: boolean } | null = null;
       const span = (className: string, text = ''): HTMLSpanElement => {
         const el = document.createElement('span');
@@ -450,21 +453,19 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       };
       const renderLegend = (): void => {
         legendBox.hidden = shown === null;
+        unitBox.textContent = '';
         if (shown === null) return;
         const { scale, missing } = shown;
-        const offset = scale.metric === 'gradient' ? DIVERGING : 0;
+        const gradient = scale.metric === 'gradient';
+        const offset = gradient ? DIVERGING : 0;
         const { labels, unit } = legend(scale, sport, options.units?.get() ?? 'metric');
+        unitBox.textContent = unit;
         const swatches = document.createElement('div');
         swatches.className = 'wx-swatches';
-        for (let k = 0; k < CLASS_COUNT; k++) swatches.append(span('wx-c' + (offset + k)));
+        for (let k = 0; k <= scale.edges.length; k++) swatches.append(span('wx-c' + (offset + k)));
         const row = document.createElement('div');
         row.className = 'wx-labels';
-        if (scale.metric === 'gradient') {
-          labels.forEach((t, k) => row.append(span('wx-l' + (k + 1), t)));
-          row.append(span('wx-l7', unit));
-        } else {
-          row.append(span('wx-l0', labels[0]), span('wx-l7', labels[1] + ' ' + unit));
-        }
+        labels.forEach((t, k) => row.append(span(gradient ? 'wx-g' + k : ['wx-l0', 'wx-lm', 'wx-le'][k], t)));
         legendBox.replaceChildren(swatches, row);
         if (missing) {
           const none = document.createElement('div');
@@ -484,7 +485,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
           const values = metricValues(data, metric);
           const scale = colourScale(metric, values, ends, sport);
           const offset = metric === 'gradient' ? DIVERGING : 0;
-          const cs = classify(values, scale).map((k) => (k < CLASS_COUNT ? offset + k : NO_VALUE));
+          const cs = classify(values, scale).map((k) => (k === NO_CLASS ? NO_VALUE : offset + k));
           classes = cs;
           shown = { scale, missing: ends.some((i) => cs[i] === NO_VALUE) };
           colour = colourData(classLines(data, ends, cs, NO_VALUE));

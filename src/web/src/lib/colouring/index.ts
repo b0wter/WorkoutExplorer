@@ -8,7 +8,8 @@ import { STOP_SPEED, formatFixed, formatSpeedOrPace, isPaceSport, speedOrPaceUni
 /** In AP-9's order. */
 export type ColourMetric = 'speed' | 'heart_rate' | 'power' | 'gradient';
 
-export const CLASS_COUNT = 7;
+/** Classes of the workout-relative metrics (C-4); gradient has GRADIENT_EDGES.length + 1. */
+export const CLASS_COUNT = 12;
 /** The class of a sample without a value: its edge is left out, so the plain route shows (C-2). */
 export const NO_CLASS = 255;
 
@@ -19,8 +20,10 @@ export const POWER_WINDOW_S = 30;
 /** Gradient: centred distance window, and the shortest span (at the ends of the route) that still counts. */
 export const GRADIENT_WINDOW_M = 100;
 export const GRADIENT_MIN_SPAN_M = 50;
-/** Gradient class edges in %: descent, flat in the middle, climb. */
-export const GRADIENT_EDGES: readonly number[] = [-8, -4, -1, 1, 4, 8];
+/** Gradient class edges in %: descent, flat in the middle, climb (11 classes, C-4). */
+export const GRADIENT_EDGES: readonly number[] = [-12, -8, -5, -3, -1, 1, 3, 5, 8, 12];
+/** The gradient edges the legend labels (C-6: at most five, 0 % implied by the flat middle). */
+export const GRADIENT_LABELS: readonly number[] = [-12, -5, 5, 12];
 
 /** Metrics with a value at a positioned sample, in AP-9's order; gradient needs altitude and distance (C-3).
  *  Each stream's pass stops at its first such value. */
@@ -128,8 +131,8 @@ export function gradientValues(data: WorkoutData): Float64Array {
   return out;
 }
 
-/** The value per sample that is classed; NaN = no class (C-3). Speed for the pace sports is pace in s/m, so the
- *  classes step evenly in pace (C-4). */
+/** The value per sample that is classed; NaN = no class (C-3). Speed for the pace sports is pace in s/m (the
+ *  quantile edges are the same either way, C-4; the legend shows pace). */
 export function metricValues(data: WorkoutData, metric: ColourMetric): Float64Array {
   const n = data.sampleCount;
   const s = data.metrics;
@@ -150,37 +153,33 @@ export function metricValues(data: WorkoutData, metric: ColourMetric): Float64Ar
 
 export interface ColourScale {
   readonly metric: ColourMetric;
-  /** CLASS_COUNT − 1 ascending edges in the value's unit: class = number of edges ≤ value. */
+  /** Ascending edges in the value's unit, one fewer than the classes: class = number of edges ≤ value.
+   *  Relative metrics: NaN when no drawn edge has a value. */
   readonly edges: readonly number[];
   /** Pace: class 0 is the largest value (slow → fast for every sport, C-5). */
   readonly reverse: boolean;
-  /** Workout-relative bounds (5th and 95th percentile); NaN when no drawn edge has a value. */
-  readonly lo: number;
-  readonly hi: number;
 }
 
-/** C-4. `ends`: sample i of every drawn (recorded) edge (i − 1, i); only their values set the bounds. */
+/** C-4. `ends`: sample i of every drawn (recorded) edge (i − 1, i); only their values set the edges, the k/12
+ *  quantiles, so each class covers about a twelfth of the drawn route. Ties leave classes between them empty. */
 export function colourScale(metric: ColourMetric, values: Float64Array, ends: Uint32Array, sport: string): ColourScale {
   const reverse = metric === 'speed' && isPaceSport(sport);
-  if (metric === 'gradient') return { metric, edges: GRADIENT_EDGES, reverse, lo: GRADIENT_EDGES[0], hi: GRADIENT_EDGES[GRADIENT_EDGES.length - 1] };
+  if (metric === 'gradient') return { metric, edges: GRADIENT_EDGES, reverse };
   const base = new Float64Array(ends.length);
   let n = 0;
-  // Speed sports: a stop takes the slowest class but does not move the bounds.
+  // Speed sports: a stop takes the slowest class but does not move the edges.
   const floor = metric === 'speed' && !reverse ? STOP_SPEED : -Infinity;
   for (let k = 0; k < ends.length; k++) {
     const v = values[ends[k]];
     if (v >= floor) base[n++] = v;
   }
   const sorted = base.subarray(0, n).sort();
-  const lo = n > 0 ? sorted[Math.floor(0.05 * (n - 1))] : Number.NaN;
-  const hi = n > 0 ? sorted[Math.ceil(0.95 * (n - 1))] : Number.NaN;
   const edges: number[] = [];
-  // Equal bounds: one class, never a division by zero.
-  for (let k = 1; k < CLASS_COUNT; k++) edges.push(hi > lo ? lo + ((hi - lo) * k) / CLASS_COUNT : Infinity);
-  return { metric, edges, reverse, lo, hi };
+  for (let k = 1; k < CLASS_COUNT; k++) edges.push(n > 0 ? sorted[Math.floor((k * n) / CLASS_COUNT)] : Number.NaN);
+  return { metric, edges, reverse };
 }
 
-/** Class per sample, NO_CLASS where the value is NaN. Values beyond the bounds clip to the end classes. */
+/** Class per sample (0 … edges.length), NO_CLASS where the value is NaN. */
 export function classify(values: Float64Array, scale: ColourScale): Uint8Array {
   const out = new Uint8Array(values.length);
   const e = scale.edges;
@@ -192,13 +191,13 @@ export function classify(values: Float64Array, scale: ColourScale): Uint8Array {
     }
     let c = 0;
     while (c < e.length && e[c] <= v) c++;
-    out[i] = scale.reverse ? CLASS_COUNT - 1 - c : c;
+    out[i] = scale.reverse ? e.length - c : c;
   }
   return out;
 }
 
 export interface Legend {
-  /** Relative scales: [class 0 end, last class end], marked ≤ or ≥; gradient: its class edges, left to right. */
+  /** Relative scales: [left end, median edge, right end], the ends marked ≤ or ≥; gradient: GRADIENT_LABELS. */
   readonly labels: readonly string[];
   readonly unit: string;
 }
@@ -206,15 +205,17 @@ export interface Legend {
 /** The legend's texts in the viewer's units (C-6, DS-1, DS-2). Metric ↔ imperial only relabels (C-4). */
 export function legend(scale: ColourScale, sport: string, units: Units): Legend {
   const m = scale.metric;
-  if (m === 'gradient') return { labels: GRADIENT_EDGES.map((e) => formatFixed(e, 0)), unit: '%' };
-  const ends = scale.reverse ? [scale.hi, scale.lo] : [scale.lo, scale.hi];
-  // The bounds are the 5th and 95th percentile; values beyond clip into the end classes (QA-25-r1-4).
-  // Pace: the slow (left) end is the larger number.
-  const marks = scale.lo !== scale.lo ? ['', ''] : scale.reverse ? ['≥ ', '≤ '] : ['≤ ', '≥ '];
+  if (m === 'gradient') return { labels: GRADIENT_LABELS.map((e) => formatFixed(e, 0)), unit: '%' };
+  const e = scale.edges;
+  const lo = e[0];
+  const hi = e[e.length - 1];
+  // The end classes hold everything beyond the lowest and highest edge. Pace: the slow (left) end is the larger number.
+  const shown = scale.reverse ? [hi, e[e.length >> 1], lo] : [lo, e[e.length >> 1], hi];
+  const marks = lo !== lo ? ['', '', ''] : scale.reverse ? ['≥ ', '', '≤ '] : ['≤ ', '', '≥ '];
   let text = (v: number): string => formatFixed(v, 0);
   if (m === 'speed') {
-    // A missing bound gives '' from formatSpeedOrPace; show the missing-value dash instead.
+    // A missing edge gives '' from formatSpeedOrPace; show the missing-value dash instead.
     text = (v) => formatSpeedOrPace(sport, scale.reverse ? 1 / v : v, units) || formatFixed(Number.NaN, 0);
   }
-  return { labels: ends.map((v, k) => marks[k] + text(v)), unit: m === 'speed' ? speedOrPaceUnit(sport, units) : m === 'heart_rate' ? 'bpm' : 'W' };
+  return { labels: shown.map((v, k) => marks[k] + text(v)), unit: m === 'speed' ? speedOrPaceUnit(sport, units) : m === 'heart_rate' ? 'bpm' : 'W' };
 }

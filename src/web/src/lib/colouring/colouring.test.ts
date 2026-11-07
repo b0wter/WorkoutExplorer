@@ -8,6 +8,7 @@ import { golden, positioned } from '../route/testing/fixtures';
 import {
   CLASS_COUNT,
   GRADIENT_EDGES,
+  GRADIENT_LABELS,
   NO_CLASS,
   centredMean,
   classify,
@@ -107,8 +108,8 @@ describe('gradientValues (C-3)', () => {
     const classes = classify(values, colourScale('gradient', values, all(d.sampleCount), d.meta.sport));
     let flat = 0;
     for (const c of classes) {
-      if (c === 3) flat++;
-      expect(c === 0 || c === 6).toBe(false);
+      if (c === 5) flat++;
+      expect(c === 0 || c === 10).toBe(false);
     }
     expect(flat / d.sampleCount).toBeGreaterThan(0.8);
   });
@@ -128,38 +129,49 @@ describe('transitions (F-08 hand-off, C-3)', () => {
 });
 
 describe('colourScale and classify (AC 3, C-4)', () => {
-  const n = 101;
+  const n = 120;
   const hr = workout(n, { heart_rate: ramp(n, (i) => 100 + i) });
-  it('classes are monotonic in the value and clip to the end classes; bounds are the 5th and 95th percentile', () => {
+  const count = (c: Uint8Array, k: number): number => c.filter((x) => x === k).length;
+  it('edges are the k/12 quantiles of the drawn edges: on spread data each class holds a twelfth; monotonic, no clipping', () => {
     const values = metricValues(hr, 'heart_rate');
     const scale = colourScale('heart_rate', values, Uint32Array.from(ramp(n, (i) => i)), 'cycling');
-    expect([scale.lo, scale.hi]).toEqual([105, 195]);
+    expect(scale.edges).toEqual(ramp(CLASS_COUNT - 1, (k) => 110 + 10 * k));
     const c = classify(values, scale);
     for (let i = 1; i < n; i++) expect(c[i]).toBeGreaterThanOrEqual(c[i - 1]);
-    expect(c[0]).toBe(0);
-    expect(c[5]).toBe(0);
-    expect(c[95]).toBe(CLASS_COUNT - 1);
-    expect(c[100]).toBe(CLASS_COUNT - 1);
-    expect(new Set(c).size).toBe(CLASS_COUNT);
+    for (let k = 0; k < CLASS_COUNT; k++) expect(count(c, k)).toBe(n / CLASS_COUNT);
+    // Beyond the drawn values: still the end classes.
+    expect(Array.from(classify(Float64Array.from([0, 1000]), scale))).toEqual([0, CLASS_COUNT - 1]);
   });
-  it('only the drawn edges set the bounds', () => {
+  it('a skewed metric still gives each class about a twelfth', () => {
+    const values = Float64Array.from(ramp(1200, (i) => 100 + (i / 12) ** 2));
+    const c = classify(values, colourScale('heart_rate', values, all(1200), 'cycling'));
+    for (let k = 0; k < CLASS_COUNT; k++) expect(Math.abs(count(c, k) - 100)).toBeLessThanOrEqual(1);
+  });
+  it('only the drawn edges set the edges', () => {
     const values = metricValues(hr, 'heart_rate');
-    const scale = colourScale('heart_rate', values, Uint32Array.from([10, 11, 12]), 'cycling');
-    expect([scale.lo, scale.hi]).toEqual([110, 112]);
+    const scale = colourScale('heart_rate', values, Uint32Array.from(ramp(12, (i) => 10 + i)), 'cycling');
+    expect(scale.edges).toEqual(ramp(CLASS_COUNT - 1, (k) => 111 + k));
   });
-  it('equal bounds give one class; NaN gives NO_CLASS; no drawn value gives NaN bounds', () => {
+  it('ties leave classes empty, never out of order; a constant metric gives one class', () => {
+    const values = Float64Array.from([...ramp(10, () => 120), ...ramp(10, () => 150)]);
+    const c = classify(values, colourScale('heart_rate', values, all(20), 'cycling'));
+    expect(new Set(c)).toEqual(new Set([5, CLASS_COUNT - 1]));
+    for (let i = 1; i < c.length; i++) expect(c[i]).toBeGreaterThanOrEqual(c[i - 1]);
+    const flat = Float64Array.from([120, 120, N, 120]);
+    expect(new Set(classify(flat, colourScale('heart_rate', flat, Uint32Array.from([1, 2, 3]), 'cycling')))).toEqual(new Set([CLASS_COUNT - 1, NO_CLASS]));
+  });
+  it('NaN gives NO_CLASS; no drawn value gives NaN edges and dash labels', () => {
     const values = Float64Array.from([120, 120, N, 120]);
-    const scale = colourScale('heart_rate', values, Uint32Array.from([1, 2, 3]), 'cycling');
-    expect(Array.from(classify(values, scale))).toEqual([0, 0, NO_CLASS, 0]);
     const none = colourScale('heart_rate', values, Uint32Array.from([2]), 'cycling');
-    expect(none.lo).toBeNaN();
-    expect(legend(none, 'cycling', 'metric').labels).toEqual(['–', '–']);
+    expect(none.edges.every(Number.isNaN)).toBe(true);
+    expect(classify(values, none)[2]).toBe(NO_CLASS);
+    expect(legend(none, 'cycling', 'metric').labels).toEqual(['–', '–', '–']);
   });
-  it('speed sports: a stop takes the slowest class but does not move the bounds', () => {
-    const d = workout(40, { speed: ramp(40, (i) => (i < 20 ? 0 : 10)) });
+  it('speed sports: a stop takes the slowest class but does not move the edges', () => {
+    const d = workout(40, { speed: ramp(40, (i) => (i < 20 ? 0 : i)) });
     const values = metricValues(d, 'speed');
     const scale = colourScale('speed', values, all(40), 'cycling');
-    expect(scale.lo).toBeGreaterThanOrEqual(0.3);
+    expect(scale.edges[0]).toBeGreaterThanOrEqual(0.3);
     expect(classify(values, scale)[0]).toBe(0);
   });
   it('pace sports class in pace, slow → fast; a stop has no class (DS-2)', () => {
@@ -173,36 +185,43 @@ describe('colourScale and classify (AC 3, C-4)', () => {
     const c = classify(values, scale);
     expect(c[0]).toBe(NO_CLASS);
     expect(c[20]).toBe(0); // slow
-    expect(c[50]).toBe(CLASS_COUNT - 1); // fast
+    expect(c[50]).toBeGreaterThan(5); // fast; two tied values, so the classes between them stay empty
   });
-  it('gradient uses the fixed class edges', () => {
-    const values = Float64Array.from([-20, -8, -5, 0, 0.99, 1, 6, 8, 30]);
+  it('gradient uses the 10 fixed edges: 11 classes, flat (±1 %) in the middle', () => {
+    const values = Float64Array.from([-20, -12, -6, -1, 0, 0.99, 1, 4, 12, 30]);
     const scale = colourScale('gradient', values, Uint32Array.from([1]), 'cycling');
     expect(scale.edges).toEqual(GRADIENT_EDGES);
-    expect(Array.from(classify(values, scale))).toEqual([0, 1, 1, 3, 3, 4, 5, 6, 6]);
+    expect(GRADIENT_EDGES).toHaveLength(10);
+    expect(Array.from(classify(values, scale))).toEqual([0, 1, 2, 5, 5, 5, 6, 7, 10, 10]);
+    expect(GRADIENT_LABELS.every((e) => GRADIENT_EDGES.includes(e))).toBe(true);
   });
 });
 
 describe('legend (AC 3, AC 4, DS-1, DS-2)', () => {
-  const scale = (metric: ColourScale['metric'], lo: number, hi: number, reverse = false): ColourScale => ({ metric, edges: [], reverse, lo, hi });
-  it('speed in km/h or mph; a units switch only relabels', () => {
-    expect(legend(scale('speed', 5, 10), 'cycling', 'metric')).toEqual({ labels: ['≤ 18.0', '≥ 36.0'], unit: 'km/h' });
-    expect(legend(scale('speed', 5, 10), 'cycling', 'imperial')).toEqual({ labels: ['≤ 11.2', '≥ 22.4'], unit: 'mph' });
+  /** Edges lo … hi with the median edge at mid. */
+  const scale = (metric: ColourScale['metric'], lo: number, mid: number, hi: number, reverse = false): ColourScale => ({
+    metric,
+    edges: [lo, ...ramp(4, () => lo), mid, ...ramp(4, () => hi), hi],
+    reverse,
+  });
+  it('speed in km/h or mph: lowest, median and highest edge; a units switch only relabels', () => {
+    expect(legend(scale('speed', 5, 7.5, 10), 'cycling', 'metric')).toEqual({ labels: ['≤ 18.0', '27.0', '≥ 36.0'], unit: 'km/h' });
+    expect(legend(scale('speed', 5, 7.5, 10), 'cycling', 'imperial')).toEqual({ labels: ['≤ 11.2', '16.8', '≥ 22.4'], unit: 'mph' });
   });
   it.each([
-    ['running', 'metric', ['≥ 6:40', '≤ 3:20'], '/km'],
-    ['running', 'imperial', ['≥ 10:44', '≤ 5:22'], '/mi'],
-    ['swimming', 'metric', ['≥ 0:40', '≤ 0:20'], '/100 m'],
-    ['swimming', 'imperial', ['≥ 0:37', '≤ 0:18'], '/100 yd'],
-    ['rowing', 'imperial', ['≥ 3:20', '≤ 1:40'], '/500 m'],
+    ['running', 'metric', ['≥ 6:40', '5:00', '≤ 3:20'], '/km'],
+    ['running', 'imperial', ['≥ 10:44', '8:03', '≤ 5:22'], '/mi'],
+    ['swimming', 'metric', ['≥ 0:40', '0:30', '≤ 0:20'], '/100 m'],
+    ['swimming', 'imperial', ['≥ 0:37', '0:27', '≤ 0:18'], '/100 yd'],
+    ['rowing', 'imperial', ['≥ 3:20', '2:30', '≤ 1:40'], '/500 m'],
   ] as const)('pace for %s (%s): slow pace on the left, the larger number marked ≥', (sport, units, labels, unit) => {
-    // lo/hi in s/m: 0.2 s/m = 5 m/s (fast), 0.4 s/m = 2.5 m/s (slow)
-    expect(legend(scale('speed', 0.2, 0.4, true), sport, units)).toEqual({ labels, unit });
+    // edges in s/m: 0.2 s/m = 5 m/s (fast), 0.4 s/m = 2.5 m/s (slow)
+    expect(legend(scale('speed', 0.2, 0.3, 0.4, true), sport, units)).toEqual({ labels, unit });
   });
   it('heart rate, power and gradient', () => {
-    expect(legend(scale('heart_rate', 110.4, 171.6), 'cycling', 'imperial')).toEqual({ labels: ['≤ 110', '≥ 172'], unit: 'bpm' });
-    expect(legend(scale('power', 0, 312), 'cycling', 'metric')).toEqual({ labels: ['≤ 0', '≥ 312'], unit: 'W' });
-    expect(legend(scale('gradient', -8, 8), 'cycling', 'imperial')).toEqual({ labels: ['-8', '-4', '-1', '1', '4', '8'], unit: '%' });
+    expect(legend(scale('heart_rate', 110.4, 140, 171.6), 'cycling', 'imperial')).toEqual({ labels: ['≤ 110', '140', '≥ 172'], unit: 'bpm' });
+    expect(legend(scale('power', 0, 180, 312), 'cycling', 'metric')).toEqual({ labels: ['≤ 0', '180', '≥ 312'], unit: 'W' });
+    expect(legend(colourScale('gradient', new Float64Array(0), new Uint32Array(0), 'cycling'), 'cycling', 'imperial')).toEqual({ labels: ['-12', '-5', '5', '12'], unit: '%' });
   });
 });
 

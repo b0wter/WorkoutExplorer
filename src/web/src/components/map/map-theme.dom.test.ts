@@ -63,10 +63,10 @@ describe('classColours (F-25 C-5)', () => {
   it('falls back to the light values; reads --seq-k and --div-k from the element', () => {
     expect(classColours(document.createElement('div'))).toEqual(CLASS_COLOURS);
     const el = document.createElement('div');
-    el.style.setProperty('--seq-6', '#010203');
+    el.style.setProperty('--seq-11', '#010203');
     el.style.setProperty('--div-0', '#040506');
     const c = classColours(el);
-    expect([c[6], c[7], c[8]]).toEqual(['#010203', '#040506', CLASS_COLOURS[8]]);
+    expect([c[11], c[12], c[13]]).toEqual(['#010203', '#040506', CLASS_COLOURS[13]]);
   });
 });
 

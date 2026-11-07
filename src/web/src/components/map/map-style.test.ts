@@ -231,10 +231,10 @@ describe('F-25: route colouring (C-1, ADR-037)', () => {
     expect(byId.get('wx-colour-line')).not.toHaveProperty('filter');
   });
 
-  it('the class expression maps c = 0…13 to the 14 class colours, else the fallback; the range adds NO_VALUE in the route colour', () => {
+  it('the class expression maps c = 0…22 to the 23 class colours, else the fallback; the range adds NO_VALUE in the route colour', () => {
     const e = classColourExpression(['#000001', '#000002'], '#ff0000');
     expect(e).toEqual(['match', ['get', 'c'], 0, '#000001', 1, '#000002', '#ff0000']);
-    expect(CLASS_COLOURS).toHaveLength(2 * DIVERGING);
+    expect(CLASS_COLOURS).toHaveLength(DIVERGING + 11);
     expect(NO_VALUE).toBe(CLASS_COLOURS.length);
     expect(rangeColourExpression(['#000001'], MAP_COLOURS)).toEqual(['match', ['get', 'c'], 0, '#000001', 1, MAP_COLOURS.route, MAP_COLOURS.range]);
   });

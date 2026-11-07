@@ -54,12 +54,23 @@ div.wx-map {
 .wx-legend {
   margin-top: 4px;
 }
+.wx-unit {
+  margin-left: 4px;
+}
+/* C-6: 12 or 11 equal swatches in a bar no wider than 140 px; the labels sit at edge positions. */
+.wx-swatches,
+.wx-labels {
+  width: 132px;
+}
 .wx-swatches {
   display: flex;
 }
-.wx-swatches span,
+.wx-swatches span {
+  flex: 1;
+  height: 8px;
+}
 .wx-nodata span {
-  width: 20px;
+  width: 11px;
   height: 8px;
 }
 .wx-labels {
@@ -71,18 +82,14 @@ div.wx-map {
   top: 0;
   white-space: nowrap;
 }
-.wx-labels .wx-l0 {
-  left: 0;
-}
-.wx-labels .wx-l7 {
-  right: 0;
-}
-.wx-l1 { left: 20px; transform: translateX(-50%); }
-.wx-l2 { left: 40px; transform: translateX(-50%); }
-.wx-l3 { left: 60px; transform: translateX(-50%); }
-.wx-l4 { left: 80px; transform: translateX(-50%); }
-.wx-l5 { left: 100px; transform: translateX(-50%); }
-.wx-l6 { left: 120px; transform: translateX(-50%); }
+.wx-l0 { left: 0; }
+.wx-lm { left: 50%; transform: translateX(-50%); }
+.wx-le { right: 0; }
+/* Gradient: GRADIENT_LABELS at edges 1, 3, 8 and 10 of 11 swatches. */
+.wx-g0 { left: 9.09%; transform: translateX(-50%); }
+.wx-g1 { left: 27.27%; transform: translateX(-50%); }
+.wx-g2 { left: 72.73%; transform: translateX(-50%); }
+.wx-g3 { left: 90.91%; transform: translateX(-50%); }
 .wx-nodata {
   display: flex;
   align-items: center;
@@ -95,13 +102,22 @@ div.wx-map {
 .wx-c4 { background: var(--seq-4); }
 .wx-c5 { background: var(--seq-5); }
 .wx-c6 { background: var(--seq-6); }
-.wx-c7 { background: var(--div-0); }
-.wx-c8 { background: var(--div-1); }
-.wx-c9 { background: var(--div-2); }
-.wx-c10 { background: var(--div-3); }
-.wx-c11 { background: var(--div-4); }
-.wx-c12 { background: var(--div-5); }
-.wx-c13 { background: var(--div-6); }
+.wx-c7 { background: var(--seq-7); }
+.wx-c8 { background: var(--seq-8); }
+.wx-c9 { background: var(--seq-9); }
+.wx-c10 { background: var(--seq-10); }
+.wx-c11 { background: var(--seq-11); }
+.wx-c12 { background: var(--div-0); }
+.wx-c13 { background: var(--div-1); }
+.wx-c14 { background: var(--div-2); }
+.wx-c15 { background: var(--div-3); }
+.wx-c16 { background: var(--div-4); }
+.wx-c17 { background: var(--div-5); }
+.wx-c18 { background: var(--div-6); }
+.wx-c19 { background: var(--div-7); }
+.wx-c20 { background: var(--div-8); }
+.wx-c21 { background: var(--div-9); }
+.wx-c22 { background: var(--div-10); }
 .wx-cn { background: var(--route); }
 
 /* F-26 FS-4 (ADR-038): in fullscreen the page is hidden by inherited visibility, not removed, and

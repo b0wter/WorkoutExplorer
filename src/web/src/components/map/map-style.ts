@@ -85,17 +85,17 @@ const COLOUR_PROPERTIES: Readonly<Record<keyof typeof MAP_COLOURS, string>> = {
   fade: '--route-fade',
 };
 
-/** The colour classes' light values, the fallback of `--seq-0…6` (speed, pace, heart rate, power: low → high)
- *  and `--div-0…6` (gradient: descent, flat, climb) in page.css (F-25 C-5). Feature property `c` of wx-colour
- *  and wx-range indexes this list: 0–6 sequential, 7–13 diverging; in wx-range, NO_VALUE is an edge without one. */
+/** The colour classes' light values, the fallback of `--seq-0…11` (speed, pace, heart rate, power: low → high)
+ *  and `--div-0…10` (gradient: descent, flat, climb) in page.css (F-25 C-5). Feature property `c` of wx-colour
+ *  and wx-range indexes this list: 0–11 sequential, 12–22 diverging; in wx-range, NO_VALUE is an edge without one. */
 export const CLASS_COLOURS: readonly string[] = [
-  '#f0c43c', '#eba337', '#e18231', '#cc632a', '#ad4823', '#86321b', '#5c2112',
-  '#01665e', '#35978f', '#80cdc1', '#cfc6b0', '#dfc27d', '#bf812d', '#8c510a',
+  '#1b3f97', '#0057a8', '#0070ab', '#0088a9', '#04a19b', '#7ab05a', '#dcae00', '#e58900', '#df6800', '#d34900', '#c02e00', '#a81900',
+  '#163990', '#1656a4', '#2574b0', '#488bb2', '#6e9db3', '#b3a381', '#c8843d', '#c76414', '#be4400', '#ab2c00', '#902014',
 ];
 /** Offset of the diverging palette in CLASS_COLOURS. */
-export const DIVERGING = 7;
+export const DIVERGING = 12;
 /** Class `c` of a wx-range edge without a value while colouring is on: drawn in the route colour. */
-export const NO_VALUE = 14;
+export const NO_VALUE = 23;
 const classProperty = (k: number): string => (k < DIVERGING ? '--seq-' + k : '--div-' + (k - DIVERGING));
 
 /** The class colours of the current theme, read from `el`; the light values where unset. */

@@ -1273,14 +1273,17 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     expect(edges).toBe(4); // 0–1, 1–2, 5–6, 6–7: never the dropout bridge 2–5
     const legendBox = box!.querySelector<HTMLElement>('.wx-legend')!;
     expect(legendBox.hidden).toBe(false);
-    expect(legendBox.querySelectorAll('.wx-swatches span')).toHaveLength(7);
-    expect(legendBox.querySelector('.wx-l7')!.textContent).toMatch(/ km\/h$/);
+    expect(legendBox.querySelectorAll('.wx-swatches span')).toHaveLength(12);
+    expect(Array.from(legendBox.querySelectorAll('.wx-labels span'), (e) => e.className)).toEqual(['wx-l0', 'wx-lm', 'wx-le']);
+    const unit = box!.querySelector('.wx-unit')!;
+    expect(unit.textContent).toBe('km/h');
     units.set('imperial');
-    expect(legendBox.querySelector('.wx-l7')!.textContent).toMatch(/ mph$/);
+    expect(unit.textContent).toBe('mph');
     expect(map.sourceData.filter(([id]) => id === COLOUR_SOURCE)).toHaveLength(1); // a units switch only relabels
     pick(box!, '');
     expect(map.sourceData[map.sourceData.length - 1]).toEqual([COLOUR_SOURCE, { type: 'FeatureCollection', features: [] }]);
     expect(legendBox.hidden).toBe(true);
+    expect(unit.textContent).toBe('');
   });
 
   it('a run labels speed as pace, with a pace legend', async () => {
@@ -1288,30 +1291,29 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     expect(box!.querySelector('option[value="speed"]')!.textContent).toBe('Pace');
     pick(box!, 'speed');
     // Pace: the fast (right) end is the smaller number (QA-25-r1-4).
-    expect(box!.querySelector('.wx-l7')!.textContent).toMatch(/^≤ \d+:\d\d \/km$/);
+    expect(box!.querySelector('.wx-le')!.textContent).toMatch(/^≤ \d+:\d\d$/);
+    expect(box!.querySelector('.wx-unit')!.textContent).toBe('/km');
   });
 
   it('gradient: the diverging classes and their legend (QA-25-r1-3)', async () => {
-    // 3 m up per 30 m: 10 %, steeper than the last edge (+8 %), so every classed edge takes the last class.
+    // 4.5 m up per 30 m: 15 %, steeper than the last edge (+12 %), so every classed edge takes the last class.
     const d = coloured();
     const { map, box } = await withControl({
       ...d,
-      metrics: { ...d.metrics, altitude: Float64Array.from([0, 3, 6, 9, 12, 15, 18, 21]), distance: Float64Array.from([0, 30, 60, 90, 120, 150, 180, 210]) },
+      metrics: { ...d.metrics, altitude: Float64Array.from([0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5]), distance: Float64Array.from([0, 30, 60, 90, 120, 150, 180, 210]) },
     });
     pick(box!, 'gradient');
     const data = map.sourceData.filter(([id]) => id === COLOUR_SOURCE)[0][1] as Colour;
     expect(data.features.length).toBeGreaterThan(0);
-    expect(new Set(data.features.map((f) => f.properties.c))).toEqual(new Set([DIVERGING + 6]));
-    expect(Array.from(box!.querySelectorAll('.wx-swatches span'), (e) => e.className)).toEqual(['wx-c7', 'wx-c8', 'wx-c9', 'wx-c10', 'wx-c11', 'wx-c12', 'wx-c13']);
+    expect(new Set(data.features.map((f) => f.properties.c))).toEqual(new Set([DIVERGING + 10]));
+    expect(Array.from(box!.querySelectorAll('.wx-swatches span'), (e) => e.className)).toEqual(Array.from({ length: 11 }, (_, k) => 'wx-c' + (DIVERGING + k)));
     expect(Array.from(box!.querySelectorAll('.wx-labels span'), (e) => [e.className, e.textContent])).toEqual([
-      ['wx-l1', '-8'],
-      ['wx-l2', '-4'],
-      ['wx-l3', '-1'],
-      ['wx-l4', '1'],
-      ['wx-l5', '4'],
-      ['wx-l6', '8'],
-      ['wx-l7', '%'],
+      ['wx-g0', '-12'],
+      ['wx-g1', '-5'],
+      ['wx-g2', '5'],
+      ['wx-g3', '12'],
     ]);
+    expect(box!.querySelector('.wx-unit')!.textContent).toBe('%');
   });
 
   it('with colouring on, the range keeps the class colours, outlined, the rest faded; no value and bridges stay in the range (C-9)', async () => {
@@ -1347,7 +1349,7 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     vi.advanceTimersByTime(RANGE_SETTLE_MS);
     f = ranges().at(-1)!.features;
     expect(f.map((x) => [x.properties.c, x.geometry.coordinates])).toEqual([
-      [6, [[[8.06, 47], [8.07, 47]]]],
+      [11, [[[8.06, 47], [8.07, 47]]]], // 170 bpm, the highest drawn value: the last class
       [NO_VALUE, [[[8.05, 47], [8.06, 47]]]],
     ]);
     expect(colours()).toHaveLength(before);
