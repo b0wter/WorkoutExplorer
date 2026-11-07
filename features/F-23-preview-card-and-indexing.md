@@ -19,7 +19,7 @@ A link posted in a messenger shows a rich card with the route and headline value
 - Base URL for absolute links as a server setting.
 
 ## Out of scope
-- Units in the preview: metric assumed (see README). Map tiles behind the route (fallback, not chosen).
+- Units in the preview: metric assumed (see README). Map tiles behind the route (phase 2: drawn in the browser, F-36, SH-12).
 
 ## Acceptance criteria
 - [ ] A published ride's preview PNG is 1200 × 630, under 300 KB, and shows the route shape, the ride icon and name, distance, moving time, speed in km/h and average heart rate, plus elevation gain when altitude was recorded and the gain is above zero.

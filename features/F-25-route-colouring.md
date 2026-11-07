@@ -11,7 +11,7 @@ Viewers colour the route by speed, heart rate, power or gradient to see where ef
 ## Scope
 - Selector offering only metrics the workout has; gradient only when altitude and distance exist.
 - Gradient computed in the browser from altitude and distance. Where distance does not change between samples (a standstill or a held device dropout, F-08 R-14), there is no gradient: drawn as a missing value, never as an extreme one.
-- Colour scale with a legend in the viewer's units. For the pace sports (DS-2), the speed option is labelled pace and its legend shows pace.
+- Colour scale with a legend in the viewer's units: speed or pace, heart rate and power in 12 workout-relative equal-share classes (each class covers about a twelfth of the coloured route, so a steady ride still shows small differences); gradient in 11 fixed classes with "flat" as one neutral middle class; three colours (sequential blue, yellow, red; diverging for gradient), colour-blind safe in light and dark theme (decision log 7 Nov 2026, OQ-107). For the pace sports (DS-2), the speed option is labelled pace and its legend shows pace.
 - Default: plain single-colour route (assumption, see README); the choice is not stored.
 - Loaded with the map; no cost before the map loads.
 
@@ -26,3 +26,5 @@ Viewers colour the route by speed, heart rate, power or gradient to see where ef
 - [ ] Scrubbing on the 12-hour file with colouring on still runs at 60 fps on the operator's phone.
 - [ ] Hidden start and end sections stay hidden when colouring is on.
 - [ ] Dashed segments across GPS dropouts and time gaps stay dashed and uncoloured when colouring is on, since they have no recorded data (AP-3).
+- [ ] Coloured by heart rate, a steady flat stretch and a hard climb on a corpus ride show clearly different colours.
+- [ ] The legend is readable on the operator's phone in both themes.

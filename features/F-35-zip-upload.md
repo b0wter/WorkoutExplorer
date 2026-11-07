@@ -2,7 +2,7 @@
 
 - **Phase:** 2 (first in phase 2, before F-34)
 - **Owner:** frontend
-- **Requirements:** UP-11 (Could), UP-1, UP-2, UP-10, NFR Security, NFR Compatibility; extends F-11
+- **Requirements:** UP-11 (Should within phase 2), UP-1, UP-2, UP-10, NFR Security, NFR Compatibility; extends F-11
 - **Depends on:** F-11
 
 ## Goal
@@ -13,11 +13,11 @@ A sharer can drop or pick a zip archive that holds one FIT file (for example a d
 - A file is treated as a zip archive by its content (zip signature), whatever its name, so a zip renamed to `.fit` is never sent either. A FIT file is never mistaken for one (its first byte is its header size, 12 or 14).
 - Works for drag and drop and the file picker; the picker accepts `.fit` and `.zip`. The existing rules hold: only the first of several dropped files is used; the drop zone and picker are disabled from the moment a file is taken until the upload ends, extraction included.
 - Accepted only when the archive's root holds exactly one entry whose name ends in `.fit` (case-insensitive). Root means the name has no folder part (no `/`). FIT files in folders don't count (this also skips macOS `__MACOSX/` copies); every other entry is ignored, never decompressed and never sent.
-- Compression methods stored (0) and deflate (8). Archives made by standard tools are accepted, including entries whose sizes are written after the data (data descriptor).
-- Refused with a message, nothing sent: no root FIT file; two or more root FIT files; an encrypted FIT entry or one with another compression method; a split or multi-disk archive; a Zip64 archive; a damaged archive (unreadable directory, sizes that don't match, CRC-32 of the extracted file wrong).
+- Compression methods stored (0) and deflate (8). Archives made by standard tools are accepted, including entries whose sizes are written after the data (data descriptor). Encryption and compression method are checked on the FIT entry only; other entries are not checked, whatever their method or encryption.
+- Refused with a message, nothing sent: no root FIT file; two or more root FIT files; an encrypted FIT entry or one with another compression method; refused as a whole, whatever their entries: a split or multi-disk archive, a Zip64 archive; a damaged archive (unreadable directory, sizes that don't match, CRC-32 of the extracted file wrong).
 - Size limits, both the existing upload limit of 20,000,000 bytes (UP-1, NFR Security): the archive itself, checked before it is read, with today's message; and the extracted FIT file, enforced while decompressing: decompression stops as soon as the output would exceed 20,000,000 bytes, whatever size the archive declares, and the archive is refused. Exactly 20,000,000 bytes is accepted.
 - The extracted file then goes through the same client-side checks and the same upload request as a picked `.fit` file; every later message (UP-2, UP-10) is unchanged. A root `.fit` entry that is not a FIT file is sent and refused by the server as today.
-- Messages (proposed wording, the user reviews it on screen as with OQ-58):
+- Messages (wording as below; the user reviews it on screen as with OQ-58, decision log 7 Nov 2026):
   - Archive larger than 20,000,000 bytes: "This file is larger than 20 MB." (unchanged)
   - No root FIT file: "This archive contains no FIT file."
   - Two or more: "This archive contains more than one FIT file. Please upload one at a time."
@@ -47,6 +47,7 @@ A sharer can drop or pick a zip archive that holds one FIT file (for example a d
 - [ ] A zip renamed to `workout.fit` is extracted, not sent as is; a `.fit` file is uploaded exactly as before.
 - [ ] Root `.FIT` (upper case) is accepted; a root `notes.txt`, a `readme.pdf` and a `.fit` in `sub/` next to one root FIT file are ignored.
 - [ ] No root FIT file (also: an empty archive, or FIT files only in folders) shows "This archive contains no FIT file."; two root FIT files show the "more than one" message. No request is sent.
+- [ ] An archive with one plain root FIT file next to an encrypted `notes.txt` and a bzip2 `readme.pdf` is accepted.
 - [ ] An encrypted FIT entry, a FIT entry with another method (e.g. bzip2), a split archive, a Zip64 archive, a truncated archive and an archive whose FIT entry fails its CRC-32 each show the "could not be opened" message; no request is sent.
 - [ ] An archive of 20,000,001 bytes is refused with "This file is larger than 20 MB." before it is read.
 - [ ] A FIT entry that inflates to exactly 20,000,000 bytes is sent; one that inflates to 20,000,001 bytes, and a crafted entry declaring a small size that inflates to 1 GB, are refused with the extracted-size message; decompression stops after at most 20,000,000 bytes of output and the tab stays responsive.
@@ -54,3 +55,4 @@ A sharer can drop or pick a zip archive that holds one FIT file (for example a d
 - [ ] During extraction and upload the drop zone and picker are disabled; after any refusal both are usable again.
 - [ ] The upload page entry stays within its bundle budget (`make ci` size check); no new dependency in `package.json`.
 - [ ] The page sets no cookies and stores nothing in browser storage.
+- [ ] The user has reviewed every message on screen (user check).

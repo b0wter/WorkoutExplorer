@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, before F-34, decided 7 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -39,7 +39,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
 | [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | waiting on user | AC 3 loop-route check; AC 8/9 messengers (deployed) |
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
-| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | rework: design v0.2 done | user: OQ-107 (gradient 11 classes?) |
+| [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | rework: building | |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, real Pushover message, delete prompt via exec, Caddy 404 after delete, report query with sudo) |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov) |
@@ -48,14 +48,15 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
 | [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | not started | |
+| [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | not started | |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 2 features (F-35, F-34, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 3 features (F-35, F-36, F-34, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
-Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8 owner download, DS-4) as MVP; the SH-8 viewer download is Later (phase 3), and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
+Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8 owner download, DS-4) as MVP; the SH-8 viewer download is Later (phase 3), UP-11 is Should within phase 2 (F-35); and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
 
 | Requirement | Priority | Covered by |
 | --- | --- | --- |
@@ -67,7 +68,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | UP-8 Storage limit and notice | Must | F-10, F-11 |
 | UP-9 Identifying data removed on upload | Must | F-09, F-12, F-29 |
 | UP-10 Upload messages | Must | F-09, F-11 |
-| UP-11 Zip archive opened in the browser | Could | F-35 (phase 2) |
+| UP-11 Zip archive opened in the browser | Should (phase 2) | F-35 (phase 2) |
 | AP-1 Header | Must | F-13 |
 | AP-2 Summary strip | Must | F-02, F-08, F-13 |
 | AP-3 Map, no-location hint | Must | F-06, F-16 |
@@ -84,7 +85,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
-| SH-5 Preview card | Must | F-23, F-32 |
+| SH-5 Preview card | Must | F-23, F-32; F-36 in phase 2 |
+| SH-12 Preview image with map context, made in the browser | Could | F-36 (phase 2) |
 | SH-6 Share and copy-link buttons | Must | F-13, F-20 |
 | SH-8 Download setting and original | Should | F-12, F-20 (owner original); F-24 (viewer download, phase 3) |
 | SH-9 Privacy notice | Must | F-13 |
@@ -502,6 +504,29 @@ Updated: spec (scope table row, Roadmap phase 3). No requirement ID or feature f
 - **Build order:** F-35 first in phase 2, before F-34. Owner frontend.
 
 Updated: spec (sharer story 12, scope table, UP-1, new UP-11, NFR Security, Roadmap phase 2), F-35 (new), feature index (order, counts, coverage). Technical design: front-end implementation notes to mention zip reading on the upload page (architect).
+
+**Decided on 7 Nov 2026, route colouring rework** (user, OQ-107, F-25 design v0.2, ADR-037 rev. 1):
+
+- **(OQ-107) accepted:** speed or pace, heart rate and power in 12 workout-relative equal-share classes; gradient in 11 fixed classes, "flat" one neutral middle class; three colours, colour-blind safe in light and dark. A steady ride showing small differences strongly is accepted; the user iterates later if needed.
+
+Updated: F-25 (scope, two new acceptance criteria appended; AC 3 to 7 unchanged). Spec unchanged (AP-9 states no class count or palette).
+
+**Decided on 7 Nov 2026, zip upload details** (user, UP-11, F-35):
+
+- **Confirmed:** archive limit 20,000,000 bytes; zip detected by content, not name; encryption and method checked on the FIT entry only, Zip64 and split archives refused as a whole; message wording reviewed on screen.
+- **Priority:** UP-11 raised from Could to Should within phase 2.
+
+Updated: spec (UP-11), F-35 (priority, scope, one acceptance criterion for unchecked other entries, user check of messages), feature index (coverage).
+
+**Decided on 7 Nov 2026, preview image with map context** (user, phase 2, new SH-12, F-36):
+
+- **Made in the browser at publish:** the edit page renders the public route (hidden ends excluded, frame fitted to the public route only) on OpenFreeMap tiles with SH-5's headline numbers into a 1200 × 630 PNG and sends it with the publish request or an edit-token request (architect decides). Map attribution in the image.
+- **Trust boundary:** size cap, must decode as a PNG of the expected size, re-encoded; the received bytes are never served. Stored instead of the server-made image.
+- **Fallback** to the server-made image when WebGL is missing or anything fails. `regenerate` keeps a browser-made image only while it fits the current public route. A change of hidden ends or route after publish drops or replaces it; F-36 also counts a name change, since the name is in the image.
+- **No new server calls to external services.** Privacy note on About: the preview shows where the route is, as the public page already does.
+- **Build order:** after F-35, before F-34. Owner both. Priority assumed Could (phase 2).
+
+Updated: spec (viewer story 15, scope table, SH-5 pointer, new SH-12, open question "Preview image with map context", Roadmap phase 2), F-36 (new), F-23 (out of scope pointer), feature index (order, counts, coverage). Technical design: preview images, publish request and `regenerate` to be updated (architect).
 
 The original questions follow for reference.
 
