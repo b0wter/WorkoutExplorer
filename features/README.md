@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, before F-34, decided 7 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -47,10 +47,11 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
+| [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | not started | |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 1 feature (F-34, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 2 features (F-35, F-34, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -66,6 +67,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | UP-8 Storage limit and notice | Must | F-10, F-11 |
 | UP-9 Identifying data removed on upload | Must | F-09, F-12, F-29 |
 | UP-10 Upload messages | Must | F-09, F-11 |
+| UP-11 Zip archive opened in the browser | Could | F-35 (phase 2) |
 | AP-1 Header | Must | F-13 |
 | AP-2 Summary strip | Must | F-02, F-08, F-13 |
 | AP-3 Map, no-location hint | Must | F-06, F-16 |
@@ -109,11 +111,11 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | NFR Privacy: no tracking cookies | — | F-22, F-29 |
 | NFR Privacy: `noindex` | — | F-15, F-23 |
 | NFR Security: 128-bit IDs, hashed tokens | — | F-09, F-12 |
-| NFR Security: upload size, rate, uploads at once, parse limits | — | F-08, F-09, F-11, F-31 |
+| NFR Security: upload size, rate, uploads at once, parse limits; zip never reaches the server | — | F-08, F-09, F-11, F-31; F-35 in phase 2 |
 | NFR Security: originals never public | — | F-12, F-22; F-24 in phase 3 |
 | NFR Privacy: no data outlives its workout | — | F-12, F-21, F-27 |
 | NFR Accessibility | — | **Deliberately not covered**: not a goal. Only Esc to leave fullscreen (F-26). |
-| NFR Compatibility | — | F-11, F-13, F-26, F-32 |
+| NFR Compatibility | — | F-11, F-13, F-26, F-32; F-35 in phase 2 |
 | NFR Reliability | — | Guiding principle, not a target: edge-case criteria in every feature; corpus in F-02, F-08; end-to-end sweep in F-32 |
 | NFR Operations: parser errors logged with device model | — | F-08, F-30, F-31 |
 
@@ -489,6 +491,17 @@ Updated: F-32 (AC 8).
 - **Bundle budget is near its limit:** compare would be a separate lazily loaded chunk.
 
 Updated: spec (scope table row, Roadmap phase 3). No requirement ID or feature file yet. No MVP feature changes.
+
+**Decided on 7 Nov 2026, zip upload** (user, phase 2, UP-11, F-35):
+
+- **Browser only:** the upload page takes the FIT file out of a zip archive; the server never receives an archive and is unchanged. The upload API and the iOS Shortcut (F-34) stay FIT only, so a malicious archive never reaches the backend. A file counts as an archive by its content, whatever its name.
+- **One root FIT file:** accepted only when the archive root holds exactly one entry ending in `.fit` (case-insensitive); FIT files in folders don't count, other entries are ignored. None, or two or more: refused, each with its own message.
+- **Formats:** stored (0) and deflate (8) entries; an encrypted FIT entry, other methods, split or multi-disk archives and Zip64 are refused with a message.
+- **Zip-bomb guard:** the existing 20,000,000-byte upload limit applies to the archive and to the extracted file; decompression stops once the output would exceed it, and the archive is refused.
+- **Browser without `DecompressionStream`:** zip refused with a message; FIT upload unaffected. Android and iOS share-to-browser is not in scope.
+- **Build order:** F-35 first in phase 2, before F-34. Owner frontend.
+
+Updated: spec (sharer story 12, scope table, UP-1, new UP-11, NFR Security, Roadmap phase 2), F-35 (new), feature index (order, counts, coverage). Technical design: front-end implementation notes to mention zip reading on the upload page (architect).
 
 The original questions follow for reference.
 
