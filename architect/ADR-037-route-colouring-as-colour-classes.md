@@ -1,7 +1,8 @@
 # ADR-037 Route colouring drawn as colour classes: one MultiLineString per class in its own source
 
-- **Status:** accepted (2 Nov 2026), with the F-25 design v0.1
-- **Date:** 2 Nov 2026
+- **Status:** accepted (2 Nov 2026), with the F-25 design v0.1; rev. 1 (7 Nov 2026, F-25 v0.2): class count raised
+- **Date:** 7 Nov 2026
+- **History:** [history/ADR-037-route-colouring-as-colour-classes.md](history/ADR-037-route-colouring-as-colour-classes.md)
 - **Features:** F-25 (introduces it), F-26 (fullscreen keeps it)
 - **Supersedes:** none. Adds an overlay source next to [ADR-013](ADR-013-maplibre-behind-a-lazy-adapter.md) item 8's `wx-route`; `wx-route` is unchanged
 - **Depends on:** [ADR-013](ADR-013-maplibre-behind-a-lazy-adapter.md) items 4, 7, 8; [ADR-008](ADR-008-shared-cursor-store.md); [ADR-016](ADR-016-scrubbing-smoothness-measurement-and-gate.md)
@@ -19,7 +20,7 @@ AP-9 colours the route by a metric. The route is drawn from up to 43,200 positio
 
 ## Decision
 
-1. Each sample's value maps to one of a fixed small number of **colour classes** (F-25: 7), or to none (missing).
+1. Each sample's value maps to one of a fixed small number of **colour classes** (F-25: 12, gradient 11), or to none (missing).
 2. A separate GeoJSON source `wx-colour` holds **at most one `MultiLineString` per class**. Consecutive recorded edges of the same class are merged into one line. Edges without a class are left out, so the plain `wx-route-line` underneath shows through in the route colour.
 3. One layer `wx-colour-line` draws it, with `line-color` chosen by the class property. It lies directly above `wx-route-line` and below every other `wx-` layer (hidden marks, range, markers).
 4. Plain mode is the same source with no features. The source exists from the base style on, like `wx-range`.
@@ -39,5 +40,5 @@ Cheap. Lazy map code only, no data format, nothing stored.
 
 ## Would choose differently if
 
-- The operator finds 7 steps too coarse on screen: first raise the class count (up to about 12, still one feature per class), before considering per-edge features.
+- The operator still finds 12 steps too coarse on screen with equal-share edges (F-25 C-4): then per-edge features with a continuous colour, accepting the larger `setData`.
 - A MapLibre release supports feature properties in `line-gradient`: then a smooth gradient per recorded segment becomes possible in one layer, and this ADR is revisited.
