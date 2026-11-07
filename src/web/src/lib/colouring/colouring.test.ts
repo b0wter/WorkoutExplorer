@@ -184,8 +184,24 @@ describe('colourScale and classify (AC 3, C-4)', () => {
     expect(scale.reverse).toBe(true);
     const c = classify(values, scale);
     expect(c[0]).toBe(NO_CLASS);
-    expect(c[20]).toBe(0); // slow
-    expect(c[50]).toBeGreaterThan(5); // fast; two tied values, so the classes between them stay empty
+    expect(c[20]).toBeLessThan(6); // slow
+    expect(c[50]).toBe(CLASS_COUNT - 1); // fast, ties like a ride
+  });
+  it('ties read the same on a run as on a ride (QA-25-r2-1)', () => {
+    const cls = (sport: string, speed: number[]) => {
+      const d = workout(speed.length, { speed }, sport);
+      const v = metricValues(d, 'speed');
+      return Array.from(classify(v, colourScale('speed', v, all(speed.length), sport)));
+    };
+    for (const [a, b] of [[50, 50], [30, 70]]) {
+      const sp = [...Array(a).fill(3), ...Array(b).fill(6)];
+      const run = cls('running', sp);
+      expect(run[sp.length - 1]).toBe(CLASS_COUNT - 1); // the fast part is high, as on a ride
+      expect(run[0]).toBeLessThan(run[sp.length - 1]);
+    }
+    const flat = Array(40).fill(3);
+    expect(new Set(cls('running', flat))).toEqual(new Set([CLASS_COUNT - 1]));
+    expect(new Set(cls('cycling', flat))).toEqual(new Set([CLASS_COUNT - 1]));
   });
   it('gradient uses the 10 fixed edges: 11 classes, flat (±1 %) in the middle', () => {
     const values = Float64Array.from([-20, -12, -6, -1, 0, 0.99, 1, 4, 12, 30]);

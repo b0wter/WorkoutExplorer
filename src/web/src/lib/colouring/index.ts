@@ -189,8 +189,9 @@ export function classify(values: Float64Array, scale: ColourScale): Uint8Array {
       out[i] = NO_CLASS;
       continue;
     }
+    // Reversed (pace): count edges strictly below, so ties land on the same side as on a ride.
     let c = 0;
-    while (c < e.length && e[c] <= v) c++;
+    while (c < e.length && (scale.reverse ? e[c] < v : e[c] <= v)) c++;
     out[i] = scale.reverse ? e.length - c : c;
   }
   return out;

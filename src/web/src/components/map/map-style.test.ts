@@ -1,6 +1,8 @@
 // Base style and style merge (F-06 design, Tests; ADR-013 decision 2). Node: map-style.ts
 // imports only types from maplibre-gl, so nothing of MapLibre runs here.
 
+// @ts-expect-error no @types/node here; vitest runs in node
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { buildRoute, routeLines, routeMarkers, type RouteLines, type RouteMarker } from '../../lib/route';
@@ -376,5 +378,26 @@ describe('mapPixelRatio (F-07 D-8, QA-06-r4-1)', () => {
     [Number.POSITIVE_INFINITY, 1],
   ])('dpr %s → %s', (dpr, expected) => {
     expect(mapPixelRatio(dpr)).toBe(expected);
+  });
+});
+
+describe('class colour fallbacks match page.css (QA-25-r2-2)', () => {
+  const css: string = readFileSync(new URL('../../page/page.css', import.meta.url), 'utf8');
+  const block = (from: number) => {
+    const end = css.indexOf('}', from);
+    const m = new Map<string, string>();
+    for (const [, k, v] of css.slice(from, end).matchAll(/--((?:seq|div)-\d+):\s*(#[0-9a-f]{6})/gi)) m.set(k, v.toLowerCase());
+    return m;
+  };
+  it('light tokens equal CLASS_COLOURS', () => {
+    const light = block(css.indexOf('\n:root {'));
+    const names = CLASS_COLOURS.map((_, k) => (k < DIVERGING ? 'seq-' + k : 'div-' + (k - DIVERGING)));
+    expect(names.map((n) => light.get(n))).toEqual(CLASS_COLOURS.map((c) => c.toLowerCase()));
+  });
+  it('the two dark blocks are identical', () => {
+    const a = block(css.indexOf(':root:not([data-theme=\'light\']) {'));
+    const b = block(css.indexOf(":root[data-theme='dark']"));
+    expect(a.size).toBe(23);
+    expect(b).toEqual(a);
   });
 });
