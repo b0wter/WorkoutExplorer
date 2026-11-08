@@ -528,6 +528,13 @@ Updated: spec (UP-11), F-35 (priority, scope, one acceptance criterion for unche
 
 Updated: spec (viewer story 15, scope table, SH-5 pointer, new SH-12, open question "Preview image with map context", Roadmap phase 2), F-36 (new), F-23 (out of scope pointer), feature index (order, counts, coverage). Technical design: preview images, publish request and `regenerate` to be updated (architect).
 
+**Decided on 8 Nov 2026, map controls** (user, F-13 D-19, F-25 C-6):
+
+- **Pin map (AP-18):** icon-only pin button in the map's top-right control stack under fullscreen; accessible name "Pin map", state via `aria-pressed`, visibly filled when pressed. Replaces the "Pin map" / "Unpin map" text.
+- **Route colouring control (AP-9):** at the map's top-left in every layout.
+
+Updated: spec (AP-18), F-13 (scope, AC).
+
 The original questions follow for reference.
 
 **Contradictions**
