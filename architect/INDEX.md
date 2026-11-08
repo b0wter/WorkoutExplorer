@@ -46,6 +46,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-30 Regenerate command | [F-30-regenerate-command.md](F-30-regenerate-command.md) | accepted (4 Nov 2026; critical lane; owner backend; no open questions; F-15 P-7 and F-31 DP-10 item 5 edited in place) | 0.1 | ADR-005, ADR-017, ADR-018, ADR-019, ADR-022, ADR-023, ADR-028, ADR-030, ADR-031, ADR-032, ADR-034, ADR-035 |
 | F-31 Server, deploy and monitoring | [F-31-server-deploy-and-monitoring.md](F-31-server-deploy-and-monitoring.md) | accepted (2 Nov 2026; critical lane; owner backend). Replaces the systemd references listed in its "Earlier text" table, F-21's `Restart=always` hand-off included | 0.5 (behind the operator's reverse proxy on plain HTTP; Caddy trusts that proxy, Go trusts Caddy; two upload limit settings; no monitoring, no Docker daemon duty; self-built image for self-hosters via `deploy/Dockerfile`, built by `make ci`; the operator deploys GitHub Releases built on `vX.Y.Z` tags by a separate `contents: write` job, version = tag) | ADR-017, ADR-019, ADR-021, ADR-022, ADR-031, ADR-032, ADR-034, ADR-035 |
 | F-33 Cursor readout in the fullscreen map | [F-33-fullscreen-cursor-readout.md](F-33-fullscreen-cursor-readout.md) | accepted (4 Nov 2026; normal lane; owner frontend; second readout instance inside the map container, noted in F-26 FS-3; no open questions) | 0.1 | ADR-008, ADR-011, ADR-015, ADR-016, ADR-038 |
+| F-35 Zip upload | [F-35-zip-upload.md](F-35-zip-upload.md) | draft (8 Nov 2026; normal lane; owner frontend, server unchanged; OQ-108 to OQ-111 open, not blocking) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-040 |
 
 ## Decisions (ADRs)
 
@@ -90,6 +91,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | [ADR-037](ADR-037-route-colouring-as-colour-classes.md) | Route colouring as colour classes (12; gradient 11; rev. 1): own source `wx-colour` with one `MultiLineString` per class over recorded edges only, one layer above `wx-route-line`; not `line-gradient`, not per-edge features | accepted (2 Nov 2026) | F-25, F-26 | — (adds a source beside ADR-013 item 8) |
 | [ADR-038](ADR-038-fullscreen-map-as-css-overlay-with-a-history-entry.md) | Fullscreen map as a CSS overlay (MapLibre `FullscreenControl`, `pseudo: true`) on every platform, never the Fullscreen API; page hidden by `visibility`, not removed; back gesture through one same-document history entry pushed on entry, no URL change | accepted (3 Nov 2026) | F-26, AP-19 (phase 2) | — |
 | [ADR-039](ADR-039-report-notifications-through-pushover.md) | Report notifications through Pushover: opt-in (`WORKOUT_EXPLORER_PUSHOVER_TOKEN`/`_USER`, one only → exit 2); message = report number and reason only, never link or text; after commit from a bounded queue, 10 s, no retry; at most 10 per hour; egress for `app` only through `compose.notify.yaml`; no callback abstraction | accepted (3 Nov 2026) | F-27, F-29, F-31 | — (narrows ADR-034 item 1) |
+| [ADR-040](ADR-040-zip-archives-read-in-the-browser.md) | Zip archives read in the browser by our own reader in `lib/zip`: archive = first four bytes a zip signature; central directory the only source of entry facts, local header must agree; limit on bytes produced, only the root FIT entry inflated; only FIT bytes sent, named `workout.fit` | accepted (8 Nov 2026) | F-35 | — |
 
 ## Open questions
 
@@ -111,6 +113,10 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-103 | **Resolved 3 Nov 2026: accepted, nothing shown without JS (user).** Report control without JavaScript (INF-2 "every workout page"; the API takes JSON only). Suggestion: show nothing, no "needs JavaScript" line (F-28 RF-9) | Nothing (suggestion built unless the user objects) | user (product) |
 | OQ-104 | **Resolved 3 Nov 2026: RF-8 wording, user reviews on screen.** Wording of the report dialog texts. Suggestion: as in F-28 RF-8, reviewed on screen | Nothing (wording only) | user (product) |
 | OQ-107 | F-25 v0.2: the user decided 12 classes; gradient gets 11 so that "flat" stays one neutral middle class (C-4). Suggestion: accept | Nothing (suggestion built unless the user objects) | user (product) |
+| OQ-108 | F-35: a split archive's later part or a prefixed archive is not recognised (ADR-040 item 2) and the server answers "not a FIT file". Suggestion: accept; AC 51's split case = a part starting with a zip signature | Wording of F-35 AC 51 only | user (product) |
+| OQ-109 | F-35: an AppleDouble `._ride.fit` in the root counts as a second FIT file under UP-11. Suggestion: ignore root names starting with `._` | Nothing (UP-11 built as written until decided) | user (product) |
+| OQ-110 | F-35: "the picker accepts `.fit` and `.zip`" met without an `accept` filter (F-11 U-6). Suggestion: no filter | Nothing | user (product) |
+| OQ-111 | F-35: a root `.fit` entry that holds a zip. Suggestion: refused as damaged, nothing sent (F-35 Z-10) | Nothing | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

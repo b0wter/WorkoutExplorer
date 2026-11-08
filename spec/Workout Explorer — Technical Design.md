@@ -224,7 +224,7 @@ Enforce the bundle budget in CI with a size check, so it cannot grow unnoticed. 
 - Range stats (AP-7) take constant time: distance, moving time and gain are differences of cumulative streams (moving time and gain from the server, ADR-029); averages come from prefix sums built in the browser once per workout, at full resolution (F-17).
 - Units and theme switch on the client without refetching data. Unit defaults come from the browser language, and a units drop-down choice is remembered in `localStorage` on the viewer's device, never in a cookie or sent to the server, and wins over that default (DS-1); one units store per page holds it (`lib/units`, F-14). The interface is English only (DS-3).
 - No OS integration in the MVP: no PWA install and no share target. Upload is by drag and drop or file picker (UP-1).
-- The upload page is plain TypeScript, with no Svelte: its own HTML entry, sharing no chunk with the activity page (ADR-024).
+- The upload page is plain TypeScript, with no Svelte: its own HTML entry, sharing no chunk with the activity page (ADR-024). From phase 2 it takes the FIT file out of a zip archive in the browser and sends only that file; the server never receives an archive (UP-11, F-35 design, ADR-040).
 - Without a position stream, the map module is not loaded at all; a small "No location data in this workout" hint takes its place (AP-3).
 - The upload page asks `GET /api/status` on load and, if storage is full, shows the "uploads paused" notice instead of the drop zone (UP-8).
 - Every page has a footer linking to the About page (INF-1); workout pages also have the Report link, which opens a small form posting to `POST /api/reports` (INF-2).
@@ -308,7 +308,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
             ├── page/                   viewing-page glue: reads the page, loads the data file, mounts into empty slots, load-error text, enhancers (F-13, ADR-026)
             ├── edit/                   edit-page glue, LAZY, owner chunk only, via import() from main.ts (F-19 E-1)
             ├── measure/                scrub recorder, LAZY, only via import() with ?measure (F-07, ADR-016)
-            ├── upload/                 upload page DOM glue: elements, status and upload requests, navigation; imports only lib/upload (F-11, ADR-024)
+            ├── upload/                 upload page DOM glue: elements, status and upload requests, navigation; imports only lib/upload and lib/zip (F-11, F-35, ADR-024)
             ├── theme/                  plain.css: the plain pages' frame and theme, CSS only; imported by upload and generic, never by the activity entry (F-14 D-9, F-15 P-12)
             ├── generic/                generic page stylesheet and its static check (F-15 P-12)
             ├── lib/                    pure TypeScript: no Svelte, no DOM (range stats planned)
@@ -322,6 +322,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
             │   ├── colouring/          route colouring: offered metrics, per-sample values, bounds, classes, legend numbers; imports only lib/datafile and lib/format (F-25, ADR-037)
             │   ├── owner/              the only holder of the edit token; owner API client and settings types (F-19 E-2)
             │   ├── upload/             upload page logic: size rule, status answer, response outcome, edit-link check, page states, client-held sentences; imports nothing (F-11)
+            │   ├── zip/                zip archive reader for the upload page: detection, central directory, root FIT entry, inflating under a limit; imports nothing, imported only by src/upload (F-35, ADR-040; planned)
             │   └── route/              route presence, geometry, markers, nearest-sample grid, map gesture reducer (F-06, ADR-015)
             └── components/             Svelte components
                 ├── charts/             ChartStack, MetricChart, CursorReadout; the only uPlot importer (F-05, ADR-009)
