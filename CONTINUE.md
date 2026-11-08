@@ -2,7 +2,7 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current: F-25 colouring rework in progress; F-32 local checks done, user checks after the next release
+## Current: F-25 colouring rework done (8 Nov 2026); next: release with the new colours, then F-32 user checks
 
 Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29) exist; v0.3.0 was skipped (7 Nov 2026): the next release waits for the F-25 colouring rework. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
