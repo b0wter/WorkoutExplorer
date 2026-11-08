@@ -9,10 +9,17 @@ export const SENTENCES = {
   unreadable: 'The upload could not be read. Please try again.',
   serverError: 'Something went wrong on the server. Please try again later.',
   paused: 'Uploads are paused because storage is full. Please try again later.',
+  // Zip archives (F-35); the last four are keyed by lib/zip's refusal reasons.
+  opening: 'Opening the archive…',
+  noZip: 'This browser cannot open zip archives. Please unzip it and upload the FIT file.',
+  noFit: 'This archive contains no FIT file.',
+  several: 'This archive contains more than one FIT file. Please upload one at a time.',
+  fitTooLarge: 'The FIT file in this archive is larger than 20 MB.',
+  damaged: 'This archive could not be opened. Please unzip it and upload the FIT file.',
 } as const;
 
-/** The page's states (U-5, U-7). Only `ready` accepts a file. */
-export type PageState = 'checking' | 'ready' | 'uploading' | 'processing' | 'paused';
+/** The page's states (U-5, U-7; F-35 Z-11: `opening` reads the file and opens an archive). Only `ready` accepts a file. */
+export type PageState = 'checking' | 'ready' | 'opening' | 'uploading' | 'processing' | 'paused';
 
 export function canPick(state: PageState): boolean {
   return state === 'ready';

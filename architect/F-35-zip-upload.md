@@ -1,7 +1,7 @@
 # F-35 Zip upload: architecture
 
 - **Version:** 0.1
-- **Status:** draft (8 Nov 2026; normal lane; OQ-108 to OQ-111 open, none blocks the build)
+- **Status:** draft (8 Nov 2026; normal lane; OQ-108 to OQ-111 decided 9 Nov 2026)
 - **Feature:** [`features/F-35-zip-upload.md`](../features/F-35-zip-upload.md)
 - **Requirements:** UP-11, UP-1, UP-2, UP-10, NFR Security, NFR Compatibility
 - **Builds on:** [F-11 design](F-11-upload-page.md) (U-4 to U-10), [ADR-024](ADR-024-upload-page-plain-typescript-entry.md), [ADR-002](ADR-002-bundle-size-budget-measurement.md), [ADR-021](ADR-021-upload-request-handling-and-rate-limit.md) item 1; new: [ADR-040](ADR-040-zip-archives-read-in-the-browser.md)
@@ -60,7 +60,7 @@ Manual: AC 45 (tools, iOS picker), AC 58 (wording on screen).
 
 | ID | Question | Suggestion | Blocks |
 | --- | --- | --- | --- |
-| OQ-108 | A split archive's later part, or an archive with a prefix (self-extracting), does not start with a zip signature, so it is sent and the server answers "This file is not a FIT file." (Z-3). AC 51's split case then holds only for a part that starts with a signature | Accept; requirements words AC 51 as "a split archive whose part starts with a zip signature" | Wording of AC 51 only |
-| OQ-109 | Some macOS tools (`ditto` without `--sequesterRsrc`) put `._ride.fit` next to `ride.fit` in the root; by UP-11 that is "more than one FIT file" | Ignore root names starting with `._` (one byte test in Z-7). Built as UP-11 says until decided | Nothing |
-| OQ-110 | Feature scope "the picker accepts `.fit` and `.zip`": no filter (Z-12) or an extension filter? | No filter, as U-6 | Nothing |
-| OQ-111 | A root `.fit` entry holding a zip: UP-11 says a non-FIT entry is sent, but also that the server never receives an archive | Refuse as damaged, nothing sent (Z-10) | Nothing |
+| OQ-108 | A split archive's later part, or an archive with a prefix (self-extracting), does not start with a zip signature, so it is sent and the server answers "This file is not a FIT file." (Z-3). AC 51's split case then holds only for a part that starts with a signature | Accept; requirements words AC 51 as "a split archive whose part starts with a zip signature" | Wording of AC 51 only. **Decided 9 Nov 2026: split archives never accepted; a first part (`PK\7\8` at offset 0) is refused in the browser as damaged, other parts by the server (decision log)** |
+| OQ-109 | Some macOS tools (`ditto` without `--sequesterRsrc`) put `._ride.fit` next to `ride.fit` in the root; by UP-11 that is "more than one FIT file" | Ignore root names starting with `._` (one byte test in Z-7). Built as UP-11 says until decided | Nothing. **Decided 9 Nov 2026: root names starting with `._` are ignored (built in Z-7)** |
+| OQ-110 | Feature scope "the picker accepts `.fit` and `.zip`": no filter (Z-12) or an extension filter? | No filter, as U-6 | Nothing. **Decided 9 Nov 2026: no file filter (Z-12)** |
+| OQ-111 | A root `.fit` entry holding a zip: UP-11 says a non-FIT entry is sent, but also that the server never receives an archive | Refuse as damaged, nothing sent (Z-10) | Nothing. **Decided 9 Nov 2026: refused as damaged, nothing sent (Z-10)** |

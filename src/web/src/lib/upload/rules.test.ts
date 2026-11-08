@@ -96,6 +96,6 @@ describe('percent and canPick', () => {
   });
   it('only the ready state accepts a file', () => {
     expect(canPick('ready')).toBe(true);
-    for (const s of ['checking', 'uploading', 'processing', 'paused'] as const) expect(canPick(s)).toBe(false);
+    for (const s of ['checking', 'opening', 'uploading', 'processing', 'paused'] as const) expect(canPick(s)).toBe(false);
   });
 });

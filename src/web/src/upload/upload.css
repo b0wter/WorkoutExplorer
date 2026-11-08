@@ -18,10 +18,12 @@
   border-color: var(--accent);
 }
 [data-state='ready'] .drop,
+[data-state='opening'] .drop,
 [data-state='uploading'] .drop,
 [data-state='processing'] .drop {
   display: block;
 }
+[data-state='opening'] .drop,
 [data-state='uploading'] .drop,
 [data-state='processing'] .drop {
   opacity: 0.5;
@@ -53,6 +55,7 @@
   display: none;
 }
 [data-state='paused'] .notice,
+[data-state='opening'] .progress,
 [data-state='uploading'] .progress,
 [data-state='processing'] .progress {
   display: block;

@@ -1,6 +1,7 @@
 // DOM glue of the upload page (F-11 design U-5 to U-10). Everything the browser is asked to do
 // comes in through `Env`, so jsdom tests can replace it. No cookies, no browser storage (U-10).
-import { canPick, outcomeOf, parseStatus, percent, SENTENCES, tooLarge, type PageState } from '../lib/upload';
+import { canPick, MAX_UPLOAD_BYTES, outcomeOf, parseStatus, percent, SENTENCES, tooLarge, type PageState } from '../lib/upload';
+import { canInflate, extractFit, isZip } from '../lib/zip';
 
 export interface Env {
   fetch(input: string, init?: RequestInit): Promise<Response>;
@@ -63,7 +64,32 @@ export function start(doc: Document, win: Window, env: Env): () => void {
       show('ready', { message: SENTENCES.tooLarge });
       return;
     }
-    send(file);
+    void open(file);
+  }
+
+  // F-35 Z-3, Z-9 to Z-11: busy from the first byte read; an archive is replaced by its FIT file.
+  async function open(file: File): Promise<void> {
+    const gen = generation;
+    show('opening');
+    let bytes: Uint8Array<ArrayBuffer>;
+    try {
+      if (!isZip(new Uint8Array(await file.slice(0, 4).arrayBuffer()))) {
+        if (gen === generation) send(file); // a FIT file is sent as the picked File, unchanged
+        return;
+      }
+      if (gen !== generation) return;
+      if (!canInflate()) return show('ready', { message: SENTENCES.noZip });
+      progress.textContent = SENTENCES.opening;
+      bytes = new Uint8Array(await file.arrayBuffer());
+    } catch {
+      if (gen === generation) show('ready', { message: SENTENCES.unreadable });
+      return;
+    }
+    if (gen !== generation) return;
+    const r = await extractFit(bytes, MAX_UPLOAD_BYTES);
+    if (gen !== generation) return;
+    if (r.ok) send(new File(r.chunks as BlobPart[], 'workout.fit'));
+    else show('ready', { message: SENTENCES[r.reason] });
   }
 
   function send(file: File): void {
