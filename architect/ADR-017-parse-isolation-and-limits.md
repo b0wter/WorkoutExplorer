@@ -103,6 +103,8 @@ Uploads go through `(*Parser).Accept`: parse, strip identifying data (UP-9), and
    - So M(4) is about 0.85 to 1.05 GB, plus L.
 
    N = 16 allows up to 2·A + 14·B + L in the worst case. In practice, requests waiting for a slot hold only U. Every later in-memory table that clients can grow (for example F-27's report limiter) states its own bound and adds it to M(N) the same way.
+
+   (note, 9 Nov 2026, F-36 MC-4, MC-5) One preview-map request at a time adds **P ≤ 16 MB** (4 MB body, decoded pixels, composite) to M(N); a second one gets `503`. Its build uses the parser's existing slots.
 5. **Runtime variables are F-31's.** `GOMEMLIMIT` is read by the Go runtime, not by our code. If F-31 sets it, the systemd unit sets it, next to `MemoryMax` and below it, sized from the measured M(N) (rev. 8: not plus `regenerate`). Every stop rule in this ADR is measured without it.
 
 (rev. 4 item 3) **Machine (OQ-51, decided by the user, 16 Oct 2026):** the VPS has at least 2 GB RAM, and N stays at its default of 4. F-31 sets systemd `MemoryMax` at or above the measured M(4) + L. (rev. 8) During a deploy, `regenerate` (F-30) runs next to `serve` in the same cgroup, one workout at a time (about 365 MB max RSS on the all-caps file, QA-30-r1-6). It is **not** added to the cap: going over needs a deploy to coincide with 4 uploads at the caps, and the result is an OOM kill inside the cgroup that is recovered (ADR-022, F-30 RG-7, RG-11 retry). The gate of 2 (Would choose differently, rev. 3) is no remedy for this: at N = 4 it does not lower M(4). `GOMEMLIMIT`, if used, goes below `MemoryMax`.

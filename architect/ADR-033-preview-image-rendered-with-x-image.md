@@ -3,6 +3,7 @@
 - **Status:** accepted (31 Oct 2026), with the F-23 design v0.1
 - **Date:** 31 Oct 2026
 - **Features:** F-23 (introduces it); F-30 (rebuilds it), F-29 (attribution)
+- **Note (9 Nov 2026, F-36, ADR-041):** a second variant draws the same card over a basemap rendered in the sharer's browser, as a paletted PNG from our own quantizer (standard library only). The tiles never reach the server from the tile host, so I-6 and "no external services" hold; the second "Would choose differently if" bullet is settled that way
 - **Supersedes:** none
 - **Depends on:** [ADR-028](ADR-028-public-files-rebuilt-whole-page-as-commit-point.md) (deterministic artefacts), [ADR-005](ADR-005-workout-data-file-format-v1.md) (positions in the public data file)
 - **Requirements:** SH-5, NFR Privacy (no external services); TD Tech stack (Preview images: rendered in Go, no headless browser)

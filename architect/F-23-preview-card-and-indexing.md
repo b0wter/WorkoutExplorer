@@ -6,6 +6,7 @@
 - **Requirements:** SH-5, SH-11, SH-4, SH-10, NFR Privacy (`noindex`); TD Tech stack (Preview images), Security and privacy (Indexing and preview cards), invariants I-3, I-6
 - **Builds on:** [F-15](F-15-publish-pipeline-and-static-page.md) P-4, P-5, P-12 and its F-23 hand-off; [F-16](F-16-start-and-end-hiding.md) H-6, H-7 and its F-23 hand-off; [F-22](F-22-caching-and-security-headers.md) H-6, H-8; [ADR-020](ADR-020-workout-identifiers-edit-token-and-links.md) item 8, [ADR-026](ADR-026-activity-page-template-adopted-not-hydrated.md), [ADR-028](ADR-028-public-files-rebuilt-whole-page-as-commit-point.md) item 5, [ADR-032](ADR-032-response-headers-in-caddy.md); new: [ADR-033](ADR-033-preview-image-rendered-with-x-image.md)
 - **Owner and order:** both. **B-1 backend first** (renderer, `Card` group, setting, artefact), then **FE-1** (three HTML edits, one sample constant). FE-1 adds no script or CSS; the main session may give it to the backend engineer, as with `generic.html` (F-15 P-12)
+- **Extended by:** [F-36](F-36-preview-image-with-map-context.md) (9 Nov 2026): the same card over a browser-made basemap (ADR-041); PC-1, PC-3, PC-4 apply unchanged, PC-5's plain background and PC-12's "no tiles" hold for the server-made variant only
 - **Bundle:** 0 bytes on every ADR-011 / ADR-024 line (HTML `<meta>` only). Binary grows by about 1.2 MB (ADR-033)
 
 ## Decisions

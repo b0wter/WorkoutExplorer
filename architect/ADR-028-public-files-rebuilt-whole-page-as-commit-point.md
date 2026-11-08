@@ -4,6 +4,7 @@
 - **History:** [history/ADR-028-public-files-rebuilt-whole-page-as-commit-point.md](history/ADR-028-public-files-rebuilt-whole-page-as-commit-point.md)
 - **Date:** 25 Oct 2026
 - **Features:** F-15 (introduces it); F-16, F-21, F-23, F-24 (plug in), F-30 (reuses the build), F-22, F-31 (serving)
+- **Note (9 Nov 2026, F-36, ADR-041):** item 2's build also reads the stored preview basemap, if any, and uses it only when its key matches the frame of the current public route. A basemap upload changes no row field and rebuilds in place
 - **Supersedes:** none. Applies [ADR-022](ADR-022-private-workout-files-staging-and-recovery.md) items 5 and 6 to `public/`; implements the F-12 hand-off ("fail toward less public content, remove first, then write, idempotent")
 - **Depends on:** [ADR-005](ADR-005-workout-data-file-format-v1.md) (deterministic encoding), [ADR-006](ADR-006-brotli-pre-compression.md), [ADR-025](ADR-025-owner-api-access-and-not-found-response.md), [ADR-026](ADR-026-activity-page-template-adopted-not-hydrated.md)
 - **Requirements:** SH-2, SH-10, AC-5, UP-4, NFR Privacy; TD invariants I-3, I-4

@@ -4,6 +4,7 @@
 - **Date:** 12 Oct 2026; revision 4 of 15 Oct 2026
 - **History:** [architect/history/ADR-013-maplibre-behind-a-lazy-adapter.md](history/ADR-013-maplibre-behind-a-lazy-adapter.md)
 - **Features:** F-06 (introduces it); F-07 (page wiring, phone gate), F-14 (dark style), F-17 (range layer), F-25 (route colouring), F-26 (fullscreen) build on it
+- **Note (9 Nov 2026, F-36 MC-7, ADR-041):** item 1 gains one exception: `components/map/basemap.ts` also imports `maplibre-gl` as a value, reached only through `import()` from `src/edit`, for the offscreen preview basemap (light style, no `wx-` layers). Everything else in this ADR applies to the visible map only
 - **Supersedes:** none. Refines the TD sentences "the cursor marker as a single feature updated on each cursor move" (decision 4) and (rev. 3) "the route is added as one GeoJSON line" (decision 8)
 - **Depends on:** [ADR-002](ADR-002-bundle-size-budget-measurement.md), [ADR-008](ADR-008-shared-cursor-store.md) rev. 1, [ADR-010](ADR-010-touch-gestures-on-charts.md) rev. 2, [ADR-011](ADR-011-activity-page-bundle-allocation.md) rev. 5, [ADR-014](ADR-014-map-tiles-and-third-party-privacy.md)
 - **Requirements:** AP-3, AP-6; NFR Performance (60 fps scrubbing, LCP); TD Tech stack (Map: MapLibre GL JS, loaded after the charts), TD Front end (Load order step 4: "MapLibre loaded with a dynamic `import()`, then tiles; the route is added as one GeoJSON line, the cursor marker as a single feature updated on each cursor move"), TD Security (strict CSP)
