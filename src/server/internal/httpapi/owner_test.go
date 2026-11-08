@@ -18,6 +18,10 @@ type fakeOwner struct {
 	token string
 	err   error
 	patch lifecycle.SettingsPatch
+	// F-36
+	noFrame bool
+	key     string
+	read    int
 }
 
 func (f *fakeOwner) rec() lifecycle.Record {
@@ -71,6 +75,7 @@ func TestOwnerQueryStringIsNotFound(t *testing.T) {
 	tok := "Bearer " + strings.Repeat("t", 22)
 	for _, e := range []struct{ method, path string }{
 		{"GET", ""}, {"PATCH", ""}, {"DELETE", ""}, {"GET", "/draft.bin"}, {"GET", "/original.fit"}, {"POST", "/publish"},
+		{"GET", "/preview-map"}, {"PUT", "/preview-map/0123456789abcdef"},
 	} {
 		for _, q := range []string{"?x=1", "?", "?token=" + strings.Repeat("t", 22)} {
 			rec := ownerDo(h, e.method, "/api/workouts/"+pid+e.path+q, tok, "{}")

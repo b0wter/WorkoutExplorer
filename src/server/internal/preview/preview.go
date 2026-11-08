@@ -79,8 +79,25 @@ func mustParse(ttf []byte) *opentype.Font {
 func Render(f datafile.File, vm page.ViewModel) ([]byte, error) {
 	img := image.NewRGBA(image.Rect(0, 0, Width, Height))
 	draw.Draw(img, img.Bounds(), image.NewUniform(background), image.Point{}, draw.Src)
+	// Values in a grid: two columns left of the route, or three across
+	// without positions (indoor, fully hidden; no hint).
+	cols, colWidth, top := 2, 240, 228
+	if !drawRoute(img, f) {
+		cols, colWidth, top = 3, 376, 300
+	}
+	drawCard(img, f, vm, nameSize, Width-margin, cols, colWidth, top)
+	var buf bytes.Buffer
+	enc := png.Encoder{CompressionLevel: png.DefaultCompression}
+	if err := enc.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
 
-	nameFace := face(bold, nameSize)
+// drawCard draws the icon, the name (in a face of size nameSz, ending before
+// x = nameEnd) and the values in cols columns from baseline top (PC-3, PC-4).
+func drawCard(img *image.RGBA, f datafile.File, vm page.ViewModel, nameSz float64, nameEnd, cols, colWidth, top int) {
+	nameFace := face(bold, nameSz)
 	labelFace := face(regular, labelSize)
 	valueFace := face(bold, valueSize)
 	unitFace := face(regular, unitSize)
@@ -91,25 +108,11 @@ func Render(f datafile.File, vm page.ViewModel) ([]byte, error) {
 
 	icon(img, vm.Header.SportIcon, margin, nameY-iconSize+8)
 	nameX := margin + iconSize + iconGap
-	name := Name(vm.Card.Title, page.DefaultTitle(f), nameFace, Width-margin-nameX)
+	name := Name(vm.Card.Title, page.DefaultTitle(f), nameFace, nameEnd-nameX)
 	text(img, nameFace, ink, nameX, nameY, name)
-
-	// Values in a grid: two columns left of the route, or three across
-	// without positions (indoor, fully hidden; no hint).
-	cols, colWidth, top := 2, 240, 228
-	if !drawRoute(img, f) {
-		cols, colWidth, top = 3, 376, 300
-	}
 	for i, it := range page.CardItems(f, vm) {
 		value(img, labelFace, valueFace, unitFace, margin+i%cols*colWidth, top+i/cols*rowHeight, it)
 	}
-
-	var buf bytes.Buffer
-	enc := png.Encoder{CompressionLevel: png.DefaultCompression}
-	if err := enc.Encode(&buf, img); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 func face(f *opentype.Font, size float64) font.Face {
@@ -245,9 +248,14 @@ func drawRoute(img *image.RGBA, f datafile.File) bool {
 	proj := func(p [2]float64) (float64, float64) {
 		return cx + (p[1]-lon0)*kx*scale, cy - (p[0]-lat0)*ky*scale
 	}
+	stroke(img, runs, proj, routeWidth, routeInk)
+	return true
+}
 
+// stroke draws the runs, projected to pixels by proj, as a line width wide.
+func stroke(img *image.RGBA, runs [][][2]float64, proj func([2]float64) (float64, float64), width float64, c color.Color) {
 	z := vector.NewRasterizer(Width, Height)
-	r := routeWidth / 2.0
+	r := width / 2
 	for _, run := range runs {
 		var px, py float64
 		for i, p := range run {
@@ -266,8 +274,7 @@ func drawRoute(img *image.RGBA, f datafile.File) bool {
 			circle(z, x, y, 2*r)
 		}
 	}
-	z.Draw(img, img.Bounds(), image.NewUniform(routeInk), image.Point{})
-	return true
+	z.Draw(img, img.Bounds(), image.NewUniform(c), image.Point{})
 }
 
 // segment and circle add closed shapes of the same (clockwise on screen)

@@ -48,6 +48,12 @@ type Originals interface {
 	Original(id string) ([]byte, error)
 }
 
+// Maps reads a workout's stored basemap for a frame key (internal/privatedir,
+// F-36 MC-9). An absent map is an error wrapping fs.ErrNotExist.
+type Maps interface {
+	PreviewMap(id, key string) ([]byte, error)
+}
+
 // Parser is the process's single *ingest.Parser, so its slots, budgets and
 // time limit apply to the build (P-3).
 type Parser interface {
@@ -58,6 +64,7 @@ type Parser interface {
 type Deps struct {
 	Template  *template.Template // LoadTemplate
 	Originals Originals
+	Maps      Maps // nil: always the server-made card (F-23)
 	Parser    Parser
 	Storage   *lifecycle.Storage // nil: no total (tests)
 	Logger    *slog.Logger       // nil: no log lines (tests)
@@ -317,39 +324,86 @@ type built struct {
 	index     []byte
 }
 
-// build is the public build of P-4, in memory. It is deterministic: the same
-// original and settings give the same names and bytes.
-func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
+// front is the build's front half (P-4): parse the original, apply the
+// public transform, encode and decode the data file. It writes nothing.
+func (a *Area) front(ctx context.Context, r lifecycle.Record) (bin []byte, f datafile.File, routeHidden bool, err error) {
 	orig, err := a.d.Originals.Original(r.ID)
 	if err != nil {
-		return built{}, fail("read", "original", err)
+		return nil, f, false, fail("read", "original", err)
 	}
 	w, err := a.d.Parser.Parse(ctx, orig)
 	if err != nil {
 		// A stored original the running binary rejects is a server error,
 		// never a delete (P-14; F-30 owns deletes on rejection).
-		return built{}, fmt.Errorf("publish: parse original: %w", err)
+		return nil, f, false, fmt.Errorf("publish: parse original: %w", err)
 	}
 	orig = nil
-	w, routeHidden := a.transform(w, r)
-	bin, err := datafile.Encode(w)
+	w, routeHidden = a.transform(w, r)
+	if bin, err = datafile.Encode(w); err != nil {
+		return nil, f, false, fmt.Errorf("publish: encode: %w", err)
+	}
+	// The page comes from the metadata as written (F-13 hand-off, ADR-026 item 3).
+	if f, err = datafile.Decode(bin); err != nil {
+		return nil, f, false, fmt.Errorf("publish: decode: %w", err)
+	}
+	return bin, f, routeHidden, nil
+}
+
+// Frame is the preview frame of the workout's public data file (F-36 MC-2,
+// MC-4): the build's front half, nothing written. ok is false without
+// public positions.
+func (a *Area) Frame(ctx context.Context, r lifecycle.Record) (fr preview.Frame, ok bool, err error) {
+	_, f, _, err := a.front(ctx, r)
 	if err != nil {
-		return built{}, fmt.Errorf("publish: encode: %w", err)
+		return fr, false, err
+	}
+	fr, ok = preview.FrameOf(f)
+	return fr, ok, nil
+}
+
+// card is the preview of F-23 PC-1, over the stored basemap when one exists
+// for the key of the frame computed now from f (F-36 MC-3); any failure on
+// the map side draws the server-made card.
+func (a *Area) card(r lifecycle.Record, f datafile.File, vm page.ViewModel) ([]byte, error) {
+	if fr, ok := preview.FrameOf(f); ok && a.d.Maps != nil {
+		m, err := a.d.Maps.PreviewMap(r.ID, fr.Key)
+		if err == nil {
+			img, rerr := preview.RenderOnMap(f, vm, fr, m)
+			if rerr == nil {
+				return img, nil
+			}
+			err = rerr
+		}
+		if !errors.Is(err, fs.ErrNotExist) && a.d.Logger != nil {
+			// Never the frame, key or path (I-5); errors.Is keeps the reason short.
+			reason := "read"
+			if errors.Is(err, preview.ErrTooLarge) {
+				reason = "size"
+			} else if m != nil {
+				reason = "render"
+			}
+			a.d.Logger.Info("preview map not used", "id", r.ID, "reason", reason)
+		}
+	}
+	return preview.Render(f, vm)
+}
+
+// build is the public build of P-4, in memory. It is deterministic: the same
+// original, settings and stored basemap give the same names and bytes.
+func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
+	bin, f, routeHidden, err := a.front(ctx, r)
+	if err != nil {
+		return built{}, err
 	}
 	sum := sha256.Sum256(bin)
 	name := "data." + hex.EncodeToString(sum[:8]) + ".bin"
-	// The page comes from the metadata as written (F-13 hand-off, ADR-026 item 3).
-	f, err := datafile.Decode(bin)
-	if err != nil {
-		return built{}, fmt.Errorf("publish: decode: %w", err)
-	}
 	s := page.Settings{
 		Title: r.Title, Description: r.Description, ExpiresAt: r.ExpiresAt,
 		PublicID: r.PublicID, DataFile: name, RouteHidden: routeHidden, BaseURL: a.d.BaseURL,
 	}
 	// The preview is drawn from the decoded public file and the card text
 	// (F-23 PC-1); its name then goes into the page's image URL.
-	img, err := preview.Render(f, page.Build(f, s))
+	img, err := a.card(r, f, page.Build(f, s))
 	if err != nil {
 		return built{}, fmt.Errorf("publish: preview: %w", err)
 	}

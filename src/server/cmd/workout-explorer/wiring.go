@@ -100,7 +100,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	// The total starts at 0 and gets the measured usage after recovery, so
 	// removed orphans and staging never count (ADR-022, F-10 design).
 	storage := lifecycle.NewStorage(limit, 0)
-	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Parser: parser, Storage: storage, Logger: logger, BaseURL: s.baseURL, Rows: db})
+	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Maps: files, Parser: parser, Storage: storage, Logger: logger, BaseURL: s.baseURL, Rows: db})
 	if err != nil {
 		return fail(err)
 	}
@@ -111,6 +111,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		Storage: storage,
 		Hook:    public,
 		Public:  public,
+		Frames:  public,
 		Logger:  logger,
 	})
 	if err := svc.Recover(ctx); err != nil {

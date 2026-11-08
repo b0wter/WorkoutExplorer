@@ -85,7 +85,7 @@ func regenerate(ctx context.Context, dataDir string, s settings, stdout, stderr 
 		return failed(err)
 	}
 	parser := newParser(s.parseTimeout, true, logger)
-	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Parser: parser, Logger: logger, BaseURL: s.baseURL, Rows: db})
+	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Maps: files, Parser: parser, Logger: logger, BaseURL: s.baseURL, Rows: db})
 	if err != nil {
 		return failed(err)
 	}

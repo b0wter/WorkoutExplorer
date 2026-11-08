@@ -298,6 +298,7 @@ Remove old build leftovers when you like: `docker image prune`.
 ## 9. Data, backups and privacy
 
 - All workout data is in `WX_DATA` (default `/srv/workouts`): the database (`workouts.db`), the private originals (`private/`), and what is served to visitors (`public/`).
+- A workout whose sharer's browser sent a map for the link preview also keeps that map in `private/` (`preview-map.*.png`, up to about 2.5 MB each). It counts towards the storage limit, is never served as it is, and is deleted with the workout. The server itself never contacts the map tile host.
 - **There are no backups, by design.** Workouts are short-lived, and a copy would outlive the deletion that the app promises to its users. Do not back up this folder. Turn off provider snapshots for the host if you can. Losing the server loses its workouts; that is accepted.
 - Expiry deletes everything stored for a workout, in the database and on disk. Drafts are deleted after 48 hours.
 - Only unlisted, published workouts have files under `public/`. Original FIT files are never served.
@@ -358,6 +359,7 @@ docker compose logs --tail 100 caddy
 ```
 
 - The server logs JSON lines (start, expiry, errors). Caddy writes no access log, and the server writes none. Visitor addresses are not logged by either.
+- `preview map refused` (with a `reason`: `size`, `format`, `dimensions`, `decode`, `stale`) and `preview map not used` (`size`, `read`, `render`) are informational: the link preview then uses the plain card. Many `size` lines for real routes mean the map card is too large for messengers (ADR-041, "Would choose differently if").
 - Docker keeps them in rotating files on the host (at most 5 files of 10 MB per container). `docker compose down` removes them.
 - Your reverse proxy has its own logs. Those are yours to configure (section 5).
 
@@ -463,7 +465,7 @@ Fill these in on the real VPS; the Compose cap must stay at or above the first v
 
 | What | How | Value |
 | --- | --- | --- |
-| `memory.peak` of `app`, 4 uploads at the parse limits at once + one publish with its preview | `cat /sys/fs/cgroup/system.slice/docker-$(docker inspect -f '{{.Id}}' workout-explorer-app-1).scope/memory.peak` after the run | not yet measured |
+| `memory.peak` of `app`, 4 uploads at the parse limits at once + one publish with its preview + one preview-map upload (F-36, up to 16 MB more) | `cat /sys/fs/cgroup/system.slice/docker-$(docker inspect -f '{{.Id}}' workout-explorer-app-1).scope/memory.peak` after the run | not yet measured |
 | Cap in `compose.yaml` | `mem_limit` = `memswap_limit`: (peak + 112 MB rate table) x 1.2, rounded up to 100 MB | 1200m (from the F-09 range 620 to 861 MB) |
 | `parse` time of the all-caps synthetic file (ADR-017 item 7) | generate the file on a dev machine (`cd src/server && go run ./tools/corpusgen -cap-file /tmp/cap.fit`), copy it into `/srv/workouts`, then `time docker compose exec app /srv/workout-explorer/bin/workout-explorer parse /srv/workouts/cap.fit`; delete it afterwards | not yet measured |
 | Parse time limit `WORKOUT_EXPLORER_PARSE_TIMEOUT` | env file | 10 s (default) |

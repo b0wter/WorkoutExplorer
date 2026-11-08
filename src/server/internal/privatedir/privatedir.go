@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"workout-explorer/internal/lifecycle"
 )
@@ -38,8 +39,10 @@ func Open(dataDir string) (*Dir, error) {
 // ValidID reports whether id is an internal workout ID (32 lowercase hex).
 func ValidID(id string) bool { return idPattern.MatchString(id) }
 
+var mapPattern = regexp.MustCompile(`^preview-map\.[0-9a-f]{16}\.png$`)
+
 func validName(name string) bool {
-	return name == lifecycle.OriginalName || name == lifecycle.DraftName
+	return name == lifecycle.OriginalName || name == lifecycle.DraftName || mapPattern.MatchString(name)
 }
 
 // Create writes files into tmp/{id}, fsyncs them, and renames the folder to
@@ -125,6 +128,68 @@ func (d *Dir) Replace(id, name string, data []byte) (err error) {
 		return fmt.Errorf("privatedir: %w", err)
 	}
 	return syncDir(folder)
+}
+
+// StoreMap writes data as private/{id}/preview-map.{key}.png as Replace
+// does, never creating the folder, then removes every other preview-map.*
+// there (F-36 MC-9). freed is the sizes of the files it replaced or removed;
+// a map it could not remove stays private and unserved, counted, until the
+// folder goes. Errors carry no path: the key is in the file name (I-5).
+func (d *Dir) StoreMap(id, key string, data []byte) (freed int64, err error) {
+	name := lifecycle.PreviewMapName(key)
+	if !ValidID(id) || !mapPattern.MatchString(name) {
+		return 0, errors.New("privatedir: invalid workout ID or map key")
+	}
+	folder := filepath.Join(d.private, id)
+	if info, err := os.Lstat(filepath.Join(folder, name)); err == nil && info.Mode().IsRegular() {
+		freed = info.Size()
+	}
+	if err := d.Replace(id, name, data); err != nil {
+		return 0, pathless(err)
+	}
+	entries, err := os.ReadDir(folder)
+	if err != nil {
+		return freed, nil
+	}
+	for _, e := range entries {
+		if e.Name() == name || !strings.HasPrefix(e.Name(), "preview-map.") {
+			continue
+		}
+		info, err := e.Info()
+		if err == nil && os.Remove(filepath.Join(folder, e.Name())) == nil {
+			freed += info.Size()
+		}
+	}
+	return freed, nil
+}
+
+// PreviewMap returns private/{id}/preview-map.{key}.png (F-36 MC-9: the
+// public build reads it as it reads the original). Absent: an error wrapping
+// fs.ErrNotExist. Errors carry no path (I-5).
+func (d *Dir) PreviewMap(id, key string) ([]byte, error) {
+	f, _, err := d.Read(id, lifecycle.PreviewMapName(key))
+	if err != nil {
+		return nil, pathless(err)
+	}
+	defer f.Close()
+	b, err := io.ReadAll(f)
+	if err != nil {
+		return nil, pathless(err)
+	}
+	return b, nil
+}
+
+// pathless reduces a path error to its operation and system error.
+func pathless(err error) error {
+	var pe *fs.PathError
+	var le *os.LinkError
+	switch {
+	case errors.As(err, &pe):
+		return fmt.Errorf("privatedir: %s: %w", pe.Op, pe.Err)
+	case errors.As(err, &le):
+		return fmt.Errorf("privatedir: %s: %w", le.Op, le.Err)
+	}
+	return err
 }
 
 func writeSynced(path string, data []byte) error {

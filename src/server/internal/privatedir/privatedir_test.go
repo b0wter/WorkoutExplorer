@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -276,5 +277,52 @@ func TestReplace(t *testing.T) {
 		if err := d.Replace(c[0], c[1], nil); err == nil {
 			t.Errorf("%v accepted", c)
 		}
+	}
+}
+
+// TestStoreMap (F-36 MC-9, AC 44): stored as a file of an existing folder,
+// the others removed and counted as freed; never creates the folder (a PUT
+// racing a delete); errors carry no key.
+func TestStoreMap(t *testing.T) {
+	d, root := open(t)
+	id := "0123456789abcdef0123456789abcdef"
+	if err := d.Create(id, files()); err != nil {
+		t.Fatal(err)
+	}
+	const k1, k2 = "1111111111111111", "2222222222222222"
+	if freed, err := d.StoreMap(id, k1, []byte("first")); err != nil || freed != 0 {
+		t.Fatal(freed, err)
+	}
+	if freed, err := d.StoreMap(id, k1, []byte("again")); err != nil || freed != 5 {
+		t.Errorf("same key: freed %d, %v", freed, err)
+	}
+	if freed, err := d.StoreMap(id, k2, []byte("second!")); err != nil || freed != 5 {
+		t.Errorf("new key: freed %d, %v", freed, err)
+	}
+	want := []string{"draft.bin", "original.fit", "preview-map." + k2 + ".png"}
+	if got := entries(t, filepath.Join(root, "private", id)); !slices.Equal(got, want) {
+		t.Errorf("folder %v", got)
+	}
+	if b, err := d.PreviewMap(id, k2); err != nil || string(b) != "second!" {
+		t.Errorf("read %q %v", b, err)
+	}
+	if _, err := d.PreviewMap(id, k1); !errors.Is(err, fs.ErrNotExist) || strings.Contains(err.Error(), k1) {
+		t.Errorf("absent map: %v", err)
+	}
+	gone := "fedcba9876543210fedcba9876543210"
+	if _, err := d.StoreMap(gone, k1, []byte("x")); err == nil || strings.Contains(err.Error(), k1) || strings.Contains(err.Error(), gone) {
+		t.Errorf("missing folder: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(root, "private", gone)); !os.IsNotExist(err) || len(entries(t, filepath.Join(root, "tmp"))) != 0 {
+		t.Errorf("created the folder or left staging: %v", err)
+	}
+	for _, k := range []string{"../x", "ABCDEF0123456789", "0123", ""} {
+		if _, err := d.StoreMap(id, k, nil); err == nil {
+			t.Errorf("key %q accepted", k)
+		}
+	}
+	// Deleted with the folder (I-4).
+	if freed, err := d.Remove(id); err != nil || freed != int64(len("ORIGINAL")+len("DRAFT")+len("second!")) {
+		t.Errorf("remove: %d %v", freed, err)
 	}
 }

@@ -62,6 +62,7 @@ type PrivateFiles interface {
 	Remove(id string) (freed int64, err error)                        // private/{id}; freed = the sizes of its files (F-10); nil and 0 if absent
 	Read(id, name string) (body io.ReadCloser, size int64, err error) // an open file of private/{id}; an error wrapping fs.ErrNotExist if absent (F-12 O-8)
 	Replace(id, name string, data []byte) error                       // temp and rename into an existing private/{id}, never creating it (F-30 RG-4)
+	StoreMap(id, key string, data []byte) (freed int64, err error)    // preview-map.{key}.png as Replace, other maps removed; freed = replaced and removed sizes (F-36 MC-9)
 	IDs() (ids []string, unknown int, err error)
 	ClearStaging() (removed int, err error)
 }
@@ -77,3 +78,6 @@ const (
 	OriginalName = "original.fit"
 	DraftName    = "draft.bin"
 )
+
+// PreviewMapName is the stored basemap of the frame with this key (F-36 MC-9).
+func PreviewMapName(key string) string { return "preview-map." + key + ".png" }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/preview"
 )
 
 // The owner endpoints of F-12 (architect/F-12-owner-api.md, ADR-025). The
@@ -25,6 +26,8 @@ type Owner interface {
 	OpenOriginal(ctx context.Context, publicID, token string) (lifecycle.Download, error)
 	DeleteByOwner(ctx context.Context, publicID, token string) error
 	Publish(ctx context.Context, publicID, token string) (lifecycle.Record, error)
+	PreviewFrame(ctx context.Context, publicID, token string) (lifecycle.MapFrame, error)
+	PutPreviewMap(ctx context.Context, publicID, token, key string, body io.Reader) error
 }
 
 // Limits of the owner endpoints (F-12 O-12).
@@ -36,6 +39,12 @@ const (
 	// escaped (a surrogate pair), plus the other fields: far below 32 KiB.
 	maxPatchBytes = 32 << 10
 	codeInvalid   = "invalid_settings"
+	// F-36 MC-4 refusals.
+	codeStale        = "stale"
+	codeInvalidImage = "invalid_image"
+	msgMapBusy       = "Another preview image is being processed. Please try again."
+	msgMapStale      = "The preview frame has changed."
+	msgMapRefused    = "The preview image was refused."
 )
 
 // notFoundBody is ADR-025 item 5, byte for byte.
@@ -96,6 +105,61 @@ func registerOwner(mux *http.ServeMux, cfg Config) {
 	mux.HandleFunc("GET /api/workouts/{public_id}/original.fit", h.file(true))
 	mux.HandleFunc("DELETE /api/workouts/{public_id}", h.delete)
 	mux.HandleFunc("POST /api/workouts/{public_id}/publish", h.publish)
+	mux.HandleFunc("GET /api/workouts/{public_id}/preview-map", h.previewFrame)
+	mux.HandleFunc("PUT /api/workouts/{public_id}/preview-map/{key}", h.putPreviewMap)
+}
+
+// frameBody is GET …/preview-map (F-36 MC-4): {"frame":null}, or the frame
+// with its key and whether a stored basemap matches it.
+type frameBody struct {
+	Frame   *preview.Frame `json:"frame"`
+	Key     string         `json:"key,omitempty"`
+	Current *bool          `json:"current,omitempty"`
+}
+
+func (h *ownerHandler) previewFrame(w http.ResponseWriter, r *http.Request) {
+	id, token, ok := h.begin(w, r, h.build)
+	if !ok {
+		return
+	}
+	mf, err := h.o.PreviewFrame(r.Context(), id, token)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	var b frameBody
+	if mf.OK {
+		b = frameBody{Frame: &mf.Frame, Key: mf.Frame.Key, Current: &mf.Current}
+	}
+	writeJSON(w, http.StatusOK, b)
+}
+
+// putPreviewMap is PUT …/preview-map/{key}, body = PNG bytes (F-36 MC-4).
+// Refusals are fixed JSON errors the browser ignores.
+func (h *ownerHandler) putPreviewMap(w http.ResponseWriter, r *http.Request) {
+	id, token, ok := h.begin(w, r, h.build)
+	if !ok {
+		return
+	}
+	// One byte over the cap tells lifecycle the body was too large; then the transfer stops.
+	body := http.MaxBytesReader(w, r.Body, preview.MaxMapBytes+1)
+	err := h.o.PutPreviewMap(r.Context(), id, token, r.PathValue("key"), body)
+	var me *lifecycle.MapRefusedError
+	switch {
+	case err == nil:
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, lifecycle.ErrMapBusy):
+		writeError(w, http.StatusServiceUnavailable, codeBusy, msgMapBusy)
+	case errors.Is(err, lifecycle.ErrMapStale):
+		writeError(w, http.StatusConflict, codeStale, msgMapStale)
+	case errors.As(err, &me) && me.Reason == "size":
+		writeError(w, http.StatusRequestEntityTooLarge, codeTooLarge, msgMapRefused)
+	case errors.As(err, &me):
+		writeError(w, http.StatusBadRequest, codeInvalidImage, msgMapRefused)
+	default:
+		fail(w, err)
+	}
 }
 
 // publish is F-15 P-1: no request body is read.

@@ -29,6 +29,8 @@ type Deps struct {
 	Hook ChangeHook
 	// Public is the public area (F-15 P-3); nil: no public files (tests of earlier features).
 	Public PublicFiles
+	// Frames computes preview frames (F-36 MC-2); nil: the preview-map operations answer not found.
+	Frames Frames
 	Logger *slog.Logger
 	Now    func() time.Time // nil: time.Now
 	Rand   io.Reader        // nil: crypto/rand.Reader
@@ -41,6 +43,8 @@ type Service struct {
 	mu sync.Mutex
 	// uncheckpointed: a row was deleted and the WAL not yet checkpointed.
 	uncheckpointed atomic.Bool
+	// mapSlot admits one basemap upload at a time (F-36 MC-4).
+	mapSlot atomic.Bool
 }
 
 // New returns a Service. A nil Logger writes nothing.
