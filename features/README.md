@@ -47,7 +47,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
-| [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | design v0.1 done, building | user: OQ-108 to OQ-111 |
+| [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | design v0.1 done, building | |
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | not started | |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
@@ -534,6 +534,15 @@ Updated: spec (viewer story 15, scope table, SH-5 pointer, new SH-12, open quest
 - **Route colouring control (AP-9):** at the map's top-left in every layout.
 
 Updated: spec (AP-18), F-13 (scope, AC).
+
+**Decided on 9 Nov 2026, zip upload open questions** (user, OQ-108 to OQ-111, UP-11, F-35):
+
+- **OQ-108:** split archives are never accepted. The first part is refused in the browser ("could not be opened"); later parts and self-extracting archives don't look like a zip, are sent and refused by the server as not a FIT file.
+- **OQ-109:** root entries whose name starts with `._` (macOS metadata) are ignored when looking for the FIT file.
+- **OQ-110:** the picker has no file-type filter (a filter can grey out `.fit` in phone pickers); that meets "accepts `.fit` and `.zip`".
+- **OQ-111:** a root `.fit` entry that is itself a zip archive is refused as damaged; nothing is sent.
+
+Updated: spec (UP-11), F-35 (scope, acceptance criteria).
 
 The original questions follow for reference.
 
