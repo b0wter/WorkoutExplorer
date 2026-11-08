@@ -40,8 +40,8 @@ div.wx-map {
   }
 }
 
-/* F-25 C-6: the colour selector and its legend, one MapLibre control at bottom-left (moved to the top
-   in the two-column layouts above). */
+/* F-25 C-6: the colour selector and its legend, one MapLibre control at top-right under zoom and fullscreen (never
+   beside the attribution). */
 .wx-colour {
   padding: 4px;
   background: var(--bg);

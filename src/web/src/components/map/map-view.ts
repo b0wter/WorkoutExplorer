@@ -500,7 +500,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       };
       select.addEventListener('change', () => choose(select.value as ColourMetric | ''));
       if (options.units) unsubscribeUnits = options.units.subscribe(renderLegend);
-      map.addControl({ onAdd: () => box, onRemove: () => box.remove() }, 'bottom-left');
+      map.addControl({ onAdd: () => box, onRemove: () => box.remove() }, 'top-right'); // under zoom and fullscreen; attribution stays bottom-right or top, left of them
     }
 
     // ---- route interaction (D-9, D-10, ADR-015) --------------------------------------------
