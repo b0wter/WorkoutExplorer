@@ -34,14 +34,10 @@ div.wx-map {
     bottom: auto;
     right: 40px;
   }
-  .route-map .maplibregl-ctrl-bottom-left {
-    top: 0;
-    bottom: auto;
-  }
 }
 
-/* F-25 C-6: the colour selector and its legend, one MapLibre control at bottom-left (top-left in the two-column layouts above;
-   top-right in the narrow layout, clear of the attribution). */
+/* F-25 C-6: the colour selector and its legend, one MapLibre control at top-left in every layout (the attribution is bottom-right
+   or top, left of the zoom; the pin toggle sits under fullscreen). */
 .wx-colour {
   padding: 4px;
   background: var(--bg);

@@ -374,11 +374,10 @@ describe('pin toggle (D-19, AP-18)', () => {
     b.click();
     expect(document.querySelector('.layout')?.classList.contains('pinned')).toBe(true);
     expect(b.getAttribute('aria-pressed')).toBe('true');
-    expect(b.textContent).toBe('Unpin map');
+    expect(b.getAttribute('aria-label')).toBe('Pin map');
     b.click();
     expect(document.querySelector('.layout')?.classList.contains('pinned')).toBe(false);
     expect(b.getAttribute('aria-pressed')).toBe('false');
-    expect(b.textContent).toBe('Pin map');
     expect(stubLog.routeMap).toHaveLength(1);
     expect(window.location.hash).toBe('');
     expect(localStorage.length + sessionStorage.length).toBe(0);

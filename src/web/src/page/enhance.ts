@@ -164,27 +164,33 @@ export function enhanceReport(root: ParentNode, load = () => import('../report/f
   });
 }
 
-const PIN_TEXT = 'Pin map';
-const UNPIN_TEXT = 'Unpin map';
+const PIN_LABEL = 'Pin map';
+const PIN_SVG =
+  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16 3H8v2l1 .5V11l-3 3v2h5v5l1 1 1-1v-5h5v-2l-3-3V5.5L16 5z"/></svg>';
 
 /** The phone's pin toggle (F-13 design D-19, AP-18). Bundle-only: created when the map is ready,
- *  so it never exists without JavaScript, before the map or after a failed map. A sibling of the
- *  map's container inside #map-slot, so it moves nothing and the map's listeners never see it.
- *  It flips one class on the layout wrapper and aria-pressed; held in memory only. CSS shows it
- *  and applies the class below 1024 px only. */
+ *  so it never exists without JavaScript, before the map or after a failed map. An icon button in
+ *  MapLibre's top-right stack under fullscreen (own control group); without that stack (stubbed
+ *  map) it is a plain child of #map-slot. It flips one class on the layout wrapper and
+ *  aria-pressed; held in memory only. CSS shows it and applies the class below 1024 px only. */
 export function addPinToggle(root: ParentNode, slot: HTMLElement): HTMLButtonElement | null {
   const layout = root.querySelector('.layout');
   if (!layout || slot.querySelector('.map-pin')) return null;
-  const button = slot.ownerDocument.createElement('button');
+  const doc = slot.ownerDocument;
+  const group = doc.createElement('div');
+  group.className = 'maplibregl-ctrl maplibregl-ctrl-group map-pin-group';
+  const button = doc.createElement('button');
   button.type = 'button';
   button.className = 'map-pin';
-  button.textContent = PIN_TEXT;
+  button.title = PIN_LABEL;
+  button.setAttribute('aria-label', PIN_LABEL);
   button.setAttribute('aria-pressed', 'false');
+  button.innerHTML = PIN_SVG;
   button.addEventListener('click', () => {
     const on = layout.classList.toggle('pinned');
     button.setAttribute('aria-pressed', String(on));
-    button.textContent = on ? UNPIN_TEXT : PIN_TEXT;
   });
-  slot.appendChild(button);
+  group.appendChild(button);
+  (slot.querySelector('.maplibregl-ctrl-top-right') ?? slot).appendChild(group);
   return button;
 }

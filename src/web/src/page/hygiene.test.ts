@@ -150,7 +150,7 @@ describe('page.css layout structure (D-17 to D-19)', () => {
     expect(two).toMatch(/\.has-map \.layout \{\s*display: grid;/);
     expect(two).toContain('minmax(608px, 1fr)');
     expect(two).toMatch(/\.has-map \.map-slot \{[^}]*position: sticky;/);
-    expect(two).toMatch(/\.map-pin \{\s*display: none;/);
+    expect(two).toMatch(/\.map-pin-group \{\s*display: none;/);
     expect(css).not.toMatch(/^\.layout \{[^}]*display: grid/m);
   });
 
@@ -179,7 +179,7 @@ describe('page.css layout structure (D-17 to D-19)', () => {
     const land = block(LANDSCAPE);
     expect(land).toMatch(/\.has-map \.layout \{\s*padding-left: var\(--map-w, 40%\);/);
     expect(land).toMatch(/\.has-map \.map-slot \{[^}]*position: fixed;[^}]*width: var\(--map-w, 40%\);[^}]*height: 100lvh;/);
-    expect(land).toMatch(/\.map-pin \{\s*display: none;/);
+    expect(land).toMatch(/\.map-pin-group \{\s*display: none;/);
     expect(land).toMatch(/\.has-map #charts-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
     expect(land).toMatch(/\.has-map \.charts \{\s*--r: var\(--r4\);/);
     expect(land).not.toContain('display: grid'); // one block flow: the range slot can stick

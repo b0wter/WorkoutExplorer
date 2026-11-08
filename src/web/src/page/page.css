@@ -558,23 +558,20 @@ tbody tr:nth-child(even) {
   margin-left: 12px;
 }
 
-/* Map pin toggle (D-19, AP-18): created by the bundle, a sibling of the map's container. */
+/* Map pin toggle (D-19, AP-18): an icon button in MapLibre's top-right control stack, under fullscreen. */
 .map-pin {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 2;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-  font-size: 14px;
+  color: black; /* MapLibre's buttons stay light in both themes */
+}
+.map-pin svg {
+  display: block;
+  margin: auto;
+}
+.map-pin:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .map-pin[aria-pressed='true'] {
   background: var(--accent);
-  border-color: var(--accent);
   color: var(--on-accent);
 }
 
@@ -648,7 +645,7 @@ tbody tr:nth-child(even) {
   .has-map #charts-slot .readout {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .map-pin {
+  .map-pin-group {
     display: none;
   }
 }
@@ -696,7 +693,7 @@ tbody tr:nth-child(even) {
     padding-top: 0;
     padding-bottom: 0;
   }
-  .map-pin {
+  .map-pin-group {
     display: none;
   }
 }
