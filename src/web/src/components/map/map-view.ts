@@ -500,7 +500,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       };
       select.addEventListener('change', () => choose(select.value as ColourMetric | ''));
       if (options.units) unsubscribeUnits = options.units.subscribe(renderLegend);
-      map.addControl({ onAdd: () => box, onRemove: () => box.remove() }, 'top-right'); // under zoom and fullscreen; attribution stays bottom-right or top, left of them
+      const narrowLayout = window.matchMedia?.('(min-width: 1024px), (orientation: landscape) and (max-height: 500px)').matches === false;
+    map.addControl({ onAdd: () => box, onRemove: () => box.remove() }, narrowLayout ? 'top-right' : 'bottom-left'); // shortcut: chosen once, no resize re-add
     }
 
     // ---- route interaction (D-9, D-10, ADR-015) --------------------------------------------

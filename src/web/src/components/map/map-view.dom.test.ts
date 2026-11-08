@@ -1237,7 +1237,7 @@ describe('route colouring control (F-25 C-6, C-7, C-8)', () => {
     const handle = await p;
     handles.push(handle);
     const map = recorder.maps[recorder.maps.length - 1];
-    const entry = [...map.controls].reverse().find(([, pos]) => pos === 'top-right');
+    const entry = [...map.controls].reverse().find(([, pos]) => pos === 'top-right' || pos === 'bottom-left');
     const el = entry ? (entry[0] as { onAdd(m: unknown): HTMLElement }).onAdd(map) : null;
     const box = el && el.classList.contains('wx-colour') ? el : null;
     return { s, handle, map, box, units };
