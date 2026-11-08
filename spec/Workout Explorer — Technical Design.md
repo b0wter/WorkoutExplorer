@@ -322,7 +322,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
             │   ├── colouring/          route colouring: offered metrics, per-sample values, bounds, classes, legend numbers; imports only lib/datafile and lib/format (F-25, ADR-037)
             │   ├── owner/              the only holder of the edit token; owner API client and settings types (F-19 E-2)
             │   ├── upload/             upload page logic: size rule, status answer, response outcome, edit-link check, page states, client-held sentences; imports nothing (F-11)
-            │   ├── zip/                zip archive reader for the upload page: detection, central directory, root FIT entry, inflating under a limit; imports nothing, imported only by src/upload (F-35, ADR-040; planned)
+            │   ├── zip/                zip archive reader for the upload page: detection, central directory, root FIT entry, inflating under a limit; imports nothing, imported only by src/upload (F-35, ADR-040)
             │   └── route/              route presence, geometry, markers, nearest-sample grid, map gesture reducer (F-06, ADR-015)
             └── components/             Svelte components
                 ├── charts/             ChartStack, MetricChart, CursorReadout; the only uPlot importer (F-05, ADR-009)

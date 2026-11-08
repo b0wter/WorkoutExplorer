@@ -244,9 +244,9 @@ describe('structure (Z-4, Z-5): every failure is a result, never an exception', 
     for (let i = 0; i < 3000; i++) {
       const b = small.slice();
       for (let k = 1 + Math.floor(rnd() * 3); k > 0; k--) b[Math.floor(rnd() * b.length)] = Math.floor(rnd() * 256);
-      const r = await extractFit(b, LIMIT);
-      expect(typeof r.ok).toBe('boolean');
-      seen.add(r.ok ? 'ok' : r.reason);
+      const r = await run(b); // a throw fails the test
+      if (typeof r !== 'string') expect(same(r, FIT.subarray(0, 200))).toBe(true);
+      seen.add(typeof r === 'string' ? r : 'ok');
     }
     expect(seen.has('damaged')).toBe(true);
   }, 60_000);

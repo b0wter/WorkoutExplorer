@@ -49,7 +49,7 @@ Archives in committed tests are built by a test helper from synthetic FIT files 
 | Only the FIT entry is inflated, and only once | Node: overlapping entries pointing at one local header (with one and with two root FIT names); a spy shows one `DecompressionStream` per archive |
 | The output limit holds whatever is declared | Node: exactly 20,000,000 accepted; 20,000,001 refused; a 1 GB bomb declaring a small size refused with output read ≤ limit plus one slice and the stream cancelled; a declared size over the limit refused without inflating |
 | Lying sizes and data are damaged | Node: declared length too small and too large, wrong CRC, truncated deflate data, stored entry with unequal sizes, local header disagreeing in name or method |
-| Many entries stay fast | Node: 65,535 entries with one root FIT, accepted in well under a second |
+| Many entries stay fast | Node: 65,534 entries with one root FIT accepted (65,535 refused as Zip64, Z-6) in well under a second |
 | No zip bytes and no archive name ever reach the server | jsdom: the part is named `workout.fit` and holds the FIT bytes; a root `.fit` that is a zip is refused; no request on any refusal |
 | Fallback and page states | jsdom: AC 54 with the global removed; AC 55 busy during the four-byte read, extraction and upload, usable after each refusal |
 | Budget | `make ci`: upload entry ≤ 8,000, F-35's growth ≤ 2,500, no shared chunk, no new dependency, storage check unchanged |
