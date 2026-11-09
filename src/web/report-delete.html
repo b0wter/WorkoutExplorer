@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- The delete link's confirmation page (F-37 DK-11; INF-6). Caddy serves it at /report-delete, no-store. The key stays in the fragment; no Open Graph or Twitter card: the link only ever goes to the operator. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>Delete a reported workout - Workout Explorer</title>
+  </head>
+  <body>
+    <main id="page" data-state="loading">
+      <h1>Delete a reported workout</h1>
+      <noscript><p>This page needs JavaScript.</p></noscript>
+      <dl id="facts" class="facts"></dl>
+      <p id="message" class="message"></p>
+      <button id="delete" class="button" type="button">Delete workout</button>
+    </main>
+    <footer><a href="/about">About</a></footer>
+    <script type="module" src="/src/report-delete/main.ts"></script>
+  </body>
+</html>

@@ -50,7 +50,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | QA r1 ready | user: U-1 to U-4 (qa r1) |
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | done | user: browser, messenger and card look checks (qa r1 list), VPS memory.peak |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
-| [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | design done, backend in progress | user: OQ-125 (Pushover phone check, AC 41) |
+| [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | built, QA r1 | user: OQ-125 (Pushover phone check, AC 41) |
 | [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | spec | user: OQ-120 to OQ-124 |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 

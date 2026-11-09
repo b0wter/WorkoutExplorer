@@ -100,6 +100,7 @@ describe('limitFor', () => {
     expect(limitFor('index.html')).toBe(LIMIT_BYTES);
     expect(withinBudget(8000, limitFor('upload.html'))).toBe(true);
     expect(withinBudget(8001, limitFor('upload.html'))).toBe(false);
+    expect(limitFor('report-delete.html')).toBe(4000);
   });
 });
 

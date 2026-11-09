@@ -1118,6 +1118,11 @@ describe('the token stays in lib/owner (E-2 source scan)', () => {
       // The upload page turns the edit link the API returns into the address it opens (F-11 U-9):
       // the token's way into the fragment, before any edit page code runs.
       if (file === '../lib/upload/rules.ts') continue;
+      // F-37 DK-11: the delete link's page reads its own key and sends it as Bearer; it never touches history.
+      if (file.startsWith('../report-delete/')) {
+        expect(code(text), file).not.toMatch(/replaceState|pushState|location\.(assign|replace|href)|console\.|localStorage|sessionStorage|innerHTML/);
+        continue;
+      }
       // F-26 (ADR-038 item 3): the fullscreen map's one history entry, with no URL argument.
       const c = file === '../components/map/map-view.ts' ? code(text).replace("history.pushState(null, '')", '') : code(text);
       expect(c, file).not.toMatch(/\.hash\b|Authorization|Bearer|replaceState|pushState|location\.href/);
