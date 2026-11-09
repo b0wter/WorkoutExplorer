@@ -537,7 +537,7 @@ Updated: spec (AP-18), F-13 (scope, AC).
 
 **Decided on 9 Nov 2026, zip upload open questions** (user, OQ-108 to OQ-111, UP-11, F-35):
 
-- **OQ-108:** split archives are never accepted. The first part is refused in the browser ("could not be opened"); later parts and self-extracting archives don't look like a zip, are sent and refused by the server as not a FIT file.
+- **OQ-108:** split archives are never accepted. The first part is refused in the browser ("could not be opened"); later parts and self-extracting archives don't look like a ZIP archive, are sent and refused by the server as not a FIT file.
 - **OQ-109:** root entries whose name starts with `._` (macOS metadata) are ignored when looking for the FIT file.
 - **OQ-110:** the picker has no file-type filter (a filter can grey out `.fit` in phone pickers); that meets "accepts `.fit` and `.zip`".
 - **OQ-111:** a root `.fit` entry that is itself a zip archive is refused as damaged; nothing is sent.

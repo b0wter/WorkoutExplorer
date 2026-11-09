@@ -6,7 +6,7 @@
 - **Depends on:** F-11
 
 ## Goal
-A sharer can drop or pick a zip archive that holds one FIT file (for example a device website's "export original" download) without unzipping it first; the browser takes the FIT file out and uploads it as if it had been picked.
+A sharer can drop or pick a ZIP archive that holds one FIT file (for example a device website's "export original" download) without unzipping it first; the browser takes the FIT file out and uploads it as if it had been picked.
 
 ## Scope
 - The upload page opens the archive in the browser. The server never receives an archive and is unchanged: it gets one FIT file through the existing upload request (`POST /api/workouts`). The upload API, and so the iOS Shortcut (F-34), stay FIT only.
@@ -23,8 +23,8 @@ A sharer can drop or pick a zip archive that holds one FIT file (for example a d
   - Two or more: "This archive contains more than one FIT file. Please upload one at a time."
   - Extracted file over the limit: "The FIT file in this archive is larger than 20 MB."
   - Unsupported or damaged: "This archive could not be opened. Please unzip it and upload the FIT file."
-  - Browser without `DecompressionStream('deflate-raw')`: "This browser cannot open zip archives. Please unzip it and upload the FIT file." FIT upload is unaffected.
-- While extracting, the page shows a short progress text (engineer proposes, e.g. "Opening the archive…"). The drop zone and intro mention zip archives; wording proposed by the engineer.
+  - Browser without `DecompressionStream('deflate-raw')`: "This browser cannot open ZIP archives. Please unzip it and upload the FIT file." FIT upload is unaffected.
+- While extracting, the page shows a short progress text (engineer proposes, e.g. "Opening the archive…"). The drop zone and intro mention ZIP archives: intro "…or a ZIP archive holding one…", drop zone "Drop a FIT file or ZIP archive here".
 - After a refusal the drop zone is usable again.
 - Nothing from the archive is stored in the browser (F-11 AC 8 holds), logged or sent besides the extracted FIT file.
 
@@ -52,7 +52,7 @@ A sharer can drop or pick a zip archive that holds one FIT file (for example a d
 - [ ] An encrypted FIT entry, a FIT entry with another method (e.g. bzip2), the first part of a split archive, a root `.fit` entry that is itself a zip archive, a Zip64 archive, a truncated archive and an archive whose FIT entry fails its CRC-32 each show the "could not be opened" message; no request is sent.
 - [ ] An archive of 20,000,001 bytes is refused with "This file is larger than 20 MB." before it is read.
 - [ ] A FIT entry that inflates to exactly 20,000,000 bytes is sent; one that inflates to 20,000,001 bytes, and a crafted entry declaring a small size that inflates to 1 GB, are refused with the extracted-size message; decompression stops after at most 20,000,000 bytes of output and the tab stays responsive.
-- [ ] With `DecompressionStream` removed (test stub), a zip shows the "This browser cannot open zip archives" message and a `.fit` file still uploads.
+- [ ] With `DecompressionStream` removed (test stub), a ZIP archive shows the "This browser cannot open ZIP archives" message and a `.fit` file still uploads.
 - [ ] During extraction and upload the drop zone and picker are disabled; after any refusal both are usable again.
 - [ ] The upload page entry stays within its bundle budget (`make ci` size check); no new dependency in `package.json`.
 - [ ] The page sets no cookies and stores nothing in browser storage.
