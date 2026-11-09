@@ -1,8 +1,19 @@
-# Continue here (state of 5 Nov 2026)
+# Continue here (state of 9 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current: v0.3.0 released (8 Nov 2026); next: deploy it (first run of regenerate), then F-32 user checks
+## Current (9 Nov 2026): F-38 Impressum, backend built (9f1c8ee); next: F-38 frontend, QA r1, then release v0.4.0
+
+- v0.3.0 is deployed on the VPS and works. Commits after it are not pushed yet.
+- Done since v0.3.0: F-35 ZIP upload, F-36 map preview card, F-34 iOS Shortcut link, F-37 report notification links (viewing link, readable reason, single-use delete link).
+- F-38 frontend next (senior-frontend-engineer, Opus): replace the stub `src/web/impressum.html` with the real page (a "Show Impressum" button that fetches `/api/impressum` with header `Wx-Impressum: 1`, a load-failure message, `<noscript>` note, 2,000 B gzip ceiling). Clone `<template id="wx-impressum">` into the edit page's three browser-drawn footers. The backend report's contract is in architect/F-38-impressum-page.md (IM-2, IM-3, IM-7).
+- Then QA r1 at medium effort, then push `main` and tag/push v0.4.0. The user asked for this release.
+- Before the v0.4.0 deploy, the user creates `site/` once on the VPS (RUNBOOK). `deploy.sh` now copies all page shells, including report-delete.html, which it never copied before.
+- User checks still open:
+  - F-35: U-1 to U-4.
+  - F-36: browser and messenger checks, VPS memory.peak.
+  - F-34: iPhone Shortcut.
+  - F-37: the OQ-125 phone check (AC 41).
 
 Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29) and v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
