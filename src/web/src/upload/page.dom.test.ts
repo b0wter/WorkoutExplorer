@@ -109,8 +109,8 @@ afterEach(() => {
 describe('page text (U-3)', () => {
   it('has the texts, the About link and the referrer policy in the markup, no inline script or style', () => {
     expect(document.querySelector('h1')!.textContent).toBe('Workout Explorer');
-    expect(document.body.textContent).toContain('Upload a FIT file, or a zip archive holding one, to get a page with map, charts and laps that you can share.');
-    expect(document.body.textContent).toContain('Drop a FIT file or zip archive here');
+    expect(document.body.textContent).toContain('Upload a FIT file, or a ZIP archive holding one, to get a page with map, charts and laps that you can share.');
+    expect(document.body.textContent).toContain('Drop a FIT file or ZIP archive here');
     expect(document.querySelector('label.button')!.textContent).toBe('Choose a file');
     expect(document.querySelector('footer a')!.getAttribute('href')).toBe('/about');
     expect(document.querySelector('footer a')!.textContent).toBe('About');
@@ -395,7 +395,7 @@ describe('zip archives (F-35)', () => {
     // @ts-expect-error removing the global, as an old browser
     delete globalThis.DecompressionStream;
     await pickFile(archive([{ name: 'ride.fit', data: FIT, method: 0 }]));
-    expect($('message').textContent).toBe('This browser cannot open zip archives. Please unzip it and upload the FIT file.');
+    expect($('message').textContent).toBe('This browser cannot open ZIP archives. Please unzip it and upload the FIT file.');
     expect(FakeXhr.all).toHaveLength(0);
     await pickFile(new File([FIT], 'ride.fit'));
     expect(FakeXhr.all).toHaveLength(1);

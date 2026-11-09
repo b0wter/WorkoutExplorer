@@ -11,7 +11,7 @@ export const SENTENCES = {
   paused: 'Uploads are paused because storage is full. Please try again later.',
   // Zip archives (F-35); the last four are keyed by lib/zip's refusal reasons.
   opening: 'Opening the archive…',
-  noZip: 'This browser cannot open zip archives. Please unzip it and upload the FIT file.',
+  noZip: 'This browser cannot open ZIP archives. Please unzip it and upload the FIT file.',
   noFit: 'This archive contains no FIT file.',
   several: 'This archive contains more than one FIT file. Please upload one at a time.',
   fitTooLarge: 'The FIT file in this archive is larger than 20 MB.',
