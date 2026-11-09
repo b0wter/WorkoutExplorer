@@ -2,20 +2,19 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (9 Nov 2026): F-38 Impressum, backend built (9f1c8ee); next: F-38 frontend, QA r1, then release v0.4.0
+## Current (9 Nov 2026): v0.4.0 released (c1bc702), not yet deployed
 
-- v0.3.0 is deployed on the VPS and works. Commits after it are not pushed yet.
-- Done since v0.3.0: F-35 ZIP upload, F-36 map preview card, F-34 iOS Shortcut link, F-37 report notification links (viewing link, readable reason, single-use delete link).
-- F-38 frontend next (senior-frontend-engineer, Opus): replace the stub `src/web/impressum.html` with the real page (a "Show Impressum" button that fetches `/api/impressum` with header `Wx-Impressum: 1`, a load-failure message, `<noscript>` note, 2,000 B gzip ceiling). Clone `<template id="wx-impressum">` into the edit page's three browser-drawn footers. The backend report's contract is in architect/F-38-impressum-page.md (IM-2, IM-3, IM-7).
-- Then QA r1 at medium effort, then push `main` and tag/push v0.4.0. The user asked for this release.
-- Before the v0.4.0 deploy, the user creates `site/` once on the VPS (RUNBOOK). `deploy.sh` now copies all page shells, including report-delete.html, which it never copied before.
+- Phase 2 is done: F-35 ZIP upload, F-36 map preview card, F-34 iOS Shortcut link, F-37 report notification links, F-38 Impressum (QA r1 ready, minors r1-1..3 fixed). Tag v0.4.0 pushed, CI green, release assets exist. Nothing is in progress.
+- The user deploys v0.4.0. Before that, create `site/` once on the VPS (RUNBOOK section 3); `deploy.sh` now refuses without it. That refusal is untested against a real deploy.
 - User checks still open:
   - F-35: U-1 to U-4.
   - F-36: browser and messenger checks, VPS memory.peak.
-  - F-34: iPhone Shortcut.
+  - F-34: iPhone Shortcut and the About look.
   - F-37: the OQ-125 phone check (AC 41).
+  - F-38: browser and phone checks of /impressum; `curl /api/impressum` answers 404; `/robots.txt` blocks only the Impressum.
+- Next: F-32 launch checks, then phase-2 ideas (DS-5 summary tints, AP-19 range in URL) or phase 3 (AP-20, F-24).
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29) and v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) and v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
 Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline, route faded) and F-26 fullscreen map (CSS overlay, ADR-038; OQ-100 accepted: bars stay visible), both checked by the user. Theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash); header controls on their own line on narrow screens; F-19 download toggle hidden until F-24.
 
@@ -29,9 +28,9 @@ F-30 regenerate (5 Nov 2026, critical lane, QA r2 ready, done): `deploy.sh` runs
 
 F-33 fullscreen cursor readout strip (AP-21, Must): done, checked by the user 5 Nov.
 
-F-34 iOS Shortcut link on the About page (INF-5, Could, phase 2): specified, not started. The user's Shortcut works against the existing API with Request Body = Form, one File field `file` (a bare File body gets 400); no server change needed for uploads.
+F-34 iOS Shortcut link on the About page (INF-5, Could, phase 2): done (setting `WORKOUT_EXPLORER_IOS_SHORTCUT_URL`). The user's Shortcut works against the existing API with Request Body = Form, one File field `file` (a bare File body gets 400); no server change needed for uploads.
 
-Next: F-32 launch checks. The user hosts on a 2 GB VPS. Phase-2 ideas: DS-5 summary tints, AP-19 range in URL. Phase 3: AP-20 split distance, F-24 viewer download.
+The user hosts on a 2 GB VPS.
 
 F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks.
 
@@ -68,4 +67,4 @@ Sample pages on protoserve (`/w/<name>`) come from `src/server/testdata/page/*.j
 - F-21 and F-30 designs must settle QA-15-r2-1 (sweep vs a concurrent build: cross-process lock or a grace period). F-22: Caddy answers `.br` with 206 (QA-15-r1-3).
 - F-23/F-24 artefacts must be linked from `index.html` by a plain path ending in the file name, or the public sweep deletes them (ADR-028 item 5).
 - The frontend engineer runs on Opus at effort high from F-17 on (memory `frontend-model-per-feature`).
-- Real FIT files are never committed. Before every commit, check that nothing under `corpus/real/`, `expected/real/` or `build/`, and no `.br` file, is staged.
+- Real FIT files are never committed. Before every commit, check that nothing under `corpus/real/`, `expected/real/` or `build/`, and no `.br`/`.zip`/`.png`/`.fit` file, is staged.
