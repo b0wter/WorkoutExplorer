@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -55,9 +55,10 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-39](F-39-how-to-use.md) | How to use | 2 | frontend | F-14, F-17, F-18, F-26 | specified | |
 | [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | specified | |
 | [F-41](F-41-summary-tints.md) | Summary tints | 2 | frontend | F-13, F-14 | specified | |
+| [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 8 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 9 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -89,6 +90,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-21 Cursor readout in the fullscreen map | Must | F-33 |
 | AP-19 Range in the link | Could (phase 2) | F-40 (phase 2) |
 | AP-22 How to use, first-visit range hint | Could (phase 2) | F-39 (phase 2) |
+| AP-12 Multisport legs as sections | Could (phase 2) | F-08 (MVP: one workout, sport, transitions); F-42 (phase 2) |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -135,7 +137,6 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1
 - Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5
-- Multisport legs and transitions as sections (leg lines and sport labels on charts, separator rows in laps, leg start markers on the map) — AP-12
 - Pool swims: lengths and stroke type instead of a map; pool length and number of lengths in the summary (needs a workout data file format change: backend and frontend) — AP-13, AP-16
 - Device and sensor info — AP-14
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11
@@ -144,6 +145,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
 - Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
 - Summary colours — DS-5: detailed in [F-41](F-41-summary-tints.md).
+- Multisport legs and transitions as sections — AP-12: detailed in [F-42](F-42-multisport-sections.md).
 
 ## Questions for review
 
@@ -590,7 +592,7 @@ Updated: spec (viewer story 17, scope table row, AP-7, AP-19, new AP-22, open qu
 
 **Decided on 9 Nov 2026, F-39 design questions** (user, AP-22): OQ-133 accepted: on phones narrower than about 440 px the header control row wraps (one row taller on every load, space reserved, no shift), checked on the 360 px phone. OQ-134 accepted: Android browsers close the dialog on the back gesture; F-39 AC 4 now says only that opening the dialog adds no history entry. Updated: F-39 scope and AC 4, architect F-39 and INDEX. Spec unchanged (it made no back-gesture claim).
 
-**Decided on 9 Nov 2026, multisport sections shown** (user, AP-12, phase 2 idea, no feature file): charts get a vertical line at each leg boundary with the sport labelled on top; the laps table a separator row with the leg's name before each leg; the map a marker at each leg start. Updated: spec AP-12, Phase 2 list.
+**Decided on 9 Nov 2026, multisport sections shown** (user, AP-12, phase 2 idea, no feature file): charts get a vertical line at each leg boundary with the sport labelled on top; the laps table a separator row with the leg's name before each leg; the map a marker at each leg start. Updated: spec AP-12, Phase 2 list. Later the same day: F-42 (new, OQ-138 to OQ-143 open), feature index (order, row, counts, coverage AP-12), Phase 2 list (moved to F-42).
 
 The original questions follow for reference.
 
