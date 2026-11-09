@@ -147,7 +147,10 @@ func TestReportDeleteRateLimit(t *testing.T) {
 	var logs bytes.Buffer
 	k := &fakeKeys{err: reports.ErrLinkInvalid}
 	h := NewHandler(Config{ReportKeys: k, MaxConcurrentUploads: 1, Logger: slog.New(slog.NewJSONHandler(&logs, nil)), Now: func() time.Time { return now }})
-	for i := 0; i < reportDeletePerHour; i++ {
+	if reportDeletePerHour != 30 {
+		t.Fatalf("limit %d, DK-9 says 30", reportDeletePerHour)
+	}
+	for i := 0; i < 30; i++ {
 		m := "GET"
 		if i%2 == 1 {
 			m = "POST"

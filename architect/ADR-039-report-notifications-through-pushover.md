@@ -1,6 +1,6 @@
 # ADR-039 Report notifications through Pushover, opt-in, with egress only when configured
 
-- **Status:** accepted (3 Nov 2026), with the F-27 design v0.1; rev. 1 (9 Nov 2026, F-37: item 2 and the first Consequence rewritten for INF-4 as changed, proposed with the F-37 design)
+- **Status:** accepted (3 Nov 2026), with the F-27 design v0.1; rev. 1 (9 Nov 2026, F-37: item 2 and the first Consequence rewritten for INF-4 as changed, accepted with the F-37 design)
 - **Date:** 3 Nov 2026; rev. 1 9 Nov 2026
 - **History:** [history/ADR-039-report-notifications-through-pushover.md](history/ADR-039-report-notifications-through-pushover.md)
 - **Features:** F-27 (introduces it), F-31 (Compose override, env file), F-29 (privacy policy), F-37 (links, [ADR-042](ADR-042-report-delete-keys.md))

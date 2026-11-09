@@ -332,15 +332,14 @@ func TestCaddy(t *testing.T) {
 		}
 		r.check("about.html", r.get("/about.html"), 404, ccNoCache)
 		// F-37 DK-11: the delete link's page, never cached; its .html name is not served.
-		// shortcut: until the frontend builds report-delete.html the route answers 404; then the strict branch runs.
-		if page, err := os.ReadFile(filepath.Join(r.web, "report-delete.html")); err == nil {
-			got := r.get("/report-delete")
-			r.check("report-delete", got, 200, ccNoStore)
-			if !bytes.Equal(got.body, page) || bytes.Contains(page, []byte("og:")) || bytes.Contains(page, []byte("twitter:")) {
-				t.Error("/report-delete is not report-delete.html, or the page has a card")
-			}
-		} else {
-			r.check("report-delete before its page is built", r.get("/report-delete"), 404, ccNoCache)
+		page, perr := os.ReadFile(filepath.Join(r.web, "report-delete.html"))
+		if perr != nil {
+			t.Fatal(perr)
+		}
+		rd := r.get("/report-delete")
+		r.check("report-delete", rd, 200, ccNoStore)
+		if !bytes.Equal(rd.body, page) || bytes.Contains(page, []byte("og:")) || bytes.Contains(page, []byte("twitter:")) {
+			t.Error("/report-delete is not report-delete.html, or the page has a card")
 		}
 		r.check("report-delete.html", r.get("/report-delete.html"), 404, ccNoCache)
 		r.check("report-delete/", r.get("/report-delete/"), 404, ccNoCache)

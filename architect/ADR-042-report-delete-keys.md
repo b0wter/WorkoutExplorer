@@ -1,6 +1,6 @@
 # ADR-042 Report delete keys: issued at send, stored as a hash on the report, redeemed by one consuming statement
 
-- **Status:** proposed (9 Nov 2026), with the F-37 design v0.1
+- **Status:** accepted (9 Nov 2026), with the F-37 design v0.1
 - **Date:** 9 Nov 2026
 - **Features:** F-37 (introduces it), F-27 (reports, operator delete), F-29 (About text)
 - **Supersedes:** none. Changes [ADR-039](ADR-039-report-notifications-through-pushover.md) item 2 (rev. 1); a second credential beside the edit token ([ADR-020](ADR-020-workout-identifiers-edit-token-and-links.md))

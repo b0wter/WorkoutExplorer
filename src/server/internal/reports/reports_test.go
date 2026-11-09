@@ -6,8 +6,10 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -318,4 +320,54 @@ func TestLabels(t *testing.T) {
 			t.Errorf("no label for %s", r)
 		}
 	}
+}
+
+type countingStore struct {
+	*fakeStore
+	consumes atomic.Int32
+}
+
+func (c *countingStore) ConsumeDeleteKey(ctx context.Context, h [32]byte, a, n time.Time) (string, string, bool, error) {
+	c.consumes.Add(1)
+	return c.fakeStore.ConsumeDeleteKey(ctx, h, a, n)
+}
+
+type blockingDeleter struct {
+	entered, release chan struct{}
+}
+
+func (d *blockingDeleter) DeleteByOperator(context.Context, lifecycle.Record) error {
+	d.entered <- struct{}{}
+	<-d.release
+	return nil
+}
+
+// TestRedeemSerialised (DK-8, QA-37-r1-3): while one redeem sits between its
+// consume and its delete, a second must not even consume.
+func TestRedeemSerialised(t *testing.T) {
+	st := &countingStore{fakeStore: &fakeStore{found: true}}
+	del := &blockingDeleter{make(chan struct{}, 2), make(chan struct{})}
+	s := New(Deps{Store: st, Deleter: del, BaseURL: "https://wx.example", Now: time.Now, Logger: slog.New(slog.NewJSONHandler(io.Discard, nil))})
+	link, _ := s.IssueDeleteLink(context.Background(), 1)
+	key := strings.TrimPrefix(link, "https://wx.example/report-delete#")
+	done := make(chan error, 2)
+	go func() { done <- s.RedeemDeleteKey(context.Background(), key) }()
+	<-del.entered
+	go func() { done <- s.RedeemDeleteKey(context.Background(), key) }()
+	time.Sleep(100 * time.Millisecond) // a second consume without the lock happens within microseconds
+	if n := st.consumes.Load(); n != 1 {
+		t.Errorf("%d consumes while the first redeem is unfinished, want 1", n)
+	}
+	close(del.release)
+	first, second := <-done, <-done
+	if n := btoi(first == nil) + btoi(second == nil); n != 1 {
+		t.Errorf("results %v, %v", first, second)
+	}
+}
+
+func btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

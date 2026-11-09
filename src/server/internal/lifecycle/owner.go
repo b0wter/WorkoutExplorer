@@ -377,10 +377,13 @@ func (s *Service) DeleteByOwner(ctx context.Context, publicID, token string) err
 func (s *Service) DeleteByOperator(ctx context.Context, r Record) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := s.Delete(ctx, r.ID, r.PublicID); err != nil {
+	deleted, err := s.deleteRow(ctx, r.ID, r.PublicID)
+	if err != nil {
 		return err
 	}
-	s.d.Logger.Info("workout deleted", "id", r.ID, "by", "operator")
+	if deleted { // a delete that lost the race logs nothing (QA-37-r1-1)
+		s.d.Logger.Info("workout deleted", "id", r.ID, "by", "operator")
+	}
 	s.checkpoint(ctx)
 	return nil
 }

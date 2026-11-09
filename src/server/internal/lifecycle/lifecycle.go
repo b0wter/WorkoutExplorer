@@ -174,9 +174,15 @@ func (s *Service) fail(stage, id string, err error) error {
 // (F-21) and the operator's delete (F-27) call. The storage cap never
 // refuses it.
 func (s *Service) Delete(ctx context.Context, id, publicID string) error {
+	_, err := s.deleteRow(ctx, id, publicID)
+	return err
+}
+
+// deleteRow is Delete, also reporting whether this call removed the row.
+func (s *Service) deleteRow(ctx context.Context, id, publicID string) (bool, error) {
 	deleted, err := s.d.Repo.DeleteWorkout(ctx, id)
 	if err != nil {
-		return fmt.Errorf("lifecycle: delete: %w", err)
+		return false, fmt.Errorf("lifecycle: delete: %w", err)
 	}
 	var public int64
 	var errs []error
@@ -205,9 +211,9 @@ func (s *Service) Delete(ctx context.Context, id, publicID string) error {
 		s.d.Storage.Release(public + freed)
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("lifecycle: delete: %w", errors.Join(errs...))
+		return deleted, fmt.Errorf("lifecycle: delete: %w", errors.Join(errs...))
 	}
-	return nil
+	return deleted, nil
 }
 
 // Recover is the startup sweep (ADR-022 rev. 2 item 5): staging is emptied,

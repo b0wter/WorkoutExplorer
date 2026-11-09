@@ -634,3 +634,27 @@ func TestOwnerRealRepositoryErrorIsLogged(t *testing.T) {
 		}
 	})
 }
+
+// TestDeleteByOperatorLogsOnlyRealDelete (QA-37-r1-1, F-37 DK-8): a second
+// operator delete of the same row succeeds silently.
+func TestDeleteByOperatorLogsOnlyRealDelete(t *testing.T) {
+	s, r, f, l, c, _ := owned(t, nil)
+	var rec Record
+	for id := range r.rows {
+		rec = Record{ID: id, PublicID: c.PublicID}
+	}
+	for i := 0; i < 2; i++ {
+		if err := s.DeleteByOperator(context.Background(), rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n := 0
+	for _, m := range l.all(t) {
+		if m["msg"] == "workout deleted" && m["by"] == "operator" {
+			n++
+		}
+	}
+	if n != 1 || len(r.rows) != 0 || len(f.dirs) != 0 {
+		t.Errorf("%d lines, rows %d, dirs %d", n, len(r.rows), len(f.dirs))
+	}
+}
