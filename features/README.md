@@ -585,10 +585,11 @@ Updated: spec (viewer story 16, scope table row, footer line under Activity page
 
 - **How to use (AP-22, Could, phase 2):** viewing page only; a text button "How to use" with an icon in the header's control row, visible on phones, not a bare "?"; emphasised until first opened on the device, then plain; a dialog of one line per section (cursor, range, lap and split rows, fullscreen map, units and theme, sharing a range once F-40 ships), worded for touch or mouse, loaded only when opened.
 - **First-visit range hint:** the AP-7 hint on the viewing page shows until the first range selection on the device or until dismissed. Both flags are kept in browser storage like the units choice (no cookie, nothing to the server; works without storage).
-- **Shareable range (AP-19):** the range panel gets a "Copy link to this selection" button. Format, live update and button look: OQ-130 to OQ-132 (F-40).
+- **Shareable range (AP-19):** the range panel gets a "Copy link to this selection" button.
+- **Details (later the same day):** OQ-126, OQ-127, OQ-129 to OQ-132 as suggested: button only, address bar not updated live, Copy link (SH-6) stays plain, cursor position never in the link. OQ-128 rejected: no lines are left out; every workout shows the same dialog, the map lines worded "On workouts with GPS, ...".
 - **Build order:** F-39, then F-40, after F-38. Both frontend.
 
-Updated: spec (viewer story 17, scope table row, AP-7, AP-19, new AP-22, open questions "Range in the link" and "How to use details", Roadmap phase 2), F-39 and F-40 (new, OQ-126 to OQ-132 open), feature index (order, rows, counts, coverage AP-19, AP-22), Phase 2 list (shareable range moved to F-40). Technical design (`lib/prefs` keys, ADR-011 shares, ADR-020 fragment) to be updated by the architect.
+Updated: spec (viewer story 17, scope table row, AP-7, AP-19, new AP-22, open questions "Range in the link" and "How to use details", Roadmap phase 2), F-39 and F-40 (new, OQ-126 to OQ-132 open), feature index (order, rows, counts, coverage AP-19, AP-22), Phase 2 list (shareable range moved to F-40). Technical design (`lib/prefs` keys, ADR-011 shares, ADR-020 fragment) to be updated by the architect. Later the same day: OQ-126 to OQ-132 resolved in F-39, F-40, spec AP-19, AP-22 and open questions.
 
 The original questions follow for reference.
 
