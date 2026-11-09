@@ -51,7 +51,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | done | user: browser, messenger and card look checks (qa r1 list), VPS memory.peak |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | done | user: OQ-125 phone check (AC 41) |
-| [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | spec | user: OQ-120 to OQ-124 |
+| [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | design done, backend in progress | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 5 features (F-35, F-36, F-34, F-37, F-38, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
@@ -577,11 +577,13 @@ Updated: spec (scope table row, INF-1, INF-4, new INF-6, NFR Privacy Pushover li
 - **Text:** an optional file on the server next to the operator file, following the operator-file pattern (F-29 AB-8: one setting, size cap, plain text with the three-rule format, read at start, invalid exits 2); never in the repository. Unset: no page (not found) and no footer link.
 - **Footer:** an "Impressum" link on every page when set.
 - Whether an Impressum is legally required is the hoster's call (out of scope).
-- **Hardening:** the text loads only after a click on "Show Impressum"; the text address answers only same-origin requests and at most 10 per 10 minutes per IP address. Only raises the effort for scrapers.
+- **Hardening:** the text loads only after a click on "Show Impressum"; the text address answers only same-origin requests and at most 30 per rolling hour per address (IPv4 or IPv6 /64), at most 1,000 addresses tracked, new addresses refused while full (decided 9 Nov 2026, following architect IM-6). Only raises the effort for scrapers.
+- **Design (9 Nov 2026, user):** page shells in `{data}/site/` (ADR-043) accepted; the user accepts the legal risk of a click-to-load, JavaScript-only Impressum.
+- **F-23:** `robots.txt` is no longer 404; F-23 scope and AC follow F-38 IM-8 (always served, disallows only `/impressum` and `/api/impressum`, never `/w/`).
 - **Details (OQ-120 to OQ-124, as suggested):** static published pages follow the setting after `regenerate`; one static `robots.txt`, always served; operator-file format and limits, missing or invalid file exits 2; Should within phase 2; load-failure wording "The Impressum could not be loaded. Reload the page."
 - **Build order:** after F-37. Owner both, backend first.
 
-Updated: spec (viewer story 16, scope table row, footer line under Activity page, DS-4, new INF-7, open question "Impressum details", Roadmap phase 2), F-38 (new), feature index (order, row, counts, coverage DS-4, INF-7, NFR `noindex`). Technical design (Configuration, Hosting, Indexing: `robots.txt` now exists, Repository layout, footer) to be updated by the architect.
+Updated: spec (viewer story 16, scope table row, footer line under Activity page, DS-4, new INF-7, open question "Impressum details", Roadmap phase 2), F-38 (new), feature index (order, row, counts, coverage DS-4, INF-7, NFR `noindex`). Technical design (Configuration, Hosting, Indexing: `robots.txt` now exists, Repository layout, footer) to be updated by the architect. Later the same day: F-38 rate limit, spec INF-7, F-23 (`robots.txt`).
 
 The original questions follow for reference.
 

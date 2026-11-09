@@ -13,7 +13,7 @@ A link posted in a messenger shows a rich card with the route and headline value
 - Workouts without positions, or fully hidden (F-16): card with name and values only, no hint text (assumption).
 - Open Graph and Twitter tags early in `<head>`: `og:title`, `og:description` with the same values, absolute `og:image` URL, `og:image:width` 1200, `og:image:height` 630, `twitter:card` `summary_large_image`.
 - Regenerated with the data file when hiding or other stream-affecting settings change; old image deleted.
-- No `robots.txt` (`404`), so nothing disallows `/w/`. The `X-Robots-Tag` header is F-22's, on every response (decision log 31 Oct 2026, OQ-89).
+- `robots.txt` is always served and disallows only `/impressum` and `/api/impressum`, never `/w/` (F-38 IM-8). The `X-Robots-Tag` header is F-22's, on every response (decision log 31 Oct 2026, OQ-89).
 - Draft and expired links: generic page without route or numbers (see README on "generic card").
 - Edit page (`/edit/{id}`) and published page (`/published/{id}`): fixed, workout-independent OG/Twitter tags, title "Edit link: do not share" plus one short sentence; no image (F-23 design PC-9; SH-11, decision log 31 Oct 2026).
 - Base URL for absolute links as a server setting.
@@ -28,7 +28,7 @@ A link posted in a messenger shows a rich card with the route and headline value
 - [ ] A name longer than 40 characters is cut to 40 plus "…".
 - [ ] With start and end hiding on, the preview route visibly lacks the hidden ends (compared with hiding off).
 - [ ] The HTML contains every listed OG/Twitter tag with an absolute image URL.
-- [ ] `/robots.txt` answers `404` (no rule for `/w/`).
+- [ ] `/robots.txt` is served and disallows only `/impressum` and `/api/impressum`; it has no rule for `/w/` (F-38 IM-8).
 - [ ] A draft and an expired link each produce no image and no numbers when fetched by a messenger crawler.
 - [ ] `/edit/{id}` and `/published/{id}` return the same OG/Twitter tags for any two workouts and for a draft; title "Edit link: do not share"; no workout name, value, route image or ID in any tag (SH-11).
 - [ ] Manual check: pasting an edit link in WhatsApp, Signal and Slack shows the warning card.
