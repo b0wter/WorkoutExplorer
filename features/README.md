@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -51,9 +51,10 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | done | user: browser, messenger and card look checks (qa r1 list), VPS memory.peak |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | spec | |
+| [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | spec | user: OQ-120 to OQ-124 |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 4 features (F-35, F-36, F-34, F-37, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 5 features (F-35, F-36, F-34, F-37, F-38, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -100,20 +101,21 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | DS-1 Units, drop-down | Must | F-14, F-18 |
 | DS-2 Sport-specific pace/speed | Must | F-14, F-25 |
 | DS-3 English | Must | F-11, F-13, F-14, F-28 |
-| DS-4 Light and dark theme | Should | F-14, F-15, F-29 |
+| DS-4 Light and dark theme | Should | F-14, F-15, F-29; F-38 (Impressum page, phase 2) |
 | INF-1 About page | Must | F-29 |
 | INF-2 Report form, stored reports | Must | F-27, F-28 |
 | INF-3 Operator delete | Must | F-27 |
 | INF-4 Report notifications (Pushover, opt-in) | Must | F-27; viewing link and readable reason: F-37 (phase 2) |
 | INF-5 iOS Shortcut upload link (opt-in) | Could | F-34 (phase 2) |
 | INF-6 Single-use delete link in the notification | Should (phase 2, assumed) | F-37 (phase 2) |
+| INF-7 Impressum page (opt-in, text loaded by JavaScript, noindex) | Should (phase 2, assumed) | F-38 (phase 2) |
 | NFR Performance: LCP under 2.5 s | — | F-13, F-32 |
 | NFR Performance: 60 fps on 12-hour workout | — | F-05, F-06, F-07, F-25, F-32 |
 | NFR Performance: data file under 500 KB | — | F-03, F-07, F-32 |
 | NFR Privacy: GDPR (EU hosting, policy, record, deletion) | — | F-12, F-29, F-31, F-32 |
 | NFR Privacy: store as little as possible | — | F-09, F-11, F-27, F-31 |
 | NFR Privacy: no tracking cookies | — | F-22, F-29 |
-| NFR Privacy: `noindex` | — | F-15, F-23 |
+| NFR Privacy: `noindex` | — | F-15, F-23; F-38 (Impressum, `robots.txt`) |
 | NFR Security: 128-bit IDs, hashed tokens | — | F-09, F-12; delete keys: F-37 |
 | NFR Security: upload size, rate, uploads at once, parse limits; zip never reaches the server | — | F-08, F-09, F-11, F-31; F-35 in phase 2 |
 | NFR Security: originals never public | — | F-12, F-22; F-24 in phase 3 |
@@ -567,6 +569,17 @@ Updated: spec (SH-12, SH-5 pointer, scope table row), F-36 (scope; ACs unchanged
 - **OQ-119:** anyone with the operator's Pushover account or unlocked phone can delete reported workouts: accepted; stated on the About page.
 
 Updated: spec (scope table row, INF-1, INF-4, new INF-6, NFR Privacy Pushover line, NFR Security, Roadmap phase 2), F-37 (new, OQ-114 to OQ-119 resolved), feature index (order, row, counts, coverage). Technical design and ADR-039 to be updated by the architect.
+
+**Decided on 9 Nov 2026, Impressum page** (user, new INF-7, F-38):
+
+- **Need:** the hoster can set an Impressum (German legal notice) holding personal data, hard to crawl. Rejected: a scrambling font (screen readers, copy and paste, legibility risk, trivially decoded).
+- **Page:** its own page `/impressum`, heading "Impressum / Legal notice", `noindex` (meta and `X-Robots-Tag`) and disallowed in `robots.txt`. The HTML holds no text; the page's script loads it from an address that is also `noindex` and disallowed. Readers without JavaScript see a short note that JavaScript is needed. No external service, no consent needed.
+- **Text:** an optional file on the server next to the operator file, following the operator-file pattern (F-29 AB-8: one setting, size cap, plain text with the three-rule format, read at start, invalid exits 2); never in the repository. Unset: no page (not found) and no footer link.
+- **Footer:** an "Impressum" link on every page when set.
+- Whether an Impressum is legally required is the hoster's call (out of scope).
+- **Build order:** after F-37. Owner both, backend first. Open: OQ-120 to OQ-124 (F-38), suggestions assumed.
+
+Updated: spec (viewer story 16, scope table row, footer line under Activity page, DS-4, new INF-7, open question "Impressum details", Roadmap phase 2), F-38 (new), feature index (order, row, counts, coverage DS-4, INF-7, NFR `noindex`). Technical design (Configuration, Hosting, Indexing: `robots.txt` now exists, Repository layout, footer) to be updated by the architect.
 
 The original questions follow for reference.
 
