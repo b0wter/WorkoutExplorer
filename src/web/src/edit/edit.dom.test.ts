@@ -1188,7 +1188,10 @@ describe('the token stays in lib/owner (E-2 source scan)', () => {
         continue;
       }
       // F-26 (ADR-038 item 3): the fullscreen map's one history entry, with no URL argument.
-      const c = file === '../components/map/map-view.ts' ? code(text).replace("history.pushState(null, '')", '') : code(text);
+      let c = file === '../components/map/map-view.ts' ? code(text).replace("history.pushState(null, '')", '') : code(text);
+      // F-40 SR-4, SR-5: the viewing page (no edit seam) reads its range link once and drops it
+      // without a history entry; the edit seam reads nothing.
+      if (file === '../page/start.ts') c = c.replace("edit ? '' : win.location.hash", '').replace("win.history.replaceState(win.history.state, '', win.location.pathname + win.location.search)", '');
       expect(c, file).not.toMatch(/\.hash\b|Authorization|Bearer|replaceState|pushState|location\.href/);
       // The upload page opens the edit link it checked (F-11 U-9).
       if (file !== '../upload/main.ts') expect(c, file).not.toMatch(/location\.(assign|replace)\b/);

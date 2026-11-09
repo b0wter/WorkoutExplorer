@@ -29,6 +29,7 @@ describe('openHowto', () => {
       'Laps and splits. Tap a lap or split to select it as a range.',
       'Fullscreen map. On workouts with GPS, tap the fullscreen button on the map to enlarge it; tap it again or go back to leave.',
       'Units and theme. Change units and theme at the top of the page; this device remembers your choice.',
+      'Share a range. Select a range, then tap "Copy link to this selection" to share it.',
     ]);
     expect(texts('fine')).toEqual([
       'Values at a point. Point at a chart to see the values at that point; on workouts with GPS, you can also point along the route on the map.',
@@ -36,6 +37,7 @@ describe('openHowto', () => {
       'Laps and splits. Click a lap or split to select it as a range.',
       'Fullscreen map. On workouts with GPS, click the fullscreen button on the map to enlarge it; click it again or press Esc to leave.',
       'Units and theme. Change units and theme at the top of the page; this device remembers your choice.',
+      'Share a range. Select a range, then click "Copy link to this selection" to share it.',
     ]);
   });
 

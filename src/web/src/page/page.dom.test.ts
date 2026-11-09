@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
 import { loadGolden } from '../../test-support/golden.mjs';
 import type { RecorderOptions } from '../measure/recorder';
+import { loadDataFile, type DataFileResult } from '../lib/datafile';
 import { dataFileUrl, startPage } from './start';
 import { renderSample, type Fixture } from './testing/fixture';
 import { resetStubLog, stubLog } from './testing/stub-log';
@@ -402,6 +403,148 @@ describe('How to use and the range hint (F-39 HU-1 to HU-6; AC 2, AC 6, AC 7)', 
     stubLog.chartStack[0].onhint?.();
     flushSync();
     expect(hint()).toBe('done');
+  });
+});
+
+describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
+  let decoded: DataFileResult;
+  let time: Float64Array;
+  let writeText: ReturnType<typeof vi.fn>;
+  beforeEach(async () => {
+    vi.stubGlobal('requestAnimationFrame', (f: FrameRequestCallback) => {
+      f(0);
+      return 1;
+    });
+    decoded = await loadDataFile(async () => new Response(RIDE.slice(0)));
+    if (!decoded.ok) throw new Error('golden does not decode');
+    time = decoded.data.time;
+    writeText = vi.fn(async () => {});
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+  });
+  afterEach(() => {
+    delete (navigator as { clipboard?: unknown }).clipboard;
+    delete document.documentElement.dataset.hint;
+  });
+  const sel = () => stubLog.chartStack[0].selection!;
+  const range = (): [number, number] => [sel().start(), sel().end()];
+  const hint = (): string | undefined => stubLog.chartStack[0].hint;
+  const rangeSlot = (): HTMLElement => slot('range-slot') as HTMLElement;
+  const share = (): HTMLButtonElement | null => rangeSlot().querySelector('button.share');
+  const frag = (a: number, b: number): string => `#range=${time[a]}-${time[b]}`;
+  async function openAt(path: string, seam?: boolean): Promise<void> {
+    window.history.replaceState({ fs: 1 }, '', path);
+    page = renderSample('ride-30min');
+    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [] } : undefined);
+    await settle();
+    stubLog.chartStack[0].onready?.();
+    flushSync();
+  }
+
+  it('selects the link range before the charts mount; it is not the viewer’s: no hint done, the address stays', async () => {
+    await openAt('/w/x?q=1' + frag(100, 3000));
+    expect(range()).toEqual([100, 3000]);
+    expect(hint()).toBe('once');
+    expect(localStorage.getItem('wx.hint.done')).toBeNull();
+    expect(window.location.hash).toBe(frag(100, 3000));
+    expect(rangeSlot().hidden).toBe(false);
+  });
+
+  it('the viewer’s first change drops the fragment without a history entry, keeping query and state; the hint goes', async () => {
+    await openAt('/w/x?q=1' + frag(100, 3000));
+    const length = window.history.length;
+    sel().set(200, 400);
+    flushSync();
+    expect([window.location.pathname, window.location.search, window.location.hash]).toEqual(['/w/x', '?q=1', '']);
+    expect(window.history.length).toBe(length);
+    expect(window.history.state).toEqual({ fs: 1 });
+    expect(hint()).toBe('done');
+  });
+
+  it('Clear also drops it, and does not count as a selection for the hint', async () => {
+    await openAt('/w/x' + frag(100, 3000));
+    (rangeSlot().querySelector('button.clear') as HTMLButtonElement).click();
+    flushSync();
+    expect(window.location.hash).toBe('');
+    expect(hint()).toBe('once');
+  });
+
+  it.each(['#range=abc', '#range=5-1', '#range=7-7', '#range=99999999-1', '#range=1-5&x', '#x'])('ignores %s: no range, the page works; it stays until the viewer’s change', async (h) => {
+    await openAt('/w/x' + h);
+    expect(range()).toEqual([-1, -1]);
+    expect(window.location.hash).toBe(h);
+    expect(rangeSlot().hidden).toBe(true);
+    sel().set(10, 20);
+    flushSync();
+    expect(window.location.hash).toBe('');
+  });
+
+  it('cuts a range past the data to the data', async () => {
+    await openAt(`/w/x#range=0-9999999`);
+    expect(range()).toEqual([0, N - 1]);
+  });
+
+  it('without a fragment, selecting and clearing leave the address alone', async () => {
+    await openAt('/w/x');
+    sel().set(10, 20);
+    flushSync();
+    sel().clear();
+    flushSync();
+    expect(window.location.href).toBe(window.location.origin + '/w/x');
+  });
+
+  it('the edit seam neither reads nor writes it, and has no button', async () => {
+    await openAt('/edit/x' + frag(100, 3000), true);
+    expect(range()).toEqual([-1, -1]);
+    sel().set(10, 20);
+    flushSync();
+    expect(window.location.hash).toBe(frag(100, 3000));
+    expect(rangeSlot().querySelector('.range-panel')).not.toBeNull();
+    expect(share()).toBeNull();
+  });
+
+  it('the button copies the viewing link with the range; "Link copied" for 2 s; the copy round-trips; Copy link stays plain', async () => {
+    await openAt('/w/x');
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      expect(share()).not.toBeNull(); // in the hidden panel: shows only with a range
+      sel().set(123, 2345);
+      flushSync();
+      share()!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      const view = window.location.origin + page!.model.Page.ViewPath;
+      expect(writeText).toHaveBeenCalledWith(view + frag(123, 2345));
+      expect(share()!.textContent).toBe('Link copied');
+      vi.advanceTimersByTime(2000);
+      expect(share()!.textContent).toBe('Copy link to this selection');
+      (document.querySelector('a[data-copy-link]') as HTMLAnchorElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(writeText).toHaveBeenLastCalledWith(view);
+    } finally {
+      vi.useRealTimers();
+    }
+    const copied = String(writeText.mock.calls[0][0]);
+    page?.remove();
+    resetStubLog();
+    await openAt('/w/x' + copied.slice(copied.indexOf('#')));
+    expect(range()).toEqual([123, 2345]);
+  });
+
+  it('without the Clipboard API the link shows in a selected field in the panel, removed when the range changes', async () => {
+    delete (navigator as { clipboard?: unknown }).clipboard;
+    await openAt('/w/x');
+    sel().set(10, 20);
+    flushSync();
+    share()!.click();
+    await settle();
+    const field = rangeSlot().querySelector<HTMLInputElement>('.range-panel input.copy-url')!;
+    expect(field.value).toBe(window.location.origin + page!.model.Page.ViewPath + frag(10, 20));
+    expect([field.readOnly, document.activeElement === field]).toEqual([true, true]);
+    expect(document.querySelector('header input.copy-url')).toBeNull();
+    sel().set(10, 30);
+    flushSync();
+    expect(rangeSlot().querySelector('input.copy-url')).toBeNull();
   });
 });
 

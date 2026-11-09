@@ -106,40 +106,55 @@ export function viewingUrl(origin: string, href: string | null): string | null {
   return origin + href.split(/[?#]/, 1)[0];
 }
 
-/** Copy-link button (SH-6). Without the Clipboard API (a non-secure context) or when it refuses,
- *  the URL appears in a read-only, pre-selected field next to the button. No execCommand. */
-export function enhanceCopyLink(root: ParentNode, origin: string, nav: { clipboard?: { writeText(t: string): Promise<void> } }): void {
+export type ClipboardNav = { clipboard?: { writeText(t: string): Promise<void> } };
+
+/** SH-6's copy routine for `el`, shared by Copy link and "Copy link to this selection" (F-40 SR-7):
+ *  the Clipboard API, then "Link copied" for 2 s; without it (a non-secure context) or when it
+ *  refuses, `fallback` shows the URL. No execCommand. */
+export function copier(el: HTMLElement, nav: ClipboardNav, fallback: (url: string) => void): (url: string) => void {
+  const idle = el.textContent;
+  let timer = 0;
+  return (url) => {
+    const write = nav.clipboard ? nav.clipboard.writeText(url) : Promise.reject(new Error('no clipboard'));
+    write.then(
+      () => {
+        el.textContent = COPIED_TEXT;
+        clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          el.textContent = idle;
+        }, 2000);
+      },
+      () => fallback(url),
+    );
+  };
+}
+
+/** The copy fallback: `url` in a read-only, pre-selected field in `host` (one per host). */
+export function copyField(host: Element, url: string): HTMLInputElement {
+  let field = host.querySelector<HTMLInputElement>('input.copy-url');
+  if (!field) {
+    field = host.ownerDocument.createElement('input');
+    field.className = 'copy-url';
+    field.readOnly = true;
+    host.appendChild(field);
+  }
+  field.value = url;
+  field.focus();
+  field.select();
+  return field;
+}
+
+/** Copy-link button (SH-6): the plain viewing link, its fallback field on its own header line. */
+export function enhanceCopyLink(root: ParentNode, origin: string, nav: ClipboardNav): void {
   const link = root.querySelector<HTMLAnchorElement>('a[data-copy-link]');
   if (!link) return;
   const url = viewingUrl(origin, link.getAttribute('href'));
   if (url === null) return;
-  let timer = 0;
-  const showField = (): void => {
-    const head = link.closest('header') ?? link.parentElement;
-    let field = head?.querySelector<HTMLInputElement>('input.copy-url') ?? null;
-    if (!field) {
-      field = link.ownerDocument.createElement('input');
-      field.className = 'copy-url';
-      field.readOnly = true;
-      field.value = url;
-      head?.appendChild(field);
-    }
-    field.focus();
-    field.select();
-  };
+  const head = link.closest('header') ?? link.parentElement;
+  const copy = copier(link, nav, (u) => head && copyField(head, u));
   link.addEventListener('click', (event) => {
     event.preventDefault();
-    const write = nav.clipboard ? nav.clipboard.writeText(url) : Promise.reject(new Error('no clipboard'));
-    write.then(
-      () => {
-        link.textContent = COPIED_TEXT;
-        clearTimeout(timer);
-        timer = window.setTimeout(() => {
-          link.textContent = COPY_TEXT;
-        }, 2000);
-      },
-      showField,
-    );
+    copy(url);
   });
 }
 

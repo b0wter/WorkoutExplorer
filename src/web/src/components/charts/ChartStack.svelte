@@ -136,7 +136,8 @@
   });
 </script>
 
-<div class="chart-stack" bind:this={stack}>
+<!-- tabindex -1: the ×'s focus lands here when it removes itself (QA-39-r1-2). -->
+<div class="chart-stack" tabindex="-1" bind:this={stack}>
   {#key data}
    {#if data.metrics.distance && charts.length > 0}
     <!-- The row is reserved by the page with any distance stream (has-distance); the control only
@@ -174,7 +175,10 @@
    {#if charts.length > 0 && hint !== 'none'}
     <!-- How to select (R-12): the wording follows the primary pointer, in CSS. -->
     <p class="select-hint">{#if hint !== 'done'}<span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span>{/if}{#if hint === 'once'}<button
-      type="button" class="hint-x" aria-label="Dismiss hint" onclick={() => onhint?.()}>×</button>{/if}</p>
+      type="button" class="hint-x" aria-label="Dismiss hint" onclick={() => {
+        stack.focus();
+        onhint?.();
+      }}>×</button>{/if}</p>
    {/if}
   {/key}
 </div>

@@ -950,8 +950,10 @@ describe('F-17 range selection and x-axis toggle', () => {
     const once = hintOf('once', onhint)!;
     const x = once.querySelector('button')!;
     expect([x.getAttribute('aria-label'), x.textContent, once.lastElementChild === x]).toEqual(['Dismiss hint', '×', true]);
+    x.focus();
     x.click();
     expect(onhint).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(once.closest('.chart-stack')); // QA-39-r1-2: not body when the × goes
     const done = hintOf('done')!;
     expect([done.childElementCount, done.textContent]).toEqual([0, '']);
     expect(hintOf('none')).toBeNull();

@@ -29,9 +29,12 @@
     data: WorkoutData;
     selection: SelectionStore;
     units?: Units;
+    /** F-40 SR-7: the page's copy action for "Copy link to this selection"; no button without it
+     *  (edit page). The panel knows no clipboard or URL rules. */
+    oncopy?: (button: HTMLButtonElement) => void;
   }
 
-  let { data, selection, units = 'metric' }: Props = $props();
+  let { data, selection, units = 'metric', oncopy }: Props = $props();
 
   const sport = untrack(() => data.meta.sport);
   const stats = createRangeStats(untrack(() => data));
@@ -121,6 +124,7 @@
     </div>
   {/each}
   <button type="button" class="clear" onclick={() => selection.clear()}>Clear</button>
+  {#if oncopy}<button type="button" class="copy share" onclick={(e) => oncopy?.(e.currentTarget)}>Copy link to this selection</button>{/if}
 </div>
 
 <style>
@@ -144,5 +148,13 @@
     color: var(--fg, #111);
     font: inherit;
     font-size: 13px;
+  }
+  /* The Copy link look (page.css .copy); beside Clear when three tracks are left, else on its own line. */
+  .share {
+    grid-column: span 3;
+    justify-self: start;
+    background: none;
+    font-family: inherit;
+    white-space: nowrap;
   }
 </style>

@@ -332,6 +332,10 @@ h1 {
   font: inherit;
   font-size: 13px;
 }
+/* F-40 SR-7: the range link's fallback field, a full line of the range panel grid. */
+.range-panel .copy-url {
+  grid-column: 1 / -1;
+}
 
 /* Summary (AP-2) and the privacy notice (SH-9) */
 .summary {

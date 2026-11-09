@@ -133,8 +133,11 @@ func TestSamplePages(t *testing.T) {
 				t.Errorf("has-map class %v, Route.Map %q", hasMap, route["Map"])
 			}
 			// The two buttons: How to use (F-39 HU-6) and Report.
-			if strings.Contains(page, "map-pin") || strings.Count(page, "<button") != 2 || !strings.Contains(page, `<button type="button" class="howto" data-howto>`) {
+			if strings.Contains(page, "map-pin") {
 				t.Error("pin toggle in the server markup")
+			}
+			if n := strings.Count(page, "<button"); n != 2 || !strings.Contains(page, `<button type="button" class="howto" data-howto>`) {
+				t.Errorf("server markup: %d buttons, want How to use and Report", n)
 			}
 
 			// AC 10: About and Report in the footer; Report is a button the bundle unhides (F-28 RF-1, RF-9).

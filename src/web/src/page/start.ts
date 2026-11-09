@@ -17,7 +17,8 @@ import RouteMap from '../components/map/RouteMap.svelte';
 import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
-import { enhanceCopyLink, enhanceExpiry, enhanceHowto, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { parseRangeLink, rangeFragment } from '../lib/rangelink';
+import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceHowto, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
@@ -48,7 +49,7 @@ function showLoadError(root: ParentNode, text: string): void {
 
 /** The range panel (F-17 R-9): mounted after the charts' first paint into #range-slot. The slot
  *  is hidden while there is no range; only the two transitions touch it, never a frame of a drag. */
-function mountRangePanel(root: ParentNode, data: WorkoutData, selection: SelectionStore, look: Look): void {
+function mountRangePanel(root: ParentNode, data: WorkoutData, selection: SelectionStore, look: Look, oncopy?: (button: HTMLButtonElement) => void): void {
   const slot = root.querySelector<HTMLElement>('#range-slot');
   if (!slot) return;
   let shown: boolean | null = null;
@@ -66,8 +67,27 @@ function mountRangePanel(root: ParentNode, data: WorkoutData, selection: Selecti
       get units() {
         return look.units;
       },
+      oncopy,
     },
   });
+}
+
+/** "Copy link to this selection" (F-40 SR-7): the viewing link plus the current range's fragment,
+ *  through Copy link's routine. The fallback field never shows another range than the current one. */
+function rangeCopy(viewUrl: string, data: WorkoutData, selection: SelectionStore, nav: ClipboardNav): (button: HTMLButtonElement) => void {
+  const url = (): string => viewUrl + '#' + rangeFragment(data.time, selection.start(), selection.end());
+  let field: HTMLInputElement | null = null;
+  selection.subscribe(() => {
+    field?.remove();
+    field = null;
+  });
+  let copy: ((url: string) => void) | null = null;
+  return (button) => {
+    copy ??= copier(button, nav, (u) => {
+      if (selection.start() >= 0 && u === url() && button.parentElement) field = copyField(button.parentElement, u);
+    });
+    copy(url());
+  };
 }
 
 /** The edit page's seam (F-19 E-5): its already-decoded draft instead of the preload, and the
@@ -138,11 +158,27 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   addUnitsSelect(root, units, prefs.setUnits);
   const cursor = createCursorStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
-  // F-39 HU-4: the viewer's first range, by drag or lap/split row (F-40: a range from a link must not count).
-  if (hint === 'once') selection.subscribe((a) => a >= 0 && hintDone());
+  // F-40 SR-4: the viewing page only (no edit seam) reads the range link, once, before the charts mount.
+  const hash = edit ? '' : win.location.hash;
+  const linked = parseRangeLink(hash, data.time);
+  if (linked) selection.set(linked[0], linked[1]);
+  // The link's own range is not the viewer's (SR-5, SR-6). The viewer's first change or Clear drops
+  // any fragment, once and without a history entry; every range of the viewer's (drag or lap/split
+  // row) marks the hint done (F-39 HU-4).
+  const [la, lb] = [selection.start(), selection.end()];
+  let viewer = false;
+  selection.subscribe((a, b) => {
+    if (!viewer) {
+      if (a === la && b === lb) return;
+      viewer = true;
+      if (hash) win.history.replaceState(win.history.state, '', win.location.pathname + win.location.search);
+    }
+    if (a >= 0) hintDone();
+  });
   // F-18: the row mark, the laps / splits switch and the splits table; row taps once the range
   // panel is mounted (L-7, QA-18-r1-3).
   const lapTaps = enhanceLaps(root, data, selection, units, win);
+  const viewUrl = edit ? null : viewingUrl(win.location.origin, root.querySelector('a[data-copy-link]')?.getAttribute('href') ?? null);
   const hasRoute = routePresence(data) === 'route';
   const mapSlot = root.querySelector<HTMLElement>('#map-slot');
   const chartsSlot = root.querySelector<HTMLElement>('#charts-slot');
@@ -186,7 +222,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
         onready: () => {
           performance.mark('wx-page:charts-ready');
           recorder?.chartsReady();
-          mountRangePanel(root, data, selection, look);
+          mountRangePanel(root, data, selection, look, viewUrl ? rangeCopy(viewUrl, data, selection, win.navigator) : undefined);
           lapTaps();
           map?.startLoading();
         },

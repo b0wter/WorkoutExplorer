@@ -5,7 +5,7 @@
 
 import './howto.css';
 
-/** [section, touch, mouse]; the same lines for every workout (OQ-126). F-40 adds "Share a range". */
+/** [section, touch, mouse]; the same lines for every workout (OQ-126). */
 const LINES: [string, string, string][] = [
   [
     'Values at a point',
@@ -28,6 +28,11 @@ const LINES: [string, string, string][] = [
     'Change units and theme at the top of the page; this device remembers your choice.',
     'Change units and theme at the top of the page; this device remembers your choice.',
   ],
+  [
+    'Share a range',
+    'Select a range, then tap "Copy link to this selection" to share it.',
+    'Select a range, then click "Copy link to this selection" to share it.',
+  ], // F-40 SR-8
 ];
 
 export function openHowto(doc: Document): void {

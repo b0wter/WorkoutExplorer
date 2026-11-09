@@ -106,6 +106,14 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(stack).toMatch(/\.select-hint \{\s*height: 20px;\s*margin: 4px 0 0;/);
   });
 
+  it("F-39 HU-2 (QA-39-r1-1): data-hint='done' drops the hint row on the viewing page only", () => {
+    expect(css).toMatch(/^\[data-hint='done'\] body > \.page \.charts \{\s*--hint: 0px;\s*\}/m);
+    // The edit page's .page sits inside #wx-edit, never directly under body, so it keeps the row.
+    const edit = readWebFile('edit.html');
+    expect(edit.slice(edit.indexOf('<body>'))).not.toContain('class="page');
+    expect(edit).toContain('<div id="wx-edit"></div>');
+  });
+
   it('F-17 R-9: the range slot is empty and zero height until filled, sticky at the bottom in one column', () => {
     expect(rule('.range-slot')).toMatch(/position: sticky;\s*bottom: 0;/);
     expect(rule('.range-slot:empty')).toContain('padding: 0');
@@ -252,7 +260,8 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
     expect(Object.keys(all).length).toBeGreaterThan(40);
     for (const [file, text] of Object.entries(all)) {
       // F-26 (ADR-038 item 3): the fullscreen map's one entry holds no state and no URL.
-      const code = file === '../components/map/map-view.ts' ? text.replace("history.pushState(null, '')", '') : text;
+      // F-40 SR-5: the range link's fragment dropped from the address, history state kept.
+      const code = file === '../components/map/map-view.ts' ? text.replace("history.pushState(null, '')", '') : file === './start.ts' ? text.replace("win.history.replaceState(win.history.state, '', win.location.pathname + win.location.search)", '') : text;
       expect(code, file).not.toMatch(/sessionStorage|document\.cookie|cookieStore|indexedDB|history\.(push|replace)State/);
       if (file === '../lib/prefs/index.ts') continue;
       // The page glue hands lib/prefs its storage getter, nothing else.
