@@ -49,6 +49,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-35 Zip upload | [F-35-zip-upload.md](F-35-zip-upload.md) | draft (8 Nov 2026; normal lane; owner frontend, server unchanged; OQ-108 to OQ-111 decided 9 Nov 2026) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-040 |
 | F-36 Preview image with map context | [F-36-preview-image-with-map-context.md](F-36-preview-image-with-map-context.md) | draft (9 Nov 2026; critical lane; owner both, B-1 backend first, then FE-1) | 0.1 | ADR-013, ADR-017, ADR-022, ADR-025, ADR-028, ADR-032, ADR-033, ADR-041 |
 | F-37 Report notification links | [F-37-report-notification-links.md](F-37-report-notification-links.md) | accepted, built (9 Nov 2026; critical lane; owner both, backend first; OQ-125 open, not blocking; F-27 R-11, F-29 PT-9 noted in place) | 0.1 | ADR-002, ADR-019, ADR-020, ADR-021, ADR-024, ADR-025, ADR-031, ADR-032, ADR-039, ADR-042 |
+| F-38 Impressum page | [F-38-impressum-page.md](F-38-impressum-page.md) | draft (9 Nov 2026; normal lane; owner both, backend first; user decisions of 9 Nov built in; F-15 P-13, F-22 H-6, H-10, F-23 PC-11, F-31 DP-4 noted in place; no open questions) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-025, ADR-032, ADR-034, ADR-043 |
 
 ## Decisions (ADRs)
 
@@ -96,6 +97,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | [ADR-040](ADR-040-zip-archives-read-in-the-browser.md) | Zip archives read in the browser by our own reader in `lib/zip`: archive = first four bytes a zip signature; central directory the only source of entry facts, local header must agree; limit on bytes produced, only the root FIT entry inflated; only FIT bytes sent, named `workout.fit` | accepted (8 Nov 2026) | F-35 | — |
 | [ADR-041](ADR-041-preview-basemap-from-the-browser-composed-on-the-server.md) | Preview image with map context: the browser renders only a tiles basemap for a server-made frame and sends it in a separate owner request; Go draws route, text and attribution over it; a stored basemap counts only while its key matches the current public route's frame; stored privately as our re-encoding, served only inside our composite | accepted (9 Nov 2026) | F-36, F-23, F-30 | — (extends ADR-033, ADR-028 item 2; exception to ADR-013 item 1) |
 | [ADR-042](ADR-042-report-delete-keys.md) | Report delete keys (INF-6): 128-bit base62, SHA-256 in the nullable column `reports.delete_key_hash` (schema v5); issued only when the notification is sent; valid while the report is under 30 days old and the workout lives; redeemed by one consuming `UPDATE … RETURNING` before the unchanged operator delete; all keys cleared at a start without Pushover | accepted (9 Nov 2026) | F-37, F-27, F-29 | — (changes ADR-039 item 2) |
+| [ADR-043](ADR-043-page-shells-filled-at-start.md) | Page shells (upload, generic, edit, confirmation, Impressum) filled by `serve` at start from comment markers and written to `{data}/site/`, served from there by Caddy (read-only mount); view path still never reaches Go | accepted (9 Nov 2026) | F-38, F-11, F-15, F-19, F-37, F-31 | — (widens F-22 H-10, ADR-034 item 5) |
 
 ## Open questions
 
