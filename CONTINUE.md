@@ -10,8 +10,8 @@ Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask whe
   - F-35: U-1 to U-4.
   - F-36: browser and messenger checks, VPS memory.peak.
   - F-34: iPhone Shortcut and the About look.
-  - F-37: the OQ-125 phone check (AC 41).
-  - F-38: browser and phone checks of /impressum; `curl /api/impressum` answers 404; `/robots.txt` blocks only the Impressum.
+  - F-37: lock-screen text shows no key (AC 41); links work (9 Nov).
+  - F-38: `/robots.txt` blocks only the Impressum; phone and dark-mode look (page and `/api/impressum` 404 checked 9 Nov).
 - Next: F-32 launch checks, then phase-2 ideas (DS-5 summary tints, AP-19 range in URL) or phase 3 (AP-20, F-24).
 
 Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) and v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).

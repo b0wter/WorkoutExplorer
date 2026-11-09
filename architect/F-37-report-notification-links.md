@@ -1,7 +1,7 @@
 # F-37 Report notification links: architecture
 
 - **Version:** 0.1
-- **Status:** accepted, built (9 Nov 2026). Critical lane: a new credential that deletes data. OQ-114 to OQ-119 built as accepted (one invalid message, OQ-115's alternative chosen: a key only for a sent notification, no reporter's message, 30 days, risk of the operator's Pushover account accepted). OQ-125 open, not blocking
+- **Status:** accepted, built (9 Nov 2026). Critical lane: a new credential that deletes data. OQ-114 to OQ-119 built as accepted (one invalid message, OQ-115's alternative chosen: a key only for a sent notification, no reporter's message, 30 days, risk of the operator's Pushover account accepted). OQ-125 resolved 9 Nov 2026 (the delete link from the notification works on the phone, so the fragment is kept)
 - **Feature:** [`features/F-37-report-notification-links.md`](../features/F-37-report-notification-links.md); "AC n" is the n-th acceptance criterion there
 - **Requirements:** INF-4 (changed 9 Nov 2026), INF-6, INF-1, INF-3, AC-4, SH-10, NFR Security, NFR Privacy
 - **Builds on:** [F-27](F-27-reports-api-and-operator-delete.md) R-2, R-3, R-6, R-8, R-11; [ADR-039](ADR-039-report-notifications-through-pushover.md) rev. 1 (item 2 rewritten by this design); [ADR-020](ADR-020-workout-identifiers-edit-token-and-links.md) items 2 to 4, 7, 9; [ADR-025](ADR-025-owner-api-access-and-not-found-response.md) items 2, 3, 7, 8; [ADR-021](ADR-021-upload-request-handling-and-rate-limit.md) items 6 to 8; [ADR-019](ADR-019-sqlite-store-schema-and-migrations.md) items 5, 10; [ADR-024](ADR-024-upload-page-plain-typescript-entry.md); [ADR-032](ADR-032-response-headers-in-caddy.md); [F-29](F-29-about-page-and-attributions.md) AB-2, AB-3, PT-9. New: [ADR-042](ADR-042-report-delete-keys.md)
@@ -51,6 +51,4 @@ CREATE UNIQUE INDEX reports_delete_key_hash ON reports (delete_key_hash) WHERE d
 
 ## Open questions
 
-| ID | Question | Suggestion | Blocks |
-| --- | --- | --- | --- |
-| OQ-125 | Does the Pushover iOS app keep the `#fragment` when it opens an `<a href>` from an `html=1` message? Not documented by Pushover | Assume yes; the user's phone check (AC 41) confirms. If not: a plain URL line instead (auto-linked; the key then shows on the lock screen) | Nothing now; DK-10 only if the check fails |
+None.
