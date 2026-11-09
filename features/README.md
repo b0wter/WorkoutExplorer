@@ -52,8 +52,8 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | done | user: lock-screen text shows no key (AC 41; links checked 9 Nov) |
 | [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | done | user: /robots.txt check; phone and dark-mode look (page and /api 404 checked 9 Nov) |
-| [F-39](F-39-how-to-use.md) | How to use | 2 | frontend | F-14, F-17, F-18, F-26 | built, QA r1 next | |
-| [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | specified | |
+| [F-39](F-39-how-to-use.md) | How to use | 2 | frontend | F-14, F-17, F-18, F-26 | done | user: hand checks 1–6 (qa r1); minors r1-1..3 open |
+| [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | building | |
 | [F-41](F-41-summary-tints.md) | Summary tints | 2 | frontend | F-13, F-14 | specified | |
 | [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
