@@ -2,10 +2,10 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (9 Nov 2026): v0.4.0 released (c1bc702), not yet deployed
+## Current (9 Nov 2026): v0.4.0 released (c1bc702) and deployed by the user; hand checks open
 
 - Phase 2 is done: F-35 ZIP upload, F-36 map preview card, F-34 iOS Shortcut link, F-37 report notification links, F-38 Impressum (QA r1 ready, minors r1-1..3 fixed). Tag v0.4.0 pushed, CI green, release assets exist. Nothing is in progress.
-- The user deploys v0.4.0. Before that, create `site/` once on the VPS (RUNBOOK section 3); `deploy.sh` now refuses without it. That refusal is untested against a real deploy.
+- v0.4.0 deployed 9 Nov 2026 and works per the user. `deploy.sh` refuses without `{data}/site`; that refusal is untested against a real deploy.
 - User checks still open:
   - F-35: U-1 to U-4.
   - F-36: browser and messenger checks, VPS memory.peak.
