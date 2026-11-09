@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 
 // aboutFixture is a finished About page: the list is generated, every marker is present.
 const aboutFixture = `<main><!--wx:operator-->|<!--wx:version-->
-<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:generated-->{{ list <!--wx:version--> }}</main>`
+<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:generated-->{{ list <!--wx:version--> }}</main>`
 
 // TestAboutTemplateContract: the frontend's source template carries every
 // marker serve and the generator fill (F-29 AB-3, AB-5).
@@ -68,7 +68,7 @@ func TestAboutTemplateContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->"} {
+	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->", "<!--wx:shortcut-->", "<!--wx:shortcut-url-->", "<!--/wx:shortcut-->"} {
 		if !strings.Contains(string(src), m) {
 			t.Errorf("about.html lacks %s", m)
 		}
@@ -97,6 +97,27 @@ func TestOperatorFileSetting(t *testing.T) {
 		if _, err := readSettings(envOf(map[string]string{envOperatorFile: v})); err == nil || !strings.Contains(err.Error(), envOperatorFile) {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+}
+
+// TestIOSShortcutSetting (F-34, INF-5): unset is off, an https link is
+// kept as given, anything else is an error naming the setting.
+func TestIOSShortcutSetting(t *testing.T) {
+	for _, v := range []string{"", "https://www.icloud.com/shortcuts/0123abcd", "https://example.org/s?a=1&b=<x>"} {
+		if s, err := readSettings(envOf(map[string]string{envIOSShortcutURL: v})); err != nil || s.iosShortcutURL != v {
+			t.Errorf("%q = %q, %v", v, s.iosShortcutURL, err)
+		}
+	}
+	for _, v := range []string{"http://www.icloud.com/shortcuts/x", "/shortcuts/x", "www.icloud.com/shortcuts/x", "shortcuts://run", "javascript:alert(1)",
+		"https://", "https:///x", "https://u:p@example.org/", "https://exa mple.org/", "https://example.org/\x00", "Upload here", " https://example.org/"} {
+		if _, err := readSettings(envOf(map[string]string{envIOSShortcutURL: v})); err == nil || !strings.Contains(err.Error(), envIOSShortcutURL) {
+			t.Errorf("%q: %v", v, err)
+		}
+	}
+	t.Setenv(envIOSShortcutURL, "http://www.icloud.com/shortcuts/x")
+	var stderr bytes.Buffer
+	if got := run([]string{"serve", "-data", filepath.Join(t.TempDir(), "data"), "-web", testWeb, "-addr", "127.0.0.1:0"}, nil, &stderr); got != 2 || !strings.Contains(stderr.String(), envIOSShortcutURL) {
+		t.Errorf("serve = %d, %q", got, stderr.String())
 	}
 }
 
@@ -130,6 +151,12 @@ func TestAboutRoute(t *testing.T) {
 	if !strings.Contains(on, "PUSH") || strings.Contains(on, "<!--/wx:pushover-->") {
 		t.Errorf("Pushover block: %q", on)
 	}
+	if strings.Contains(rec.Body.String(), "SC") {
+		t.Error("Shortcut section present without the setting")
+	}
+	if sc := get(settings{iosShortcutURL: "https://www.icloud.com/shortcuts/x?a=1&b=2"}, "GET").Body.String(); !strings.Contains(sc, `<a href="https://www.icloud.com/shortcuts/x?a=1&amp;b=2">SC</a>`) {
+		t.Errorf("Shortcut section: %q", sc)
+	}
 	if h := get(settings{}, "HEAD"); h.Code != 200 || h.Body.Len() != 0 {
 		t.Errorf("HEAD = %d, %d body bytes", h.Code, h.Body.Len())
 	}
@@ -146,6 +173,7 @@ func TestAboutMissingOrUngenerated(t *testing.T) {
 		"not generated":      strings.ReplaceAll(aboutFixture, "<!--wx:generated-->", "<!--wx:attributions-->"),
 		"no operator marker": strings.ReplaceAll(aboutFixture, "<!--wx:operator-->", ""),
 		"no block":           strings.ReplaceAll(aboutFixture, "<!--wx:pushover-->", ""),
+		"no shortcut block":  strings.ReplaceAll(aboutFixture, "<!--/wx:shortcut-->", ""),
 	} {
 		dir := t.TempDir()
 		idx, _ := os.ReadFile(filepath.Join(testWeb, "index.html"))

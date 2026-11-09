@@ -37,6 +37,7 @@ type settings struct {
 	pushoverEndpoint     string // "": pushover.Endpoint; tests point it at a fake
 	operatorFile         string // WORKOUT_EXPLORER_OPERATOR_FILE, for the missing-file warning
 	operatorHTML         string // the rendered operator file (F-29 AB-8); "": the placeholder
+	iosShortcutURL       string // the About page's iOS Shortcut link (F-34); "": no section
 	// onParser is called with the parser newApp built; nil in production.
 	onParser func(*ingest.Parser)
 	// onService is called with the service and the storage total newApp
@@ -64,7 +65,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	if err != nil {
 		return nil, nil, err
 	}
-	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != ""})
+	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != "", Shortcut: s.iosShortcutURL})
 	if err != nil {
 		return nil, nil, err
 	}

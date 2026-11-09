@@ -31,6 +31,7 @@ const (
 	envPushoverToken        = "WORKOUT_EXPLORER_PUSHOVER_TOKEN"
 	envPushoverUser         = "WORKOUT_EXPLORER_PUSHOVER_USER"
 	envOperatorFile         = "WORKOUT_EXPLORER_OPERATOR_FILE"
+	envIOSShortcutURL       = "WORKOUT_EXPLORER_IOS_SHORTCUT_URL"
 )
 
 const (
@@ -202,6 +203,20 @@ func operatorBlock(getenv func(string) string) (string, error) {
 	return block, nil
 }
 
+// iosShortcutURL reads the link to the hoster's iOS Shortcut (F-34, INF-5):
+// unset or empty is off; otherwise an absolute https link with a host and no
+// user info, or an error naming the setting.
+func iosShortcutURL(getenv func(string) string) (string, error) {
+	v := getenv(envIOSShortcutURL)
+	if v == "" {
+		return "", nil
+	}
+	if u, err := url.Parse(v); err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil {
+		return "", errors.New(envIOSShortcutURL + " must be an absolute https:// link")
+	}
+	return v, nil
+}
+
 // trustedProxy reads Caddy's address (ADR-021 rev. 6 item 6): unset or empty
 // is the zero Addr (loopback only); otherwise exactly one IP address, no zone,
 // no prefix. IPv4-mapped IPv6 is unmapped to match the peer comparison.
@@ -256,7 +271,11 @@ func readSettings(getenv func(string) string) (settings, error) {
 	if err != nil {
 		return settings{}, err
 	}
-	return settings{operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
+	sc, err := iosShortcutURL(getenv)
+	if err != nil {
+		return settings{}, err
+	}
+	return settings{iosShortcutURL: sc, operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
 		pushoverToken: pt, pushoverUser: pu}, nil
 }
 

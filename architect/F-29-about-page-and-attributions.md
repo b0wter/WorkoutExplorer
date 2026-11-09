@@ -36,6 +36,7 @@
 | Setting | Meaning | Default | Format | Read by |
 | --- | --- | --- | --- | --- |
 | `WORKOUT_EXPLORER_OPERATOR_FILE` | The operator file shown on the About page (AB-8) | none: the placeholder block | Absolute path; content as AB-8; invalid → exit 2 | `serve` |
+| `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | F-34 (INF-5): link to the hoster's iOS Shortcut; set, `serve` keeps the "Upload from your iPhone" block (a second block like Pushover's, AB-3) with the link HTML-escaped | none: no block | Absolute `https:` link with a host, no user info; invalid → exit 2 | `serve` |
 
 Removed (never released): `WORKOUT_EXPLORER_OPERATOR_NAME`, `WORKOUT_EXPLORER_OPERATOR_CONTACT`.
 

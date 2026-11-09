@@ -111,6 +111,7 @@ Unset or empty keys use the default. An invalid value stops the server at start 
 | `WORKOUT_EXPLORER_PUSHOVER_TOKEN` | unset (off) | Pushover application token for report notifications, section 4a. **A secret** |
 | `WORKOUT_EXPLORER_PUSHOVER_USER` | unset (off) | Pushover user key, section 4a. **A secret** |
 | `WORKOUT_EXPLORER_OPERATOR_FILE` | unset (placeholder) | Absolute path of your About page text, see "The About page: operator file" above. `WX_OPERATOR` (default `/srv/workout-explorer/operator`) is the host folder mounted for it |
+| `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section) | `https://` link to your iPhone upload Shortcut, shown on the About page, section 4b. Anything that is not an absolute `https://` link stops the server at start |
 | `COMPOSE_FILE` | unset | Self-hosters: `compose.yaml:compose.build.yaml`; with notifications add `:compose.notify.yaml` (section 4a) |
 
 `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`.
@@ -142,6 +143,33 @@ Then `docker compose up -d`. Check: `docker compose logs app | grep 'server star
 Without the override the server has no internet access at all. With it, the server can reach any host on the internet, not only Pushover (Docker cannot filter by name); that is the price of turning notifications on. Only one of the two settings, or a value that is not 30 letters and digits, stops the server at start (exit code 2, the message names the setting but never prints its value).
 
 To turn it off: comment out both settings, remove `:compose.notify.yaml` from `COMPOSE_FILE`, `docker compose up -d`.
+
+## 4b. iPhone upload Shortcut (optional)
+
+You can offer iPhone users an Apple Shortcut that uploads a FIT file from the share sheet (for example from a watch app or Files) and opens its edit page. The project ships no Shortcut: you build one for your site with the steps below and share it as an iCloud link. With `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` set, the About page shows a section "Upload from your iPhone" with that link; unset, there is no section. The Shortcut uses the normal upload, with the same limits (20 MB, uploads per hour per address); the site stores nothing new.
+
+Build it in the Shortcuts app (replace `https://workouts.example.org` with your `WORKOUT_EXPLORER_BASE_URL`):
+
+1. New Shortcut. In its details, turn on **Show in Share Sheet**; the first action becomes **Receive Files from Share Sheet**. Set "If there's no input" to **Stop and Respond**.
+2. **Get Contents of URL**: URL `https://workouts.example.org/api/workouts`, Method **POST**, Request Body **Form**, one field of type **File** with key `file` and value **Shortcut Input**. No other fields and no headers are needed.
+3. **Get Dictionary Value**: key `edit_url` from **Contents of URL**.
+4. **If** Dictionary Value **has any value**:
+   - **Text**: `https://workouts.example.org` followed directly by the variable **Dictionary Value** (`edit_url` is a path such as `/edit/<id>#<token>`).
+   - **Open URLs**: the Text. It opens in Safari (the default browser) on the edit page.
+5. **Otherwise** (the server refused the file): **Get Dictionary Value** key `message` from **Contents of URL**, then **Show Alert** (or Show Result) with it. Every refusal carries a sentence for people in `message`, for example "This file is not a FIT file." or "Too many uploads. Please try again later."; a `429` (too many uploads) and a `503` "busy" also carry a `Retry-After` header in seconds, which the Shortcut does not need to read. If the response is not JSON at all (site down), the alert is empty: add a fixed fallback text such as "Upload failed. Please try again later."
+6. **End If**.
+
+The edit link is a secret: whoever has it can change, download and delete the workout. The Shortcut opens it and does nothing else with it: no Show Result, Quick Look, notification, Copy to Clipboard, Save File, note or message with the Dictionary Value from step 3, and no logging action.
+
+The site accepts FIT files only. A `.zip` from a watch app or a download must be extracted first (tap it in Files); the upload page in the browser can open zip archives, the Shortcut cannot.
+
+Share it: in the Shortcuts app, long-press the Shortcut, **Share**, **Copy iCloud Link**. Put the link in `.env`:
+
+```
+WORKOUT_EXPLORER_IOS_SHORTCUT_URL=https://www.icloud.com/shortcuts/<id>
+```
+
+Then `docker compose up -d app` and check that `/about` shows the section. Test once on an iPhone: share a FIT file to the Shortcut; Safari opens its edit page. Share a non-FIT file; the alert shows the server's message. To turn it off, comment out the setting and restart `app`.
 
 ## 5. Reverse proxy
 

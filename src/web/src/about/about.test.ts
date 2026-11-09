@@ -30,11 +30,16 @@ describe('About page', () => {
   });
 
   it('has each server marker exactly once, the version at least once', () => {
-    for (const m of ['<!--wx:attributions-->', '<!--wx:operator-->', '<!--wx:pushover-->', '<!--/wx:pushover-->']) {
+    for (const m of ['<!--wx:attributions-->', '<!--wx:operator-->', '<!--wx:pushover-->', '<!--/wx:pushover-->', '<!--wx:shortcut-->', '<!--/wx:shortcut-->']) {
       expect(count(m), m).toBe(1);
     }
     expect(count('<!--wx:version-->')).toBeGreaterThan(0);
     expect(html.indexOf('<!--wx:pushover-->')).toBeLessThan(html.indexOf('<!--/wx:pushover-->'));
+    // F-34: the Shortcut link is filled only inside its block.
+    const sc = html.slice(html.indexOf('<!--wx:shortcut-->'), html.indexOf('<!--/wx:shortcut-->'));
+    expect(sc).toContain('<h2>Upload from your iPhone</h2>');
+    expect(sc).toContain('<a href="<!--wx:shortcut-url-->"><!--wx:shortcut-url--></a>');
+    expect(count('<!--wx:shortcut-url-->')).toBe(2);
   });
 
   it('states the facts of AC 2 and AC 3', () => {

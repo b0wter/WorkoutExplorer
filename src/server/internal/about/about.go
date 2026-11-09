@@ -9,6 +9,8 @@
 //	<!--wx:operator-->       serve: the operator file as <h2>, <p> and <ul> (exactly once; AB-8), or the placeholder paragraph
 //	<!--wx:version-->        serve: the binary's version, HTML-escaped (any number of times, also inside the list)
 //	<!--wx:pushover-->...<!--/wx:pushover-->  exactly one pair; kept (markers dropped) only when notifications are on
+//	<!--wx:shortcut-->...<!--/wx:shortcut-->  exactly one pair; kept only when the iOS Shortcut link is set (F-34, INF-5)
+//	<!--wx:shortcut-url-->   serve: inside that pair, the link, HTML-escaped (also usable in an href)
 package about
 
 import (
@@ -33,6 +35,9 @@ const (
 	markerVersion = "<!--wx:version-->"
 	markerPushOn  = "<!--wx:pushover-->"
 	markerPushOff = "<!--/wx:pushover-->"
+	markerSCOn    = "<!--wx:shortcut-->"
+	markerSCOff   = "<!--/wx:shortcut-->"
+	markerSCURL   = "<!--wx:shortcut-url-->"
 )
 
 // Placeholder is the operator block while the operator file is missing (decision 25, AB-8).
@@ -43,9 +48,10 @@ const MaxOperatorFile = 16 << 10
 
 // Values are the per-deployment facts filled at start. Operator is the
 // rendered operator block (RenderOperator); empty shows the placeholder.
+// Shortcut is the iOS Shortcut link (F-34); empty drops its block.
 type Values struct {
-	Operator, Version string
-	Notifications     bool
+	Operator, Version, Shortcut string
+	Notifications               bool
 }
 
 // ParseOperator checks the operator file's content and renders it (AB-8):
@@ -126,22 +132,35 @@ func fill(src []byte, v Values) ([]byte, error) {
 	case strings.Count(s, markerOp) != 1:
 		return nil, errors.New("about page: needs exactly one operator marker")
 	}
-	on, off := strings.Index(s, markerPushOn), strings.Index(s, markerPushOff)
-	if on < 0 || off < on || strings.Count(s, markerPushOn) != 1 || strings.Count(s, markerPushOff) != 1 {
+	// The blocks first, so nothing inserted later is ever scanned again.
+	s, ok := cutBlock(s, markerPushOn, markerPushOff, v.Notifications)
+	if !ok {
 		return nil, errors.New("about page: the pushover block is missing or malformed")
 	}
-	// The block first, so nothing inserted later is ever scanned again.
-	inner := s[on+len(markerPushOn) : off]
-	if !v.Notifications {
-		inner = ""
+	if s, ok = cutBlock(s, markerSCOn, markerSCOff, v.Shortcut != ""); !ok {
+		return nil, errors.New("about page: the shortcut block is missing or malformed")
 	}
-	s = s[:on] + inner + s[off+len(markerPushOff):]
 	op := v.Operator
 	if op == "" {
 		op = Placeholder
 	}
 	// One pass: an inserted value that contains a marker is not expanded.
-	return []byte(strings.NewReplacer(MarkerDone, "", markerOp, op, markerVersion, html.EscapeString(v.Version)).Replace(s)), nil
+	return []byte(strings.NewReplacer(MarkerDone, "", markerOp, op, markerVersion, html.EscapeString(v.Version),
+		markerSCURL, html.EscapeString(v.Shortcut)).Replace(s)), nil
+}
+
+// cutBlock drops the markers of the one on...off pair in s, and its content
+// unless keep. ok is false unless each marker occurs once, in order.
+func cutBlock(s, on, off string, keep bool) (string, bool) {
+	i, j := strings.Index(s, on), strings.Index(s, off)
+	if i < 0 || j < i || strings.Count(s, on) != 1 || strings.Count(s, off) != 1 {
+		return s, false
+	}
+	inner := s[i+len(on) : j]
+	if !keep {
+		inner = ""
+	}
+	return s[:i] + inner + s[j+len(off):], true
 }
 
 // Handler answers GET and HEAD (register as "GET /about") with the page.
