@@ -51,7 +51,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-37 Report notification links | [F-37-report-notification-links.md](F-37-report-notification-links.md) | accepted, built (9 Nov 2026; critical lane; owner both, backend first; OQ-125 resolved; F-27 R-11, F-29 PT-9 noted in place) | 0.1 | ADR-002, ADR-019, ADR-020, ADR-021, ADR-024, ADR-025, ADR-031, ADR-032, ADR-039, ADR-042 |
 | F-38 Impressum page | [F-38-impressum-page.md](F-38-impressum-page.md) | accepted, built (9 Nov 2026; normal lane; owner both, backend first; user decisions of 9 Nov built in; F-15 P-13, F-22 H-6, H-10, F-23 PC-11, F-31 DP-4 noted in place; no open questions) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-025, ADR-032, ADR-034, ADR-043 |
 
-| F-39 How to use | [F-39-how-to-use.md](F-39-how-to-use.md) | accepted (9 Nov 2026; normal lane; owner frontend; head script also sets `data-hint`, new CSP hash; OQ-133, OQ-134 open, not blocking) | 0.1 | ADR-011, ADR-026, ADR-032 |
+| F-39 How to use | [F-39-how-to-use.md](F-39-how-to-use.md) | accepted (9 Nov 2026; normal lane; owner frontend; head script also sets `data-hint`, new CSP hash; OQ-133, OQ-134 resolved) | 0.1 | ADR-011, ADR-026, ADR-032 |
 | F-40 Shareable range | [F-40-shareable-range.md](F-40-shareable-range.md) | accepted (9 Nov 2026; normal lane; owner frontend; built after F-39; no open questions) | 0.1 | ADR-011, ADR-020, ADR-038 |
 
 ## Decisions (ADRs)
@@ -126,8 +126,6 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-109 | F-35: an AppleDouble `._ride.fit` in the root counts as a second FIT file under UP-11. Suggestion: ignore root names starting with `._` | Nothing (UP-11 built as written until decided) | user (product). **Decided 9 Nov 2026: root names starting with `._` are ignored (built in Z-7)** |
 | OQ-110 | F-35: "the picker accepts `.fit` and `.zip`" met without an `accept` filter (F-11 U-6). Suggestion: no filter | Nothing | user (product). **Decided 9 Nov 2026: no file filter (Z-12)** |
 | OQ-111 | F-35: a root `.fit` entry that holds a zip. Suggestion: refused as damaged, nothing sent (F-35 Z-10) | Nothing | user (product). **Decided 9 Nov 2026: refused as damaged, nothing sent (Z-10)** |
-| OQ-133 | F-39: on phones narrower than about 440 px the header's control row wraps to a second line (one row taller on every load, no shift). Suggestion: accept, checked on the 360 px phone (F-39 HU-8) | Nothing | user (product) |
-| OQ-134 | F-39: Chrome and Firefox on Android close a modal `<dialog>` on the back gesture instead of leaving the page (AC 4). Suggestion: accept the browser's behaviour; requirements reword AC 4 to "adds no history entry" | Wording of F-39 AC 4 only | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

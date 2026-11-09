@@ -2,7 +2,7 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (9 Nov 2026): v0.4.0 released (c1bc702) and deployed by the user; hand checks open
+## Current (9 Nov 2026): v0.4.0 deployed; F-39 How to use and F-40 range link specified and designed, build not started (user: wait for the go)
 
 - Phase 2 is done: F-35 ZIP upload, F-36 map preview card, F-34 iOS Shortcut link, F-37 report notification links, F-38 Impressum (QA r1 ready, minors r1-1..3 fixed). Tag v0.4.0 pushed, CI green, release assets exist. Nothing is in progress.
 - v0.4.0 deployed 9 Nov 2026 and works per the user. `deploy.sh` refuses without `{data}/site`; that refusal is untested against a real deploy.

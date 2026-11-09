@@ -11,7 +11,7 @@ A first-time viewer finds out how to explore the page (cursor, ranges, laps, ful
 
 ## Scope
 - **Button.** On the viewing page (`/w/{id}`) only: a text button "How to use" with a small icon in the header's control row, next to Copy link and the units and theme drop-downs; visible on phones too, never in a menu. Until it has been opened once on the device it is emphasised (the accent background of the selected axis toggle); then plain (the Copy link look). Not shown without JavaScript.
-- **Dialog.** Title "How to use this page"; one line per section, worded for touch when the primary pointer is coarse (CSS `pointer: coarse`, as the existing hint), otherwise for mouse (a laptop with a touchscreen gets the mouse wording). Every workout shows the same lines; the map lines say they apply only to workouts with GPS. Closes with its close button, Esc or a tap outside; the phone's back gesture does not close it (no history entry). Its code and text load only when the button is first used.
+- **Dialog.** Title "How to use this page"; one line per section, worded for touch when the primary pointer is coarse (CSS `pointer: coarse`, as the existing hint), otherwise for mouse (a laptop with a touchscreen gets the mouse wording). Every workout shows the same lines; the map lines say they apply only to workouts with GPS. Closes with its close button, Esc or a tap outside; opening it adds no history entry (Android browsers also close it on the back gesture, OQ-134). Its code and text load only when the button is first used.
 
   | Section | Touch | Mouse |
   | --- | --- | --- |
@@ -36,7 +36,7 @@ A first-time viewer finds out how to explore the page (cursor, ranges, laps, ful
 - [ ] On `/w/{id}`, the header's control row shows "How to use" with an icon on a 360 px wide phone (portrait and landscape) and on desktop; not on `/edit/`, `/published/`, upload, About or Impressum pages.
 - [ ] Fresh browser: the button is emphasised; after opening it once and reloading (also another workout), it is plain.
 - [ ] The dialog shows the sections with the texts above, touch wording on a touch phone and mouse wording on desktop (a touchscreen laptop gets mouse wording); a workout without GPS, without laps and splits, or without charts shows the same lines as one with all of them.
-- [ ] The dialog closes with its close button, Esc and a tap outside it; the phone's back gesture leaves the page as usual and adds no history entry.
+- [ ] The dialog closes with its close button, Esc and a tap outside it; opening the dialog adds no history entry.
 - [ ] Network log: no request for the dialog's code until the button is first used; the entry chunk stays under 60,000 bytes gzip (CI) and within the ADR-011 share.
 - [ ] Fresh browser: the hint shows; after the first range selection (drag or lap/split row) or dismissing it, it does not show on a reload or another workout, and the laps table does not jump on the page where it went away.
 - [ ] Storage blocked: the page works, button emphasised and hint shown on every load, no error.

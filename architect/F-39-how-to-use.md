@@ -1,7 +1,7 @@
 # F-39 How to use: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (9 Nov 2026). Normal lane. OQ-133, OQ-134 open, not blocking
+- **Status:** accepted (9 Nov 2026). Normal lane. OQ-133, OQ-134 resolved (9 Nov 2026)
 - **Feature:** [`features/F-39-how-to-use.md`](../features/F-39-how-to-use.md)
 - **Requirements:** AP-22, AP-7, DS-1, NFR Performance, NFR Privacy
 - **Builds on:** [F-14](F-14-units-and-theme.md) (theme head script), [F-17](F-17-range-selection-and-axis-toggle.md) R-12 (hint), [F-28](F-28-report-form.md) (lazy `<dialog>`), ADR-011, ADR-026 rev. 1, ADR-032 item 3. Changes TD Load order step 1 (the head script also sets `data-hint`)
@@ -18,7 +18,7 @@
 | HU-5 | **The ×** sits at the line's end and never ellipsises away (the text does); hit area at least 24 × 24 px inside the 24 px row; accessible name "Dismiss hint" | Small phones; NFR Accessibility |
 | HU-6 | **The button is template markup, revealed by an enhancer.** `index.html` gets the button (text and icon) right after Copy link in `.ctl`, with a fixed box like the units and theme slots, invisible and inert until the enhancer reveals it (a class, no inline style; not `hidden`, which would drop its space). Without JavaScript: an empty reserved box, as the units and theme slots today. Emphasised and plain looks have the same box, so the switch causes no shift. Enhanced before any await (as Report), so it works when the data file fails. The edit page's `PageHeader` has no button and no box | ADR-026 rev. 1: no shift from bundle-only controls. Text and icon in the HTML cost no bundle bytes |
 | HU-7 | **The dialog is a lazy chunk `src/howto/`**, plain DOM, one native modal `<dialog>` built on first open and reused, CSS in the chunk, reached only through one `import()` from `src/page` (the F-28 pattern; ADR-011 item 2 gains it). Both wordings are in the dialog, chosen in CSS by `(pointer: coarse)` as the hint. Close button, Esc (native) and a tap on the backdrop close it; no history entry. A failed load shows one line next to the button, as Report. "Opened" is written when the dialog is shown | AC 4, AC 5; the chunk holds every text, so it costs nothing static |
-| HU-8 | **Phones:** the control row may wrap to a second line on narrow phones (OQ-133). The box is reserved in the markup, so this is a taller header, not a shift | Spec: on phones too, never in a menu |
+| HU-8 | **Phones:** the control row may wrap to a second line on narrow phones (OQ-133, accepted). The box is reserved in the markup, so this is a taller header, not a shift | Spec: on phones too, never in a menu |
 
 ## Cost
 
@@ -30,7 +30,4 @@
 
 ## Open questions
 
-| ID | Question | Suggestion |
-| --- | --- | --- |
-| OQ-133 | On phones narrower than about 440 px the control row (Copy link, How to use, units, theme) no longer fits one line and wraps; the header is one row (about 40 px) taller on every load there | Accept (follows from "visible on phones, never in a menu"); the user checks it on the 360 px phone |
-| OQ-134 | Chrome and Firefox on Android close a modal `<dialog>` on the back gesture (a browser "close request", no history entry of ours); AC 4 says back "leaves the page as usual". Browsers deliberately make this hard to prevent (anti back-trapping) | Accept the browser's behaviour; requirements reword AC 4 to "adds no history entry; back closes the dialog or leaves the page, as the browser does" |
+None. OQ-133 and OQ-134 accepted by the user on 9 Nov 2026 (decision log, `features/README.md`).

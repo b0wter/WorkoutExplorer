@@ -591,6 +591,8 @@ Updated: spec (viewer story 16, scope table row, footer line under Activity page
 
 Updated: spec (viewer story 17, scope table row, AP-7, AP-19, new AP-22, open questions "Range in the link" and "How to use details", Roadmap phase 2), F-39 and F-40 (new, OQ-126 to OQ-132 open), feature index (order, rows, counts, coverage AP-19, AP-22), Phase 2 list (shareable range moved to F-40). Technical design (`lib/prefs` keys, ADR-011 shares, ADR-020 fragment) to be updated by the architect. Later the same day: OQ-126 to OQ-132 resolved in F-39, F-40, spec AP-19, AP-22 and open questions.
 
+**Decided on 9 Nov 2026, F-39 design questions** (user, AP-22): OQ-133 accepted: on phones narrower than about 440 px the header control row wraps (one row taller on every load, space reserved, no shift), checked on the 360 px phone. OQ-134 accepted: Android browsers close the dialog on the back gesture; F-39 AC 4 now says only that opening the dialog adds no history entry. Updated: F-39 scope and AC 4, architect F-39 and INDEX. Spec unchanged (it made no back-gesture claim).
+
 **Decided on 9 Nov 2026, multisport sections shown** (user, AP-12, phase 2 idea, no feature file): charts get a vertical line at each leg boundary with the sport labelled on top; the laps table a separator row with the leg's name before each leg; the map a marker at each leg start. Updated: spec AP-12, Phase 2 list.
 
 The original questions follow for reference.
