@@ -13,6 +13,7 @@ import EditPanel from '../components/edit/EditPanel.svelte';
 import PublishedView from '../components/edit/PublishedView.svelte';
 import { loadDataFile } from '../lib/datafile';
 import { openOwner, type OwnerClient, type OwnerLocation, type OwnerResult, type Settings, type SettingsPatch } from '../lib/owner';
+import { impressum } from '../lib/page/impressum';
 import { buildPageViewModel, defaultTitle } from '../lib/page/view';
 import { enhanceExpiry } from '../page/enhance';
 import { loadErrorText } from '../page/load-error';
@@ -24,7 +25,10 @@ const NONE: readonly (readonly [number, number])[] = [];
 /** The generic page's content (generic.html, E-4), in this page's theme. No workout data. */
 export function showGeneric(doc: Document, text = 'This workout has expired or is not available.', upload = ''): void {
   doc.title = 'Workout Explorer';
+  const link = doc.getElementById('wx-impressum'); // kept: the other footers copy from it (F-38 IM-7)
   doc.body.innerHTML = `<main class="generic"><h1>Workout Explorer</h1><p>${text}</p>${upload}</main><footer class="foot generic-foot"><a href="/about">About</a></footer>`;
+  if (link) doc.body.prepend(link);
+  impressum(doc.querySelector('footer')!);
 }
 
 /** The deleted screen (F-20 C-8): E-4's teardown with a fixed sentence and the upload link. */

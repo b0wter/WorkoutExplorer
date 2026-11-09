@@ -48,3 +48,7 @@ footer {
 footer a {
   color: var(--muted);
 }
+/* F-38 IM-7: the server puts the link after "About " or nothing, so the gap is ours. */
+footer a[href='/impressum'] {
+  margin-left: 0.5rem;
+}

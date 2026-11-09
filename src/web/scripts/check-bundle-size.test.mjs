@@ -101,6 +101,8 @@ describe('limitFor', () => {
     expect(withinBudget(8000, limitFor('upload.html'))).toBe(true);
     expect(withinBudget(8001, limitFor('upload.html'))).toBe(false);
     expect(limitFor('report-delete.html')).toBe(4000);
+    expect(limitFor('impressum.html')).toBe(2000); // F-38 IM-2
+    expect(withinBudget(2001, limitFor('impressum.html'))).toBe(false);
   });
 });
 

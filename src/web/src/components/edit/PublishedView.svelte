@@ -4,6 +4,7 @@
   // CRITICAL: the edit link is the only place the token is in the DOM: one text node in a
   // translate="no" element; never an attribute, an input or a link. Its copy fallback is text only.
   import type { Attachment } from 'svelte/attachments';
+  import { impressum } from '../../lib/page/impressum';
   import { enhanceCopyLink } from '../../page/enhance';
   import DeleteControl from './DeleteControl.svelte';
 
@@ -62,4 +63,4 @@
     <span class="edit-status" role="status">{busy || status}</span>
   </p>
 </main>
-<footer class="foot generic-foot"><a href="/about">About</a></footer>
+<footer class="foot generic-foot" {@attach impressum}><a href="/about">About</a></footer>

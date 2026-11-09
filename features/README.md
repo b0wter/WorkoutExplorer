@@ -51,7 +51,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | done | user: browser, messenger and card look checks (qa r1 list), VPS memory.peak |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | done | user: OQ-125 phone check (AC 41) |
-| [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | backend built, frontend next | user: create site/ on the VPS before the next deploy |
+| [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | built, QA r1 | user: create site/ on the VPS before the next deploy |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 5 features (F-35, F-36, F-34, F-37, F-38, detailed). Phase 3: 1 feature (F-24, deferred; design kept).

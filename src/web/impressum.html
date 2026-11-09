@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Impressum page (F-38 IM-2): served at /impressum from {data}/site/ only while the hoster sets an Impressum. Never any Impressum text in this file. Backend stub: the frontend adds the "Show Impressum" button and its script (IM-3). -->
+<!-- Impressum page (F-38 IM-2): served at /impressum from {data}/site/ only while the hoster sets an Impressum. Never any Impressum text in this file: the script fetches it on a click (IM-3). No Open Graph or Twitter card. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -8,13 +8,16 @@
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>Impressum - Workout Explorer</title>
-    <link rel="stylesheet" href="/src/generic/generic.css" />
   </head>
   <body>
     <main>
       <h1>Impressum / Legal notice</h1>
       <noscript><p>JavaScript is needed to show the Impressum.</p></noscript>
+      <button id="show" class="button" type="button" hidden>Show Impressum</button>
+      <p id="message" class="message"></p>
+      <div id="text"></div>
     </main>
     <footer><a href="/about">About</a> <!--wx:impressum--></footer>
+    <script type="module" src="/src/impressum/main.ts"></script>
   </body>
 </html>

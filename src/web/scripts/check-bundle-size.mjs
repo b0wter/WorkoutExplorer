@@ -14,8 +14,8 @@ import zlib from 'node:zlib';
 
 export const LIMIT_BYTES = 60000;
 
-/** Lower ceilings for single entries, by manifest key (ADR-024 item 4: upload page 8,000; F-37 DK-11: delete link page 4,000). */
-export const ENTRY_LIMITS = { 'upload.html': 8000, 'report-delete.html': 4000 };
+/** Lower ceilings for single entries, by manifest key (ADR-024 item 4: upload page 8,000; F-37 DK-11: delete link page 4,000; F-38 IM-2: Impressum page 2,000). */
+export const ENTRY_LIMITS = { 'upload.html': 8000, 'report-delete.html': 4000, 'impressum.html': 2000 };
 
 /** The ceiling that applies to one entry. */
 export function limitFor(entry) {

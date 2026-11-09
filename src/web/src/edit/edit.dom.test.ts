@@ -9,6 +9,7 @@ import { loadGolden } from '../../test-support/golden.mjs';
 import type { Settings } from '../lib/owner';
 import { resetStubLog, stubLog } from '../page/testing/stub-log';
 import { startEdit } from './start.svelte';
+import editHtml from '../../edit.html?raw';
 
 vi.mock('../components/charts/ChartStack.svelte', async () => await import('../page/testing/ChartStackStub.svelte'));
 vi.mock('../components/map/RouteMap.svelte', async () => await import('../page/testing/RouteMapStub.svelte'));
@@ -1100,6 +1101,58 @@ describe('F-20 C-6, AC 10: download original', () => {
     original = () => new Response('', { status: 404 });
     await click('download');
     expect(document.body.textContent).toContain(GENERIC);
+  });
+});
+
+describe('F-38 IM-7: the Impressum link in the browser-drawn footers', () => {
+  const LINK = '<a href="/impressum">Impressum</a>';
+  const withTemplate = (filled: string): void => {
+    const t = document.createElement('template');
+    t.id = 'wx-impressum';
+    t.innerHTML = filled;
+    document.body.prepend(t);
+  };
+  const links = (): string[] => [...document.querySelectorAll('footer a')].map((a) => a.getAttribute('href')!);
+
+  for (const [name, filled, want] of [
+    ['set', LINK, ['/about', '/impressum']],
+    ['unset', '', ['/about']],
+    ['the unfilled dev marker', '<!--wx:impressum-->', ['/about']],
+  ] as const) {
+    describe(name, () => {
+      beforeEach(() => withTemplate(filled));
+
+      it('the page footer', async () => {
+        await open();
+        expect(links()).toEqual(want);
+        expect(document.querySelectorAll('footer')).toHaveLength(1);
+      });
+
+      it('the published view', async () => {
+        settings = fresh({ visibility: 'unlisted' });
+        await openPublished();
+        expect($('main.published')).not.toBeNull();
+        expect(links()).toEqual(want);
+      });
+
+      it('the not-found view, also when drawn twice (delete, then the deleted screen)', async () => {
+        await open('');
+        expect($('main.generic')).not.toBeNull();
+        expect(links()).toEqual(want);
+        settings = fresh({ visibility: 'unlisted' });
+        host = document.createElement('div');
+        document.body.append(host);
+        await openPublished();
+        await click('delete');
+        await click('confirm');
+        expect($('main.generic p')?.textContent).toBe('This workout has been deleted.');
+        expect(links()).toEqual(want);
+      });
+    });
+  }
+
+  it('the edit.html template holds exactly the marker, before #wx-edit', () => {
+    expect(editHtml).toContain('<template id="wx-impressum"><!--wx:impressum--></template>\n    <div id="wx-edit"></div>');
   });
 });
 

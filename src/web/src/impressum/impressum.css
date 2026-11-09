@@ -1,0 +1,31 @@
+/* The Impressum page (F-38 IM-2): the plain pages' theme, the button and the hoster's text
+   (operator-file format: h2, p, ul). */
+@import '../theme/plain.css';
+
+main {
+  overflow-wrap: anywhere;
+}
+h2 {
+  font-size: 1.25rem;
+  margin: 2rem 0 0.5rem;
+}
+.button {
+  margin: 1rem 0;
+  padding: 0.6rem 1.2rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  cursor: pointer;
+}
+.button[hidden] {
+  display: none;
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.message {
+  color: var(--error);
+}
