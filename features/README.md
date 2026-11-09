@@ -108,7 +108,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | INF-4 Report notifications (Pushover, opt-in) | Must | F-27; viewing link and readable reason: F-37 (phase 2) |
 | INF-5 iOS Shortcut upload link (opt-in) | Could | F-34 (phase 2) |
 | INF-6 Single-use delete link in the notification | Should (phase 2, assumed) | F-37 (phase 2) |
-| INF-7 Impressum page (opt-in, text loaded by JavaScript, noindex) | Should (phase 2, assumed) | F-38 (phase 2) |
+| INF-7 Impressum page (opt-in, text loaded by JavaScript, noindex) | Should (phase 2) | F-38 (phase 2) |
 | NFR Performance: LCP under 2.5 s | — | F-13, F-32 |
 | NFR Performance: 60 fps on 12-hour workout | — | F-05, F-06, F-07, F-25, F-32 |
 | NFR Performance: data file under 500 KB | — | F-03, F-07, F-32 |
@@ -577,7 +577,9 @@ Updated: spec (scope table row, INF-1, INF-4, new INF-6, NFR Privacy Pushover li
 - **Text:** an optional file on the server next to the operator file, following the operator-file pattern (F-29 AB-8: one setting, size cap, plain text with the three-rule format, read at start, invalid exits 2); never in the repository. Unset: no page (not found) and no footer link.
 - **Footer:** an "Impressum" link on every page when set.
 - Whether an Impressum is legally required is the hoster's call (out of scope).
-- **Build order:** after F-37. Owner both, backend first. Open: OQ-120 to OQ-124 (F-38), suggestions assumed.
+- **Hardening:** the text loads only after a click on "Show Impressum"; the text address answers only same-origin requests and at most 10 per 10 minutes per IP address. Only raises the effort for scrapers.
+- **Details (OQ-120 to OQ-124, as suggested):** static published pages follow the setting after `regenerate`; one static `robots.txt`, always served; operator-file format and limits, missing or invalid file exits 2; Should within phase 2; load-failure wording "The Impressum could not be loaded. Reload the page."
+- **Build order:** after F-37. Owner both, backend first.
 
 Updated: spec (viewer story 16, scope table row, footer line under Activity page, DS-4, new INF-7, open question "Impressum details", Roadmap phase 2), F-38 (new), feature index (order, row, counts, coverage DS-4, INF-7, NFR `noindex`). Technical design (Configuration, Hosting, Indexing: `robots.txt` now exists, Repository layout, footer) to be updated by the architect.
 
