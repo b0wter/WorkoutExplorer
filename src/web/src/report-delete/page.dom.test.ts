@@ -116,6 +116,16 @@ describe('confirmation page', () => {
     expect($('message').textContent).toBe(INVALID);
   });
 
+  it('a 500 on confirm means the key is spent: final message, no retry', async () => {
+    replies.push(async () => json(200, LOOKUP));
+    await start(document, '#' + KEY, fetchFn);
+    replies.push(async () => json(500, { error: 'server_error', message: 'x' }));
+    $('delete').click();
+    await settle();
+    expect(state()).toBe('failed');
+    expect($('message').textContent).toContain('workout-explorer delete');
+  });
+
   it('a network failure or a bad body never shows facts', async () => {
     replies.push(async () => {
       throw new TypeError('offline');

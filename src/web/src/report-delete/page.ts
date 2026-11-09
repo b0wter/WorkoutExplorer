@@ -4,6 +4,7 @@
 
 const KEY = /^[0-9A-Za-z]{22}$/;
 const INVALID = 'This delete link is no longer valid: it was already used, has expired, or the workout is gone.';
+const SPENT = 'The delete link has been used up, but the deletion failed. The workout may still be online. Please delete it on the server with the `workout-explorer delete` command.';
 const FAILED = 'Something went wrong. Please try again later.';
 
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -80,8 +81,10 @@ export function start(doc: Document, hash: string, fetchFn: Fetch): Promise<void
       const res = await request('POST');
       if (res.status === 204) return show('deleted', 'The workout has been deleted.');
       const text = await refusal(res);
-      // 404: the link is spent or the workout gone; otherwise the operator may try again.
-      if (res.status === 404) show('failed', text);
+      // 404: link spent or workout gone. 500: the key is already consumed (DK-8), no retry.
+      // 429 (before consume) and other errors stay retryable.
+      if (res.status === 500) show('failed', SPENT);
+      else if (res.status === 404) show('failed', text);
       else show('ready', text);
     } catch {
       show('ready', FAILED);
