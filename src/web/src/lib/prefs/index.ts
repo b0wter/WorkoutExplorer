@@ -32,6 +32,10 @@ export interface ViewerPrefs {
   split(layout: SplitLayout): number | null;
   setSplit(layout: SplitLayout, percent: number): void;
   clearSplit(layout: SplitLayout): void;
+  /** AP-22 (F-39 HU-1): flags, `"1"` once the event happened; never removed. */
+  howtoOpened(): boolean;
+  setHowtoOpened(): void;
+  setHintDone(): void;
 }
 
 export const PREF_KEYS = {
@@ -41,6 +45,9 @@ export const PREF_KEYS = {
   theme: 'wx.theme',
   wide: 'wx.split.wide',
   landscape: 'wx.split.landscape',
+  howto: 'wx.howto.opened',
+  /** Also read by the inline head script (sets <html data-hint="done">, F-39 HU-2). */
+  hint: 'wx.hint.done',
 } as const;
 
 /** `storage` is called on every access, so a getter that throws (blocked site data) is contained too. */
@@ -79,5 +86,8 @@ export function createViewerPrefs(storage: () => KeyValueStore | null | undefine
     },
     setSplit: (layout, percent) => write(PREF_KEYS[layout], percent.toFixed(2)),
     clearSplit: (layout) => write(PREF_KEYS[layout], null),
+    howtoOpened: () => read(PREF_KEYS.howto) === '1',
+    setHowtoOpened: () => write(PREF_KEYS.howto, '1'),
+    setHintDone: () => write(PREF_KEYS.hint, '1'),
   };
 }

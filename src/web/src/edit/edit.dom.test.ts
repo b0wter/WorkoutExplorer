@@ -232,6 +232,17 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expectNoTokenOutsideTheFragment();
   });
 
+  it("F-39 AC 9: today's hint, even after the viewer's hint is done, and no How to use button", async () => {
+    document.documentElement.dataset.hint = 'done';
+    try {
+      await open();
+      expect(stubLog.chartStack[0].hint).toBe('plain');
+      expect($('[data-howto]')).toBeNull();
+    } finally {
+      delete document.documentElement.dataset.hint;
+    }
+  });
+
   it('the copy link copies the view path, never the address', async () => {
     const writeText = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });

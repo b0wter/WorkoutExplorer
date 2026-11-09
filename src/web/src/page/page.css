@@ -210,15 +210,18 @@ a {
   gap: 12px;
   padding: 16px 0 8px;
 }
-.sport {
-  flex: none;
-  width: 32px;
-  height: 32px;
+.sport,
+.howto svg {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+.sport {
+  flex: none;
+  width: 32px;
+  height: 32px;
   color: var(--muted);
 }
 .head-text {
@@ -246,19 +249,49 @@ h1 {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.copy {
-  flex: none;
+.copy,
+.howto {
   box-sizing: border-box;
-  min-width: 84px;
   height: 32px;
-  padding: 0 10px;
-  line-height: 30px;
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--fg);
   font-size: 14px;
+}
+.copy {
+  flex: none;
+  min-width: 84px;
+  padding: 0 10px;
+  line-height: 30px;
   text-align: center;
   text-decoration: none;
+}
+/* How to use (F-39 HU-6): a fixed box, invisible and inert until the enhancer adds .ready; .fresh (not
+   yet opened on this device) has the selected axis toggle's look in the same box. */
+.howto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 120px;
+  background: none;
+  font-family: inherit;
+}
+.howto:not(.ready) {
+  visibility: hidden;
+}
+.howto.fresh {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.howto svg {
+  width: 16px;
+  height: 16px;
+}
+/* F-39 HU-2: the head script found the hint done, so the viewing page (not the edit page under
+   #wx-edit) reserves no hint line. */
+[data-hint='done'] body > .page .charts {
+  --hint: 0px;
 }
 /* Control group (D-8): Copy link, the units and the theme slot (DS-4); on their own line below the title
    on narrow phones, beside it from 560 px when the title keeps its width. The slots reserve their size,

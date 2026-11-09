@@ -132,7 +132,8 @@ func TestSamplePages(t *testing.T) {
 			if hasMap := strings.Contains(page, `class="page has-map"`); hasMap != (route["Map"] != "") {
 				t.Errorf("has-map class %v, Route.Map %q", hasMap, route["Map"])
 			}
-			if strings.Contains(page, "map-pin") || strings.Count(page, "<button") != 1 {
+			// The two buttons: How to use (F-39 HU-6) and Report.
+			if strings.Contains(page, "map-pin") || strings.Count(page, "<button") != 2 || !strings.Contains(page, `<button type="button" class="howto" data-howto>`) {
 				t.Error("pin toggle in the server markup")
 			}
 
@@ -143,7 +144,7 @@ func TestSamplePages(t *testing.T) {
 			}
 
 			// AC 5: user text is escaped; the module script and DS-4's inline theme script are the only scripts.
-			if c := strings.Count(page, "<script"); c != 2 || strings.Count(page, `<script type="module"`) != 1 || !strings.Contains(page, `<script>try{var t=localStorage.getItem("wx.theme")`) {
+			if c := strings.Count(page, "<script"); c != 2 || strings.Count(page, `<script type="module"`) != 1 || !strings.Contains(page, `<script>try{var s=localStorage,`) {
 				t.Errorf("%d script elements, or not the module and theme scripts", c)
 			}
 			if name == "hostile-text" {

@@ -83,8 +83,28 @@ describe('createViewerPrefs', () => {
         p.clearSplit('landscape');
         p.setTheme('dark');
         p.setTheme('system');
+        p.setHowtoOpened();
+        p.setHintDone();
       }).not.toThrow();
-      expect([p.units(), p.axis(), p.split('wide'), p.theme()]).toEqual([null, null, null, 'system']);
+      expect([p.units(), p.axis(), p.split('wide'), p.theme(), p.howtoOpened()]).toEqual([null, null, null, 'system', false]);
     }
+  });
+
+  it('F-39 flags: "1" once, any other value reads as not yet (HU-1)', () => {
+    const s = memory();
+    const p = createViewerPrefs(() => s);
+    expect(p.howtoOpened()).toBe(false);
+    for (const v of ['0', 'true', '1 ', '']) {
+      s.map.set(PREF_KEYS.howto, v);
+      expect(p.howtoOpened()).toBe(false);
+    }
+    s.map.clear();
+    p.setHowtoOpened();
+    p.setHintDone();
+    expect([...s.map]).toEqual([
+      ['wx.howto.opened', '1'],
+      ['wx.hint.done', '1'],
+    ]);
+    expect(p.howtoOpened()).toBe(true);
   });
 });

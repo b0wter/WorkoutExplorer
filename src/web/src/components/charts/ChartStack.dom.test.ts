@@ -193,7 +193,16 @@ let current: Mounted | null = null;
 
 function setup(
   data: WorkoutData,
-  options: { chartHeight?: number; before?: (c: CursorStore) => void; cursor?: CursorStore; selection?: SelectionStore; initialAxis?: 'time' | 'distance'; onaxis?: (a: 'time' | 'distance') => void } = {},
+  options: {
+    chartHeight?: number;
+    before?: (c: CursorStore) => void;
+    cursor?: CursorStore;
+    selection?: SelectionStore;
+    initialAxis?: 'time' | 'distance';
+    onaxis?: (a: 'time' | 'distance') => void;
+    hint?: 'plain' | 'once' | 'done' | 'none';
+    onhint?: () => void;
+  } = {},
 ): Mounted {
   const reported: unknown[] = [];
   const cursor =
@@ -222,6 +231,8 @@ function setup(
   if (options.selection) props.selection = options.selection;
   if (options.initialAxis) props.initialAxis = options.initialAxis;
   if (options.onaxis) props.onaxis = options.onaxis;
+  if (options.hint) props.hint = options.hint;
+  if (options.onhint) props.onhint = options.onhint;
   const app = mount(ChartStack, { target, props: props as never });
   flushSync();
   current = { data, cursor, target, reported, ready: () => ready, active: () => active, app };
@@ -920,5 +931,29 @@ describe('F-17 range selection and x-axis toggle', () => {
     const none = setup(timeOnly(50));
     layout(900);
     expect(none.target.querySelector('.select-hint')).toBeNull();
+  });
+
+  it('F-39 HU-3, HU-5: plain has no ×; once adds "Dismiss hint", which only reports; done keeps an empty line; none has no line', () => {
+    const ride = golden('ride-4h');
+    const hintOf = (hint?: 'plain' | 'once' | 'done' | 'none', onhint?: () => void): Element | null => {
+      if (current) {
+        unmount(current.app);
+        current.target.remove();
+      }
+      const m = setup(ride, { hint, onhint });
+      layout(900);
+      return m.target.querySelector('.select-hint');
+    };
+    expect(hintOf()?.querySelector('button')).toBeNull();
+    expect(hintOf('plain')?.querySelector('button')).toBeNull();
+    const onhint = vi.fn();
+    const once = hintOf('once', onhint)!;
+    const x = once.querySelector('button')!;
+    expect([x.getAttribute('aria-label'), x.textContent, once.lastElementChild === x]).toEqual(['Dismiss hint', '×', true]);
+    x.click();
+    expect(onhint).toHaveBeenCalledTimes(1);
+    const done = hintOf('done')!;
+    expect([done.childElementCount, done.textContent]).toEqual([0, '']);
+    expect(hintOf('none')).toBeNull();
   });
 });

@@ -1,0 +1,44 @@
+/* The How to use dialog (F-39 HU-7), the report dialog's frame (report.css); colours from page.css.
+   No padding on the dialog itself: a click on it is a click on the backdrop. */
+.howto-dlg {
+  box-sizing: border-box;
+  width: calc(100% - 16px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+}
+@media (min-width: 1024px) {
+  .howto-dlg {
+    width: 480px;
+  }
+}
+.howto-dlg::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+.howto-body {
+  padding: 12px 16px;
+}
+.howto-dlg h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.howto-body p {
+  margin: 0 0 10px;
+}
+.howto-body .howto-actions {
+  margin: 12px 0 0;
+  text-align: right;
+}
+.howto-dlg .coarse {
+  display: none;
+}
+@media (pointer: coarse) {
+  .howto-dlg .fine {
+    display: none;
+  }
+  .howto-dlg .coarse {
+    display: inline;
+  }
+}

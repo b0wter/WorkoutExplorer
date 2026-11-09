@@ -8,6 +8,7 @@ import type { WorkoutData } from '../lib/datafile';
 import type { Units } from '../lib/format';
 import type { UnitsStore } from '../lib/units';
 import type { ThemeChoice } from '../lib/prefs';
+import type { HintMode } from '../lib/charts';
 
 /** The viewer's units and colour scheme as reactive state (F-14 D-10): the one scheme listener
  *  of the page. The glue passes both to ChartStack and RouteMap. A forced theme (DS-4) wins over
@@ -16,12 +17,15 @@ export interface Look {
   readonly units: Units;
   readonly scheme: 'light' | 'dark';
   theme: ThemeChoice;
+  /** The range hint under the charts (F-39 HU-3), set by the page. */
+  hint: HintMode;
   /** The store itself, for consumers that subscribe (the map's colouring legend, F-25 C-6). */
   readonly store: UnitsStore;
 }
 
-export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme: ThemeChoice = 'system'): Look {
+export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme: ThemeChoice = 'system', hint: HintMode = 'plain'): Look {
   let u = $state(units.get());
+  let h = $state(hint);
   let isDark = $state(dark?.matches ?? false);
   let t = $state(theme);
   units.subscribe((next) => (u = next));
@@ -38,6 +42,12 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
     },
     set theme(next) {
       t = next;
+    },
+    get hint() {
+      return h;
+    },
+    set hint(next) {
+      h = next;
     },
     store: units,
   };

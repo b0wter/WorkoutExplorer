@@ -17,7 +17,7 @@ import RouteMap from '../components/map/RouteMap.svelte';
 import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
-import { enhanceCopyLink, enhanceExpiry, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { enhanceCopyLink, enhanceExpiry, enhanceHowto, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
@@ -86,11 +86,20 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   restoreSplit(root, split);
   enhanceCopyLink(root, win.location.origin, win.navigator);
   enhanceReport(root); // F-28 RF-2: before any await, so a failing data file still leaves Report working
+  enhanceHowto(root, prefs.howtoOpened(), prefs.setHowtoOpened); // F-39 HU-6: likewise; viewing page only (the markup)
   enhanceExpiry(root, Date.now());
   // One units store per page (D-3): a remembered drop-down choice, else the browser language (D-4,
   // DS-1). The server markup is metric: swapped once the data file is decoded (D-5).
   const units = createUnitsStore(prefs.units() ?? defaultUnits(win.navigator.languages, win.navigator.language));
-  const look = createLook(units, typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-color-scheme: dark)') : null, prefs.theme());
+  // F-39 HU-3: the edit page keeps today's hint; the viewing page takes "done" from the head script's
+  // attribute, read once, so the hint agrees with the space the CSS reserved.
+  const hint = edit ? 'plain' : win.document.documentElement.dataset.hint === 'done' ? 'none' : 'once';
+  const look = createLook(units, typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-color-scheme: dark)') : null, prefs.theme(), hint);
+  const hintDone = (): void => {
+    if (look.hint !== 'once') return;
+    look.hint = 'done'; // the line empties but keeps its space until the next load
+    prefs.setHintDone();
+  };
   // DS-4: the head script applied the stored theme before the first paint; a choice sets the
   // attribute first, so the charts and the map read the new CSS when the scheme prop changes.
   addThemeSelect(root, look.theme, (theme) => {
@@ -129,6 +138,8 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   addUnitsSelect(root, units, prefs.setUnits);
   const cursor = createCursorStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
+  // F-39 HU-4: the viewer's first range, by drag or lap/split row (F-40: a range from a link must not count).
+  if (hint === 'once') selection.subscribe((a) => a >= 0 && hintDone());
   // F-18: the row mark, the laps / splits switch and the splits table; row taps once the range
   // panel is mounted (L-7, QA-18-r1-3).
   const lapTaps = enhanceLaps(root, data, selection, units, win);
@@ -168,6 +179,10 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
         // AP-5: the remembered axis; a workout without distance shows time and stores nothing.
         initialAxis: prefs.axis() ?? 'time',
         onaxis: prefs.setAxis,
+        get hint() {
+          return look.hint;
+        },
+        onhint: hintDone,
         onready: () => {
           performance.mark('wx-page:charts-ready');
           recorder?.chartsReady();

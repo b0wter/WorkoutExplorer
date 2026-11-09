@@ -153,13 +153,35 @@ export function enhanceReport(root: ParentNode, load = () => import('../report/f
   button.addEventListener('click', () => {
     load().then(
       (m) => m.openReport(button.ownerDocument, id),
-      () => {
-        if (button.nextElementSibling?.className === 'report-fail') return;
-        const p = button.ownerDocument.createElement('span');
-        p.className = 'report-fail';
-        p.textContent = 'The report form could not be loaded. Reload the page and try again.';
-        button.after(p);
+      () => loadFailed(button, 'The report form could not be loaded. Reload the page and try again.'),
+    );
+  });
+}
+
+/** One line after a button whose lazy chunk failed to load (F-28, F-39), never a second one. */
+function loadFailed(button: HTMLElement, text: string): void {
+  if (button.nextElementSibling?.className === 'report-fail') return;
+  const p = button.ownerDocument.createElement('span');
+  p.className = 'report-fail';
+  p.textContent = text;
+  button.after(p);
+}
+
+/** How to use (F-39 HU-6, HU-7; AP-22): reveals the template's button, emphasised until the dialog
+ *  has been shown on this device (`opened`); the dialog is a lazy chunk (ADR-011). */
+export function enhanceHowto(root: ParentNode, opened: boolean, onopen: () => void, load = () => import('../howto')): void {
+  const button = root.querySelector<HTMLButtonElement>('button[data-howto]');
+  if (!button) return;
+  button.classList.add('ready');
+  button.classList.toggle('fresh', !opened);
+  button.addEventListener('click', () => {
+    load().then(
+      (m) => {
+        m.openHowto(button.ownerDocument);
+        button.classList.remove('fresh');
+        onopen();
       },
+      () => loadFailed(button, 'The help could not be loaded. Reload the page and try again.'),
     );
   });
 }

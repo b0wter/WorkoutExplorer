@@ -336,6 +336,75 @@ describe('range panel (F-17 R-9, AC 4, AC 5)', () => {
   });
 });
 
+describe('How to use and the range hint (F-39 HU-1 to HU-6; AC 2, AC 6, AC 7)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('requestAnimationFrame', (f: FrameRequestCallback) => {
+      f(0);
+      return 1;
+    });
+  });
+  afterEach(() => {
+    delete document.documentElement.dataset.hint;
+  });
+  const hint = (): string | undefined => stubLog.chartStack[0].hint;
+
+  it('fresh: the hint with its ×; the first range writes the flag once and empties the line', async () => {
+    await open();
+    expect(hint()).toBe('once');
+    stubLog.chartStack[0].selection?.set(10, 20);
+    flushSync();
+    expect(hint()).toBe('done');
+    expect(localStorage.getItem('wx.hint.done')).toBe('1');
+    expect(document.documentElement.dataset.hint).toBeUndefined(); // never set at runtime
+  });
+
+  it('the × does the same', async () => {
+    await open();
+    stubLog.chartStack[0].onhint?.();
+    flushSync();
+    expect(hint()).toBe('done');
+    expect(localStorage.getItem('wx.hint.done')).toBe('1');
+  });
+
+  it('data-hint="done" from the head script: no line, and a range writes nothing', async () => {
+    document.documentElement.dataset.hint = 'done';
+    await open();
+    expect(hint()).toBe('none');
+    stubLog.chartStack[0].selection?.set(10, 20);
+    flushSync();
+    expect(localStorage.length).toBe(0);
+  });
+
+  it('the button is emphasised until opened on this device; storage is untouched by loading', async () => {
+    page = renderSample('ride-30min');
+    const ctl = () => document.querySelector('.ctl')!;
+    ctl().insertAdjacentHTML('beforeend', '<button type="button" class="howto" data-howto>How to use</button>');
+    await startPage(document);
+    expect(document.querySelector('.howto')?.className).toBe('howto ready fresh');
+    expect(localStorage.length).toBe(0);
+    page.remove();
+    localStorage.setItem('wx.howto.opened', '1');
+    page = renderSample('ride-30min');
+    ctl().insertAdjacentHTML('beforeend', '<button type="button" class="howto" data-howto>How to use</button>');
+    await startPage(document);
+    expect(document.querySelector('.howto')?.className).toBe('howto ready');
+  });
+
+  it('storage that throws: the button emphasised and the hint shown, no error', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    await open();
+    expect(hint()).toBe('once');
+    stubLog.chartStack[0].onhint?.();
+    flushSync();
+    expect(hint()).toBe('done');
+  });
+});
+
 describe('fullscreen readout strip (F-33 CR-2)', () => {
   it('mounted into the map box only after onmapready; none without a map', async () => {
     await open('ride-30min');

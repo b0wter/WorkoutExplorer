@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The enhancers (F-13 design D-8, D-14; AC 1 expiry, AC 6 copy link). Synthetic markup only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, enhanceReport, viewingUrl } from './enhance';
+import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
 
 const ORIGIN = 'https://example.test';
 let root: HTMLElement;
@@ -163,5 +163,48 @@ describe('report button (F-28 RF-1, RF-2, RF-5, RF-9)', () => {
     expect(lines.length).toBe(1);
     expect(button.nextElementSibling).toBe(lines[0]);
     expect(lines[0].textContent).toBe('The report form could not be loaded. Reload the page and try again.');
+  });
+});
+
+describe('How to use button (F-39 HU-6, HU-7; AC 2, AC 5)', () => {
+  const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+  const button = (): HTMLButtonElement => {
+    root.insertAdjacentHTML('beforeend', '<button type="button" class="howto" data-howto>How to use</button>');
+    return root.querySelector('button[data-howto]')!;
+  };
+
+  it('revealed and emphasised until opened; the chunk loads only on click; opening reports once shown', async () => {
+    const b = button();
+    expect(b.classList.contains('ready')).toBe(false); // without JavaScript: an invisible reserved box
+    const openHowto = vi.fn();
+    const load = vi.fn(async () => ({ openHowto }));
+    const onopen = vi.fn();
+    enhanceHowto(root, false, onopen, load);
+    expect([...b.classList]).toEqual(['howto', 'ready', 'fresh']);
+    expect(load).not.toHaveBeenCalled();
+    b.click();
+    await flush();
+    expect(openHowto).toHaveBeenCalledWith(document);
+    expect(onopen).toHaveBeenCalledTimes(1);
+    expect(b.classList.contains('fresh')).toBe(false);
+  });
+
+  it('plain when already opened on this device', () => {
+    const b = button();
+    enhanceHowto(root, true, vi.fn(), vi.fn());
+    expect([...b.classList]).toEqual(['howto', 'ready']);
+  });
+
+  it('a failed chunk shows one line beside the button and records nothing', async () => {
+    const b = button();
+    const onopen = vi.fn();
+    enhanceHowto(root, false, onopen, () => Promise.reject(new Error('offline')));
+    b.click();
+    b.click();
+    await flush();
+    expect(root.querySelectorAll('.report-fail').length).toBe(1);
+    expect(b.nextElementSibling?.textContent).toBe('The help could not be loaded. Reload the page and try again.');
+    expect(onopen).not.toHaveBeenCalled();
+    expect(b.classList.contains('fresh')).toBe(true);
   });
 });

@@ -37,8 +37,9 @@ describe('template', () => {
     expect(template).toContain('<div class="page{{if .Route.Map}} has-map{{end}}">');
     expect(template).toMatch(/<div class="layout">[\s\S]*<footer class="foot">[\s\S]*<\/footer>\s*<\/div>/);
     expect(template).not.toMatch(/map-pin|aria-pressed|pinned/);
-    // The one button: Report, hidden without JavaScript (F-28 RF-1, RF-9).
-    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" data-report hidden>']);
+    // Report, hidden without JavaScript (F-28 RF-1, RF-9); How to use, invisible until enhanced
+    // (F-39 HU-6: a reserved box, not hidden).
+    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="howto" data-howto>', '<button type="button" data-report hidden>']);
   });
 
   it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6)', () => {
@@ -123,7 +124,9 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(rule('.head-text')).toContain('min-width: min(160px, 100% - 44px)');
     expect(css).toMatch(/@media \(min-width: 560px\) \{\s*\.head-text \{\s*min-width: min\(240px, 100% - 44px\);/);
     expect(rule('.units-slot,\n.theme-slot')).toMatch(/width: 104px;\s*height: 32px;/);
-    expect(rule('.copy')).toMatch(/min-width: 84px;\s*height: 32px;/);
+    expect(rule('.copy,\n.howto')).toMatch(/height: 32px;/);
+    expect(rule('.copy')).toContain('min-width: 84px;');
+    expect(css).toMatch(/^\.howto \{[^}]*\swidth: 120px;/m); // F-39 HU-6: the same box emphasised, plain and before the bundle
   });
 
   it('viewport units only in the desktop and landscape maps and the pinned phone map, never dvh/svh', () => {

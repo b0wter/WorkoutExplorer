@@ -9,7 +9,7 @@
   import type { WorkoutData } from '../../lib/datafile';
   import type { CursorStore } from '../../lib/cursor';
   import type { SelectionStore } from '../../lib/selection';
-  import { distanceAxis, presentCharts, timeAxis, type AxisKind } from '../../lib/charts';
+  import { distanceAxis, presentCharts, timeAxis, type AxisKind, type HintMode } from '../../lib/charts';
   import type { Units } from '../../lib/format';
   import CursorReadout from './CursorReadout.svelte';
   import MetricChart from './MetricChart.svelte';
@@ -34,9 +34,12 @@
     initialAxis?: AxisKind;
     /** Called when the viewer picks an axis with the toggle (the page remembers it). */
     onaxis?: (axis: AxisKind) => void;
+    /** The range hint (F-39 HU-3); default `plain`. The page owns it: × only reports through onhint. */
+    hint?: HintMode;
+    onhint?: () => void;
   }
 
-  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis }: Props = $props();
+  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, hint = 'plain', onhint }: Props = $props();
 
   // A wiring bug, not a data problem: one cursor store per WorkoutData (ADR-008).
   // Reads only the two sampleCount values: never cursor.get() or subscribe.
@@ -168,9 +171,10 @@
       {/if}
     </div>
    {/key}
-   {#if charts.length > 0}
+   {#if charts.length > 0 && hint !== 'none'}
     <!-- How to select (R-12): the wording follows the primary pointer, in CSS. -->
-    <p class="select-hint"><span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span></p>
+    <p class="select-hint">{#if hint !== 'done'}<span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span>{/if}{#if hint === 'once'}<button
+      type="button" class="hint-x" aria-label="Dismiss hint" onclick={() => onhint?.()}>×</button>{/if}</p>
    {/if}
   {/key}
 </div>
@@ -214,6 +218,30 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  /* F-39 HU-5: the text ellipsises, the × never; its 24 px hit area takes the 4 px gap above. */
+  .select-hint:has(button) {
+    display: flex;
+    overflow: visible;
+  }
+  .select-hint:has(button) span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hint-x {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -4px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 16px;
+    line-height: 24px;
   }
   .coarse {
     display: none;
