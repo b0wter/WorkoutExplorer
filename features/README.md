@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -41,7 +41,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
 | [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done (rework 8 Nov 2026) | user: AC 5 scrub record on ride-12h (qa r2) |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
-| [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, delete prompt via exec, Caddy 404 after delete, report query with sudo) |
+| [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, delete prompt via exec, report query with sudo) |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov) |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
@@ -52,9 +52,11 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | done | user: lock-screen text shows no key (AC 41; links checked 9 Nov) |
 | [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | done | user: /robots.txt check; phone and dark-mode look (page and /api 404 checked 9 Nov) |
+| [F-39](F-39-how-to-use.md) | How to use | 2 | frontend | F-14, F-17, F-18, F-26 | specified | |
+| [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 5 features (F-35, F-36, F-34, F-37, F-38, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 7 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -84,6 +86,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-17 Two columns on wide screens | Must | F-13, F-17 (splitter), F-19 |
 | AP-18 Pinned map on a phone | Must | F-13, F-19, F-26 |
 | AP-21 Cursor readout in the fullscreen map | Must | F-33 |
+| AP-19 Range in the link | Could (phase 2) | F-40 (phase 2) |
+| AP-22 How to use, first-visit range hint | Could (phase 2) | F-39 (phase 2) |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -136,15 +140,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Privacy zones of 200 m to 1 km — SH-3
 - iframe embed with compact layout — SH-7
 - Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
-- Shareable range: the selected range kept in the viewing link's fragment (frontend only) — AP-19, AP-7, AP-8, SH-6. Acceptance criteria, to carry into its feature file:
-  - [ ] Selecting a range on `/w/{id}` (drag or lap/split row) and opening the resulting link in another browser shows the same range: map highlight and range panel with the same values.
-  - [ ] The range is only in the fragment: the server access log and the request for the page show no trace of it, and the cached static page is served unchanged.
-  - [ ] The fragment holds time positions only (no coordinates, no distance); a link opened after the data file is regenerated selects the same time span.
-  - [ ] The edit page and the published page neither read nor write the range; their token fragment is untouched, and opening `/edit/{id}#{token}` never selects a range.
-  - [ ] A range that ends past the workout's data, or starts before it, is cut to the data; with start and end hiding on, a range inside a hidden section shows the range panel but no positions on the map, the same as selecting it by hand.
-  - [ ] Malformed, empty, zero-length, reversed and entirely out-of-range values are each ignored without a message; the page opens with no range and works as usual.
-  - [ ] With JavaScript off the page shows as before; the summary still renders before the map and charts (LCP target unchanged).
-  - [ ] With live link update (assumed, open question): selecting updates the link without new browser history entries, clearing (AP-7) removes the range from it, and the copy-link button (SH-6) copies the link with the range.
+- Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
 - Summary colours: summary cells tinted with a muted version of their chart's line colour (frontend only) — DS-5, AP-2, AP-4, DS-4. Acceptance criteria, to carry into its feature file:
   - [ ] Elevation gain, speed or pace, heart rate, power, cadence and temperature cells are tinted, each in a muted version of its own chart's line colour; distance, moving time, elapsed time and calories cells stay plain.
   - [ ] In light and dark theme the tint matches that theme's line colour, and every text in a tinted cell has a contrast of at least 4.5:1 against it.
@@ -584,6 +580,15 @@ Updated: spec (scope table row, INF-1, INF-4, new INF-6, NFR Privacy Pushover li
 - **Build order:** after F-37. Owner both, backend first.
 
 Updated: spec (viewer story 16, scope table row, footer line under Activity page, DS-4, new INF-7, open question "Impressum details", Roadmap phase 2), F-38 (new), feature index (order, row, counts, coverage DS-4, INF-7, NFR `noindex`). Technical design (Configuration, Hosting, Indexing: `robots.txt` now exists, Repository layout, footer) to be updated by the architect. Later the same day: F-38 rate limit, spec INF-7, F-23 (`robots.txt`).
+
+**Decided on 9 Nov 2026, How to use and shareable range** (user, new AP-22, AP-19, F-39, F-40):
+
+- **How to use (AP-22, Could, phase 2):** viewing page only; a text button "How to use" with an icon in the header's control row, visible on phones, not a bare "?"; emphasised until first opened on the device, then plain; a dialog of one line per section (cursor, range, lap and split rows, fullscreen map, units and theme, sharing a range once F-40 ships), worded for touch or mouse, loaded only when opened.
+- **First-visit range hint:** the AP-7 hint on the viewing page shows until the first range selection on the device or until dismissed. Both flags are kept in browser storage like the units choice (no cookie, nothing to the server; works without storage).
+- **Shareable range (AP-19):** the range panel gets a "Copy link to this selection" button. Format, live update and button look: OQ-130 to OQ-132 (F-40).
+- **Build order:** F-39, then F-40, after F-38. Both frontend.
+
+Updated: spec (viewer story 17, scope table row, AP-7, AP-19, new AP-22, open questions "Range in the link" and "How to use details", Roadmap phase 2), F-39 and F-40 (new, OQ-126 to OQ-132 open), feature index (order, rows, counts, coverage AP-19, AP-22), Phase 2 list (shareable range moved to F-40). Technical design (`lib/prefs` keys, ADR-011 shares, ADR-020 fragment) to be updated by the architect.
 
 The original questions follow for reference.
 
