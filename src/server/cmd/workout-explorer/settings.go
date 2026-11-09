@@ -32,6 +32,7 @@ const (
 	envPushoverUser         = "WORKOUT_EXPLORER_PUSHOVER_USER"
 	envOperatorFile         = "WORKOUT_EXPLORER_OPERATOR_FILE"
 	envIOSShortcutURL       = "WORKOUT_EXPLORER_IOS_SHORTCUT_URL"
+	envImpressumFile        = "WORKOUT_EXPLORER_IMPRESSUM_FILE"
 )
 
 const (
@@ -203,6 +204,29 @@ func operatorBlock(getenv func(string) string) (string, error) {
 	return block, nil
 }
 
+// impressumBlock reads the Impressum file (F-38 IM-1) and returns it rendered
+// by the operator file's parser. Unset or empty is "" (no Impressum); unlike
+// the operator file, a missing, unreadable or invalid file, a directory or a
+// relative path is an error naming the setting, never a placeholder.
+func impressumBlock(getenv func(string) string) (string, error) {
+	path := getenv(envImpressumFile)
+	if path == "" {
+		return "", nil
+	}
+	if !filepath.IsAbs(path) {
+		return "", errors.New(envImpressumFile + " must be an absolute path")
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("%s: cannot read the file: %v", envImpressumFile, err)
+	}
+	block, err := about.ParseOperator(b)
+	if err != nil {
+		return "", fmt.Errorf("%s: the file %v", envImpressumFile, err)
+	}
+	return block, nil
+}
+
 // iosShortcutURL reads the link to the hoster's iOS Shortcut (F-34, INF-5):
 // unset or empty is off; otherwise an absolute https link with a host and no
 // user info, or an error naming the setting.
@@ -275,7 +299,11 @@ func readSettings(getenv func(string) string) (settings, error) {
 	if err != nil {
 		return settings{}, err
 	}
-	return settings{iosShortcutURL: sc, operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
+	im, err := impressumBlock(getenv)
+	if err != nil {
+		return settings{}, err
+	}
+	return settings{impressumHTML: im, iosShortcutURL: sc, operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
 		pushoverToken: pt, pushoverUser: pu}, nil
 }
 

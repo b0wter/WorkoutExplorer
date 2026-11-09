@@ -19,6 +19,7 @@ import (
 	"workout-explorer/internal/publish"
 	"workout-explorer/internal/pushover"
 	"workout-explorer/internal/reports"
+	"workout-explorer/internal/shell"
 	"workout-explorer/internal/store"
 )
 
@@ -38,6 +39,7 @@ type settings struct {
 	operatorFile         string // WORKOUT_EXPLORER_OPERATOR_FILE, for the missing-file warning
 	operatorHTML         string // the rendered operator file (F-29 AB-8); "": the placeholder
 	iosShortcutURL       string // the About page's iOS Shortcut link (F-34); "": no section
+	impressumHTML        string // the rendered Impressum file (F-38 IM-1); "": no Impressum, no page, no footer link
 	// onParser is called with the parser newApp built; nil in production.
 	onParser func(*ingest.Parser)
 	// onService is called with the service and the storage total newApp
@@ -61,11 +63,12 @@ const expiryPeriod = 30 * time.Second
 // and closes the database.
 func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger) (http.Handler, func() error, error) {
 	// The template is read once, before anything on disk changes (F-15 P-10).
-	tmpl, err := publish.LoadTemplate(s.webDir)
+	impressum := s.impressumHTML != ""
+	tmpl, err := publish.LoadTemplate(s.webDir, impressum)
 	if err != nil {
 		return nil, nil, err
 	}
-	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != "", Shortcut: s.iosShortcutURL})
+	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != "", Shortcut: s.iosShortcutURL, Impressum: impressum})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -77,6 +80,10 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	}
 	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return nil, nil, fmt.Errorf("data directory: %w", err)
+	}
+	// ADR-043: the page shells Caddy serves, filled for this start, before the listener opens.
+	if err := shell.Write(dataDir, s.webDir, impressum); err != nil {
+		return nil, nil, err
 	}
 	db, err := store.Open(ctx, filepath.Join(dataDir, "workouts.db"))
 	if err != nil {
@@ -179,6 +186,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		TrustedProxy:         s.trustedProxy,
 		UploadsPerHourIPv4:   s.uploadsIPv4,
 		UploadsPerHourIPv6:   s.uploadsIPv6,
+		Impressum:            []byte(s.impressumHTML),
 	})
 	every := s.expiryEvery
 	if every == 0 {

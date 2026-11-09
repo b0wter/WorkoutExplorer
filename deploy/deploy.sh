@@ -60,6 +60,8 @@ tar -C "$tmp/a/web/assets" -cf - . | tar_to
 put "$tmp/a/web/index.html" web/index.html 644 # the page template Go reads at publish
 r "mkdir -p operator" # the empty mount source (compose never creates it, DP-3); nothing is ever written inside
 put "$tmp/a/web/about.html" web/about.html 644 # the About page Go fills at start (F-29 AB-4); never touches operator/
+# The page shells serve fills into {data}/site/ at its restart below (ADR-043); Caddy never serves web/*.html.
+for f in upload.html edit.html generic.html report-delete.html impressum.html; do put "$tmp/a/web/$f" "web/$f" 644; done
 put "$tmp/a/workout-explorer" bin/workout-explorer 755
 [ "$caddy_new" = "$caddy_old" ] || put "$tmp/caddy" bin/caddy 755
 put deploy/compose.yaml compose.yaml 644
@@ -72,8 +74,6 @@ r "docker compose up -d"
 r "docker compose restart app"
 # 4. Caddyfile only: a graceful reload (a recreated Caddy has read it already).
 [ "$conf_new" = "$conf_old" ] || [ "$caddy_new" != "$caddy_old" ] || r "docker compose exec -T caddy /srv/workout-explorer/bin/caddy reload --config /srv/workout-explorer/conf/Caddyfile --adapter caddyfile"
-# The HTML entries Caddy serves, after the restart (they name the new assets, which are already there).
-for f in upload.html edit.html generic.html; do put "$tmp/a/web/$f" "web/$f" 644; done
 
 want=$tag
 up=no

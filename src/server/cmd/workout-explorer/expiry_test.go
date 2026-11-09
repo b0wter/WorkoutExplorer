@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"workout-explorer/internal/shell"
 )
 
 // F-21 end to end through newApp (architect/F-21-lifetime-and-expiry.md,
@@ -118,6 +120,13 @@ func dataLeft(t *testing.T, dir, id, pub string, more ...string) []string {
 		case "public":
 			if exists(filepath.Join(p, pub)) {
 				left = append(left, "public/{public_id}")
+			}
+		case "site": // page shells (ADR-043): fixed names, nothing per workout
+			es, _ := os.ReadDir(p)
+			for _, e := range es {
+				if !slices.Contains(append(shell.Shells, shell.Impressum), e.Name()) {
+					left = append(left, "site/"+e.Name())
+				}
 			}
 		case "tmp": // staging: empty when no upload is in flight
 			if es, err := os.ReadDir(p); err != nil || len(es) > 0 {

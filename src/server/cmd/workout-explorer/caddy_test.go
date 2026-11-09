@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"workout-explorer/internal/shell"
 )
 
 // Asserted exactly, so a loosened policy fails the build (H-2, H-12).
@@ -74,8 +76,9 @@ func freeAddr(t *testing.T) string {
 func startRig(t *testing.T) *rig { return startRigWith(t, "", "") }
 
 // startRigWith can point Caddy at another upstream (apiOverride, host:port)
-// and sets WX_TRUSTED_PROXIES (F-31 DP-1b); empty: the real server, trust nobody.
-func startRigWith(t *testing.T, apiOverride, trusted string) *rig {
+// and sets WX_TRUSTED_PROXIES (F-31 DP-1b); empty: the real server, trust
+// nobody. impressum, if given, is the rendered Impressum (F-38).
+func startRigWith(t *testing.T, apiOverride, trusted string, impressum ...string) *rig {
 	t.Helper()
 	caddy, web := os.Getenv("WX_CADDY"), os.Getenv("WX_WEB_BUILD")
 	if caddy == "" || web == "" {
@@ -85,7 +88,7 @@ func startRigWith(t *testing.T, apiOverride, trusted string) *rig {
 		t.Fatalf("no Caddy binary at %s (run `make caddy`): %v", caddy, err)
 	}
 	site := "http://" + freeAddr(t)
-	a := startApp(t, settings{webDir: web, expiryEvery: expiryEvery, baseURL: site}) // F-23 PC-8
+	a := startApp(t, settings{webDir: web, expiryEvery: expiryEvery, baseURL: site, impressumHTML: strings.Join(impressum, "")}) // F-23 PC-8
 	api, stopGo, _, result := startServer(t, a.h)
 	r := &rig{t: t, a: a, web: web, site: site,
 		client: &http.Client{
@@ -200,6 +203,22 @@ func (r *rig) publish(name string) (pub, token string) {
 	return pub, token
 }
 
+// siteFile is a page shell as serve wrote it (ADR-043); it must be the
+// build's file with the footer marker filled.
+func (r *rig) siteFile(name string) []byte {
+	r.t.Helper()
+	b, err := os.ReadFile(filepath.Join(r.a.dir, "site", name))
+	if err != nil {
+		r.t.Fatal(err)
+	}
+	src := string(r.webFile(name))
+	on := strings.Contains(string(b), shell.Link)
+	if want, err := shell.Fill(name, src, on); err != nil || want != string(b) {
+		r.t.Fatalf("site/%s is not the filled build file: %v", name, err)
+	}
+	return b
+}
+
 func (r *rig) webFile(name string) []byte {
 	r.t.Helper()
 	b, err := os.ReadFile(filepath.Join(r.web, name))
@@ -213,7 +232,7 @@ func (r *rig) webFile(name string) []byte {
 // without oldData) and the old data URL is 404, and fails after 60 s (SH-10).
 func (r *rig) gone(label, pub, oldData string, since time.Time) {
 	r.t.Helper()
-	generic := r.webFile("generic.html")
+	generic := r.siteFile("generic.html")
 	for {
 		p, d := r.get("/w/"+pub), r.get("/w/"+pub+"/"+oldData)
 		pageGone := (p.code == 404 && bytes.Equal(p.body, generic)) || (p.code == 200 && !bytes.Contains(p.body, []byte(oldData)))
@@ -258,7 +277,7 @@ func TestCaddy(t *testing.T) {
 		} else {
 			r.check("page revalidated", r.get("/w/"+pub, "If-None-Match", etag), 304, ccNoCache)
 		}
-		generic := r.webFile("generic.html")
+		generic := r.siteFile("generic.html")
 		draft, _ := r.upload("ride-30min.fit") // a draft has no public folder: generic page
 		for _, p := range []string{"/w/" + draft, "/w/0123456789abcdefABCDEF", "/w/x", "/w/" + pub + "/", "/w/" + pub + "/a/b"} {
 			got := r.get(p)
@@ -276,7 +295,7 @@ func TestCaddy(t *testing.T) {
 		}
 		// F-23 AC 7 (SH-11): the same fixed warning card for two workouts and a draft.
 		other, _ := r.publish("run-30min.fit")
-		edit := r.webFile("edit.html")
+		edit := r.siteFile("edit.html")
 		for _, p := range []string{"/edit/" + pub, "/published/" + pub, "/edit/" + other, "/published/" + other, "/edit/" + draft, "/published/" + draft} {
 			got := r.get(p)
 			r.check(p, got, 200, ccNoStore)
@@ -307,11 +326,20 @@ func TestCaddy(t *testing.T) {
 				}
 			}
 		}
-		// F-23 AC 5 (PC-11): no robots.txt, so nothing disallows /w/.
-		r.check("robots.txt", r.get("/robots.txt"), 404, ccNoCache)
+		// F-38 IM-8 (F-23 PC-11): robots.txt names only the Impressum addresses, never /w/, also without an Impressum.
+		robots := r.get("/robots.txt")
+		r.check("robots.txt", robots, 200, ccNoCache)
+		if string(robots.body) != robotsTxt || robots.h.Get("Content-Type") != "text/plain; charset=utf-8" {
+			t.Errorf("robots.txt: %q %q", robots.body, robots.h.Get("Content-Type"))
+		}
+		// F-38 AC 1: without an Impressum no page, no text address, no footer link.
+		r.check("impressum unset", r.get("/impressum"), 404, ccNoCache)
+		if got, unknown := r.get("/api/impressum", impressumHdr...), r.get("/api/nothing-here"); got.code != 404 || !bytes.Equal(got.body, unknown.body) {
+			t.Errorf("api impressum unset: %d %q", got.code, got.body)
+		}
 		got := r.get("/")
 		r.check("upload page", got, 200, ccNoCache)
-		if !bytes.Equal(got.body, r.webFile("upload.html")) {
+		if !bytes.Equal(got.body, r.siteFile("upload.html")) {
 			t.Error("/ is not upload.html")
 		}
 		assets, err := os.ReadDir(filepath.Join(r.web, "assets"))
@@ -331,11 +359,13 @@ func TestCaddy(t *testing.T) {
 			t.Error("/about is not the filled page")
 		}
 		r.check("about.html", r.get("/about.html"), 404, ccNoCache)
-		// F-37 DK-11: the delete link's page, never cached; its .html name is not served.
-		page, perr := os.ReadFile(filepath.Join(r.web, "report-delete.html"))
-		if perr != nil {
-			t.Fatal(perr)
+		for _, p := range []string{"/", "/w/" + draft, "/edit/" + pub, "/report-delete", "/about", "/w/" + pub} {
+			if bytes.Contains(r.get(p).body, []byte("Impressum")) {
+				t.Errorf("%s names the Impressum while it is unset", p)
+			}
 		}
+		// F-37 DK-11: the delete link's page, never cached; its .html name is not served.
+		page := r.siteFile("report-delete.html")
 		rd := r.get("/report-delete")
 		r.check("report-delete", rd, 200, ccNoStore)
 		if !bytes.Equal(rd.body, page) || bytes.Contains(page, []byte("og:")) || bytes.Contains(page, []byte("twitter:")) {
@@ -580,5 +610,61 @@ func TestCaddyLogsNoRequests(t *testing.T) {
 		if strings.Contains(out, bad) {
 			t.Errorf("Caddy's output contains %q:\n%s", bad, out)
 		}
+	}
+}
+
+// robotsTxt is F-38 IM-8's body, exactly.
+const robotsTxt = "User-agent: *\nDisallow: /impressum\nDisallow: /api/impressum\n"
+
+// impressumHdr is what the /impressum page's script sends (IM-5).
+var impressumHdr = []string{"Wx-Impressum", "1", "Sec-Fetch-Site", "same-origin"}
+
+// TestCaddyImpressum (F-38 AC 1 to 3, 5, 6, 10 to 12, through Caddy): the
+// footer link on every page type, the page without the text, the text only
+// from /api/impressum and only for the page's own request, 30 per hour.
+func TestCaddyImpressum(t *testing.T) {
+	const marker = "Distinctive-Impressum-Marker-7Q2"
+	block := "<h2>Impressum</h2>\n<p>" + marker + " &lt;b&gt;</p>\n"
+	r := startRigWith(t, "", "", block)
+	pub, _ := r.publish("ride-30min.fit")
+	draft, _ := r.upload("ride-30min.fit")
+
+	page := r.get("/impressum")
+	r.check("impressum", page, 200, ccNoCache)
+	if !bytes.Equal(page.body, r.siteFile("impressum.html")) || !bytes.Contains(page.body, []byte(`<meta name="robots" content="noindex, nofollow, noarchive"`)) {
+		t.Error("/impressum is not the filled shell or has no robots meta")
+	}
+	r.check("impressum.html", r.get("/impressum.html"), 404, ccNoCache)
+	r.check("impressum/", r.get("/impressum/"), 404, ccNoCache)
+	// AC 12: every page type has the link once; AC 3: none but the text address has the text.
+	for _, p := range []string{"/", "/w/" + draft, "/w/0123456789abcdefABCDEF", "/edit/" + pub, "/published/" + pub, "/report-delete", "/about", "/w/" + pub, "/impressum"} {
+		got := r.get(p)
+		if bytes.Count(got.body, []byte(shell.Link)) != 1 || bytes.Contains(got.body, []byte(marker)) || bytes.Contains(got.body, []byte(shell.Marker)) {
+			t.Errorf("%s: %d links, or the text or a marker", p, bytes.Count(got.body, []byte(shell.Link)))
+		}
+	}
+	unknown := r.get("/api/nothing-here")
+	for label, hdr := range map[string][]string{"curl": nil, "cross-site": {"Wx-Impressum", "1", "Sec-Fetch-Site", "cross-site"},
+		"other origin": {"Origin", "https://evil.example", "Referer", "https://evil.example/"}} {
+		got := r.get("/api/impressum", hdr...)
+		if got.code != 404 || !bytes.Equal(got.body, unknown.body) || got.h.Get("Content-Type") != unknown.h.Get("Content-Type") {
+			t.Errorf("%s: %d %q", label, got.code, got.body)
+		}
+	}
+	for i := 1; i <= 30; i++ {
+		got := r.get("/api/impressum", impressumHdr...)
+		if i == 1 {
+			r.check("api impressum", got, 200, ccNoStore)
+			if string(got.body) != block || got.h.Get("Content-Type") != "text/html; charset=utf-8" {
+				t.Errorf("api impressum: %q %q", got.body, got.h.Get("Content-Type"))
+			}
+		} else if got.code != 200 {
+			t.Fatalf("request %d: %d", i, got.code)
+		}
+	}
+	got := r.get("/api/impressum", impressumHdr...)
+	r.check("31st", got, 429, ccNoStore)
+	if bytes.Contains(got.body, []byte(marker)) || got.h.Get("Retry-After") == "" {
+		t.Errorf("31st: %q", got.body)
 	}
 }

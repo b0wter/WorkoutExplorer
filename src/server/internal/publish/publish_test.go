@@ -53,7 +53,7 @@ type fixture struct {
 
 func newFixture(t *testing.T, file string) *fixture {
 	t.Helper()
-	tmpl, err := LoadTemplate(webDir)
+	tmpl, err := LoadTemplate(webDir, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -686,18 +686,27 @@ func TestRemoveAndSweep(t *testing.T) {
 // that names an unknown field fail at load.
 func TestLoadTemplate(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := LoadTemplate(dir); err == nil {
+	if _, err := LoadTemplate(dir, false); err == nil {
 		t.Error("missing template")
 	}
 	for _, src := range []string{"{{.Page.Title", "{{.Page.Nope}}", "{{range .Laps.Missing}}{{end}}"} {
-		os.WriteFile(filepath.Join(dir, "index.html"), []byte(src), 0o600)
-		if _, err := LoadTemplate(dir); err == nil {
+		os.WriteFile(filepath.Join(dir, "index.html"), []byte(src+"<!--wx:impressum-->"), 0o600)
+		if _, err := LoadTemplate(dir, false); err == nil {
 			t.Errorf("%q loaded", src)
 		}
 	}
+	// F-38 IM-7: the footer marker is required once and filled before parsing.
 	os.WriteFile(filepath.Join(dir, "index.html"), []byte("<title>{{.Page.Title}}</title>"), 0o600)
-	if _, err := LoadTemplate(dir); err != nil {
-		t.Error(err)
+	if _, err := LoadTemplate(dir, false); err == nil {
+		t.Error("template without the footer marker loaded")
+	}
+	os.WriteFile(filepath.Join(dir, "index.html"), []byte("<title>{{.Page.Title}}</title><footer><!--wx:impressum--></footer>"), 0o600)
+	for on, want := range map[bool]string{true: `<title>t</title><footer><a href="/impressum">Impressum</a></footer>`, false: "<title>t</title><footer></footer>"} {
+		tmpl, err := LoadTemplate(dir, on)
+		var b strings.Builder
+		if err != nil || tmpl.Execute(&b, probe) != nil || b.String() != want {
+			t.Errorf("impressum=%v: %q %v", on, b.String(), err)
+		}
 	}
 }
 
@@ -706,7 +715,7 @@ func TestLoadTemplate(t *testing.T) {
 // (recorded in testdata/corpus/MEASUREMENTS.md).
 func benchFixture(b *testing.B) *fixture {
 	b.Helper()
-	tmpl, err := LoadTemplate(webDir)
+	tmpl, err := LoadTemplate(webDir, false)
 	if err != nil {
 		b.Fatal(err)
 	}

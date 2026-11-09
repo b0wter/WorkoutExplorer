@@ -9,18 +9,25 @@ import (
 	"time"
 
 	"workout-explorer/internal/page"
+	"workout-explorer/internal/shell"
 )
 
 // LoadTemplate reads <webDir>/index.html, the deployable page template
 // (F-15 P-10, ADR-026 item 1), parses it with missingkey=error and executes
 // it once with a filled view model, so a template that names a field the
-// view model lacks fails at start, not at the first publish.
-func LoadTemplate(webDir string) (*template.Template, error) {
+// view model lacks fails at start, not at the first publish. The footer
+// marker is filled first (html/template drops comments): the Impressum link
+// when impressum, else nothing (F-38 IM-7).
+func LoadTemplate(webDir string, impressum bool) (*template.Template, error) {
 	src, err := os.ReadFile(filepath.Join(webDir, "index.html"))
 	if err != nil {
 		return nil, fmt.Errorf("page template: %w", err)
 	}
-	t, err := template.New("index.html").Option("missingkey=error").Parse(string(src))
+	filled, err := shell.Fill("page template", string(src), impressum)
+	if err != nil {
+		return nil, err
+	}
+	t, err := template.New("index.html").Option("missingkey=error").Parse(filled)
 	if err != nil {
 		return nil, fmt.Errorf("page template: %w", err)
 	}

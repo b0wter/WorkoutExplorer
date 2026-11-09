@@ -54,6 +54,7 @@ type Config struct {
 	TrustedProxy         netip.Addr       // the one non-loopback peer whose X-Forwarded-For is believed (Caddy, F-31 DP-1a); zero: loopback only
 	UploadsPerHourIPv4   int              // per address; validated by cmd; 0: 60
 	UploadsPerHourIPv6   int              // per /64; validated by cmd; 0: 60
+	Impressum            []byte           // the rendered Impressum (F-38 IM-4); empty: GET /api/impressum is not served
 }
 
 // NewHandler returns the handler for all /api/* routes.
@@ -82,6 +83,9 @@ func NewHandler(cfg Config) http.Handler {
 		h := newReportDeleteHandler(cfg)
 		mux.Handle("GET /api/report-delete", h)
 		mux.Handle("POST /api/report-delete", h)
+	}
+	if len(cfg.Impressum) > 0 {
+		mux.Handle("GET /api/impressum", newImpressumHandler(cfg))
 	}
 	if cfg.Storage != nil {
 		mux.Handle("GET /api/status", statusHandler(cfg.Storage))

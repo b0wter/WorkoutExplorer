@@ -47,7 +47,7 @@ func regenerateCmd(args []string, getenv func(string) string, stdout, stderr io.
 		fmt.Fprintln(stderr, "regenerate: -web must not be empty")
 		return 2
 	}
-	// Only the two settings the build uses, with serve's checks, before anything is opened.
+	// Only the settings the build uses, with serve's checks, before anything is opened.
 	t, err := parseTimeout(getenv)
 	if err != nil {
 		fmt.Fprintf(stderr, "regenerate: %v\n", err)
@@ -58,9 +58,15 @@ func regenerateCmd(args []string, getenv func(string) string, stdout, stderr io.
 		fmt.Fprintf(stderr, "regenerate: %v\n", err)
 		return 2
 	}
+	// The footer link of published pages follows the setting (F-38 IM-1, OQ-120).
+	im, err := impressumBlock(getenv)
+	if err != nil {
+		fmt.Fprintf(stderr, "regenerate: %v\n", err)
+		return 2
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return regenerate(ctx, *data, settings{parseTimeout: t, baseURL: b, webDir: *web}, stdout, stderr, nil)
+	return regenerate(ctx, *data, settings{parseTimeout: t, baseURL: b, webDir: *web, impressumHTML: im}, stdout, stderr, nil)
 }
 
 // regenerate is the run; each, if set, is called after every workout (tests).
@@ -70,7 +76,7 @@ func regenerate(ctx context.Context, dataDir string, s settings, stdout, stderr 
 		logger.Error("regenerate failed", "error", pathless(err))
 		return 1
 	}
-	tmpl, err := publish.LoadTemplate(s.webDir)
+	tmpl, err := publish.LoadTemplate(s.webDir, s.impressumHTML != "")
 	if err != nil {
 		return failed(err)
 	}

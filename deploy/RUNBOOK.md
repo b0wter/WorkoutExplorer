@@ -62,10 +62,12 @@ All following commands run in `deploy/` unless stated otherwise.
 Compose never creates host folders. The server runs as user ID 10001, Caddy as 10002 (and group 10001, so it can read published files). The data directory must belong to 10001:
 
 ```sh
-sudo install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public
+sudo install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public /srv/workouts/site
 ```
 
-You should see: `ls -ld /srv/workouts /srv/workouts/public` shows `drwxr-x---` and owner `10001 10001` for both.
+You should see: `ls -ld /srv/workouts /srv/workouts/public /srv/workouts/site` shows `drwxr-x---` and owner `10001 10001` for all three. `site/` holds the static pages (upload, expired workout, edit, Impressum) that the server fills at every start; Caddy serves them from there.
+
+**Upgrading from a version without `site/`:** create it once with the same command before `docker compose up -d`, or Caddy does not start.
 
 Keep it on the local disk. To use another path, set `WX_DATA` (section 4) to it.
 
@@ -79,6 +81,22 @@ cp deploy/operator.example.txt /srv/workout-explorer/operator/about.txt   # fill
 ```
 
 Set `WORKOUT_EXPLORER_OPERATOR_FILE=/srv/workout-explorer/operator/about.txt` in `.env` (section 4) and restart `app` after every edit (`docker compose restart app`). Format: `## Heading`, `- list item`, other lines are paragraphs, a blank line ends a block; no links or markup (everything is shown as plain text); at most 16 KiB. Without the file the page shows `[OPERATOR DETAILS: ...]` and `app` logs a warning: replace it before you send links to anyone. Never commit this file.
+
+### Impressum (optional)
+
+If you need an Impressum (legal notice), write it as a plain text file in the operator folder, in the same format as the operator file above (`## Heading`, `- list item`, paragraphs; at most 16 KiB; no links or markup):
+
+```sh
+cp deploy/impressum.example.txt /srv/workout-explorer/operator/impressum.txt   # replace every [bracketed prompt]
+```
+
+Then:
+
+1. Set `WORKOUT_EXPLORER_IMPRESSUM_FILE=/srv/workout-explorer/operator/impressum.txt` in `.env` (section 4).
+2. Restart `app`: `docker compose restart app`. `/impressum` and the "Impressum" footer link on every page appear; a missing, unreadable or invalid file stops `app` at start (exit code 2, the log names the setting).
+3. Run `regenerate` (section 8), so already published workout pages get the footer link too.
+
+Do the same after every edit, and to remove it (unset the key, restart, `regenerate`). The page shows the text only after a click on "Show Impressum", fetched from `/api/impressum`, which answers only that page's request and at most 30 per hour per address; `robots.txt` asks search engines to skip both. This makes the text **hard to crawl, not secret**: anyone can read and copy it, and a determined scraper can get it. Never commit the file.
 
 ## 4. Configure
 
@@ -111,6 +129,7 @@ Unset or empty keys use the default. An invalid value stops the server at start 
 | `WORKOUT_EXPLORER_PUSHOVER_TOKEN` | unset (off) | Pushover application token for report notifications, section 4a. **A secret** |
 | `WORKOUT_EXPLORER_PUSHOVER_USER` | unset (off) | Pushover user key, section 4a. **A secret** |
 | `WORKOUT_EXPLORER_OPERATOR_FILE` | unset (placeholder) | Absolute path of your About page text, see "The About page: operator file" above. `WX_OPERATOR` (default `/srv/workout-explorer/operator`) is the host folder mounted for it |
+| `WORKOUT_EXPLORER_IMPRESSUM_FILE` | unset (no Impressum) | Absolute path of your Impressum text, see "Impressum (optional)" above. Set but missing or invalid stops the server at start |
 | `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section) | `https://` link to your iPhone upload Shortcut, shown on the About page, section 4b. Anything that is not an absolute `https://` link stops the server at start |
 | `COMPOSE_FILE` | unset | Self-hosters: `compose.yaml:compose.build.yaml`; with notifications add `:compose.notify.yaml` (section 4a) |
 
@@ -405,6 +424,8 @@ docker compose logs --tail 100 caddy
 | `app` exits at start, `docker compose logs app` shows "must be ..." | A setting is invalid or `WORKOUT_EXPLORER_BASE_URL` is missing. Fix `.env` |
 | Upload fails with permission errors, or `app` cannot create files | The data directory is not owned by 10001: `sudo chown -R 10001:10001 /srv/workouts && sudo chmod 0750 /srv/workouts /srv/workouts/public` |
 | Published pages give 404 from the container but exist | Caddy cannot read `public/`: mode must be 0750 with group 10001 (section 3) |
+| `caddy` does not start: a bind mount source `.../site` does not exist | Create `site/` as in section 3, then `docker compose up -d` |
+| `/`, `/edit/...` or the expired-workout page give 404 | `app` has not started once since `site/` was created; it writes those pages at start (`docker compose logs app`) |
 | Uploads return 503 | The storage limit is reached. Raise `WORKOUT_EXPLORER_STORAGE_LIMIT_MB` (and check free disk), or wait for expiry |
 | "network ... overlaps" or no route to the other 10.250.x hosts | The project fixes two networks, `10.250.0.0/29` (edge) and `10.250.1.0/29` (backend). If your host, VPN or other containers already use them, change them in `compose.yaml` in all places: the two `subnet` lines, `WORKOUT_EXPLORER_TRUSTED_PROXY`, both `ipv4_address` lines of Caddy, the `app` address, and the `WX_TRUSTED_PROXIES` default (the edge gateway). Then `docker compose up -d` |
 | `docker compose` complains about `!override` or unknown tag | Compose is older than 2.24. Upgrade the plugin |
@@ -435,10 +456,12 @@ Shape: `deploy.sh` downloads the GitHub Release of a version tag (binary and web
 ```sh
 adduser --disabled-password deploy && usermod -aG docker deploy      # add your SSH key to ~deploy/.ssh/authorized_keys
 install -d -o deploy -g deploy -m 0755 /srv/workout-explorer /srv/workout-explorer/bin /srv/workout-explorer/conf /srv/workout-explorer/web /srv/workout-explorer/web/assets
-install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public
+install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public /srv/workouts/site
 install -d -o deploy -g deploy -m 0755 /srv/workout-explorer/operator   # About page text (public), copy deploy/operator.example.txt there
 install -m 0600 -o deploy -g deploy /dev/null /srv/workout-explorer/.env
 ```
+
+A server set up before `site/` existed: run the `install` line for `/srv/workouts/site` once before the next deploy, or Caddy does not start.
 
 Copy `deploy/example.env` to `/srv/workout-explorer/.env` and edit it as in section 4, but **do not** enable the build override (the operator path has none); with notifications set `COMPOSE_FILE=compose.yaml:compose.notify.yaml` (section 4a; `deploy.sh` copies the file). The file must stay readable by `deploy` (`0600`). Your reverse proxy: section 5.
 

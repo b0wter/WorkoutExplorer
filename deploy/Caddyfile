@@ -4,7 +4,8 @@
 # Environment (no defaults for the paths, so a missing one fails loudly; the
 # Compose file, deploy/compose.yaml, sets all of them, F-31 DP-1, DP-6, DP-9):
 #   WX_DATA  the data directory (serve -data), e.g. /srv/workouts; only
-#            {WX_DATA}/public is ever served
+#            {WX_DATA}/public and {WX_DATA}/site (the page shells serve
+#            fills at start, ADR-043) are ever served
 #   WX_WEB   the web build (serve -web), e.g. build/web
 #   WX_API   the Go server's address (default 127.0.0.1:8080)
 #   WX_SITE  the site address (default http://127.0.0.1:8088, plain HTTP; the
@@ -22,8 +23,8 @@
 # Local run:
 #   WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web build/tools/caddy-<version>/caddy run --config deploy/Caddyfile --adapter caddyfile
 #
-# Never served: build/web/index.html (the page template), build/web/about.html (Go serves /about), private/, tmp/, the
-# database, public.lock, dot files, anything above public/ (H-10).
+# Never served: any HTML file of build/web (the page template, the About page Go serves, the unfilled shells),
+# private/, tmp/, the database, public.lock, dot files, anything above public/ and site/ (H-10).
 {
 	admin {$WX_ADMIN:off}
 	auto_https off # plain HTTP only: TLS is the operator's proxy's (ADR-034 rev. 2)
@@ -80,7 +81,7 @@
 			file_server
 		}
 		handle {
-			root * {$WX_WEB}
+			root * {$WX_DATA}/site
 			rewrite * /generic.html
 			file_server {
 				status 404
@@ -108,19 +109,22 @@
 	# Every other /w/ path: the generic page.
 	handle /w/* {
 		header Cache-Control no-cache
-		root * {$WX_WEB}
+		root * {$WX_DATA}/site
 		rewrite * /generic.html
 		file_server {
 			status 404
 		}
 	}
 
+	# The page shells (generic, owner, confirmation, upload, Impressum) come from
+	# {WX_DATA}/site, where serve writes them filled at start (ADR-043).
+
 	# /edit/* and /published/*: the static owner page (F-19 E-1, F-20 C-1); it
 	# reads the token from the fragment, which never reaches a server.
 	@owner path /edit/* /published/*
 	handle @owner {
 		header Cache-Control no-store
-		root * {$WX_WEB}
+		root * {$WX_DATA}/site
 		rewrite * /edit.html
 		file_server
 	}
@@ -130,7 +134,7 @@
 	# /report-delete.html is the 404 below.
 	handle /report-delete {
 		header Cache-Control no-store
-		root * {$WX_WEB}
+		root * {$WX_DATA}/site
 		rewrite * /report-delete.html
 		file_server
 	}
@@ -159,9 +163,32 @@
 	}
 	handle / {
 		header Cache-Control no-cache
-		root * {$WX_WEB}
+		root * {$WX_DATA}/site
 		rewrite * /upload.html
 		file_server
+	}
+
+	# /impressum (F-38 IM-2): the shell exists only while the hoster sets an
+	# Impressum, else file_server's 404 goes to handle_errors. It never holds the
+	# text; its script fetches /api/impressum (Go) on a click.
+	handle /impressum {
+		header Cache-Control no-cache
+		root * {$WX_DATA}/site
+		rewrite * /impressum.html
+		file_server
+	}
+
+	# F-38 IM-8 (OQ-121): always, also without an Impressum. Never disallows /w/:
+	# crawlers must see the noindex, preview crawlers must fetch pages (F-23 PC-11).
+	handle /robots.txt {
+		header Cache-Control no-cache
+		header Content-Type "text/plain; charset=utf-8"
+		respond <<TXT
+			User-agent: *
+			Disallow: /impressum
+			Disallow: /api/impressum
+
+			TXT 200
 	}
 
 	handle {

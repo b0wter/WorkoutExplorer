@@ -15,6 +15,7 @@ import (
 	"workout-explorer/internal/about"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/shell"
 )
 
 func envOf(m map[string]string) func(string) string {
@@ -41,12 +42,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	idx, err := os.ReadFile(filepath.Join(testWeb, "index.html"))
-	if err != nil {
-		panic(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "index.html"), idx, 0o644); err != nil {
-		panic(err)
+	for _, name := range append([]string{"index.html", shell.Impressum}, shell.Shells...) { // the sources, with their markers (F-38 IM-7)
+		b, err := os.ReadFile(filepath.Join(testWeb, name))
+		if err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), b, 0o644); err != nil {
+			panic(err)
+		}
 	}
 	if err := os.WriteFile(filepath.Join(dir, "about.html"), []byte(aboutFixture), 0o644); err != nil {
 		panic(err)
@@ -59,7 +62,7 @@ func TestMain(m *testing.M) {
 
 // aboutFixture is a finished About page: the list is generated, every marker is present.
 const aboutFixture = `<main><!--wx:operator-->|<!--wx:version-->
-<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:generated-->{{ list <!--wx:version--> }}</main>`
+<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:generated-->{{ list <!--wx:version--> }}</main><!--wx:impressum-->`
 
 // TestAboutTemplateContract: the frontend's source template carries every
 // marker serve and the generator fill (F-29 AB-3, AB-5).

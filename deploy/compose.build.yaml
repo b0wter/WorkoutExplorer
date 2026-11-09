@@ -15,3 +15,4 @@ services:
     platform: linux/amd64
     volumes: !override
       - {type: bind, source: "${WX_DATA:-/srv/workouts}/public", target: "${WX_DATA:-/srv/workouts}/public", read_only: true, bind: {create_host_path: false}}
+      - {type: bind, source: "${WX_DATA:-/srv/workouts}/site", target: "${WX_DATA:-/srv/workouts}/site", read_only: true, bind: {create_host_path: false}} # page shells serve fills at start (ADR-043)

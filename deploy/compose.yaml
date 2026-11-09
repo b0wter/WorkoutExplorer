@@ -44,7 +44,7 @@ services:
   caddy:
     <<: *common
     user: "10002:10002"
-    group_add: ["10001"] # app's group: reads public/ (0750) and nothing else (DP-5)
+    group_add: ["10001"] # app's group: reads public/ and site/ (0750) and nothing else (DP-5)
     entrypoint: ["/srv/workout-explorer/bin/caddy", "run", "--config", "/srv/workout-explorer/conf/Caddyfile", "--adapter", "caddyfile"]
     environment:
       WX_DATA: ${WX_DATA:-/srv/workouts}
@@ -63,6 +63,7 @@ services:
       - {type: bind, source: ./conf, target: /srv/workout-explorer/conf, read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: "${WX_WEB:-/srv/workout-explorer/web}", target: "${WX_WEB:-/srv/workout-explorer/web}", read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: "${WX_DATA:-/srv/workouts}/public", target: "${WX_DATA:-/srv/workouts}/public", read_only: true, bind: {create_host_path: false}}
+      - {type: bind, source: "${WX_DATA:-/srv/workouts}/site", target: "${WX_DATA:-/srv/workouts}/site", read_only: true, bind: {create_host_path: false}} # page shells serve fills at start (ADR-043)
     ports:
       - "${WX_LISTEN:-127.0.0.1:8088}:8088" # the only published port; never a public address (DP-13)
     networks:

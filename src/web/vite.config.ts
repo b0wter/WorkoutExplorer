@@ -57,7 +57,7 @@ export default defineConfig({
     // upload page). Relative to the project root.
     // No module-preload polyfill: it would become a chunk both entries share (ADR-024 item 3).
     modulePreload: { polyfill: false },
-    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html', 'report-delete': 'report-delete.html' } },
+    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html', 'report-delete': 'report-delete.html', impressum: 'impressum.html' } },
   },
   test: {
     environment: 'node',

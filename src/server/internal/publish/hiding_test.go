@@ -56,7 +56,7 @@ type output struct {
 
 func newFixtureWith(t *testing.T, orig []byte, parser Parser) *fixture {
 	t.Helper()
-	tmpl, err := LoadTemplate(webDir)
+	tmpl, err := LoadTemplate(webDir, false)
 	if err != nil {
 		t.Fatal(err)
 	}

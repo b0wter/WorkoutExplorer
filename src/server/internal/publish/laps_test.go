@@ -51,7 +51,7 @@ func TestLapsMarkup(t *testing.T) {
 // TestNoLapsModule (L-8): without laps and without an advancing distance
 // the page has no laps module.
 func TestNoLapsModule(t *testing.T) {
-	tmpl, err := LoadTemplate(webDir)
+	tmpl, err := LoadTemplate(webDir, false)
 	if err != nil {
 		t.Fatal(err)
 	}
