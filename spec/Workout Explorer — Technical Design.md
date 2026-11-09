@@ -202,7 +202,7 @@ The numbers appear with the HTML, the charts follow, and the map comes last, so 
 
 **Load order**
 
-1. HTML with the summary strip and laps table already rendered by the server, and one stylesheet from the site; no inline CSS, and one inline script only: the theme line that sets `<html data-theme>` before first paint, allowed by its hash in the CSP (ADR-026, DS-4). The client adopts this markup and never re-renders it: there is no Svelte hydration; Svelte mounts only into empty, size-reserved slots (map, charts, range panel), and framework-free enhancers attach behaviour to the server markup (ADR-026).
+1. HTML with the summary strip and laps table already rendered by the server, and one stylesheet from the site; no inline CSS, and one inline script only: the line that sets `<html data-theme>` (DS-4) and, once the viewer is done with the range hint, `<html data-hint>` (F-39 HU-2) before first paint, allowed by its hash in the CSP (ADR-026, ADR-032 item 3). The client adopts this markup and never re-renders it: there is no Svelte hydration; Svelte mounts only into empty, size-reserved slots (map, charts, range panel), and framework-free enhancers attach behaviour to the server markup (ADR-026).
 2. App bundle (Svelte + uPlot) and `data.bin` fetched in parallel; the HTML preloads both.
 3. Charts render; cursor, range selection and laps interaction work.
 4. MapLibre loaded with a dynamic `import()`, then tiles; the route is added as one GeoJSON source with two features, recorded segments (solid) and bridges (dashed), and the cursor marker as a single feature updated on each cursor move. In the MVP the route simply connects every sample that has a position; GPS dropouts and time gaps are crossed by straight, dashed bridges (AP-3).
@@ -225,6 +225,7 @@ Enforce the bundle budget in CI with a size check, so it cannot grow unnoticed. 
 - One shared cursor store (a sample index) drives charts, map marker and value readouts; no component talks to another directly. The store is plain TypeScript (`lib/cursor`, ADR-008).
 - Range stats (AP-7) take constant time: distance, moving time and gain are differences of cumulative streams (moving time and gain from the server, ADR-029); averages come from prefix sums built in the browser once per workout, at full resolution (F-17).
 - Units and theme switch on the client without refetching data. Unit defaults come from the browser language, and a units drop-down choice is remembered in `localStorage` on the viewer's device, never in a cookie or sent to the server, and wins over that default (DS-1); one units store per page holds it (`lib/units`, F-14). The interface is English only (DS-3).
+- Phase 2 on the viewing page: a range can be shared as a range link (`#range=`, read and written only in the browser, ADR-020 item 11, F-40); the How to use dialog loads on first use (F-39, ADR-011).
 - No OS integration in the MVP: no PWA install and no share target. Upload is by drag and drop or file picker (UP-1).
 - The upload page is plain TypeScript, with no Svelte: its own HTML entry, sharing no chunk with the activity page (ADR-024). From phase 2 it takes the FIT file out of a zip archive in the browser and sends only that file; the server never receives an archive (UP-11, F-35 design, ADR-040).
 - The edit page renders the preview basemap offscreen (fixed light style, no route, the server's frame), never by capturing the visible map, and only at publish or after a published workout's hiding changes (F-36 MC-7, MC-8).
@@ -257,7 +258,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
 | --- | --- | --- |
 | Data file format (`WEXD`, version) | backend | Workout data file (above); F-03 design |
 | HTTP API (`/api/*`) | backend | F-01 (health), F-09, F-10, F-12, F-15, F-27, F-36, F-37, F-38 designs |
-| Link formats (viewing link, edit link with the token in the fragment, delete link with the key in the fragment) and the token header | backend | ADR-020; delete link F-37 DK-1 |
+| Link formats (viewing link, edit link with the token in the fragment, delete link with the key in the fragment) and the token header | backend | ADR-020; delete link F-37 DK-1. The range link (`#range=` on the viewing link) is browser-only, frontend-owned (ADR-020 item 11) |
 | Page view model and HTML template | frontend writes template, backend fills it (review decision 30) | ADR-026; F-13 and F-15 designs; the committed sample view models in `src/server/testdata/page/` are the contract |
 
 **Repository layout** (ADR-001). Rows marked "planned" show where later code goes.
@@ -313,6 +314,7 @@ A small system, so bounded contexts map to packages, not services. The core doma
             ├── page/                   viewing-page glue: reads the page, loads the data file, mounts into empty slots, load-error text, enhancers (F-13, ADR-026)
             ├── edit/                   edit-page glue, LAZY, owner chunk only, via import() from main.ts (F-19 E-1)
             ├── measure/                scrub recorder, LAZY, only via import() with ?measure (F-07, ADR-016)
+            ├── howto/                  How to use dialog, plain DOM, LAZY, only via import() from src/page (F-39 HU-7)
             ├── upload/                 upload page DOM glue: elements, status and upload requests, navigation; imports only lib/upload and lib/zip (F-11, F-35, ADR-024)
             ├── theme/                  plain.css: the plain pages' frame and theme, CSS only; imported by upload and generic, never by the activity entry (F-14 D-9, F-15 P-12)
             ├── generic/                generic page stylesheet and its static check (F-15 P-12)
@@ -320,7 +322,8 @@ A small system, so bounded contexts map to packages, not services. The core doma
             │   ├── format/             numbers, durations, pace, dates, sport names; fixed English strings, no `Intl` (F-13)
             │   ├── page/               pure page view-model builder (F-13, ADR-026)
             │   ├── units/              units store and the browser-language default; imports only lib/format (F-14, ADR-027; planned)
-            │   ├── prefs/              viewer preferences remembered on the device (units, x axis, map/content split); the only code touching browser storage; imports only the Units type from lib/format; imported only by src/page (DS-1, AP-5, AP-17)
+            │   ├── prefs/              viewer preferences remembered on the device (units, x axis, map/content split, theme; How to use opened and range hint done, F-39 HU-1); the only code touching browser storage; imports only the Units type from lib/format; imported only by src/page (DS-1, DS-4, AP-5, AP-17, AP-22)
+            │   ├── rangelink/          range link fragment: format and hostile-input parse, time offsets to samples; imports nothing, imported only by src/page (F-40 SR-1 to SR-3)
             │   ├── datafile/           data file decoder, WorkoutData (F-04, ADR-007)
             │   ├── cursor/             cursor store, nearestIndex (F-05, ADR-008)
             │   ├── charts/             chart specs, decimation, formatting, gesture reducer (F-05)
@@ -366,10 +369,11 @@ Front end:
 - Components talk through stores, never directly to each other (Front end, Implementation notes). Components subscribe to the cursor store and write to the DOM themselves, never through `$cursor` or other Svelte reactivity (ADR-008).
 - Only `components/charts` imports `uplot` (ADR-009). `lib/cursor` imports nothing; `lib/charts` imports only `lib/datafile` and `lib/format` (F-05 and F-13 designs, Module boundary).
 - `lib/format` imports nothing. `lib/page` imports `lib/datafile` (types), `lib/format`, `lib/charts` (chart set only) and `lib/route` (`routePresence` only). `components/page` imports `lib/page`, `components/charts` and `components/map`. `src/page` never imports `components/page` statically (F-13 design, Module boundary).
-- `lib/format` owns the unit system type, every conversion factor and every unit label; no other module holds one. `lib/units` (the units store and the default rule) imports only `lib/format`, for the type. `lib/prefs` (viewer preferences remembered on the device: units, x axis, map/content split; DS-1, AP-5, AP-17) is the only code that touches browser storage; it imports only the Units type from `lib/format` and is imported only by `src/page`. `src/page` imports `lib/units` and `lib/page`'s summary and laps builders statically. No module other than `lib/units` reads `navigator` for units or keeps a unit of its own; every consumer gets the one units store passed in (F-14 design D-1, D-3; ADR-027).
+- `lib/format` owns the unit system type, every conversion factor and every unit label; no other module holds one. `lib/units` (the units store and the default rule) imports only `lib/format`, for the type. `lib/prefs` (viewer preferences remembered on the device: units, x axis, map/content split, theme, the F-39 flags; DS-1, DS-4, AP-5, AP-17, AP-22) is the only code that touches browser storage, apart from the read-only head script; it imports only the Units type from `lib/format` and is imported only by `src/page`. `src/page` imports `lib/units` and `lib/page`'s summary and laps builders statically. No module other than `lib/units` reads `navigator` for units or keeps a unit of its own; every consumer gets the one units store passed in (F-14 design D-1, D-3; ADR-027).
 - Only `components/map/map-view.ts` imports `maplibre-gl` as a value, and only `RouteMap.svelte` reaches it, through `import('./map-view')`; the one exception is `components/map/basemap.ts` (preview basemap), reached only through `import()` from `src/edit` (F-36 MC-7, ADR-013 note); `map-style.ts` uses `import type` (ADR-013). `lib/route` imports only `lib/datafile`; static code uses only its `routePresence`. `lib/route` and `lib/charts` never import each other; map and charts meet only in the cursor store (F-06 design, Module boundary). `lib/colouring` imports only `lib/datafile` and `lib/format`, never `lib/route` or `lib/charts`; `components/map` may import `lib/colouring` and `lib/units` (F-25 design, Module boundary; ADR-037).
 - Owner-only code (`lib/owner`, `components/edit`, `src/edit`) follows the F-19 design's module boundary ([`architect/F-19-edit-page-and-settings.md`](../architect/F-19-edit-page-and-settings.md)): only `lib/owner` reads the token, and `src/page` and `main.ts` reach `src/edit` only through one `import()`.
-- `src/measure/` is reached only through `import()` from the viewing-page glue in `src/page/`, and only with `?measure` (F-07, F-13, ADR-016). It never adds to the counted entry.
+- `src/measure/` is reached only through `import()` from the viewing-page glue in `src/page/`, and only with `?measure` (F-07, F-13, ADR-016). It never adds to the counted entry. `src/howto/` likewise, on the button's first use (F-39).
+- `lib/rangelink` imports nothing and is imported only by `src/page`; only the viewing page (no edit seam) reads or writes the range link, and `components/` never read `location` (F-40 SR-3, SR-4).
 - Runtime dependencies are limited to Svelte, uPlot, and MapLibre (dynamic import, F-06). Any other runtime dependency needs a design-doc entry with its compressed size.
 - Activity page bundle (ADR-011): only what every viewer needs before the map is imported statically. Map-only code, owner-only UI and the report form load with dynamic `import()`. Each feature design states its share of the 60,000 bytes and measures it.
 
@@ -478,6 +482,7 @@ The ubiquitous language: use these names in code, API fields and documents. Add 
 | Page shell | A static page of the web build (upload, generic, edit, confirmation, Impressum) whose markers `serve` fills at start and writes to `{data}/site/`, where Caddy serves it (ADR-043). | Page template (`index.html`, executed per publish) |
 | Workout record | The workout's row in `workouts` (ADR-019); `lifecycle.Record` in code. | Normalised workout; data file |
 | Viewing link / edit link | `/w/{public_id}` / `/edit/{public_id}#{token}`, root-relative in API responses (ADR-020). | Published page |
+| Range link | The viewing link with `#range={from}-{to}`, whole-second time offsets, made by "Copy link to this selection" and read once on the viewing page; never seen by the server (AP-19, ADR-020 item 11, F-40). | Copy link (SH-6, always the plain viewing link); cursor (never in a link) |
 | Published page | `/published/{public_id}#{token}`: the owner's page with both links and the save warning, opened after a successful publish (AC-6). | Edit page; the published activity page (`/w/{public_id}`) |
 | Owner API | The endpoints under `/api/workouts/{public_id}` that need the edit token: settings, `draft.bin`, `original.fit`, delete (F-12), publish (F-15), preview map (F-36). | Upload (`POST /api/workouts`, no token) |
 | Preview frame / key | The map camera (centre, zoom) the server computes from the public route for the preview image, and the hash that names it; a stored basemap counts only while its key equals the current frame's (ADR-041). | Bounding box of the visible map |

@@ -1,9 +1,9 @@
 # ADR-011 Activity page bundle: allocation of the 60,000 bytes and what loads lazily
 
 - **Status:** accepted
-- **Date:** 11 Oct 2026; revision 7 of 15 Oct 2026, with the F-07 QA r2 close-out; revision 8 of 24 Oct 2026, F-14 design: F-13 closed at 1,717 measured, its unused 3,283 bytes return to the reserve; revision 9 of 29 Oct 2026, F-17 QA r1: F-17 at 4,715 measured, 715 over its share accepted; revision 10 of 29 Oct 2026, F-19 QA r1: F-17 final 4,698, F-18 final 1,067, F-19 374 of 400 measured, reserve 3,640; revision 11 of 30 Oct 2026, F-20 QA r1 (QA-20-r1-4): F-20 +2 of its 100 ceiling, reserve 3,638; revision 12 of 30 Oct 2026, F-20 QA r2 (QA-20-r2-2): F-20 +7, reserve 3,633
+- **Date:** 11 Oct 2026; revision 7 of 15 Oct 2026, with the F-07 QA r2 close-out; revision 8 of 24 Oct 2026, F-14 design: F-13 closed at 1,717 measured, its unused 3,283 bytes return to the reserve; revision 9 of 29 Oct 2026, F-17 QA r1: F-17 at 4,715 measured, 715 over its share accepted; revision 10 of 29 Oct 2026, F-19 QA r1: F-17 final 4,698, F-18 final 1,067, F-19 374 of 400 measured, reserve 3,640; revision 11 of 30 Oct 2026, F-20 QA r1 (QA-20-r1-4): F-20 +2 of its 100 ceiling, reserve 3,638; revision 12 of 30 Oct 2026, F-20 QA r2 (QA-20-r2-2): F-20 +7, reserve 3,633; revision 13 of 9 Nov 2026, F-39 and F-40 designs: shares 600 and 700 from the reserve, the How to use dialog lazy
 - **History:** [architect/history/ADR-011-activity-page-bundle-allocation.md](history/ADR-011-activity-page-bundle-allocation.md) (revision list, earlier shares and reserves, the retired 45,000 trigger)
-- **Features:** F-05 (triggers it); F-06, F-07, F-13, F-14, F-17, F-18, F-19, F-20, F-25, F-26, F-28, F-33 (bound by it); F-32 (checks it)
+- **Features:** F-05 (triggers it); F-06, F-07, F-13, F-14, F-17, F-18, F-19, F-20, F-25, F-26, F-28, F-33, F-39, F-40 (bound by it); F-32 (checks it)
 - **Supersedes:** none (works within [ADR-002](ADR-002-bundle-size-budget-measurement.md), which stays unchanged)
 - **Requirements:** TD Front end, Budget ("App bundle, Svelte + uPlot + app code: 60 KB") and Load order; NFR Performance (LCP under 2.5 s)
 
@@ -45,7 +45,8 @@ Six MVP features still add code that viewers would load on the activity page, an
 2. **Behind dynamic `import()` (not counted, ADR-002 item 1):**
    - the map and everything that only works with it: MapLibre, the F-06 map module, route colouring (F-25), fullscreen map (F-26);
    - owner-only UI, loaded only when the page has an edit token: the settings panel (F-19), the publish, share and delete controls (F-20);
-   - the report form (F-28), loaded when the Report link is first opened.
+   - the report form (F-28), loaded when the Report link is first opened;
+   - (rev. 13) the How to use dialog with all its texts (F-39, `src/howto/`), loaded when its button is first used.
 3. **Separate entries, each with its own 60,000:** the upload page (F-11) and the About page (F-29), if they need JavaScript at all. They must not import `uplot` or `lib/charts`.
 4. **Planning shares of the remaining ≈ 17,200** (stop triggers, like F-05's ceiling; each feature design restates its share and measures it):
 
@@ -60,7 +61,9 @@ Six MVP features still add code that viewers would load on the activity page, an
    | F-19 edit page switch (owner UI lazy) | **400**; measured 374 at F-19 QA r1 (entry 56,360 − 55,986). Fixes after r1 stay within the 400 |
    | F-20 publish, share, delete, published page (owner UI lazy) | **0 planned, ceiling 100**; measured +7 at F-20 QA r2 (entry 56,367). The published page (F-20 v0.2) is in the lazy chunk and adds nothing static |
    | F-33 fullscreen readout strip (static glue and CSS) | **300 planned; measured 229** (4 Nov 2026: entry 57,388 − 57,159 on `dbe0450`); 240 with the QA-33-r1-2 `[hidden]` rule (entry 57,399) |
-   | Reserve (architect decides who gets it) | **2,601** (QA-33-r1-1, 5 Nov 2026: 60,000 − entry 57,399 measured; 792 bytes of F-25, F-26, F-28 call sites and follow-ups were taken from it unbooked) |
+   | (rev. 13) F-39 How to use: button enhancer, `import()` call site, hint mode and ×, two prefs entries, CSS | **600 planned** (F-39 design Cost). The engineer measures the entry before starting, since F-36 to F-38 may have moved it from 57,399 |
+   | (rev. 13) F-40 shareable range: `lib/rangelink`, read and apply, `replaceState`, panel button | **700 planned** (F-40 design Cost) |
+   | Reserve (architect decides who gets it) | **2,601** (QA-33-r1-1, 5 Nov 2026: 60,000 − entry 57,399 measured; 792 bytes of F-25, F-26, F-28 call sites and follow-ups were taken from it unbooked); **1,301 after the F-39 and F-40 shares** if the baseline still holds |
 
 5. **Review trigger (rev. 7):** the reserve falls **below 1,000**, or a feature cannot fit its share plus the reserve. The architect then revisits this ADR before that feature is implemented.
    - From F-07 on, the CI line measures the activity page itself, because the prototype page replaced the F-01 placeholder as `index.html`'s entry. The ledger is therefore read from the CI line plus the open shares.

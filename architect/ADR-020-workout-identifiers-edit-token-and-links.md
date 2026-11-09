@@ -1,9 +1,9 @@
 # ADR-020 Workout identifiers, edit token and link formats
 
-- **Status:** accepted; revision 2 (first-open marker removed, published page added, item 7) accepted with the F-20 design v0.2
-- **Date:** 16 Oct 2026; revision 1 of 23 Oct 2026; revision 2 of 30 Oct 2026
+- **Status:** accepted; revision 2 (first-open marker removed, published page added, item 7) accepted with the F-20 design v0.2; revision 3 (range link, item 11) with the F-40 design v0.1
+- **Date:** 16 Oct 2026; revision 1 of 23 Oct 2026; revision 2 of 30 Oct 2026; revision 3 of 9 Nov 2026
 - **History:** [architect/history/ADR-020-workout-identifiers-edit-token-and-links.md](history/ADR-020-workout-identifiers-edit-token-and-links.md)
-- **Features:** F-09 (introduces it), F-11, F-12 (token check), F-15 (public folder name), F-19 and F-20 (edit page, published page), F-21, F-22 and F-31 (Caddy routes), F-27 (operator delete by `public_id`)
+- **Features:** F-09 (introduces it), F-11, F-12 (token check), F-15 (public folder name), F-19 and F-20 (edit page, published page), F-21, F-22 and F-31 (Caddy routes), F-27 (operator delete by `public_id`), F-40 (range link)
 - **Supersedes:** none
 - **Requirements:** SH-1 (unguessable URL), AC-1 (secret edit link, shown only on the published page), AC-6, NFR Security (128-bit public IDs and edit tokens, tokens stored hashed), TD Security and privacy (IDs and tokens: `crypto/rand`, SHA-256, token sent as a header, never in a URL that could leak through referrers, the edit link carries it in the fragment), TD Data model (`id`, `public_id`, `edit_token_hash`), F-09 AC 2 and AC 8
 
@@ -25,12 +25,13 @@ A workout needs three secrets or names: the internal key that names its private 
 8. **Links in API responses are root-relative paths** (`/w/…`, `/edit/…#…`). The browser makes them absolute with its own origin; the server needs no base-URL setting for F-09 (F-15 or F-23 add one when absolute URLs are needed for Open Graph).
 9. **Token transport to the API (F-12):** the header `Authorization: Bearer <token>`. Caddy writes `Authorization` as `REDACTED` in access logs by default (since v2.5); a custom header such as `X-Edit-Token` would be logged in clear. A token in a query string or the path is refused as if it were absent (F-12 AC 1). F-31 must not enable Caddy's `log_credentials`.
 10. **Where the code lives:** `internal/lifecycle` generates all three values (`NewIdentity(io.Reader)`), hashes tokens (`HashToken`) and formats both links (`ViewPath`, `EditLink`). Nothing else on the server builds these strings; in the browser only `lib/owner` builds a link with the token.
+11. **(rev. 3) Range link (AP-19):** the viewing link may carry `#range={from}-{to}`, whole-second time offsets, built and read only in the browser on the viewing page ([F-40](F-40-shareable-range.md) SR-1 to SR-5). The server never sees, builds or logs it; the edit and published pages never read it, and their fragment stays the bare token. Copy link (SH-6) never includes it.
 
 ## Consequences
 
 - One encoder (base62, fixed 22) for both public values; one hex form for the internal value. An operator can tell them apart at a glance in a log (32 hex vs 22 base62), and a log line with a 22-character base62 string is a bug.
 - Base62 is case-sensitive. Two public IDs that differ only in case would clash as folder names on a case-insensitive file system (a developer's macOS). With 128-bit random values this is not a practical risk; the production file system is case-sensitive (F-31).
-- **One-way door (soft): the link formats.** Changing `/w/{public_id}`, `/edit/{public_id}#{token}` or `/published/{public_id}#{token}` breaks every link handed out in the last 30 days, unless Caddy redirects the old form for that long. The ID lengths and encodings are equally fixed once rows exist.
+- **One-way door (soft): the link formats.** Changing `/w/{public_id}`, `/edit/{public_id}#{token}` or `/published/{public_id}#{token}` breaks every link handed out in the last 30 days, unless Caddy redirects the old form for that long. (rev. 3) The same holds for the `#range=` form: the browser must keep reading it while such links live. The ID lengths and encodings are equally fixed once rows exist.
 - The token is never stored, so a lost edit link cannot be recovered (AC-1); the workout simply expires (UP-7).
 - (rev. 2) The token is in the browser history under both owner paths. It was there under `/edit/` already; the published page adds no new place.
 
