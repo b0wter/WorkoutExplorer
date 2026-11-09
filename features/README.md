@@ -559,8 +559,14 @@ Updated: spec (SH-12, SH-5 pointer, scope table row), F-36 (scope; ACs unchanged
 - **Delete link:** the notification carries a per-report delete key in the link's fragment: valid only for that report's workout, single use, expires (30 days suggested, the architect may shorten), stored only hashed, never logged. Opening it shows a confirmation page (noindex, no referrer) with enough to decide; only an explicit confirm (`POST`) deletes, exactly like the operator delete command (F-27 R-8, SH-10, same log line without the key). Used, expired and unknown keys and a gone workout are handled clearly. Only when Pushover is configured.
 - **About page** states that the notification contains a viewing link and a single-use delete link.
 - **Build order:** after F-34. Owner both, backend first.
+- **OQ-114:** one plain "link no longer valid" message for used, expired and unknown keys and a gone workout; nothing extra stored.
+- **OQ-115:** reports folded into `(+N more)` get no delete link of their own; the architect may create keys only when a notification is sent.
+- **OQ-116:** the confirmation page does not show the reporter's message.
+- **OQ-117:** key lifetime 30 days; the architect may shorten it.
+- **OQ-118:** INF-6 is Should within phase 2.
+- **OQ-119:** anyone with the operator's Pushover account or unlocked phone can delete reported workouts: accepted; stated on the About page.
 
-Updated: spec (scope table row, INF-1, INF-4, new INF-6, NFR Privacy Pushover line, NFR Security, Roadmap phase 2), F-37 (new, OQ-114 to OQ-119), feature index (order, row, counts, coverage). Technical design and ADR-039 to be updated by the architect.
+Updated: spec (scope table row, INF-1, INF-4, new INF-6, NFR Privacy Pushover line, NFR Security, Roadmap phase 2), F-37 (new, OQ-114 to OQ-119 resolved), feature index (order, row, counts, coverage). Technical design and ADR-039 to be updated by the architect.
 
 The original questions follow for reference.
 

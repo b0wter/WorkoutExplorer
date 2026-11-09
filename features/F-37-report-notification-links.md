@@ -42,11 +42,11 @@ The operator acts on a report from the phone: the Pushover notification opens th
 
 ## Open questions
 
-| ID | Question | Suggestion | Affects |
-| --- | --- | --- | --- |
-| OQ-114 | Used, expired, unknown keys and a gone workout: one message or separate ones? After a delete the key's hash is gone with the report, so "used" cannot be told from "unknown" without keeping data. | **One message** for all of them (wording above). Stores nothing extra; tells the operator what to do (nothing). | INF-6, confirmation page |
-| OQ-115 | Reports over the hourly cap (or dropped from a full queue) are folded into `(+N more)`. Do they get delete links? | **No.** The next sent message carries the link for its own report only; the operator uses `workout-explorer delete` or a later notification for others. Their keys are still stored, unused, and deleted with the report. Alternative: create the key only when its notification is sent (stores less; architect may choose it). | INF-6, ADR-039 item 4 |
-| OQ-116 | Should the confirmation page show the reporter's message? It would help decide, but the key travels through Pushover, so Pushover could then read the message. | **No.** Keep "Pushover never gets the reporter's message" true in effect; the operator reads the message with the F-27 R-7 query if needed. | INF-4, INF-6 |
-| OQ-117 | Key lifetime: 30 days equals a report's maximum lifetime, so the expiry rarely fires. Shorter? | **30 days** for now; the architect may shorten (e.g. 7 days). A report outliving its key loses only the phone shortcut. | INF-6 |
-| OQ-118 | Priority of INF-6 within phase 2. | **Should** within phase 2 (built as F-37 after F-34). | Spec INF-6, scope table |
-| OQ-119 | Pushover can hold the delete link (the fragment is part of the message). Anyone with access to the operator's Pushover account or unlocked phone can delete reported workouts. Accept? | **Accept**, as with the user's acceptance of the viewing link: a reported workout, single use, 30 days at most, operator's own device. Stated on the About page. | INF-1, INF-6 |
+All resolved by the user on 9 Nov 2026 as suggested (decision log in [README](README.md)):
+
+- **OQ-114:** one message for used, expired and unknown keys and a gone workout.
+- **OQ-115:** reports folded into `(+N more)` get no delete link of their own; the architect may create keys only when a notification is sent.
+- **OQ-116:** the confirmation page does not show the reporter's message.
+- **OQ-117:** key lifetime 30 days; the architect may shorten it.
+- **OQ-118:** INF-6 is Should within phase 2.
+- **OQ-119:** risk of the delete link in Pushover accepted; stated on the About page.
