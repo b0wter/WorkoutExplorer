@@ -17,6 +17,7 @@ import { buildPageViewModel, defaultTitle } from '../lib/page/view';
 import { enhanceExpiry } from '../page/enhance';
 import { loadErrorText } from '../page/load-error';
 import { startPage } from '../page/start';
+import { basemapJobs } from './basemap-job';
 
 const NONE: readonly (readonly [number, number])[] = [];
 
@@ -134,6 +135,9 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     return true;
   };
 
+  /** F-36 MC-8: the preview basemap job; never on the published page. */
+  const basemap = basemapJobs(owner);
+
   const save = (patch: SettingsPatch): Promise<void> | void => {
     if (ui.busy) return;
     if (Object.keys(patch).length === 0) {
@@ -141,17 +145,24 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       return;
     }
     return ui.run('Saving…', async () => {
-      if (apply(await owner.save(patch))) ui.status = 'Saved';
+      if (!apply(await owner.save(patch))) return;
+      ui.status = 'Saved';
+      // MC-8(b): hiding changed on a published workout; in the background, nothing awaited or shown.
+      if ('hide_ends' in patch && visibility !== 'draft') void basemap();
     });
   };
 
   // C-3, OQ-85: the panel's unsaved changes first; no publish unless that save succeeded. On 200
-  // the published page, with the busy state kept and nothing re-rendered.
+  // the published page, with the busy state kept and nothing re-rendered. F-36 MC-8(a), OQ-112: the
+  // basemap job starts after the save, so its frame reflects the saved hiding, and runs alongside
+  // publish; the published page opens once both ended (the job: at most 10 s).
   const publish = (patch: SettingsPatch): Promise<void> =>
     ui.run('Publishing…', async () => {
       if (Object.keys(patch).length > 0 && !apply(await owner.save(patch))) return;
+      const job = basemap();
       const r = await owner.publish();
       if (!r.ok) return void apply(r);
+      await job;
       owner.toPublished();
       return true;
     });

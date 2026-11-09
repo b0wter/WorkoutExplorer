@@ -12,6 +12,12 @@ import { startEdit } from './start.svelte';
 
 vi.mock('../components/charts/ChartStack.svelte', async () => await import('../page/testing/ChartStackStub.svelte'));
 vi.mock('../components/map/RouteMap.svelte', async () => await import('../page/testing/RouteMapStub.svelte'));
+// F-36: the offscreen basemap needs WebGL2; its own test runs it on the MapLibre fake.
+const renders: [unknown, AbortSignal][] = [];
+let render: () => Promise<Blob>;
+vi.mock('../components/map/basemap', () => ({
+  renderBasemap: (frame: unknown, signal: AbortSignal) => (renders.push([frame, signal]), render()),
+}));
 
 const ID = 'AbCdEfGhIjKlMnOpQrStUv';
 const TOKEN = 'Zz0123456789abcdefghij';
@@ -58,6 +64,8 @@ let onPatch: (body: Record<string, unknown>) => Response;
 let onPublish: () => Response;
 let onDelete: () => Response;
 let original: () => Response;
+let onFrame: () => Response;
+let onPut: () => Response;
 let consoleOut: unknown[][];
 let host: HTMLElement;
 /** Navigations through lib/owner: 'assign <url>', 'replace <url>'. */
@@ -78,12 +86,18 @@ beforeEach(() => {
   };
   onPublish = () => Response.json((settings = { ...settings, visibility: 'unlisted' }));
   onDelete = () => new Response(null, { status: 204 });
+  onFrame = () => Response.json({ frame: null });
+  onPut = () => new Response(null, { status: 204 });
+  renders.length = 0;
+  render = async () => new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
   original = () => new Response(FIT, { headers: { 'Content-Disposition': 'attachment; filename="workout-2026-10-29.fit"' } });
   vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit = {}) => {
     calls.push({ url, init });
     if (url.endsWith('/draft.bin')) return draft();
     if (url.endsWith('/original.fit')) return original();
     if (url.endsWith('/publish')) return onPublish();
+    if (url.endsWith('/preview-map')) return onFrame();
+    if (url.includes('/preview-map/')) return onPut();
     if (init.method === 'DELETE') return onDelete();
     return init.method === 'PATCH' ? onPatch(JSON.parse(init.body as string)) : onGet();
   }));
@@ -171,7 +185,7 @@ function expectNoTokenOutsideTheFragment(): void {
   expect(JSON.stringify(window.history.state) ?? '').not.toContain(TOKEN);
   expect(JSON.stringify(consoleOut.map((a) => a.map(String)))).not.toContain(TOKEN);
   for (const { url, init } of calls) {
-    expect(url).toMatch(new RegExp('^/api/workouts/' + ID + '(/draft\\.bin|/publish|/original\\.fit)?$'));
+    expect(url).toMatch(new RegExp('^/api/workouts/' + ID + '(/draft\\.bin|/publish|/original\\.fit|/preview-map(/[0-9a-f]{16})?)?$'));
     expect(init).toMatchObject({ cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' });
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer ' + TOKEN);
     expect(String(init.body ?? '')).not.toContain(TOKEN);
@@ -626,6 +640,138 @@ describe('F-20 C-2, C-3, AC 3, 4: publish', () => {
     release();
     await settle();
     expect(btn('back')?.disabled).toBe(false);
+  });
+});
+
+describe('F-36 MC-8, OQ-112: the preview basemap job', () => {
+  const KEY = '0123456789abcdef';
+  const FRAME = { lon: 11.5, lat: 48.1, zoom: 12.25 };
+  const withFrame = (current = false) => (onFrame = () => Response.json({ frame: FRAME, key: KEY, current }));
+  const frameGets = () => calls.filter((c) => !c.init.method && c.url.endsWith('/preview-map')).length;
+
+  it('publish: GET the frame after the save, render it, PUT under its key, then the published page', async () => {
+    withFrame();
+    await open();
+    toggle('hide_ends');
+    await click('publish');
+    expect(methods()).toEqual(['PATCH ', 'POST /publish', 'PUT /preview-map/' + KEY]);
+    const order = calls.map((c) => c.url.replace('/api/workouts/' + ID, ''));
+    expect(order.indexOf('/preview-map')).toBeGreaterThan(order.indexOf('')); // after the save's 200
+    expect(renders.map(([f]) => f)).toEqual([FRAME]);
+    const put = calls.find((c) => c.init.method === 'PUT')!;
+    expect(put.init.body).toBeInstanceOf(Blob);
+    expect(navs).toEqual([PUBLISHED_PAGE()]);
+    expectNoTokenOutsideTheFragment();
+  });
+
+  it('the published page opens only once the job ended', async () => {
+    withFrame();
+    let done: (b: Blob) => void = () => {};
+    render = () => new Promise<Blob>((r) => (done = r));
+    await open();
+    await click('publish');
+    expect(methods()).toEqual(['POST /publish']);
+    expect(navs).toEqual([]);
+    done(new Blob([new Uint8Array([1])]));
+    await settle();
+    expect(methods()).toEqual(['POST /publish', 'PUT /preview-map/' + KEY]);
+    expect(navs).toEqual([PUBLISHED_PAGE()]);
+  });
+
+  it('a render that never ends: the published page opens after 10 s, nothing sent', async () => {
+    withFrame();
+    render = () => new Promise<Blob>(() => {});
+    await open();
+    vi.useFakeTimers();
+    try {
+      btn('publish')!.click();
+      await vi.advanceTimersByTimeAsync(9_999);
+      expect(navs).toEqual([]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(navs).toEqual([PUBLISHED_PAGE()]);
+      expect(renders[0][1].aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(methods()).toEqual(['POST /publish']);
+  });
+
+  it.each([
+    ['no WebGL2', () => (render = () => Promise.reject(new Error('GPUInitializationError')))],
+    ['a tile error', () => (render = () => Promise.reject(new Error('basemap: map error')))],
+    ['the PUT refused', () => (onPut = () => Response.json({ error: 'invalid_image', message: 'x' }, { status: 400 }))],
+    ['the PUT lost', () => (onPut = () => Promise.reject(new TypeError('network')) as unknown as Response)],
+    ['the GET failed', () => (onFrame = () => new Response('', { status: 500 }))],
+  ])('%s: publish succeeds, the published page opens, nothing shown', async (_name, fail) => {
+    withFrame();
+    fail();
+    await open();
+    await click('publish');
+    expect(navs).toEqual([PUBLISHED_PAGE()]);
+    expect($('.edit-status')?.textContent).toBe('Publishing…');
+    expect(consoleOut).toEqual([]);
+  });
+
+  it.each([
+    ['no frame (indoor, fully hidden)', { frame: null }],
+    ['a current map', { frame: FRAME, key: KEY, current: true }],
+  ])('%s: nothing rendered, no PUT', async (_name, body) => {
+    onFrame = () => Response.json(body);
+    await open();
+    await click('publish');
+    expect(frameGets()).toBe(1);
+    expect(renders).toEqual([]);
+    expect(methods()).toEqual(['POST /publish']);
+    expect(navs).toEqual([PUBLISHED_PAGE()]);
+  });
+
+  it('a failed publish shows its message; the job does not open anything', async () => {
+    withFrame();
+    onPublish = () => Response.json({ message: 'Something broke.' }, { status: 500 });
+    await open();
+    await click('publish');
+    await settle();
+    expect(navs).toEqual([]);
+    expect($('.edit-status')?.textContent).toBe('Something broke.');
+  });
+
+  it('MC-8(b): a save that changes hiding on a published workout runs the job in the background', async () => {
+    settings = fresh({ visibility: 'unlisted' });
+    withFrame();
+    await open();
+    toggle('hide_ends');
+    await save();
+    expect($('.edit-status')?.textContent).toBe('Saved');
+    expect(frameGets()).toBe(1);
+    expect(methods()).toEqual(['PATCH ', 'PUT /preview-map/' + KEY]);
+    expect(navs).toEqual([]);
+    expectNoTokenOutsideTheFragment();
+  });
+
+  it('MC-8(b): no job for a title-only save', async () => {
+    settings = fresh({ visibility: 'unlisted' });
+    withFrame();
+    await open();
+    type('title', 'Loop');
+    await save();
+    expect(frameGets()).toBe(0);
+    expect(renders).toEqual([]);
+  });
+
+  it('MC-8(b): no job for a save of a draft', async () => {
+    withFrame();
+    await open();
+    toggle('hide_ends');
+    await save();
+    expect(frameGets()).toBe(0);
+  });
+
+  it('never on the published page', async () => {
+    settings = fresh({ visibility: 'unlisted' });
+    withFrame();
+    await openPublished();
+    await settle();
+    expect(frameGets()).toBe(0);
   });
 });
 

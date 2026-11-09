@@ -173,3 +173,55 @@ describe('requests (E-2)', () => {
     expect(SERVER_ERROR).toBe(SENTENCES.serverError);
   });
 });
+
+describe('preview map (F-36 MC-4)', () => {
+  const KEY = '0123456789abcdef';
+  const signal = new AbortController().signal;
+  const FRAME = { frame: { lon: 11.5, lat: 48.1, zoom: 12.25 }, key: KEY, current: false };
+
+  it('GET …/preview-map with the header only; the frame or no frame', async () => {
+    for (const body of [FRAME, { frame: null }]) {
+      const { owner, fetchFn } = setup('#' + TOKEN, () => Response.json(body));
+      expect(await owner!.previewFrame(signal)).toEqual({ ok: true, value: body });
+      const [url, init] = fetchFn.mock.calls[0];
+      expect(url).toBe('/api/workouts/' + ID + '/preview-map');
+      expect(init).toMatchObject({ signal, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' });
+      expect((init.headers as Record<string, string>).Authorization).toBe('Bearer ' + TOKEN);
+    }
+  });
+
+  it.each([
+    [{}],
+    [{ frame: { lon: 1, lat: 2 }, key: KEY, current: false }],
+    [{ frame: { lon: 1, lat: 2, zoom: '3' }, key: KEY, current: false }],
+    [{ ...FRAME, key: '../../x/abcdefgh' }],
+    [{ ...FRAME, key: KEY.toUpperCase() }],
+    [{ ...FRAME, current: 'no' }],
+    [null],
+  ])('a malformed answer (%j) is an error', async (body) => {
+    const { owner } = setup('#' + TOKEN, () => Response.json(body));
+    expect(await owner!.previewFrame(signal)).toEqual({ ok: false, notFound: false, message: SERVER_ERROR });
+  });
+
+  it('PUT …/preview-map/{key} sends the PNG as the body; ok on 204, refusals are errors', async () => {
+    const png = new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
+    const { owner, fetchFn } = setup('#' + TOKEN, () => new Response(null, { status: 204 }));
+    expect(await owner!.putPreviewMap(KEY, png, signal)).toEqual({ ok: true, value: true });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe('/api/workouts/' + ID + '/preview-map/' + KEY);
+    expect(init).toMatchObject({ method: 'PUT', body: png, signal, redirect: 'error' });
+    expect(init.headers).toEqual({ 'Content-Type': 'image/png', Authorization: 'Bearer ' + TOKEN });
+    for (const status of [409, 413, 400, 503]) {
+      const { owner: o } = setup('#' + TOKEN, () => Response.json({ error: 'x', message: 'refused' }, { status }));
+      expect((await o!.putPreviewMap(KEY, png, signal)).ok).toBe(false);
+    }
+  });
+
+  it('a key that is not 16 lowercase hex sends nothing', async () => {
+    const { owner, fetchFn } = setup('#' + TOKEN);
+    for (const key of ['', KEY + '0', KEY.toUpperCase(), '../publish/abcde', '0123456789abcde?']) {
+      expect((await owner!.putPreviewMap(key, new Blob(), signal)).ok).toBe(false);
+    }
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+});

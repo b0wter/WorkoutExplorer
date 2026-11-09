@@ -57,6 +57,8 @@ describe('About page', () => {
       'Saved locations',
       "Segment leaderboard entries, the segment leaders' activity IDs and segment account keys",
       'Raw ANT radio messages',
+      'gets a preview image that shows the route on an OpenFreeMap map', // F-36 MC-10, SH-12
+      'This server never contacts OpenFreeMap.',
     ]) {
       expect(text, fact).toContain(fact);
     }
