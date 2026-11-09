@@ -48,7 +48,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
 | [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | QA r1 ready | user: U-1 to U-4 (qa r1) |
-| [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | backend built, frontend next | user: OQ-112, OQ-113; card look review |
+| [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | backend built, frontend in progress | user: card look review after deploy |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | not started | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
@@ -543,6 +543,13 @@ Updated: spec (AP-18), F-13 (scope, AC).
 - **OQ-111:** a root `.fit` entry that is itself a zip archive is refused as damaged; nothing is sent.
 
 Updated: spec (UP-11), F-35 (scope, acceptance criteria).
+
+**Decided on 9 Nov 2026, preview image with map context** (user, OQ-112, OQ-113, SH-12, F-36):
+
+- **OQ-112:** publishing itself never waits for the image; the edit page may delay opening the published page by at most 10 s so a link copied there already has the map card (F-36 MC-8(a)).
+- **OQ-113:** the browser renders and sends only the basemap; the server composes route, sport icon, name, values and attribution (F-36 MC-1, ADR-041).
+
+Updated: spec (SH-12, SH-5 pointer, scope table row), F-36 (scope; ACs unchanged).
 
 The original questions follow for reference.
 

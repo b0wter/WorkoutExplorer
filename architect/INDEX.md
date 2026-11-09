@@ -47,7 +47,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-31 Server, deploy and monitoring | [F-31-server-deploy-and-monitoring.md](F-31-server-deploy-and-monitoring.md) | accepted (2 Nov 2026; critical lane; owner backend). Replaces the systemd references listed in its "Earlier text" table, F-21's `Restart=always` hand-off included | 0.5 (behind the operator's reverse proxy on plain HTTP; Caddy trusts that proxy, Go trusts Caddy; two upload limit settings; no monitoring, no Docker daemon duty; self-built image for self-hosters via `deploy/Dockerfile`, built by `make ci`; the operator deploys GitHub Releases built on `vX.Y.Z` tags by a separate `contents: write` job, version = tag) | ADR-017, ADR-019, ADR-021, ADR-022, ADR-031, ADR-032, ADR-034, ADR-035 |
 | F-33 Cursor readout in the fullscreen map | [F-33-fullscreen-cursor-readout.md](F-33-fullscreen-cursor-readout.md) | accepted (4 Nov 2026; normal lane; owner frontend; second readout instance inside the map container, noted in F-26 FS-3; no open questions) | 0.1 | ADR-008, ADR-011, ADR-015, ADR-016, ADR-038 |
 | F-35 Zip upload | [F-35-zip-upload.md](F-35-zip-upload.md) | draft (8 Nov 2026; normal lane; owner frontend, server unchanged; OQ-108 to OQ-111 decided 9 Nov 2026) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-040 |
-| F-36 Preview image with map context | [F-36-preview-image-with-map-context.md](F-36-preview-image-with-map-context.md) | draft (9 Nov 2026; critical lane; owner both, B-1 backend first, then FE-1; OQ-112, OQ-113 open) | 0.1 | ADR-013, ADR-017, ADR-022, ADR-025, ADR-028, ADR-032, ADR-033, ADR-041 |
+| F-36 Preview image with map context | [F-36-preview-image-with-map-context.md](F-36-preview-image-with-map-context.md) | draft (9 Nov 2026; critical lane; owner both, B-1 backend first, then FE-1) | 0.1 | ADR-013, ADR-017, ADR-022, ADR-025, ADR-028, ADR-032, ADR-033, ADR-041 |
 
 ## Decisions (ADRs)
 
@@ -119,8 +119,6 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-109 | F-35: an AppleDouble `._ride.fit` in the root counts as a second FIT file under UP-11. Suggestion: ignore root names starting with `._` | Nothing (UP-11 built as written until decided) | user (product). **Decided 9 Nov 2026: root names starting with `._` are ignored (built in Z-7)** |
 | OQ-110 | F-35: "the picker accepts `.fit` and `.zip`" met without an `accept` filter (F-11 U-6). Suggestion: no filter | Nothing | user (product). **Decided 9 Nov 2026: no file filter (Z-12)** |
 | OQ-111 | F-35: a root `.fit` entry that holds a zip. Suggestion: refused as damaged, nothing sent (F-35 Z-10) | Nothing | user (product). **Decided 9 Nov 2026: refused as damaged, nothing sent (Z-10)** |
-| OQ-112 | F-36: SH-12 says publishing never waits for the image; MC-8(a) delays opening the published page by at most 10 s so a copied link already has the map card. Suggestion: accept (publish itself never waits) | FE-1's publish step only | user (product) |
-| OQ-113 | F-36: the browser sends only the map; the server draws route, icon, name, values and attribution (MC-1, ADR-041). Suggestion: accept; requirements reword SH-12 and the F-36 scope, ACs unchanged | Nothing | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions
