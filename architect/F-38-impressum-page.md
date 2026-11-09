@@ -1,7 +1,7 @@
 # F-38 Impressum page: architecture
 
 - **Version:** 0.1
-- **Status:** draft (9 Nov 2026). Normal lane. User decisions of 9 Nov 2026 built in: OQ-120 to OQ-124 as suggested; the text loads only after a click on "Show Impressum"; the text address is rate-limited per address and answers only its own page
+- **Status:** accepted, built (9 Nov 2026). Normal lane. User decisions of 9 Nov 2026 built in: OQ-120 to OQ-124 as suggested; the text loads only after a click on "Show Impressum"; the text address is rate-limited per address and answers only its own page
 - **Feature:** [`features/F-38-impressum-page.md`](../features/F-38-impressum-page.md); "AC n" is the n-th acceptance criterion there
 - **Requirements:** INF-7, INF-1, DS-3, DS-4, NFR Privacy; TD I-1, I-7, Configuration, Hosting, Security and privacy (Indexing)
 - **Builds on:** [F-29](F-29-about-page-and-attributions.md) AB-1, AB-4, AB-8; [F-22](F-22-caching-and-security-headers.md) H-2, H-6, H-8, H-10, H-12; [F-23](F-23-preview-card-and-indexing.md) PC-11; [F-15](F-15-publish-pipeline-and-static-page.md) P-10, P-12, P-13; [F-30](F-30-regenerate-command.md); [F-37](F-37-report-notification-links.md) DK-9, DK-11; [ADR-021](ADR-021-upload-request-handling-and-rate-limit.md) items 6 to 8, 11; [ADR-024](ADR-024-upload-page-plain-typescript-entry.md); [ADR-025](ADR-025-owner-api-access-and-not-found-response.md) item 7; [ADR-032](ADR-032-response-headers-in-caddy.md). New: [ADR-043](ADR-043-page-shells-filled-at-start.md)

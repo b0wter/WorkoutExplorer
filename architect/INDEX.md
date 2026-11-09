@@ -49,7 +49,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-35 Zip upload | [F-35-zip-upload.md](F-35-zip-upload.md) | draft (8 Nov 2026; normal lane; owner frontend, server unchanged; OQ-108 to OQ-111 decided 9 Nov 2026) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-040 |
 | F-36 Preview image with map context | [F-36-preview-image-with-map-context.md](F-36-preview-image-with-map-context.md) | draft (9 Nov 2026; critical lane; owner both, B-1 backend first, then FE-1) | 0.1 | ADR-013, ADR-017, ADR-022, ADR-025, ADR-028, ADR-032, ADR-033, ADR-041 |
 | F-37 Report notification links | [F-37-report-notification-links.md](F-37-report-notification-links.md) | accepted, built (9 Nov 2026; critical lane; owner both, backend first; OQ-125 open, not blocking; F-27 R-11, F-29 PT-9 noted in place) | 0.1 | ADR-002, ADR-019, ADR-020, ADR-021, ADR-024, ADR-025, ADR-031, ADR-032, ADR-039, ADR-042 |
-| F-38 Impressum page | [F-38-impressum-page.md](F-38-impressum-page.md) | draft (9 Nov 2026; normal lane; owner both, backend first; user decisions of 9 Nov built in; F-15 P-13, F-22 H-6, H-10, F-23 PC-11, F-31 DP-4 noted in place; no open questions) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-025, ADR-032, ADR-034, ADR-043 |
+| F-38 Impressum page | [F-38-impressum-page.md](F-38-impressum-page.md) | accepted, built (9 Nov 2026; normal lane; owner both, backend first; user decisions of 9 Nov built in; F-15 P-13, F-22 H-6, H-10, F-23 PC-11, F-31 DP-4 noted in place; no open questions) | 0.1 | ADR-002, ADR-021, ADR-024, ADR-025, ADR-032, ADR-034, ADR-043 |
 
 ## Decisions (ADRs)
 

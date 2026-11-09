@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"fmt"
 	"log/slog"
 	"net/http/httptest"
 	"reflect"
@@ -70,5 +71,25 @@ func TestImpressumAPI(t *testing.T) {
 	}
 	if logs.Len() != 0 {
 		t.Errorf("log lines: %s", logs.String())
+	}
+}
+
+// TestImpressumKeyCap (F-38 AC 6, IM-6): with maxImpressumKeys addresses tracked,
+// a new address fails closed with 429 and no text; a tracked one is still served.
+func TestImpressumKeyCap(t *testing.T) {
+	h := NewHandler(Config{MaxConcurrentUploads: 1, Impressum: []byte("<h2>Imp</h2>"), Now: func() time.Time { return time.Unix(1_000_000, 0) }})
+	ok := []string{"Wx-Impressum", "1"}
+	addr := func(i int) string { return fmt.Sprintf("10.%d.%d.%d:1", i>>16, i>>8&255, i&255) }
+	for i := 0; i < maxImpressumKeys; i++ {
+		if got := deleteReq(h, "GET", "/api/impressum", addr(i), ok...); got.Code != 200 {
+			t.Fatalf("address %d: %d", i, got.Code)
+		}
+	}
+	got := deleteReq(h, "GET", "/api/impressum", addr(maxImpressumKeys), ok...)
+	if got.Code != 429 || got.Header().Get("Retry-After") == "" || bytes.Contains(got.Body.Bytes(), []byte("Imp")) {
+		t.Errorf("new address at the cap: %d %v %q", got.Code, got.Header(), got.Body)
+	}
+	if got := deleteReq(h, "GET", "/api/impressum", addr(0), ok...); got.Code != 200 {
+		t.Errorf("tracked address: %d", got.Code)
 	}
 }

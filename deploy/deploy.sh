@@ -46,6 +46,8 @@ put() { # put <local> <remote relative path> <mode>
 	cp_to "$1" "$tn"
 	r "chmod $3 '$tn' && mv '$tn' '$2'"
 }
+# {data}/site must exist (ADR-043; Caddy's mount has create_host_path: false); refuse before anything changes.
+r 'd=$(sed -n "s/^WX_DATA=//p" .env); [ -d "${d:-/srv/workouts}/site" ]' || { echo "deploy: {data}/site is missing on the target; create it first (deploy/RUNBOOK.md section 3: install -d ... /srv/workouts/site)" >&2; exit 1; }
 # Bundle lists (RG-10), before anything is copied: the files already in web/assets
 # when the first list is written form one list of their own (releases before F-30).
 r '[ -d bundles ] || { rm -rf bundles.new && mkdir bundles.new && ls -A web/assets > bundles.new/pre-f30 && mv bundles.new bundles; }'
