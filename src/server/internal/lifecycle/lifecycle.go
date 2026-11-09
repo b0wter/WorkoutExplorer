@@ -45,6 +45,9 @@ type Service struct {
 	uncheckpointed atomic.Bool
 	// mapSlot admits one basemap upload at a time (F-36 MC-4).
 	mapSlot atomic.Bool
+	// frameSlot admits one preview-frame build at a time, taken before the
+	// original is read, so waiting GETs hold no memory (F-36 MC-4).
+	frameSlot atomic.Bool
 }
 
 // New returns a Service. A nil Logger writes nothing.

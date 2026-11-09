@@ -38,8 +38,8 @@ type MapFrame struct {
 	Current bool
 }
 
-// PreviewFrame is GET …/preview-map: the token check, then the build's front
-// half. It writes nothing.
+// PreviewFrame is GET …/preview-map: the token check, the frame slot (one in
+// flight, else ErrMapBusy), then the build's front half. It writes nothing.
 func (s *Service) PreviewFrame(ctx context.Context, publicID, token string) (MapFrame, error) {
 	rec, err := s.lookup(ctx, publicID, token)
 	if err != nil {
@@ -48,6 +48,10 @@ func (s *Service) PreviewFrame(ctx context.Context, publicID, token string) (Map
 	if s.d.Frames == nil {
 		return MapFrame{}, ErrNotFound
 	}
+	if !s.frameSlot.CompareAndSwap(false, true) {
+		return MapFrame{}, ErrMapBusy
+	}
+	defer s.frameSlot.Store(false)
 	fr, ok, err := s.d.Frames.Frame(ctx, rec)
 	if err != nil {
 		if gone(ctx, err) {

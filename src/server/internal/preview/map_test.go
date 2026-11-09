@@ -21,6 +21,8 @@ import (
 	"workout-explorer/internal/datafile"
 	"workout-explorer/internal/page"
 	"workout-explorer/internal/workout"
+
+	"golang.org/x/image/font"
 )
 
 // F-36 MC-2, MC-5, MC-6 (ADR-041). Synthetic files and synthetic basemaps only.
@@ -318,6 +320,21 @@ func TestRenderOnMap(t *testing.T) {
 		}
 		if !near(img.At(panelWidth/2, 600), background) || !near(img.At(Width-20, 590), background) {
 			t.Errorf("%s: no panel or attribution box", name)
+		}
+		// QA-36-r1-3: the attribution text is drawn in its box.
+		af := face(regular, attribSize)
+		w := font.MeasureString(af, attribution).Ceil()
+		af.Close()
+		text := 0
+		for y := 606 - attribSize - 16; y < 606; y++ {
+			for x := Width - 12 - w - 16; x < Width-12; x++ {
+				if near(img.At(x, y), ink) {
+					text++
+				}
+			}
+		}
+		if text < 100 {
+			t.Errorf("%s: %d text pixels in the attribution box", name, text)
 		}
 	}
 }

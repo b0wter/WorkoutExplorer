@@ -123,6 +123,10 @@ func (h *ownerHandler) previewFrame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mf, err := h.o.PreviewFrame(r.Context(), id, token)
+	if errors.Is(err, lifecycle.ErrMapBusy) {
+		writeError(w, http.StatusServiceUnavailable, codeBusy, msgMapBusy)
+		return
+	}
 	if err != nil {
 		fail(w, err)
 		return

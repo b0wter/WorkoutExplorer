@@ -39,15 +39,16 @@ func (f *fakeFiles) StoreMap(id, key string, data []byte) (int64, error) {
 }
 
 type fakeFrames struct {
-	mu    sync.Mutex
-	fr    preview.Frame
-	ok    bool
-	calls int
-	gate  chan struct{} // non-nil: Frame waits for it
-	in    chan struct{} // non-nil: Frame signals entry
+	mu     sync.Mutex
+	fr     preview.Frame
+	ok     bool
+	calls  int
+	gate   chan struct{} // non-nil: Frame waits for it
+	in     chan struct{} // non-nil: Frame signals entry
+	hidKey string        // non-empty: the key while HideEnds is on
 }
 
-func (f *fakeFrames) Frame(context.Context, Record) (preview.Frame, bool, error) {
+func (f *fakeFrames) Frame(_ context.Context, r Record) (preview.Frame, bool, error) {
 	if f.in != nil {
 		f.in <- struct{}{}
 	}
@@ -57,7 +58,27 @@ func (f *fakeFrames) Frame(context.Context, Record) (preview.Frame, bool, error)
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls++
-	return f.fr, f.ok, nil
+	fr := f.fr
+	if f.hidKey != "" && r.HideEnds {
+		fr.Key = f.hidKey
+	}
+	return fr, f.ok, nil
+}
+
+// eofReader runs at once when its bytes are read to the end: a change that
+// lands between PutPreviewMap's first lookup and its lock.
+type eofReader struct {
+	r  io.Reader
+	at func()
+}
+
+func (e *eofReader) Read(p []byte) (int, error) {
+	n, err := e.r.Read(p)
+	if err == io.EOF && e.at != nil {
+		e.at()
+		e.at = nil
+	}
+	return n, err
 }
 
 const mapKey = "0123456789abcdef"
@@ -239,6 +260,69 @@ func TestPutPreviewMapBusy(t *testing.T) {
 	if err := s.PutPreviewMap(ctx, c.PublicID, c.EditToken, mapKey, bytes.NewReader(mapPNG(t))); err != nil {
 		t.Error(err)
 	}
+}
+
+// TestPreviewFrameBusy (QA-36-r1-1, MC-4): one frame build in flight; a
+// second GET is refused before it reaches the build (no original read).
+func TestPreviewFrameBusy(t *testing.T) {
+	ctx := context.Background()
+	s, _, _, _, c, frames, _ := mapService(t)
+	frames.gate, frames.in = make(chan struct{}), make(chan struct{})
+	done := make(chan error)
+	go func() { _, err := s.PreviewFrame(ctx, c.PublicID, c.EditToken); done <- err }()
+	<-frames.in
+	for range 3 {
+		if _, err := s.PreviewFrame(ctx, c.PublicID, c.EditToken); !errors.Is(err, ErrMapBusy) {
+			t.Errorf("second: %v", err)
+		}
+	}
+	frames.in = nil
+	close(frames.gate)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if frames.calls != 1 {
+		t.Errorf("%d frame builds, want 1", frames.calls)
+	}
+	if _, err := s.PreviewFrame(ctx, c.PublicID, c.EditToken); err != nil {
+		t.Errorf("slot not freed: %v", err)
+	}
+}
+
+// TestPutPreviewMapRelookup (QA-36-r1-2, MC-4, MC-8(a)): changes that land
+// after the first lookup are seen under the lock. A publish in between gets
+// the in-place build; a hiding change in between gets 409 and no store.
+func TestPutPreviewMapRelookup(t *testing.T) {
+	ctx := context.Background()
+	t.Run("publish", func(t *testing.T) {
+		s, _, _, _, c, _, hook := mapService(t)
+		body := &eofReader{r: bytes.NewReader(mapPNG(t)), at: func() {
+			if _, err := s.Publish(ctx, c.PublicID, c.EditToken); err != nil {
+				t.Error(err)
+			}
+		}}
+		if err := s.PutPreviewMap(ctx, c.PublicID, c.EditToken, mapKey, body); err != nil {
+			t.Fatal(err)
+		}
+		if len(hook.calls) != 2 || hook.calls[1].Visibility != Unlisted {
+			t.Errorf("want publish build and in-place build, got %d calls", len(hook.calls))
+		}
+	})
+	t.Run("hiding", func(t *testing.T) {
+		s, _, f, _, c, frames, _ := mapService(t)
+		frames.hidKey = "fedcba9876543210"
+		body := &eofReader{r: bytes.NewReader(mapPNG(t)), at: func() {
+			if _, err := s.Update(ctx, c.PublicID, c.EditToken, SettingsPatch{HideEnds: bp(true)}); err != nil {
+				t.Error(err)
+			}
+		}}
+		if err := s.PutPreviewMap(ctx, c.PublicID, c.EditToken, mapKey, body); !errors.Is(err, ErrMapStale) {
+			t.Errorf("%v", err)
+		}
+		if n, _ := storedMaps(f); n != 0 {
+			t.Errorf("%d maps stored", n)
+		}
+	})
 }
 
 // TestPutPreviewMapDeleted (AC 44): after the workout is gone no map is

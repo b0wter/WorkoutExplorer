@@ -48,6 +48,11 @@ func TestPreviewMapEndpoints(t *testing.T) {
 		rec.Header().Get("Cache-Control") != "no-store" || o.token != strings.Repeat("t", 22) {
 		t.Errorf("get: %d %s", rec.Code, rec.Body)
 	}
+	o.err = lifecycle.ErrMapBusy
+	if rec := ownerDo(h, "GET", base, auth, ""); rec.Code != 503 || rec.Body.String() != `{"error":"busy","message":"Another preview image is being processed. Please try again."}` {
+		t.Errorf("get busy: %d %s", rec.Code, rec.Body)
+	}
+	o.err = nil
 	o.noFrame = true
 	if rec := ownerDo(h, "GET", base, auth, ""); rec.Code != 200 || rec.Body.String() != `{"frame":null}` {
 		t.Errorf("no frame: %d %s", rec.Code, rec.Body)
