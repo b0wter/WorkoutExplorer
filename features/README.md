@@ -133,7 +133,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1
 - Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5
-- Multisport legs and transitions as sections — AP-12
+- Multisport legs and transitions as sections (leg lines and sport labels on charts, separator rows in laps, leg start markers on the map) — AP-12
 - Pool swims: lengths and stroke type instead of a map; pool length and number of lengths in the summary (needs a workout data file format change: backend and frontend) — AP-13, AP-16
 - Device and sensor info — AP-14
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11
@@ -590,6 +590,8 @@ Updated: spec (viewer story 16, scope table row, footer line under Activity page
 - **Build order:** F-39, then F-40, after F-38. Both frontend.
 
 Updated: spec (viewer story 17, scope table row, AP-7, AP-19, new AP-22, open questions "Range in the link" and "How to use details", Roadmap phase 2), F-39 and F-40 (new, OQ-126 to OQ-132 open), feature index (order, rows, counts, coverage AP-19, AP-22), Phase 2 list (shareable range moved to F-40). Technical design (`lib/prefs` keys, ADR-011 shares, ADR-020 fragment) to be updated by the architect. Later the same day: OQ-126 to OQ-132 resolved in F-39, F-40, spec AP-19, AP-22 and open questions.
+
+**Decided on 9 Nov 2026, multisport sections shown** (user, AP-12, phase 2 idea, no feature file): charts get a vertical line at each leg boundary with the sport labelled on top; the laps table a separator row with the leg's name before each leg; the map a marker at each leg start. Updated: spec AP-12, Phase 2 list.
 
 The original questions follow for reference.
 
