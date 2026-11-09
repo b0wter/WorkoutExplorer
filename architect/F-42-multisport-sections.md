@@ -1,7 +1,7 @@
 # F-42 Multisport sections: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (9 Nov 2026). Normal lane. OQ-138 to OQ-143 decided as suggested (decision log); OQ-144, OQ-145 open, not blocking
+- **Status:** accepted (9 Nov 2026). Normal lane. OQ-138 to OQ-143 decided as suggested (decision log); OQ-144, OQ-145 resolved (10 Nov 2026)
 - **Feature:** [`features/F-42-multisport-sections.md`](../features/F-42-multisport-sections.md)
 - **Requirements:** AP-12, AP-3, AP-4, AP-5, AP-7, AP-8, AP-15, SH-4, NFR Performance
 - **Builds on:** [F-03](F-03-workout-data-file-writer.md) §5.3, §5.4; [F-06](F-06-route-map-linked-to-cursor.md) (lap markers); [F-18](F-18-laps-and-splits-table.md) L-2, L-3, L-7; [F-26](F-26-fullscreen-map.md); ADR-009, ADR-011 (rev. 14: this feature lazy), ADR-026, ADR-027. TD glossary "Section"
@@ -31,7 +31,4 @@
 
 ## Open questions
 
-| ID | Question | Suggestion | Blocks | Owner |
-| --- | --- | --- | --- | --- |
-| OQ-144 | Feature scope puts the leg marker "at the first positioned sample of each leg", AC 38 at "the leg's first sample" only if positioned | Follow AC 38 and the lap-marker rule (MS-8); requirements reword the scope line | Nothing (MS-8 built as written) | requirements |
-| OQ-145 | Lines and separator taps appear shortly after the charts (lazy chunk, MS-9) | Accept. Static would cost about 300 bytes more and leave the reserve near 355 (ADR-011 item 4) | Nothing (lazy built unless the user objects) | user (product) |
+None. OQ-144 and OQ-145 accepted by the user on 10 Nov 2026 (decision log, `features/README.md`).

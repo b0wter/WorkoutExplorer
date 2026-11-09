@@ -53,7 +53,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 
 | F-39 How to use | [F-39-how-to-use.md](F-39-how-to-use.md) | accepted (9 Nov 2026; normal lane; owner frontend; head script also sets `data-hint`, new CSP hash; OQ-133, OQ-134 resolved) | 0.1 | ADR-011, ADR-026, ADR-032 |
 | F-40 Shareable range | [F-40-shareable-range.md](F-40-shareable-range.md) | accepted (9 Nov 2026; normal lane; owner frontend; built after F-39; no open questions) | 0.1 | ADR-011, ADR-020, ADR-038 |
-| F-42 Multisport sections | [F-42-multisport-sections.md](F-42-multisport-sections.md) | accepted (9 Nov 2026; normal lane; owner both, B-1 backend first; no format change; browser part lazy; OQ-144, OQ-145 open, not blocking) | 0.1 | ADR-009, ADR-011, ADR-026, ADR-027 |
+| F-42 Multisport sections | [F-42-multisport-sections.md](F-42-multisport-sections.md) | accepted (9 Nov 2026; normal lane; owner both, B-1 backend first; no format change; browser part lazy; OQ-144, OQ-145 resolved) | 0.1 | ADR-009, ADR-011, ADR-026, ADR-027 |
 
 ## Decisions (ADRs)
 
@@ -127,8 +127,6 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-109 | F-35: an AppleDouble `._ride.fit` in the root counts as a second FIT file under UP-11. Suggestion: ignore root names starting with `._` | Nothing (UP-11 built as written until decided) | user (product). **Decided 9 Nov 2026: root names starting with `._` are ignored (built in Z-7)** |
 | OQ-110 | F-35: "the picker accepts `.fit` and `.zip`" met without an `accept` filter (F-11 U-6). Suggestion: no filter | Nothing | user (product). **Decided 9 Nov 2026: no file filter (Z-12)** |
 | OQ-111 | F-35: a root `.fit` entry that holds a zip. Suggestion: refused as damaged, nothing sent (F-35 Z-10) | Nothing | user (product). **Decided 9 Nov 2026: refused as damaged, nothing sent (Z-10)** |
-| OQ-144 | F-42: the feature scope puts the leg marker "at the first positioned sample of each leg", AC 38 only at the leg's first sample if positioned. Suggestion: follow AC 38 and the lap-marker rule (F-42 MS-8); reword the scope line | Nothing (MS-8 built as written) | requirements |
-| OQ-145 | F-42: section lines and separator-row taps appear shortly after the charts, because the browser part is lazy (ADR-011 rev. 14). Suggestion: accept; static would cost about 300 bytes more of a 955-byte reserve | Nothing (lazy built unless the user objects) | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

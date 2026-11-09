@@ -636,3 +636,6 @@ The original questions follow for reference.
 33. **Pool swims in the MVP** (lengths are phase 2). *Assumed:* handled like any indoor workout: no map, charts for the streams present, no lengths table (F-02, F-13).
 
 **Decided on 9 Nov 2026, F-42 questions** (user, AP-12): OQ-138 to OQ-143 accepted as suggested: sections only for "Multisport" workouts; leg names are sport names, transitions T1, T2, …, names in the top chart only; a separator row tap selects the leg as a range; a leg marker replaces a lap marker at the same sample and stays in fullscreen; splits without separators, lap columns by workout sport; normal lane. Updated: F-42 (scope, AC, decisions), spec AP-8, AP-15.
+
+**Decided on 10 Nov 2026, F-42 design questions** (user, AP-12, AP-15): OQ-144 accepted: the leg marker sits only at the leg's first sample and only if it has a position (lap-marker rule, AC 38); F-42 scope line reworded. OQ-145 accepted: section lines and separator-row taps appear shortly after the charts (lazy chunk). Updated: F-42 scope, architect F-42 and INDEX.
+
