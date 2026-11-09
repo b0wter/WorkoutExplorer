@@ -3,12 +3,15 @@ package reports
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
 	"time"
+
+	"workout-explorer/internal/lifecycle"
 )
 
 type fakeStore struct {
@@ -21,6 +24,10 @@ type fakeStore struct {
 	pruneN     int64
 	gotNow     time.Time
 	ctxCancels bool
+	setID      int64
+	setHash    [32]byte
+	keyed      KeyedReport
+	keyArgs    []any
 }
 
 func (f *fakeStore) AddReport(ctx context.Context, publicID, reason, message string, now time.Time, max int) (int64, string, bool, error) {
@@ -39,10 +46,31 @@ func (f *fakeStore) DeleteReportsFiledBy(_ context.Context, t time.Time) (int64,
 	return f.pruneN, f.err
 }
 
+func (f *fakeStore) SetDeleteKeyHash(_ context.Context, id int64, h [32]byte) (bool, error) {
+	f.setID, f.setHash = id, h
+	return f.found, f.err
+}
+
+func (f *fakeStore) ClearDeleteKeys(context.Context) (int64, error) { return f.pruneN, f.err }
+
+func (f *fakeStore) ReportByDeleteKey(_ context.Context, h [32]byte, after, now time.Time) (KeyedReport, bool, error) {
+	f.keyArgs = []any{h, after, now}
+	return f.keyed, f.found && h == f.setHash, f.err
+}
+
+func (f *fakeStore) ConsumeDeleteKey(_ context.Context, h [32]byte, after, now time.Time) (string, string, bool, error) {
+	f.keyArgs = []any{h, after, now}
+	ok := f.found && h == f.setHash
+	if ok {
+		f.setHash = [32]byte{} // spent
+	}
+	return "w-internal", pub, ok, f.err
+}
+
 type fakeNotifier struct{ got []string }
 
-func (n *fakeNotifier) Notify(id int64, reason string) {
-	n.got = append(n.got, note(id, reason))
+func (n *fakeNotifier) Notify(id int64, label, viewURL string) {
+	n.got = append(n.got, note(id, label)+" "+viewURL)
 }
 
 func note(id int64, reason string) string { return fmt.Sprintf("%s#%d", reason, id) }
@@ -87,7 +115,7 @@ func TestFile(t *testing.T) {
 	var logs bytes.Buffer
 	st := &fakeStore{found: true, id: 7}
 	n := &fakeNotifier{}
-	s := New(st, n, func() time.Time { return now }, slog.New(slog.NewJSONHandler(&logs, nil)))
+	s := New(Deps{Store: st, Notifier: n, BaseURL: "https://wx.example", Now: func() time.Time { return now }, Logger: slog.New(slog.NewJSONHandler(&logs, nil))})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -97,7 +125,7 @@ func TestFile(t *testing.T) {
 	if st.got[0] != pub || st.got[1] != "spam" || st.got[2] != "SECRETMESSAGE" || !st.gotNow.Equal(now) || st.ctxCancels {
 		t.Errorf("store got %v at %v, cancellable ctx %v", st.got, st.gotNow, st.ctxCancels)
 	}
-	if len(n.got) != 1 || n.got[0] != note(7, "spam") {
+	if len(n.got) != 1 || n.got[0] != note(7, "Spam")+" https://wx.example/w/"+pub {
 		t.Errorf("notified %v", n.got)
 	}
 	l := logs.String()
@@ -140,7 +168,7 @@ func TestFile(t *testing.T) {
 
 	// No notifier: still stored.
 	st.err, st.id = nil, 9
-	if err := New(st, nil, nil, nil).File(ctx, pub, "spam", ""); err != nil {
+	if err := New(Deps{Store: st}).File(ctx, pub, "spam", ""); err != nil {
 		t.Error(err)
 	}
 }
@@ -149,7 +177,7 @@ func TestPrune(t *testing.T) {
 	now := time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC)
 	var logs bytes.Buffer
 	st := &fakeStore{pruneN: 2}
-	s := New(st, nil, func() time.Time { return now }, slog.New(slog.NewJSONHandler(&logs, nil)))
+	s := New(Deps{Store: st, Now: func() time.Time { return now }, Logger: slog.New(slog.NewJSONHandler(&logs, nil))})
 	s.Prune(context.Background())
 	if !st.pruneAt.Equal(now.Add(-30*24*time.Hour)) || !strings.Contains(logs.String(), `"msg":"reports pruned","removed":2`) {
 		t.Errorf("cutoff %v log %s", st.pruneAt, logs.String())
@@ -158,5 +186,136 @@ func TestPrune(t *testing.T) {
 	s.Prune(context.Background())
 	if !strings.Contains(logs.String(), `"msg":"report pruning failed"`) {
 		t.Errorf("log %s", logs.String())
+	}
+}
+
+type fakeDeleter struct {
+	got        []lifecycle.Record
+	err        error
+	ctxCancels bool
+}
+
+func (d *fakeDeleter) DeleteByOperator(ctx context.Context, r lifecycle.Record) error {
+	d.got = append(d.got, r)
+	d.ctxCancels = ctx.Done() != nil
+	return d.err
+}
+
+type failReader struct{}
+
+func (failReader) Read([]byte) (int, error) { return 0, errors.New("no entropy") }
+
+// TestDeleteKeys (F-37 DK-2 to DK-8): the link carries the key, the store
+// only its hash; lookup shows the DK-7 fields; redeem spends the key once and
+// runs the operator delete; nothing logs the key.
+func TestDeleteKeys(t *testing.T) {
+	now := time.Date(2026, 11, 9, 12, 0, 0, 0, time.UTC)
+	var logs bytes.Buffer
+	start := time.Date(2026, 11, 8, 6, 30, 0, 0, time.UTC)
+	off := 3600
+	st := &fakeStore{found: true, keyed: KeyedReport{ID: 5, Reason: "personal_data", FiledAt: now.Add(-time.Hour), Count: 3,
+		Workout: lifecycle.Record{Sport: "cycling", StartTime: &start, TimeZoneOffsetS: &off, ExpiresAt: now.Add(48 * time.Hour)}}}
+	del := &fakeDeleter{}
+	s := New(Deps{Store: st, Deleter: del, BaseURL: "https://wx.example", Now: func() time.Time { return now }, Logger: slog.New(slog.NewJSONHandler(&logs, nil))})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	link, ok := s.IssueDeleteLink(ctx, 5)
+	key, found := strings.CutPrefix(link, "https://wx.example/report-delete#")
+	if !ok || !found || !lifecycle.ValidPublicID(key) || st.setID != 5 || st.setHash != lifecycle.HashToken(key) {
+		t.Fatalf("link %q, stored %d %x", link, st.setID, st.setHash)
+	}
+
+	for _, bad := range []string{"", "short", key + "A", key[:21] + "_", strings.ToLower(key[:21]) + "é"} {
+		if _, err := s.LookupDeleteKey(ctx, bad); !errors.Is(err, ErrLinkInvalid) {
+			t.Errorf("lookup %q: %v", bad, err)
+		}
+		if err := s.RedeemDeleteKey(ctx, bad); !errors.Is(err, ErrLinkInvalid) {
+			t.Errorf("redeem %q: %v", bad, err)
+		}
+	}
+	if st.keyArgs != nil || del.got != nil {
+		t.Fatal("a malformed key reached the store")
+	}
+
+	info, err := s.LookupDeleteKey(ctx, key)
+	want := KeyInfo{Title: "Ride, 8 Nov 2026", StartDate: "8 Nov 2026, 07:30", ReportID: 5, Reason: "Personal data",
+		FiledAt: now.Add(-time.Hour), ExpiresAt: now.Add(48 * time.Hour), ReportCount: 3}
+	if err != nil || info != want {
+		t.Errorf("lookup %+v, %v", info, err)
+	}
+	if st.keyArgs[0] != lifecycle.HashToken(key) || !st.keyArgs[1].(time.Time).Equal(now.Add(-Retention)) || !st.keyArgs[2].(time.Time).Equal(now) {
+		t.Errorf("store args %v", st.keyArgs)
+	}
+	st.keyed.Workout.Title = "  Morning loop "
+	if info, _ := s.LookupDeleteKey(ctx, key); info.Title != "  Morning loop " {
+		t.Errorf("stored title %q", info.Title)
+	}
+	if del.got != nil {
+		t.Fatal("lookup deleted")
+	}
+
+	if err := s.RedeemDeleteKey(ctx, key); err != nil {
+		t.Fatal(err)
+	}
+	if len(del.got) != 1 || del.got[0].ID != "w-internal" || del.got[0].PublicID != pub || del.ctxCancels {
+		t.Errorf("deleted %+v, cancellable %v", del.got, del.ctxCancels)
+	}
+	if err := s.RedeemDeleteKey(ctx, key); !errors.Is(err, ErrLinkInvalid) || len(del.got) != 1 {
+		t.Errorf("second redeem: %v, %d deletes", err, len(del.got))
+	}
+
+	// A delete failure after the consume is returned; the key is spent.
+	link, _ = s.IssueDeleteLink(ctx, 6)
+	key2 := link[len(link)-22:]
+	del.err = errors.New("disk")
+	if err := s.RedeemDeleteKey(ctx, key2); err == nil || err.Error() != "disk" {
+		t.Errorf("delete failure: %v", err)
+	}
+	if err := s.RedeemDeleteKey(ctx, key2); !errors.Is(err, ErrLinkInvalid) {
+		t.Errorf("after a failed delete: %v", err)
+	}
+
+	// Issue failures: no random bytes, report gone, store error. One WARN with the ID only.
+	logs.Reset()
+	s.rand = failReader{}
+	if l, ok := s.IssueDeleteLink(ctx, 8); ok || l != "" {
+		t.Errorf("no entropy: %q", l)
+	}
+	s.rand = rand.Reader
+	st.found = false
+	if l, ok := s.IssueDeleteLink(ctx, 9); ok || l != "" {
+		t.Errorf("gone: %q", l)
+	}
+	st.found, st.err = true, errors.New("disk")
+	if l, ok := s.IssueDeleteLink(ctx, 10); ok || l != "" {
+		t.Errorf("store error: %q", l)
+	}
+	if got := strings.Count(logs.String(), `"level":"WARN","msg":"delete key not issued","id":`); got != 3 || strings.Contains(logs.String(), "disk") {
+		t.Errorf("log %s", logs.String())
+	}
+	for _, k := range []string{key, key2} {
+		if strings.Contains(logs.String(), k) {
+			t.Error("a key in the log")
+		}
+	}
+
+	// Clear (DK-5).
+	logs.Reset()
+	st.err, st.pruneN = nil, 2
+	if err := s.ClearDeleteKeys(ctx); err != nil || !strings.Contains(logs.String(), `"msg":"delete keys cleared","removed":2`) {
+		t.Errorf("clear: %v, log %s", err, logs.String())
+	}
+}
+
+// TestLabels: every reason has its INF-4 label.
+func TestLabels(t *testing.T) {
+	if len(Labels) != len(Reasons) {
+		t.Fatal(Labels)
+	}
+	for _, r := range Reasons {
+		if Labels[r] == "" {
+			t.Errorf("no label for %s", r)
+		}
 	}
 }

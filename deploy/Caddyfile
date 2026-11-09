@@ -125,6 +125,16 @@
 		file_server
 	}
 
+	# /report-delete: the delete link's confirmation page (F-37 DK-11); it reads
+	# the key from the fragment, which never reaches a server. Never cached;
+	# /report-delete.html is the 404 below.
+	handle /report-delete {
+		header Cache-Control no-store
+		root * {$WX_WEB}
+		rewrite * /report-delete.html
+		file_server
+	}
+
 	# Go's Cache-Control (no-store) stays untouched.
 	handle /api/* {
 		# Go gets the client Caddy resolved as the only X-Forwarded-For entry

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"workout-explorer/internal/reports"
 )
 
 // The reports table (F-27 R-2 to R-5). A report row holds the reason, the
@@ -73,4 +75,91 @@ func (d *DB) ReportCount(ctx context.Context, workoutID string) (int, error) {
 		return 0, fmt.Errorf("store: count reports: %w", err)
 	}
 	return n, nil
+}
+
+// Delete keys (F-37 DK-2 to DK-8, ADR-042). Only the key's SHA-256 is ever
+// a parameter here; no error text carries it (bound, never formatted in).
+
+// SetDeleteKeyHash stores the hash of the delete key issued for this report
+// (DK-3); false if the report is gone.
+func (d *DB) SetDeleteKeyHash(ctx context.Context, reportID int64, hash [32]byte) (bool, error) {
+	res, err := d.db.ExecContext(ctx, "UPDATE reports SET delete_key_hash = ? WHERE id = ?", hash[:], reportID)
+	if err != nil {
+		return false, fmt.Errorf("store: set delete key: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("store: set delete key: %w", err)
+	}
+	return n == 1, nil
+}
+
+// ClearDeleteKeys removes every delete key (DK-5) and returns how many.
+func (d *DB) ClearDeleteKeys(ctx context.Context) (int64, error) {
+	res, err := d.db.ExecContext(ctx, "UPDATE reports SET delete_key_hash = NULL WHERE delete_key_hash IS NOT NULL")
+	if err != nil {
+		return 0, fmt.Errorf("store: clear delete keys: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: clear delete keys: %w", err)
+	}
+	return n, nil
+}
+
+// keyValid is DK-4 in SQL over the reports row named r: the hash matches,
+// the report was filed after filedAfter, and its workout's row lives at now.
+func keyValid(r string) string {
+	return r + `.delete_key_hash = ? AND ` + r + `.created_at > ?
+	AND EXISTS (SELECT 1 FROM workouts w WHERE w.id = ` + r + `.workout_id AND w.expires_at > ?)`
+}
+
+// ReportByDeleteKey is the report a valid key points at and its workout's
+// row (title, sport, start, zone, expiry only), with the number of reports
+// on that workout (DK-7). It changes nothing.
+func (d *DB) ReportByDeleteKey(ctx context.Context, hash [32]byte, filedAfter, now time.Time) (reports.KeyedReport, bool, error) {
+	var (
+		k          reports.KeyedReport
+		filed, exp int64
+		start, off sql.NullInt64
+	)
+	err := d.db.QueryRowContext(ctx, `SELECT r.id, r.reason, r.created_at,
+			w.title, w.sport, w.start_time, w.time_zone_offset_s, w.expires_at,
+			(SELECT count(*) FROM reports c WHERE c.workout_id = r.workout_id)
+		FROM reports r JOIN workouts w ON w.id = r.workout_id WHERE `+keyValid("r"),
+		hash[:], unix(filedAfter), unix(now)).Scan(&k.ID, &k.Reason, &filed,
+		&k.Workout.Title, &k.Workout.Sport, &start, &off, &exp, &k.Count)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return reports.KeyedReport{}, false, nil
+	case err != nil:
+		return reports.KeyedReport{}, false, fmt.Errorf("store: report by delete key: %w", err)
+	}
+	k.FiledAt, k.Workout.ExpiresAt = time.Unix(filed, 0).UTC(), time.Unix(exp, 0).UTC()
+	if start.Valid {
+		t := time.Unix(start.Int64, 0).UTC()
+		k.Workout.StartTime = &t
+	}
+	if off.Valid {
+		v := int(off.Int64)
+		k.Workout.TimeZoneOffsetS = &v
+	}
+	return k, true, nil
+}
+
+// ConsumeDeleteKey spends a valid key in one statement (DK-8): its hash is
+// cleared and the workout's internal and public ID returned. Of concurrent
+// calls with one key, also across processes, exactly one gets ok.
+func (d *DB) ConsumeDeleteKey(ctx context.Context, hash [32]byte, filedAfter, now time.Time) (id, publicID string, ok bool, err error) {
+	// No alias: SQLite does not resolve an UPDATE alias inside RETURNING.
+	err = d.db.QueryRowContext(ctx, `UPDATE reports SET delete_key_hash = NULL WHERE `+keyValid("reports")+`
+		RETURNING workout_id, (SELECT w.public_id FROM workouts w WHERE w.id = reports.workout_id)`,
+		hash[:], unix(filedAfter), unix(now)).Scan(&id, &publicID)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return "", "", false, nil
+	case err != nil:
+		return "", "", false, fmt.Errorf("store: consume delete key: %w", err)
+	}
+	return id, publicID, true, nil
 }

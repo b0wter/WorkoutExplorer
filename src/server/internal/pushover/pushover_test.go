@@ -56,15 +56,6 @@ func fake(t *testing.T, status int, hang chan struct{}) (*httptest.Server, chan 
 	return srv, reqs
 }
 
-func start(t *testing.T, endpoint string, logs io.Writer) *Notifier {
-	t.Helper()
-	n := New(token, user, endpoint, slog.New(slog.NewJSONHandler(logs, nil)))
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go n.Run(ctx)
-	return n
-}
-
 func wait(t *testing.T, reqs chan got) got {
 	t.Helper()
 	select {
@@ -83,18 +74,35 @@ func noSecrets(t *testing.T, s string) {
 	}
 }
 
-// TestRequest (ADR-039 items 2, 3): one form POST with exactly token, user,
-// title and message; the secrets only in the body; the message is the
-// number and the reason only.
+const (
+	viewURL = "https://wx.example/w/PPPPPPPPPPPPPPPPPPPPPP"
+	link    = "https://wx.example/report-delete#KKKKKKKKKKKKKKKKKKKKKK"
+)
+
+// TestRequest (ADR-039 items 2, 3 rev. 1; F-37 DK-10): one form POST with
+// exactly token, user, title, message, html, url and url_title; the secrets
+// only in the body; the message is the number, the label and the delete link
+// as an anchor; url is the viewing link.
 func TestRequest(t *testing.T) {
 	srv, reqs := fake(t, 200, nil)
 	var logs syncBuf
-	n := start(t, srv.URL+"/1/messages.json", &logs)
-	n.Notify(42, "personal_data")
+	var issued []int64
+	n := New(token, user, srv.URL+"/1/messages.json", func(_ context.Context, id int64) (string, bool) {
+		issued = append(issued, id)
+		return link, true
+	}, slog.New(slog.NewJSONHandler(&logs, nil)))
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	go n.Run(ctx)
+	n.Notify(42, "Personal data", viewURL)
 	g := wait(t, reqs)
-	want := url.Values{"token": {token}, "user": {user}, "title": {"Workout Explorer"}, "message": {"New report #42: personal_data"}}
+	want := url.Values{"token": {token}, "user": {user}, "title": {"Workout Explorer"}, "html": {"1"}, "url": {viewURL}, "url_title": {"Open workout"},
+		"message": {"New report #42: Personal data\n<a href=\"" + link + "\">Delete this workout</a>"}}
 	if g.method != "POST" || g.path != "/1/messages.json" || g.query != "" || g.ctype != "application/x-www-form-urlencoded" || !reflect.DeepEqual(g.form, want) {
 		t.Errorf("request %+v", g)
+	}
+	if !reflect.DeepEqual(issued, []int64{42}) {
+		t.Errorf("issued %v", issued)
 	}
 	time.Sleep(50 * time.Millisecond)
 	if logs.String() != "" {
@@ -102,8 +110,24 @@ func TestRequest(t *testing.T) {
 	}
 }
 
+// TestMessage: without a key no anchor; the link is HTML-escaped.
+func TestMessage(t *testing.T) {
+	for _, c := range []struct {
+		label, link, want string
+		more              int
+	}{
+		{"Spam", "", "New report #7: Spam", 0},
+		{"Other", "", "New report #7: Other (+3 more)", 3},
+		{"Illegal content", "https://a.example/x?a=1&b=\"#k", "New report #7: Illegal content (+1 more)\n<a href=\"https://a.example/x?a=1&amp;b=&#34;#k\">Delete this workout</a>", 1},
+	} {
+		if got := Message(7, c.label, c.more, c.link); got != c.want {
+			t.Errorf("%q", got)
+		}
+	}
+}
+
 func TestDefaults(t *testing.T) {
-	n := New(token, user, "", nil)
+	n := New(token, user, "", nil, nil)
 	tr := n.client.Transport.(*http.Transport)
 	if n.endpoint != "https://api.pushover.net/1/messages.json" || tr.Proxy != nil || n.client.Timeout != 10*time.Second || n.client.CheckRedirect == nil {
 		t.Errorf("endpoint %s, proxy set %v, timeout %v", n.endpoint, tr.Proxy != nil, n.client.Timeout)
@@ -122,10 +146,10 @@ func TestNotifyNeverBlocks(t *testing.T) {
 	hang := make(chan struct{})
 	defer close(hang)
 	srv, reqs := fake(t, 200, hang)
-	n := New(token, user, srv.URL, nil)
+	n := New(token, user, srv.URL, nil, nil)
 	t0 := time.Now()
 	for i := 1; i <= 100; i++ {
-		n.Notify(int64(i), "spam")
+		n.Notify(int64(i), "spam", "")
 	}
 	if d := time.Since(t0); d > 100*time.Millisecond {
 		t.Errorf("100 Notify calls took %v", d)
@@ -140,7 +164,7 @@ func TestNotifyNeverBlocks(t *testing.T) {
 		t.Errorf("first message %q", m)
 	}
 	t0 = time.Now()
-	n.Notify(101, "spam") // the sender hangs on #1
+	n.Notify(101, "spam", "") // the sender hangs on #1
 	if d := time.Since(t0); d > 10*time.Millisecond {
 		t.Errorf("Notify took %v", d)
 	}
@@ -150,12 +174,16 @@ func TestNotifyNeverBlocks(t *testing.T) {
 // on the next sent message.
 func TestCap(t *testing.T) {
 	srv, reqs := fake(t, 200, nil)
-	n := New(token, user, srv.URL, nil)
+	var issued []int64
+	n := New(token, user, srv.URL, func(_ context.Context, id int64) (string, bool) {
+		issued = append(issued, id)
+		return "", false // a failed issue: the message goes without the link
+	}, nil)
 	now := time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC)
 	n.now = func() time.Time { return now }
 	ctx := context.Background()
 	for i := 1; i <= 13; i++ {
-		n.handle(ctx, item{int64(i), "spam"})
+		n.handle(ctx, item{int64(i), "spam", ""})
 	}
 	if len(reqs) != 10 {
 		t.Fatalf("%d sent", len(reqs))
@@ -164,18 +192,22 @@ func TestCap(t *testing.T) {
 		<-reqs
 	}
 	now = now.Add(time.Hour - time.Second)
-	n.handle(ctx, item{14, "other"})
+	n.handle(ctx, item{14, "other", ""})
 	if len(reqs) != 0 {
 		t.Fatal("sent inside the hour")
 	}
 	now = now.Add(time.Second)
-	n.handle(ctx, item{15, "other"})
+	n.handle(ctx, item{15, "other", ""})
 	if g := wait(t, reqs); g.form.Get("message") != "New report #15: other (+4 more)" {
 		t.Errorf("message %q", g.form.Get("message"))
 	}
-	n.handle(ctx, item{16, "spam"})
+	n.handle(ctx, item{16, "spam", ""})
 	if g := wait(t, reqs); g.form.Get("message") != "New report #16: spam" {
 		t.Errorf("message %q", g.form.Get("message"))
+	}
+	// F-37 DK-3: a key only for a message actually sent; held ones get none.
+	if !reflect.DeepEqual(issued, []int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16}) {
+		t.Errorf("issued %v", issued)
 	}
 }
 
@@ -186,8 +218,8 @@ func TestFailures(t *testing.T) {
 	for _, status := range []int{400, 429, 500} {
 		srv, reqs := fake(t, status, nil)
 		var logs syncBuf
-		n := New(token, user, srv.URL, slog.New(slog.NewJSONHandler(&logs, nil)))
-		n.handle(ctx, item{1, "spam"})
+		n := New(token, user, srv.URL, func(context.Context, int64) (string, bool) { return link, true }, slog.New(slog.NewJSONHandler(&logs, nil)))
+		n.handle(ctx, item{1, "spam", viewURL})
 		if len(reqs) != 1 {
 			t.Errorf("%d: %d requests (no retry)", status, len(reqs))
 		}
@@ -195,6 +227,9 @@ func TestFailures(t *testing.T) {
 			t.Errorf("%d: log %s", status, l)
 		}
 		noSecrets(t, logs.String())
+		if strings.Contains(logs.String(), "KKKK") || strings.Contains(logs.String(), "PPPP") {
+			t.Errorf("%d: a link in the log %s", status, logs.String())
+		}
 	}
 
 	// A redirect is not followed.
@@ -202,8 +237,8 @@ func TestFailures(t *testing.T) {
 	redir := httptest.NewServer(http.RedirectHandler(target.URL+"/?token="+token, http.StatusTemporaryRedirect))
 	defer redir.Close()
 	var logs syncBuf
-	n := New(token, user, redir.URL, slog.New(slog.NewJSONHandler(&logs, nil)))
-	n.handle(ctx, item{1, "spam"})
+	n := New(token, user, redir.URL, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
+	n.handle(ctx, item{1, "spam", ""})
 	if len(treqs) != 0 || !strings.Contains(logs.String(), `"status":307`) {
 		t.Errorf("redirect: %d requests, log %s", len(treqs), logs.String())
 	}
@@ -214,13 +249,13 @@ func TestFailures(t *testing.T) {
 	defer close(hang)
 	slow, _ := fake(t, 200, hang)
 	logs = syncBuf{}
-	n = New(token, user, slow.URL, slog.New(slog.NewJSONHandler(&logs, nil)))
+	n = New(token, user, slow.URL, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
 	n.client.Timeout = 50 * time.Millisecond
-	n.handle(ctx, item{1, "spam"})
+	n.handle(ctx, item{1, "spam", ""})
 	dead := httptest.NewServer(http.NotFoundHandler())
 	dead.Close()
 	n.endpoint = dead.URL + "/x?token=" + token // even a secret in the URL never reaches the log
-	n.handle(ctx, item{2, "spam"})
+	n.handle(ctx, item{2, "spam", ""})
 	l := logs.String()
 	if !strings.Contains(l, `"class":"timeout"`) || !strings.Contains(l, `"class":"network"`) || strings.Count(l, "\n") != 2 {
 		t.Errorf("log %s", l)
@@ -230,7 +265,7 @@ func TestFailures(t *testing.T) {
 
 // TestStop: Run returns when its context ends; queued ones are dropped.
 func TestStop(t *testing.T) {
-	n := New(token, user, "http://127.0.0.1:1", nil)
+	n := New(token, user, "http://127.0.0.1:1", nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() { n.Run(ctx); close(done) }()

@@ -262,3 +262,35 @@ func TestCard(t *testing.T) {
 		}
 	}
 }
+
+// TestRowTitle (F-37 DK-7): from the row alone, the same title and start
+// text as Build makes from the data file.
+func TestRowTitle(t *testing.T) {
+	start := time.Date(2026, 10, 9, 23, 30, 0, 0, time.UTC)
+	off := 3600
+	for _, c := range []struct {
+		title, sport string
+		start        *time.Time
+		off          *int
+	}{
+		{"", "cycling", &start, &off},
+		{"  ", "trail_running", &start, nil},
+		{"Morning loop", "running", &start, &off},
+		{"", "", nil, nil},
+	} {
+		f := datafile.File{Meta: datafile.Meta{Sport: c.sport, StartTime: time.Time{}.Format(time.RFC3339)}}
+		if c.start != nil {
+			f.Meta.StartTime = c.start.Format(time.RFC3339)
+		}
+		if c.off != nil {
+			f.Meta.TimeZone = datafile.TimeZone{Known: true, OffsetSeconds: int32(*c.off)}
+		}
+		vm := Build(f, Settings{Title: c.title})
+		if title, startText := RowTitle(c.title, c.sport, c.start, c.off); title != vm.Header.Title || startText != vm.Header.Start {
+			t.Errorf("%+v: %q %q, want %q %q", c, title, startText, vm.Header.Title, vm.Header.Start)
+		}
+	}
+	if title, s := RowTitle("", "cycling", &start, &off); title != "Ride, 10 Oct 2026" || s != "10 Oct 2026, 00:30" {
+		t.Errorf("%q %q", title, s)
+	}
+}

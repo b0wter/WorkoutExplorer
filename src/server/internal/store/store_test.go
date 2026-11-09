@@ -39,8 +39,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 4 {
-		t.Errorf("user_version = %d, want 4", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 5 {
+		t.Errorf("user_version = %d, want 5", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -75,7 +75,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 4 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 5 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -153,6 +153,7 @@ func TestSchema(t *testing.T) {
 	// F-27 R-2, R-3: reason, message and time only; nothing about the request.
 	if got := columnsOf(t, db, "reports"); !reflect.DeepEqual(got, []string{
 		"id INTEGER pk", "workout_id TEXT notnull", "reason TEXT notnull", "message TEXT notnull", "created_at INTEGER notnull",
+		"delete_key_hash BLOB", // F-37 DK-2: the key's SHA-256 only
 	}) {
 		t.Errorf("reports columns %v", got)
 	}
@@ -621,7 +622,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 4 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 5 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -693,7 +694,7 @@ func TestMigrateNoPrivate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 4 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 5 {
 		t.Errorf("user_version = %d", v)
 	}
 	if got := dump(db.db, ""); len(want) != 3 || fmt.Sprint(got) != fmt.Sprint(want) {
@@ -929,14 +930,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{3, 5} {
+	for _, v := range []int{4, 6} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (4)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (5)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}
@@ -946,5 +947,119 @@ func TestOpenExisting(t *testing.T) {
 	raw.QueryRow("SELECT count(*) FROM sqlite_master WHERE name = 'reports'").Scan(&n)
 	if n != 1 {
 		t.Error("schema changed")
+	}
+}
+
+// TestDeleteKeys (F-37 DK-2, DK-4, DK-5, DK-8; ADR-042): the hash column's
+// rules, lookup without side effect, the validity bounds, a consume that
+// works once also across connections, and the clear.
+func TestDeleteKeys(t *testing.T) {
+	db, path := openTemp(t)
+	a, b := published(1), published(2)
+	a.Title = "Hill repeats"
+	for _, r := range []lifecycle.Record{a, b} {
+		if err := db.InsertWorkout(ctx, r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	filed := a.CreatedAt.Add(time.Hour)
+	var ids []int64
+	for _, pub := range []string{a.PublicID, a.PublicID, b.PublicID} {
+		id, _, _, err := db.AddReport(ctx, pub, "illegal_content", "", filed, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	h := [][32]byte{{1}, {2}, {3}}
+	for i, id := range ids {
+		if ok, err := db.SetDeleteKeyHash(ctx, id, h[i]); err != nil || !ok {
+			t.Fatalf("set %d: %v %v", id, ok, err)
+		}
+	}
+	if ok, err := db.SetDeleteKeyHash(ctx, 99, [32]byte{9}); err != nil || ok {
+		t.Errorf("unknown report: %v %v", ok, err)
+	}
+	// One key per hash; 32 bytes or NULL.
+	if _, err := db.SetDeleteKeyHash(ctx, ids[1], h[0]); err == nil {
+		t.Error("a duplicate hash was stored")
+	}
+	if _, err := db.db.ExecContext(ctx, "UPDATE reports SET delete_key_hash = ? WHERE id = ?", make([]byte, 31), ids[0]); err == nil {
+		t.Error("a 31-byte hash was stored")
+	}
+
+	now := filed.Add(time.Minute)
+	after := now.Add(-30 * 24 * time.Hour)
+	for i := 0; i < 2; i++ { // twice: the lookup changes nothing
+		k, ok, err := db.ReportByDeleteKey(ctx, h[0], after, now)
+		if err != nil || !ok || k.ID != ids[0] || k.Reason != "illegal_content" || !k.FiledAt.Equal(filed) || k.Count != 2 ||
+			k.Workout.Title != "Hill repeats" || k.Workout.Sport != "cycling" || !k.Workout.ExpiresAt.Equal(a.ExpiresAt) || k.Workout.ID != "" || k.Workout.PublicID != "" {
+			t.Fatalf("lookup %+v %v %v", k, ok, err)
+		}
+	}
+	// DK-4 bounds: filed after the cut-off, workout alive at now; unknown hash.
+	for name, c := range map[string][3]any{
+		"filed at the cut-off": {h[0], filed, now},
+		"workout at expiry":    {h[0], after, a.ExpiresAt},
+		"unknown":              {[32]byte{7}, after, now},
+	} {
+		if _, ok, err := db.ReportByDeleteKey(ctx, c[0].([32]byte), c[1].(time.Time), c[2].(time.Time)); err != nil || ok {
+			t.Errorf("lookup %s: %v %v", name, ok, err)
+		}
+		if _, _, ok, err := db.ConsumeDeleteKey(ctx, c[0].([32]byte), c[1].(time.Time), c[2].(time.Time)); err != nil || ok {
+			t.Errorf("consume %s: %v %v", name, ok, err)
+		}
+	}
+
+	id, pub, ok, err := db.ConsumeDeleteKey(ctx, h[0], after, now)
+	if err != nil || !ok || id != a.ID || pub != a.PublicID {
+		t.Fatalf("consume: %q %q %v %v", id, pub, ok, err)
+	}
+	if _, _, ok, _ := db.ConsumeDeleteKey(ctx, h[0], after, now); ok {
+		t.Error("consumed twice")
+	}
+	if _, ok, _ := db.ReportByDeleteKey(ctx, h[0], after, now); ok {
+		t.Error("lookup after consume")
+	}
+
+	// Concurrent consumes of one key over two connections (two processes): one wins.
+	db2, err := Open(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db2.Close()
+	wins := make(chan bool, 16)
+	for i := 0; i < 16; i++ {
+		d := db
+		if i%2 == 1 {
+			d = db2
+		}
+		go func() {
+			_, _, ok, err := d.ConsumeDeleteKey(ctx, h[1], after, now)
+			if err != nil {
+				t.Error(err)
+			}
+			wins <- ok
+		}()
+	}
+	n := 0
+	for i := 0; i < 16; i++ {
+		if <-wins {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("%d consumes won", n)
+	}
+
+	// Cascade takes the key with the report; clear removes the rest.
+	if c, err := db.ClearDeleteKeys(ctx); err != nil || c != 1 {
+		t.Errorf("cleared %d: %v", c, err)
+	}
+	if c := scalar[int](t, db, "SELECT count(*) FROM reports WHERE delete_key_hash IS NOT NULL"); c != 0 {
+		t.Errorf("%d keys left", c)
+	}
+	if c, err := db.ClearDeleteKeys(ctx); err != nil || c != 0 {
+		t.Errorf("cleared again %d: %v", c, err)
 	}
 }

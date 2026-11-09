@@ -331,6 +331,25 @@ func TestCaddy(t *testing.T) {
 			t.Error("/about is not the filled page")
 		}
 		r.check("about.html", r.get("/about.html"), 404, ccNoCache)
+		// F-37 DK-11: the delete link's page, never cached; its .html name is not served.
+		// shortcut: until the frontend builds report-delete.html the route answers 404; then the strict branch runs.
+		if page, err := os.ReadFile(filepath.Join(r.web, "report-delete.html")); err == nil {
+			got := r.get("/report-delete")
+			r.check("report-delete", got, 200, ccNoStore)
+			if !bytes.Equal(got.body, page) || bytes.Contains(page, []byte("og:")) || bytes.Contains(page, []byte("twitter:")) {
+				t.Error("/report-delete is not report-delete.html, or the page has a card")
+			}
+		} else {
+			r.check("report-delete before its page is built", r.get("/report-delete"), 404, ccNoCache)
+		}
+		r.check("report-delete.html", r.get("/report-delete.html"), 404, ccNoCache)
+		r.check("report-delete/", r.get("/report-delete/"), 404, ccNoCache)
+		// DK-12 through Caddy: the one invalid answer, Go's no-store once.
+		inv := r.get("/api/report-delete", "Authorization", "Bearer "+strings.Repeat("Z", 22))
+		r.check("api report-delete", inv, 404, ccNoStore)
+		if !strings.Contains(string(inv.body), "This delete link is no longer valid") {
+			t.Errorf("api report-delete body %s", inv.body)
+		}
 
 		// /api/*: Go's Cache-Control, once; Go's own nosniff not doubled.
 		r.check("api health", r.get("/api/health"), 200, ccNoStore)

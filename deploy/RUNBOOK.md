@@ -120,7 +120,9 @@ With notifications on, the file holds two secrets. Keep it mode `0600` and never
 
 ## 4a. Notifications (optional)
 
-When a visitor reports a workout, the server can send you a push message through [Pushover](https://pushover.net). Off by default. The message is only `New report #<number>: <reason>` (title "Workout Explorer"), never the link, the workout's ID or title, or the visitor's text. Pushover is a third party outside the EU, and its messages pass through Apple's or Google's push services. At most 10 messages per hour are sent; the rest are counted into the next one ("(+3 more)"). A message can be lost (Pushover down, restart); the reports table is the record.
+When a visitor reports a workout, the server can send you a push message through [Pushover](https://pushover.net). Off by default. The message is `New report #<number>: <reason>` (title "Workout Explorer") and a **Delete this workout** link; tapping the notification opens the reported workout. Never the workout's title or the visitor's text. Pushover is a third party outside the EU, and its messages pass through Apple's or Google's push services. At most 10 messages per hour are sent; the rest are counted into the next one ("(+3 more)") and get no delete link. A message can be lost (Pushover down, restart); the reports table is the record.
+
+The delete link opens a confirmation page (`/report-delete`) that shows the workout and the report; only its **Delete workout** button deletes, exactly like the delete command in section 10. The link works once, only for that report's workout, and only while the workout lives (at most 30 days after the report). It is a credential: anyone with your Pushover account or your unlocked phone can use it. The lock screen shows only the words "Delete this workout", not the link. **To revoke every delete link** (lost phone, leaked Pushover account): turn notifications off as below and restart `app`; a start without the two settings removes every link, and turning notifications on again does not bring them back.
 
 Turning it on needs **both** steps; one without the other does not work:
 
@@ -483,7 +485,7 @@ API downtime is the `app` restart. A new Caddy binary, a changed `compose.yaml`,
 
 - Stop: `docker compose stop app` stays stopped across reboots. Start: `docker compose start app`. Run `docker compose` in `/srv/workout-explorer`.
 - Delete a workout: `docker compose exec app /srv/workout-explorer/bin/workout-explorer delete -data /srv/workouts <public_id>` (section 10, "Delete one workout").
-- Reports: the read-only `sqlite3` query of section 10, as user ID 10001 (INF-2, INF-3). With notifications on (section 4a) each new report also arrives as a Pushover message with its number.
+- Reports: the read-only `sqlite3` query of section 10, as user ID 10001 (INF-2, INF-3). With notifications on (section 4a) each new report also arrives as a Pushover message with its number, a tap to open the workout and a single-use delete link.
 - Uptime monitor (yours, later): check `/api/health` and `/`, never a workout page.
 - Links go to friends once the operator file is filled in and `/about` shows your details (F-29).
 

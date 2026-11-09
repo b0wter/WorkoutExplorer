@@ -461,8 +461,12 @@ func TestReportNotification(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("no notification")
 	}
-	want := url.Values{"token": {testPushToken}, "user": {testPushUser}, "title": {"Workout Explorer"}, "message": {"New report #1: illegal_content"}}
-	if len(g.form) != 4 || g.form.Encode() != want.Encode() || g.raw != "/1/messages.json" {
+	// F-37 DK-10: the label, the delete link as an anchor, the viewing link in url.
+	key := keyOf(t, g.form.Get("message"), "New report #1: Illegal content")
+	want := url.Values{"token": {testPushToken}, "user": {testPushUser}, "title": {"Workout Explorer"}, "html": {"1"},
+		"url": {testBaseURL + "/w/" + pub}, "url_title": {"Open workout"},
+		"message": {"New report #1: Illegal content\n<a href=\"" + testBaseURL + "/report-delete#" + key + "\">Delete this workout</a>"}}
+	if len(g.form) != 7 || g.form.Encode() != want.Encode() || g.raw != "/1/messages.json" {
 		t.Errorf("notification %v at %s", g.form, g.raw)
 	}
 	// While the sender hangs, more reports are still answered at once.
@@ -483,7 +487,7 @@ func TestReportNotification(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("no second notification")
 	}
-	if m := next.form.Get("message"); m != "New report #2: spam" {
+	if m := next.form.Get("message"); !strings.HasPrefix(m, "New report #2: Spam\n<a href=") {
 		t.Errorf("second message %q", m) // 9 queued fit the queue: none folded
 	}
 	deadline := time.Now().Add(5 * time.Second)

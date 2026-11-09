@@ -45,6 +45,7 @@ type Config struct {
 	Uploads              Uploader         // nil: POST /api/workouts is not served
 	Owner                Owner            // nil: the owner endpoints (F-12) are not served
 	Reports              Reporter         // nil: POST /api/reports (F-27) is not served
+	ReportKeys           ReportKeys       // nil: GET and POST /api/report-delete (F-37) are not served
 	Storage              StorageGate      // nil: no storage gate and GET /api/status is not served (F-10)
 	Logger               *slog.Logger     // nil: no log lines
 	MaxConcurrentUploads int              // validated by cmd; NewHandler panics on < 1 (a wiring bug)
@@ -76,6 +77,11 @@ func NewHandler(cfg Config) http.Handler {
 	}
 	if cfg.Reports != nil {
 		mux.Handle("POST /api/reports", newReportHandler(cfg))
+	}
+	if cfg.ReportKeys != nil {
+		h := newReportDeleteHandler(cfg)
+		mux.Handle("GET /api/report-delete", h)
+		mux.Handle("POST /api/report-delete", h)
 	}
 	if cfg.Storage != nil {
 		mux.Handle("GET /api/status", statusHandler(cfg.Storage))

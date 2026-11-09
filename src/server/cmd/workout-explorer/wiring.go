@@ -118,15 +118,30 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	if err := svc.Recover(ctx); err != nil {
 		return fail(err)
 	}
-	// Reports (F-27): notifications only when both secrets are set.
-	var notifier reports.Notifier
-	notifyCtx, stopNotify := context.WithCancel(context.WithoutCancel(ctx))
+	// Reports (F-27): notifications only when both secrets are set; each sent
+	// one carries a delete link issued by reports (F-37 DK-3).
+	var notifier *pushover.Notifier
+	var reps *reports.Service
 	if s.pushoverToken != "" {
-		n := pushover.New(s.pushoverToken, s.pushoverUser, s.pushoverEndpoint, logger)
-		go n.Run(notifyCtx) // pending notifications are dropped at shutdown (ADR-039 item 3)
-		notifier = n
+		notifier = pushover.New(s.pushoverToken, s.pushoverUser, s.pushoverEndpoint, func(ctx context.Context, id int64) (string, bool) {
+			return reps.IssueDeleteLink(ctx, id)
+		}, logger)
 	}
-	reps := reports.New(db, notifier, nil, logger)
+	deps := reports.Deps{Store: db, Deleter: svc, BaseURL: s.baseURL, Logger: logger}
+	if notifier != nil {
+		deps.Notifier = notifier
+	}
+	reps = reports.New(deps)
+	if notifier == nil {
+		// F-37 DK-5: without Pushover no delete link may work; this is also the revocation path.
+		if err := reps.ClearDeleteKeys(ctx); err != nil {
+			return fail(err)
+		}
+	}
+	notifyCtx, stopNotify := context.WithCancel(context.WithoutCancel(ctx))
+	if notifier != nil {
+		go notifier.Run(notifyCtx) // pending notifications are dropped at shutdown (ADR-039 item 3)
+	}
 	// expire is one pass: reports past R-3's ceiling, then the workouts,
 	// whose checkpoint also takes the pruned reports out of the WAL.
 	expire := func(ctx context.Context) {
@@ -156,6 +171,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		Uploads:              uploads,
 		Owner:                svc,
 		Reports:              reps,
+		ReportKeys:           reps,
 		Storage:              storage,
 		Logger:               logger,
 		MaxConcurrentUploads: s.maxConcurrentUploads,

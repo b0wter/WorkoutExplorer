@@ -147,6 +147,26 @@ func DefaultTitle(f datafile.File) string {
 	return sportName(f.Meta.Sport) + ", " + formatDate(f.Meta.StartTime, offset)
 }
 
+// RowTitle is the title and the header's start text of a workout from its
+// row alone, without the data file (F-37 DK-7): the stored title, else
+// DefaultTitle's rule over the row's sport, start and offset (nil: unknown
+// zone). A nil start reads as the zero time, as the data file writes it.
+func RowTitle(title, sport string, start *time.Time, offsetS *int) (string, string) {
+	var t time.Time
+	if start != nil {
+		t = *start
+	}
+	rfc := t.UTC().Format(time.RFC3339)
+	off := int64(0)
+	if offsetS != nil {
+		off = int64(*offsetS)
+	}
+	if jsTrim(title) == "" {
+		title = sportName(sport) + ", " + formatDate(rfc, off)
+	}
+	return title, formatLocalStart(rfc, offsetS != nil, off)
+}
+
 // CardItems are the card's values (F-23 PC-3), selected from the summary:
 // distance above zero; moving time, or elapsed time without positions (either
 // as fallback); elevation gain above zero when altitude was recorded; average

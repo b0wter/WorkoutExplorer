@@ -57,3 +57,14 @@ func ViewPath(publicID string) string { return "/w/" + publicID }
 // EditLink is the edit link: the token goes in the fragment, which browsers
 // never send (ADR-020 item 7).
 func EditLink(publicID, token string) string { return "/edit/" + publicID + "#" + token }
+
+// NewKey reads 16 bytes from r (crypto/rand in production) and returns them
+// as a 22-character base62 credential with the edit token's format, hashed
+// with HashToken (the report delete key, ADR-042 item 1).
+func NewKey(r io.Reader) (string, error) {
+	var b [idBytes]byte
+	if _, err := io.ReadFull(r, b[:]); err != nil {
+		return "", fmt.Errorf("lifecycle: key: %w", err)
+	}
+	return base62(b[:]), nil
+}
