@@ -465,7 +465,7 @@ Fill these in on the real VPS; the Compose cap must stay at or above the first v
 
 | What | How | Value |
 | --- | --- | --- |
-| `memory.peak` of `app`, 4 uploads at the parse limits at once + one publish with its preview + one preview-map upload (F-36, up to 16 MB more) | `cat /sys/fs/cgroup/system.slice/docker-$(docker inspect -f '{{.Id}}' workout-explorer-app-1).scope/memory.peak` after the run | not yet measured |
+| `memory.peak` of `app`, 4 uploads at the parse limits at once + one publish with its preview + one preview-map upload (F-36, ADR-017: about 55 MB total allocation plus one frame GET; use a 16-bit interlaced upload as the worst case) | `cat /sys/fs/cgroup/system.slice/docker-$(docker inspect -f '{{.Id}}' workout-explorer-app-1).scope/memory.peak` after the run | not yet measured |
 | Cap in `compose.yaml` | `mem_limit` = `memswap_limit`: (peak + 112 MB rate table) x 1.2, rounded up to 100 MB | 1200m (from the F-09 range 620 to 861 MB) |
 | `parse` time of the all-caps synthetic file (ADR-017 item 7) | generate the file on a dev machine (`cd src/server && go run ./tools/corpusgen -cap-file /tmp/cap.fit`), copy it into `/srv/workouts`, then `time docker compose exec app /srv/workout-explorer/bin/workout-explorer parse /srv/workouts/cap.fit`; delete it afterwards | not yet measured |
 | Parse time limit `WORKOUT_EXPLORER_PARSE_TIMEOUT` | env file | 10 s (default) |
