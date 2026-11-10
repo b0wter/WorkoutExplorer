@@ -18,7 +18,7 @@ A viewer of a triathlon sees where each leg and transition starts, in the charts
 - **Which workouts.** Workouts with two or more sessions of more than one sport, i.e. sport "Multisport" (OQ-138). A transition counts as a sport (OQ-36, OQ-38).
 - **Legs.** One leg per session, in time order, starting at its first sample. A gap between sessions belongs to the leg before it. Samples after the last session of a truncated file stay part of the last leg (OQ-39 rule; damaged files are a bonus).
 - **Leg name.** The sport name as shown elsewhere; transitions "T1", "T2", … in order (OQ-139). The same name is used on charts, in the laps table and on the map; repeated sports get no numbers.
-- **Charts (AP-4).** Names on charts appear only in the top chart. A vertical line through every chart at the start of each leg after the first, on both the time and the distance axis (AP-5). The leg's name sits at the top of the top chart, inside its section. A name that does not fit its section (short transitions, zero-distance transitions on the distance axis) is left out; the line stays. Lines and names do not change the cursor, range selection or scrubbing; a range may cross legs (AP-7, unchanged).
+- **Charts (AP-4).** Leg names appear in every chart (decision 10 Nov 2026). A vertical line through every chart at the start of each leg after the first, on both the time and the distance axis (AP-5). The leg's name sits at the top of each chart, inside its section; the first leg's name sits at the start of the plot, with no line at its start. A name that does not fit its section (short transitions, zero-distance transitions on the distance axis) is left out; the line stays. Lines and names do not change the cursor, range selection or scrubbing; a range may cross legs (AP-7, unchanged).
 - **Laps table (AP-8).** Before each leg's laps a separator row holding the leg's name across all columns, on the viewing page with and without JavaScript and on the edit page. A leg without laps shows its separator row alone. Tapping a separator row selects the leg as a range (OQ-140). Without device laps ("No laps recorded.") there are no separator rows. Splits stay across the whole workout, without separators; lap columns follow the workout sport as today (OQ-142).
 - **Map (AP-3, AP-15).** A leg marker labelled with the leg's name at the first sample of each leg after the first, also in the fullscreen map (OQ-141). A leg marker replaces a lap marker at the same sample. Same rule as lap markers: only when that sample has a position, never a substitute point; so a leg start inside a hidden start or end (SH-4) shows no marker.
 - **Summary (AP-2).** Unchanged: combined totals, no per-leg summary.
@@ -31,7 +31,7 @@ A viewer of a triathlon sees where each leg and transition starts, in the charts
 - Any change to the data file format, the summary, route colouring (F-25) or the transition rules (OQ-38).
 
 ## Acceptance criteria
-- [ ] On the corpus triathlon (swim, T1, ride, T2, run), the charts show 4 leg lines on the time axis and on the distance axis; each name shows where its section is wide enough and is left out otherwise, with the line kept.
+- [ ] On the corpus triathlon (swim, T1, ride, T2, run), the charts show 4 leg lines on the time axis and on the distance axis, none at the start; every chart shows the 5 names, the first at the start of the plot; each name shows where its section is wide enough and is left out otherwise, with the line kept.
 - [ ] The laps table shows 5 separator rows (e.g. Swim, T1, Ride, T2, Run), each before its leg's laps, on the published page with JavaScript on and off and on the edit page; units switches keep them.
 - [ ] Tapping a separator row selects that leg as a range, as a lap row does; the range panel gives the per-leg values.
 - [ ] A lap that starts in one leg and ends in the next is listed under the leg it starts in.
@@ -43,4 +43,4 @@ A viewer of a triathlon sees where each leg and transition starts, in the charts
 - [ ] Summary, splits, range values, route colouring and cursor are unchanged; scrubbing on `ride-12h` stays at 60 fps; data file size unchanged; LCP unchanged.
 
 ## Decisions
-OQ-138 to OQ-143 accepted as suggested (9 Nov 2026), see [README](README.md) decision log.
+OQ-138 to OQ-143 accepted as suggested (9 Nov 2026), see [README](README.md) decision log; OQ-139 partly reversed on 10 Nov 2026 (names in every chart, first leg named).

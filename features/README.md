@@ -637,6 +637,8 @@ The original questions follow for reference.
 
 **Decided on 9 Nov 2026, F-42 questions** (user, AP-12): OQ-138 to OQ-143 accepted as suggested: sections only for "Multisport" workouts; leg names are sport names, transitions T1, T2, …, names in the top chart only; a separator row tap selects the leg as a range; a leg marker replaces a lap marker at the same sample and stays in fullscreen; splits without separators, lap columns by workout sport; normal lane. Updated: F-42 (scope, AC, decisions), spec AP-8, AP-15.
 
+**Decided on 10 Nov 2026, F-42 leg names** (user, AP-12): partly reverses OQ-139: leg names appear in every chart, not only the top chart; the first leg's name also shows at the start of the plot (no line at x=0). Names that don't fit their section stay left out. Updated: F-42 (scope, AC), spec AP-12.
+
 **Decided on 10 Nov 2026, F-42 design questions** (user, AP-12, AP-15): OQ-144 accepted: the leg marker sits only at the leg's first sample and only if it has a position (lap-marker rule, AC 38); F-42 scope line reworded. OQ-145 accepted: section lines and separator-row taps appear shortly after the charts (lazy chunk). Updated: F-42 scope, architect F-42 and INDEX.
 
 **Decided on 10 Nov 2026, F-41 questions** (user, DS-5): OQ-135: tints stand out: the strongest strength at which all cell text keeps 4.5:1 in both themes (about 25 %, may differ per theme), the same for every metric, tuned by the user on screen. OQ-136: the edit page's summary is tinted too. OQ-137: small lane, frontend engineer only; the user's on-screen check in both themes is the acceptance. Updated: F-41 (lane, scope, AC). Spec unchanged (DS-5 states no strength).
