@@ -102,7 +102,7 @@ describe('baseStyle', () => {
     expect(Object.keys(s.sources).sort()).toEqual([COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
     expect(ids(s.layers)).toEqual(['background', ...WX_LAYER_IDS]);
     expect(WX_LAYER_IDS).toEqual([
-      'wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish',
+      'wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish',
     ]);
   });
 
@@ -192,7 +192,7 @@ describe('baseStyle', () => {
   it('neither a recorded segment nor a bridge (one positioned sample): no wx-route source and no route layers', () => {
     const s = baseStyle(none, markers.filter((m) => m.kind !== 'lap'));
     expect(Object.keys(s.sources)).toEqual([MARKER_SOURCE, COLOUR_SOURCE, HIDDEN_SOURCE, RANGE_SOURCE]);
-    expect(ids(s.layers)).toEqual(['background', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish']);
+    expect(ids(s.layers)).toEqual(['background', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish']);
   });
 
   it('F-17 R-10: wx-range holds the given range (empty by default), drawn by its own layers in the range colour; its outline only for classed edges (F-25 C-9)', () => {
@@ -215,6 +215,16 @@ describe('baseStyle', () => {
     expect(byId.get('wx-route-casing')).toMatchObject({ paint: { 'line-color': '#ffffff', 'line-width': 6 } });
     expect(byId.get('wx-lap-label')).toMatchObject({ layout: { 'text-font': ['Noto Sans Regular'], 'text-size': 10 } });
     expect(s.layers[0].id.startsWith('wx-')).toBe(false);
+  });
+
+  it('F-42 MS-8: a leg marker is a lap circle labelled with its name', () => {
+    const s = baseStyle(lines, [{ kind: 'leg', index: 5, lon: 8, lat: 47, name: 'T1' }]);
+    const src = s.sources[MARKER_SOURCE];
+    if (src?.type !== 'geojson' || typeof src.data !== 'object' || src.data.type !== 'FeatureCollection') throw new Error('no collection');
+    expect(src.data.features[0].properties).toEqual({ kind: 'leg', name: 'T1' });
+    const byId = new Map(s.layers.map((l) => [l.id, l]));
+    expect(byId.get('wx-lap-circle')).toMatchObject({ filter: ['in', ['get', 'kind'], ['literal', ['lap', 'leg']]] });
+    expect(byId.get('wx-leg-label')).toMatchObject({ filter: ['==', ['get', 'kind'], 'leg'], layout: { 'text-field': ['get', 'name'] } });
   });
 });
 

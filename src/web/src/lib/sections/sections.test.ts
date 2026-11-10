@@ -1,7 +1,7 @@
 // F-42 MS-1 to MS-3: the edge cases no page sample has; Go TestSections holds the same table.
 import { describe, expect, it } from 'vitest';
 import type { Lap, Session } from '../datafile';
-import { lapSections, sections } from '.';
+import { lapSections, legs, sectionRanges, sections } from '.';
 
 const s = (sport: string, start = 0, start_index = 0): Session =>
   ({ sport, sub_sport: '', start, end: start, start_index, end_index: start_index, totals: {} });
@@ -28,5 +28,21 @@ describe('sections', () => {
     expect(lapSections(sections({ sessions: [s('running', 0, 2), s('cycling', 5, 5)] }), [l(0)], [['1']], 7)[0])
       .toEqual({ Name: 'Run', Span: '7', Rows: [['1']] });
     expect(sections({ sessions: [s('running', 0, 2), s('cycling', 5, 5)] })?.[0].start).toBe(0);
+  });
+});
+
+describe('ranges and legs (MS-2, MS-6)', () => {
+  // Swim 0, T1 4, Ride 4 (no samples: T1 ties), Run 8, T2 12 (past N = 10: no samples).
+  const secs = sections({ sessions: [s('swimming', 0, 3), s('transition', 4, 4), s('cycling', 4, 4), s('running', 8, 8), s('transition', 12, 12)] });
+  it('a section runs to the next one\'s start (shared sample) or N − 1, never past it', () => {
+    expect(secs?.map((x) => x.name)).toEqual(['Swim', 'T1', 'Ride', 'Run', 'T2']);
+    expect(sectionRanges(secs ?? [], 10)).toEqual([0, 4, 4, 4, 4, 8, 8, 9, 12, 9]);
+  });
+  it('only sections with samples are legs', () => {
+    expect(legs(secs ?? [], 10).map((g) => [g.name, g.start, g.end])).toEqual([
+      ['Swim', 0, 4],
+      ['Ride', 4, 8],
+      ['Run', 8, 9],
+    ]);
   });
 });

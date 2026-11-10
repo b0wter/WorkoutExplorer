@@ -25,6 +25,8 @@ import ChartStack from './ChartStack.svelte';
 import { chartAreaHeight, plotWidth, xRange } from './uplot-options';
 import { swapHarness } from './swap-props.test-helper.svelte';
 import { lookHarness } from './look-props.test-helper.svelte';
+import { createLook, type Look } from '../../page/map-props.svelte';
+import { createUnitsStore } from '../../lib/units';
 
 interface UPlotLike {
   readonly over: HTMLDivElement;
@@ -202,6 +204,7 @@ function setup(
     onaxis?: (a: 'time' | 'distance') => void;
     hint?: 'plain' | 'once' | 'none';
     onhint?: () => void;
+    look?: Look;
   } = {},
 ): Mounted {
   const reported: unknown[] = [];
@@ -233,6 +236,8 @@ function setup(
   if (options.onaxis) props.onaxis = options.onaxis;
   if (options.hint) props.hint = options.hint;
   if (options.onhint) props.onhint = options.onhint;
+  const look = options.look;
+  if (look) Object.defineProperty(props, 'decorate', { get: () => look.decorate, enumerable: true });
   const app = mount(ChartStack, { target, props: props as never });
   flushSync();
   current = { data, cursor, target, reported, ready: () => ready, active: () => active, app };
@@ -957,5 +962,32 @@ describe('F-17 range selection and x-axis toggle', () => {
     expect(onhint).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(once.closest('.chart-stack')); // QA-39-r1-2: not body when the × goes
     expect(hintOf('none')).toBeNull();
+  });
+});
+
+describe('F-42 MS-7: the decoration seam', () => {
+  it('called on layout only: when it arrives, on a width change and an axis switch; never on a cursor or range flush', () => {
+    const data = golden('ride-4h');
+    const look = createLook(createUnitsStore('metric'), null);
+    const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
+    const m = setup(data, { look, selection });
+    layout(900);
+    const calls: [HTMLElement, number, boolean][] = [];
+    look.decorate = (over, x, top) => calls.push([over, x(100), top]);
+    flushSync();
+    const n = overs(m).length;
+    expect(calls.map((c) => c[0])).toEqual(overs(m));
+    expect(calls.map((c) => c[2])).toEqual(overs(m).map((_, k) => k === 0));
+    expect(calls[0][1]).toBe(env.charts[0].u.valToPos(data.time[100], 'x'));
+    m.cursor.set(50);
+    selection.set(10, 20);
+    env.frame();
+    flushSync();
+    expect(calls).toHaveLength(n);
+    layout(700);
+    expect(calls).toHaveLength(2 * n);
+    [...m.target.querySelectorAll<HTMLButtonElement>('.axis-toggle button')][1].click();
+    flushSync();
+    expect(calls).toHaveLength(3 * n);
   });
 });

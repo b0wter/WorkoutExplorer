@@ -67,4 +67,18 @@ describe('routeMarkers', () => {
       { kind: 'finish', index: 1, lon: 8, lat: 47 },
     ]);
   });
+
+  it('F-42 MS-8: a leg marker at a positioned leg start replaces the lap marker there; none without a position', () => {
+    const lat = [47.0, 47.1, N, 47.3, 47.4];
+    const data = positioned(lat, lat, [lap(0), lap(1), lap(3)]);
+    const r = buildRoute(data);
+    if (r === null) throw new Error('expected a route');
+    const m = routeMarkers(data, r, [{ name: 'T1', start: 2 }, { name: 'Run', start: 3 }]);
+    expect(m.map((x) => [x.kind, x.index, x.lap ?? x.name])).toEqual([
+      ['start', 0, undefined],
+      ['lap', 1, 2],
+      ['leg', 3, 'Run'],
+      ['finish', 4, undefined],
+    ]);
+  });
 });

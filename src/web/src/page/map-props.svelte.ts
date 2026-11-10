@@ -9,6 +9,7 @@ import type { Units } from '../lib/format';
 import type { UnitsStore } from '../lib/units';
 import type { ThemeChoice } from '../lib/prefs';
 import type { HintMode } from '../lib/charts';
+import type { ChartDecorator } from '../components/charts/uplot-options';
 
 /** The viewer's units and colour scheme as reactive state (F-14 D-10): the one scheme listener
  *  of the page. The glue passes both to ChartStack and RouteMap. A forced theme (DS-4) wins over
@@ -21,6 +22,8 @@ export interface Look {
   hint: HintMode;
   /** The store itself, for consumers that subscribe (the map's colouring legend, F-25 C-6). */
   readonly store: UnitsStore;
+  /** The charts' decoration (F-42 MS-7), set once by the sections chunk. */
+  decorate?: ChartDecorator;
 }
 
 export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme: ThemeChoice = 'system', hint: HintMode = 'plain'): Look {
@@ -28,6 +31,7 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
   let h = $state(hint);
   let isDark = $state(dark?.matches ?? false);
   let t = $state(theme);
+  let d = $state<ChartDecorator>();
   units.subscribe((next) => (u = next));
   dark?.addEventListener('change', (e) => (isDark = e.matches));
   return {
@@ -48,6 +52,12 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
     },
     set hint(next) {
       h = next;
+    },
+    get decorate() {
+      return d;
+    },
+    set decorate(next) {
+      d = next;
     },
     store: units,
   };

@@ -99,6 +99,12 @@ export function outerHeight(plotHeight: number, isBottom: boolean): number {
   return plotHeight + PADDING[0] + PADDING[2] + (isBottom ? X_AXIS_SIZE : 0);
 }
 
+/** Draws extra marks into one chart's plot overlay (F-42 MS-7), on layout only: after the first
+ *  layout, a width change, an axis switch and a new decorator; never on a cursor or range flush.
+ *  `x` gives a sample's x in CSS px on the current axis; `top` is the top chart. It must replace
+ *  what it drew before, and what it draws takes no pointer events. */
+export type ChartDecorator = (over: HTMLElement, x: (index: number) => number, top: boolean) => void;
+
 /** Colours uPlot cannot take from CSS: read from the theme's custom properties when a chart is built (F-14 D-10). */
 export interface ChartInk {
   /** The series line. */

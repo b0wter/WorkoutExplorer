@@ -1,0 +1,25 @@
+/* Leg lines and names on the charts (F-42 MS-7): in the plot overlay, below the range shade and the
+   cursor line; no pointer events, so scrubbing and selecting are unchanged. */
+.wx-legs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.wx-leg-line,
+.wx-leg-name {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.wx-leg-line {
+  width: 1px;
+  height: 100%;
+  background: var(--muted, #555);
+}
+.wx-leg-name {
+  padding-left: 4px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--muted, #555);
+  white-space: nowrap;
+}

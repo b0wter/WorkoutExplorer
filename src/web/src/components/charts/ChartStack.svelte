@@ -13,7 +13,7 @@
   import type { Units } from '../../lib/format';
   import CursorReadout from './CursorReadout.svelte';
   import MetricChart from './MetricChart.svelte';
-  import { DEFAULT_CHART_HEIGHT, TITLE_ROW_HEIGHT, Y_AXIS_SIZE, chartAreaHeight, plotWidth } from './uplot-options';
+  import { DEFAULT_CHART_HEIGHT, TITLE_ROW_HEIGHT, Y_AXIS_SIZE, chartAreaHeight, plotWidth, type ChartDecorator } from './uplot-options';
 
   interface Props {
     data: WorkoutData;
@@ -37,9 +37,11 @@
     /** The range hint (F-39 HU-3); default `plain`. The page owns it: × only reports through onhint. */
     hint?: HintMode;
     onhint?: () => void;
+    /** Extra marks on every chart (F-42 MS-7), from outside; ChartStack knows no rule for them. */
+    decorate?: ChartDecorator;
   }
 
-  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, hint = 'plain', onhint }: Props = $props();
+  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, hint = 'plain', onhint, decorate }: Props = $props();
 
   // A wiring bug, not a data problem: one cursor store per WorkoutData (ADR-008).
   // Reads only the two sampleCount values: never cursor.get() or subscribe.
@@ -166,6 +168,8 @@
             {width}
             height={plotHeight}
             isBottom={k === charts.length - 1}
+            isTop={k === 0}
+            {decorate}
             onfirstdata={() => chartHasData(data, charts.length)}
           />
         {/each}

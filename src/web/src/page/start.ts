@@ -183,7 +183,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   });
   // F-18: the row mark, the laps / splits switch and the splits table; row taps once the range
   // panel is mounted (L-7, QA-18-r1-3).
-  const lapTaps = enhanceLaps(root, data, selection, units, win);
+  const laps = enhanceLaps(root, data, selection, units, win);
   const viewUrl = edit ? null : viewingUrl(win.location.origin, root.querySelector('a[data-copy-link]')?.getAttribute('href') ?? null);
   const hasRoute = routePresence(data) === 'route';
   const mapSlot = root.querySelector<HTMLElement>('#map-slot');
@@ -201,6 +201,13 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     if (box) mountStrip(box, data, cursor, units); // F-33 CR-2: the fullscreen box holds it
     recorder?.mapReady();
   }, edit) : null;
+  const ready = (): void => {
+    laps.taps();
+    map?.startLoading();
+    // F-42 MS-1, MS-9: section lines, names and separator ranges are a lazy chunk, for a workout
+    // whose sessions hold two or more sports only; failing, the page stays as it is.
+    if (new Set(data.meta.sessions.map((s) => s.sport)).size > 1) import('../sections').then((m) => m.startSections(data, look, laps.legs), () => {});
+  };
   if (map && mapSlot) {
     mount(RouteMap, { target: mapSlot, props: map.props });
     addSplitter(root, mapSlot, split);
@@ -225,12 +232,14 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
           return look.hint;
         },
         onhint: hintDone,
+        get decorate() {
+          return look.decorate;
+        },
         onready: () => {
           performance.mark('wx-page:charts-ready');
           recorder?.chartsReady();
           mountRangePanel(root, data, selection, look, viewUrl ? rangeCopy(viewUrl, data, selection, win.navigator) : undefined);
-          lapTaps();
-          map?.startLoading();
+          ready();
         },
       },
     });
@@ -238,7 +247,6 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     // No chart will ever call onready: the map may start right away.
     performance.mark('wx-page:charts-ready');
     recorder?.chartsReady();
-    lapTaps();
-    map?.startLoading();
+    ready();
   }
 }

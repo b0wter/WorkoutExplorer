@@ -34,9 +34,10 @@ export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' |
       if (item.Max) writes.push([max[0], 'max ' + item.Max]);
     });
     const laps = lapsGroup(meta.sport, meta.laps, units);
-    // The server table only, not the bundle's splits table (F-18 L-6).
+    // The server table only, not the bundle's splits table (F-18 L-6); lap rows only, not the
+    // separator rows (F-42 MS-6: a leg name has no unit).
     const heads = root.querySelectorAll('.laps-scroll:not(.splits) thead th');
-    const rows = root.querySelectorAll('.laps-scroll:not(.splits) tbody tr');
+    const rows = root.querySelectorAll('.laps-scroll:not(.splits) tbody tr:not(.laps-section)');
     if (laps === null ? heads.length > 0 : heads.length !== laps.Columns.length || rows.length !== laps.Rows.length) ok = false;
     laps?.Columns.forEach((c, j) => {
       if (heads[j]?.getAttribute('data-k') === c.Key) writes.push([heads[j], c.Label]);

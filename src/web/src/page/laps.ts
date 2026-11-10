@@ -13,11 +13,6 @@ import type { UnitsStore } from '../lib/units';
 /** Row ranges as flat pairs [a0, b0, a1, b1, …], sample indices, both inclusive (L-2). */
 type Ranges = readonly number[];
 
-/** Device laps: a = start_index, b = end_index − 1 (the shared boundary sample included). */
-function lapRanges(data: WorkoutData): Ranges {
-  return data.meta.laps.flatMap((l) => [l.start_index, l.end_index - 1]);
-}
-
 /** One splits table (L-4, L-5): range values over each split, formatted by lib/page's lapsGroup.
  *  NaN values reach lapsGroup as non-finite totals, which it treats as absent. */
 function splitsTable(doc: Document, sport: string, stats: RangeStats, bounds: number[], units: Units): HTMLTableElement {
@@ -54,19 +49,37 @@ function splitsTable(doc: Document, sport: string, stats: RangeStats, bounds: nu
   return table;
 }
 
-/** Adds the switch and splits table now; returns the function that makes rows tappable. The glue
+/** Adds the switch and splits table now. Returns `taps`, which makes rows tappable: the glue
  *  calls it once the range panel is mounted (or will never be), so the L-7 flush always runs after
- *  the panel's slot listener: a tap before that would move the row uncompensated (QA-18-r1-3). */
-export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: SelectionStore, units: UnitsStore, win: Window = window): () => void {
+ *  the panel's slot listener: a tap before that would move the row uncompensated (QA-18-r1-3).
+ *  And `legs`, which gives the separator rows (F-42 MS-6) their ranges, flat pairs in row order. */
+export function enhanceLaps(
+  root: ParentNode,
+  data: WorkoutData,
+  selection: SelectionStore,
+  units: UnitsStore,
+  win: Window = window,
+): { taps(): void; legs(pairs: Ranges): void } {
   const section = root.querySelector<HTMLElement>('section.laps');
-  if (!section) return () => {};
+  if (!section) return { taps: () => {}, legs: () => {} };
+  // L-2: lap rows map to meta.laps by DOM order (a = start_index, b = end_index − 1, the shared
+  // boundary sample included), only when the counts agree. A separator row's pair is NaN (not
+  // selectable) until legs fills the NaNs in order.
+  const meta = data.meta.laps;
+  let laps: number[] = [];
+  let k = 0;
+  section.querySelectorAll('.laps-scroll tbody tr').forEach((r) => {
+    const l = r.matches('.laps-section') ? null : meta[k++];
+    laps.push(l ? l.start_index : NaN, l ? l.end_index - 1 : NaN);
+  });
+  if (k !== meta.length) {
+    console.warn('page: laps rows do not match the data file; rows not selectable');
+    laps = [];
+  }
+  let j = 0;
+  const legs = (pairs: Ranges): void => laps.forEach((a, i) => a !== a && (laps[i] = pairs[j++]));
   const doc = section.ownerDocument;
   const server = section.querySelector<HTMLElement>('.laps-scroll, .laps-none');
-  const serverRows = section.querySelectorAll('.laps-scroll tbody tr');
-  // L-2: rows map to meta.laps by DOM order, only when the counts agree.
-  const lapsOk = serverRows.length === data.meta.laps.length;
-  if (!lapsOk) console.warn('page: laps rows do not match the data file; rows not selectable');
-  const laps = lapsOk ? lapRanges(data) : [];
 
   let splits: HTMLElement | null = null;
   let splitRanges: Ranges = [];
@@ -118,7 +131,7 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
   };
   // L-6: the switch only when the distance advances; laps first, held in memory only (OQ-76).
   const slot = section.querySelector('#laps-slot');
-  if (!slot || !server || slot.firstChild || !distanceAdvances(data)) return taps;
+  if (!slot || !server || slot.firstChild || !distanceAdvances(data)) return { taps, legs };
   const build = (): void => {
     stats ??= createRangeStats(data);
     const u = units.get();
@@ -152,5 +165,5 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
     if (splits) build();
   });
   slot.appendChild(control);
-  return taps;
+  return { taps, legs };
 }

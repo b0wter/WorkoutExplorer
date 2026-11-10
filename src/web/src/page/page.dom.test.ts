@@ -220,6 +220,34 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(charts.selection?.start()).toBe(0);
   });
 
+  it('F-42 MS-9: a multisport workout loads the sections chunk after the charts\' first paint: decorator and separator taps', async () => {
+    const g = loadGolden().find((x) => x.name === 'triathlon');
+    if (!g) throw new Error('no golden triathlon');
+    respond = () => new Response(g.bin.slice(0), { status: 200 });
+    await open('triathlon');
+    const [charts] = stubLog.chartStack;
+    const sep = document.querySelector<HTMLElement>('section.laps tr.laps-section');
+    await settle();
+    expect(charts.decorate).toBeUndefined();
+    charts.onready?.();
+    await vi.waitFor(() => expect(typeof charts.decorate).toBe('function'));
+    sep?.click();
+    expect(charts.selection?.start()).toBe(0);
+    expect(charts.selection?.end()).toBe(charts.data.meta.sessions[1].start_index);
+  });
+
+  it('F-42 MS-1: a single-sport workout never gets a decorator', async () => {
+    const two = loadGolden().find((x) => x.name === 'chained-ride-ride'); // two sessions, one sport
+    if (!two) throw new Error('no golden chained-ride-ride');
+    respond = () => new Response(two.bin.slice(0), { status: 200 });
+    await open('two-rides');
+    const [charts] = stubLog.chartStack;
+    charts.onready?.();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(charts.decorate).toBeUndefined();
+    expect(document.querySelector('tr.laps-section')).toBeNull();
+  });
+
   it('a workout without location data mounts no map, only the charts', async () => {
     await open('indoor-ride');
     expect(stubLog.calls).toEqual(['ChartStack']);

@@ -18,6 +18,7 @@ export interface ChartStackStubProps {
   onaxis?: (axis: 'time' | 'distance') => void;
   hint?: 'plain' | 'once' | 'none';
   onhint?: () => void;
+  decorate?: unknown;
 }
 
 export interface RouteMapStubProps {

@@ -11,6 +11,8 @@ import { createUnitsStore, type UnitsStore } from '../lib/units';
 import { loadGolden } from '../../test-support/golden.mjs';
 import { enhanceLaps } from './laps';
 import { enhanceUnits } from './enhance';
+import { sectionRanges, sections } from '../lib/sections';
+import { legWithoutLaps } from '../lib/page/samples';
 
 function golden(name: string): WorkoutData {
   const g = loadGolden().find((x) => x.name === name);
@@ -32,6 +34,8 @@ interface Page {
   /** Runs the pending selection flush, like the next animation frame. */
   frame(): void;
   rows(selector?: string): HTMLTableRowElement[];
+  /** The sections chunk's call (F-42 MS-6). */
+  legs(pairs: readonly number[]): void;
   button(text: string): HTMLButtonElement | undefined;
 }
 
@@ -58,7 +62,8 @@ function open(data: WorkoutData, units: 'metric' | 'imperial' = 'metric', withUn
   });
   const store = createUnitsStore(units);
   if (withUnits) enhanceUnits(target, data.meta, store);
-  enhanceLaps(target, enhanceWith, selection, store)();
+  const laps = enhanceLaps(target, enhanceWith, selection, store);
+  laps.taps();
   cleanup = () => {
     unmount(app);
     target.remove();
@@ -73,6 +78,7 @@ function open(data: WorkoutData, units: 'metric' | 'imperial' = 'metric', withUn
       pending = null;
       f?.();
     },
+    legs: laps.legs,
     rows: (sel = '.laps-scroll:not(.splits)') => [...target.querySelectorAll<HTMLTableRowElement>(sel + ' tbody tr')],
     button: (text) => [...target.querySelectorAll<HTMLButtonElement>('.laps-switch button')].find((b) => b.textContent === text),
   };
@@ -245,12 +251,47 @@ describe('transition laps (AC 6, L-1)', () => {
     const p = open(golden('triathlon'));
     const heads = [...(p.section?.querySelectorAll('thead th') ?? [])].map((t) => t.getAttribute('data-k'));
     const col = (k: string): number => heads.indexOf(k);
-    const transitions = p.rows().filter((r) => r.cells[col('avg_speed')].textContent === '–');
+    const transitions = p.rows().filter((r) => r.cells[col('avg_speed')]?.textContent === '–');
     expect(transitions.length).toBeGreaterThan(0);
     for (const r of transitions) {
       expect(r.cells[col('avg_power')].textContent).toBe('–');
       expect(r.cells[col('avg_cadence')].textContent).toBe('–');
       for (const k of ['elapsed_time', 'distance', 'avg_heart_rate']) expect(r.cells[col(k)].textContent).not.toBe('–');
     }
+  });
+});
+
+describe('separator rows (F-42 MS-6; AC 2, AC 3)', () => {
+  const names = (p: Page): string[] => p.rows().map((r) => (r.className === 'laps-section' ? r.textContent ?? '' : '#' + r.cells[0].textContent));
+
+  it('one before each leg\'s laps, a leg without laps alone; units rewrite the lap rows only', () => {
+    const warn = vi.spyOn(console, 'warn');
+    const p = open(legWithoutLaps(golden('triathlon')), 'imperial', true);
+    expect(names(p)).toEqual(['Swim', '#1', 'T1', '#2', 'Ride', '#3', 'T2', 'Run', '#4']);
+    expect(p.rows()[0].cells[0].colSpan).toBe(p.section?.querySelectorAll('thead th').length);
+    expect([...(p.section?.querySelectorAll('thead th') ?? [])].map((t) => t.textContent)).toContain('Distance (mi)');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('a separator selects nothing until the chunk gives its range; then its leg, marked like a lap', () => {
+    const p = open(golden('triathlon'));
+    const secs = sections(p.data.meta);
+    if (!secs) throw new Error('no sections');
+    const sep = p.rows().filter((r) => r.className === 'laps-section');
+    expect(sep).toHaveLength(5);
+    sep[2].click();
+    expect(p.selection.start()).toBe(-1);
+    p.legs(sectionRanges(secs, p.data.sampleCount));
+    sep[2].querySelector('th')?.click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([secs[2].start, secs[3].start]);
+    p.frame();
+    expect(sep[2].classList.contains('on')).toBe(true);
+    sep[4].click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([secs[4].start, p.data.sampleCount - 1]);
+    // A lap row still maps to its lap by DOM order past the separators.
+    const laps = p.data.meta.laps;
+    const last = p.rows()[p.rows().length - 1];
+    last.click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([laps[laps.length - 1].start_index, laps[laps.length - 1].end_index - 1]);
   });
 });

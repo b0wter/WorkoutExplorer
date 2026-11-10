@@ -135,6 +135,8 @@ const PAINT: readonly [layer: string, property: string, colour: keyof typeof MAP
   ['wx-lap-circle', 'circle-color', 'lapFill'],
   ['wx-lap-circle', 'circle-stroke-color', 'lapStroke'],
   ['wx-lap-label', 'text-color', 'lapText'],
+  ['wx-leg-label', 'text-color', 'lapText'],
+  ['wx-leg-label', 'text-halo-color', 'lapFill'],
   ['wx-start', 'circle-color', 'start'],
   ['wx-start', 'circle-stroke-color', 'markerStroke'],
   ['wx-finish', 'circle-color', 'finish'],
@@ -169,7 +171,7 @@ export function emphasise(map: PaintTarget, colours: MapColours, on: boolean): v
 }
 
 /** Bottom → top, as in the design's layer table. */
-export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-start', 'wx-finish'] as const;
+export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish'] as const;
 
 const kindIs = (kind: string): FilterSpecification => ['==', ['get', 'kind'], kind];
 
@@ -230,7 +232,7 @@ export function baseStyle(
         type: 'FeatureCollection',
         features: markers.map((m) => ({
           type: 'Feature',
-          properties: m.lap === undefined ? { kind: m.kind } : { kind: m.kind, lap: m.lap },
+          properties: m.lap !== undefined ? { kind: m.kind, lap: m.lap } : m.name !== undefined ? { kind: m.kind, name: m.name } : { kind: m.kind },
           geometry: { type: 'Point', coordinates: [m.lon, m.lat] },
         })),
       },
@@ -313,10 +315,11 @@ export function baseStyle(
   );
   layers.push(
     {
+      // F-42 MS-8: a leg marker is a lap circle with its name beside it.
       id: 'wx-lap-circle',
       type: 'circle',
       source: MARKER_SOURCE,
-      filter: kindIs('lap'),
+      filter: ['in', ['get', 'kind'], ['literal', ['lap', 'leg']]],
       paint: { 'circle-radius': 6, 'circle-color': colours.lapFill, 'circle-stroke-color': colours.lapStroke, 'circle-stroke-width': 1.5 },
     },
     {
@@ -326,6 +329,14 @@ export function baseStyle(
       filter: kindIs('lap'),
       layout: { 'text-field': ['to-string', ['get', 'lap']], 'text-font': [LABEL_FONT], 'text-size': 10 },
       paint: { 'text-color': colours.lapText },
+    },
+    {
+      id: 'wx-leg-label',
+      type: 'symbol',
+      source: MARKER_SOURCE,
+      filter: kindIs('leg'),
+      layout: { 'text-field': ['get', 'name'], 'text-font': [LABEL_FONT], 'text-size': 12, 'text-anchor': 'left', 'text-offset': [0.8, 0], 'text-allow-overlap': true },
+      paint: { 'text-color': colours.lapText, 'text-halo-color': colours.lapFill, 'text-halo-width': 1.5 },
     },
     markerCircle('wx-start', 'start', colours.start, colours),
     markerCircle('wx-finish', 'finish', colours.finish, colours),

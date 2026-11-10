@@ -27,6 +27,7 @@ import type { WorkoutData } from '../../lib/datafile';
 import type { CursorIndex, CursorStore } from '../../lib/cursor';
 import type { SelectionStore } from '../../lib/selection';
 import type { UnitsStore } from '../../lib/units';
+import { legs, sections } from '../../lib/sections';
 import { NO_CLASS, classify, colourScale, legend, metricLabel, metricValues, offeredMetrics, type ColourMetric } from '../../lib/colouring';
 import {
   ROUTE_IDLE,
@@ -160,7 +161,9 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   const rangeLines = (a: number, b: number) => (a < 0 ? { recorded: [], bridges: [] } : routeLinesIn(data, route, a, b));
   const initialRange = rangeLines(selection ? selection.start() : -1, selection ? selection.end() : -1);
   let range: { readonly features: readonly unknown[] } = linesData(initialRange);
-  const markers = routeMarkers(data, route);
+  // F-42 MS-8: a leg marker at each section start after the first (multisport only).
+  const secs = sections(data.meta);
+  const markers = routeMarkers(data, route, secs ? legs(secs, data.sampleCount).filter((g) => g.start > 0) : []);
   const lat = position.latitude;
   const lon = position.longitude;
   // F-25 C-8: only which metrics are offered; no classes until the viewer picks one.

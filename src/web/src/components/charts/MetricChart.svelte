@@ -28,7 +28,7 @@
     type GestureInputKind,
     type GestureState,
   } from '../../lib/charts';
-  import { buildOptions, outerHeight, xScale } from './uplot-options';
+  import { buildOptions, outerHeight, xScale, type ChartDecorator } from './uplot-options';
 
   interface Props {
     spec: ChartSpec;
@@ -44,14 +44,17 @@
     /** Plot area height in CSS px. */
     height: number;
     isBottom: boolean;
+    isTop?: boolean;
+    /** See ChartDecorator; called from layout only. */
+    decorate?: ChartDecorator;
     /** Called once, after the first layout: after the first setData, or with no data when the width gives 0 buckets. */
     onfirstdata?: () => void;
   }
 
-  let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, onfirstdata }: Props = $props();
+  let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, isTop, decorate, onfirstdata }: Props = $props();
 
   let host: HTMLDivElement;
-  let layout: ((w: number) => void) | null = null;
+  let layout: ((w: number, f?: ChartDecorator) => void) | null = null;
 
   type MutableInput = { -readonly [K in keyof GestureInput]: GestureInput[K] };
 
@@ -132,25 +135,27 @@
     let lastWidth = -1;
     let firstLayoutDone = false;
 
-    layout = (w: number): void => {
-      if (w === lastWidth) return;
-      lastWidth = w;
-      u.batch(() => {
-        u.setSize({ width: w, height: outerHeight(plotHeight, bottom) });
-        // setSize computes u.bbox synchronously (canvas px); never read from the DOM.
-        const buckets = bucketCount(u.bbox.width / uPlot.pxRatio, uPlot.pxRatio);
-        if (buckets < 1) return;
-        const dec = decimate(xs, values, d.gaps, xMin, xMax, buckets);
-        u.setData([dec.x, dec.y]);
-      });
-      rect = null;
-      moveLine(c.get());
-      placeShade(shadeA, shadeB);
-      if (!firstLayoutDone) {
-        // onready must never wait for a chart that will not draw (v1.1).
-        firstLayoutDone = true;
-        firstData?.();
+    layout = (w: number, f?: ChartDecorator): void => {
+      if (w !== lastWidth) {
+        lastWidth = w;
+        u.batch(() => {
+          u.setSize({ width: w, height: outerHeight(plotHeight, bottom) });
+          // setSize computes u.bbox synchronously (canvas px); never read from the DOM.
+          const buckets = bucketCount(u.bbox.width / uPlot.pxRatio, uPlot.pxRatio);
+          if (buckets < 1) return;
+          const dec = decimate(xs, values, d.gaps, xMin, xMax, buckets);
+          u.setData([dec.x, dec.y]);
+        });
+        rect = null;
+        moveLine(c.get());
+        placeShade(shadeA, shadeB);
+        if (!firstLayoutDone) {
+          // onready must never wait for a chart that will not draw (v1.1).
+          firstLayoutDone = true;
+          firstData?.();
+        }
       }
+      f?.(over, (i) => u.valToPos(at[i], 'x'), !!isTop);
     };
     layout(width);
 
@@ -291,9 +296,11 @@
 
   // Width changes (resize, rotation; AC 6): ChartStack coalesces them to one
   // animation frame. Not on the scrubbing path.
+  // The decoration too (F-42 MS-7): on these and when it arrives.
   $effect(() => {
     const w = width;
-    if (layout) layout(w);
+    const f = decorate;
+    if (layout) layout(w, f);
   });
 </script>
 

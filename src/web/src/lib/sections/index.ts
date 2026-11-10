@@ -62,3 +62,22 @@ export function lapSections(
   upTo(secs.length - 1);
   return out;
 }
+
+/** MS-6: each section's range as flat pairs [a, b] in section order: a = its start, b = the next
+ *  section's start (the shared boundary sample, as adjacent laps) or N − 1, never past N − 1.
+ *  Selectable when b > a. */
+export function sectionRanges(secs: readonly Section[], n: number): number[] {
+  return secs.flatMap((s, k) => [s.start, Math.min(secs[k + 1]?.start ?? n - 1, n - 1)]);
+}
+
+/** A section that has samples, with its range end (sectionRanges' b). */
+export interface Leg extends Section {
+  readonly end: number;
+}
+
+/** MS-2, MS-7, MS-8: the sections that have samples (start < N and before the next start); only
+ *  these get a chart line, a name on the chart and a map marker. */
+export function legs(secs: readonly Section[], n: number): Leg[] {
+  const ranges = sectionRanges(secs, n);
+  return secs.flatMap((s, k) => (s.start < Math.min(secs[k + 1]?.start ?? n, n) ? [{ ...s, end: ranges[2 * k + 1] }] : []));
+}

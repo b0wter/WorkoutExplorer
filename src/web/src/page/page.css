@@ -607,6 +607,14 @@ td:first-child {
 tbody tr:nth-child(even) {
   background: var(--card);
 }
+/* A leg's separator row (F-42 MS-6): its name across all columns, never striped. */
+tbody tr.laps-section {
+  background: none;
+}
+.laps-section th {
+  color: var(--fg);
+  font-weight: 600;
+}
 
 /* Footer (INF-1, INF-2) */
 .foot {
