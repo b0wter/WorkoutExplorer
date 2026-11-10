@@ -62,6 +62,8 @@
   /* The selected range with colouring on (F-25 C-9): its outline, and the opacity of the route outside it. */
   --range-outline: #4d4d4d;
   --route-fade: 0.35;
+  /* F-41 DS-5: share of the line colour in a tinted summary cell; the strongest keeping 4.5:1 for all its text. */
+  --tint: 32%;
 }
 :root[data-theme='light'] {
   color-scheme: light;
@@ -119,6 +121,7 @@
     --div-10: #e54728;
     --range-outline: #b8b8b8;
     --route-fade: 0.4;
+    --tint: 25%;
   }
 }
 /* The forced dark theme (DS-4): the same values as the block above. */
@@ -175,6 +178,7 @@
   --div-10: #e54728;
   --range-outline: #b8b8b8;
   --route-fade: 0.4;
+  --tint: 25%;
 }
 /* The background sits on the root: iOS Safari paints the notch strips it reserves in landscape
    (default viewport-fit) with the root's colour (F-17 follow-up, user 28 Oct 2026). */
@@ -348,6 +352,16 @@ h1 {
   padding: 8px 10px;
   background: var(--card);
   border-radius: 6px;
+}
+/* F-41 DS-5: a cell with its own chart takes that line colour mixed over the page (ascent: the elevation chart). */
+.metric[data-k='ascent'] { --t: var(--c-altitude); }
+.metric[data-k='speed'] { --t: var(--c-speed); }
+.metric[data-k='heart_rate'] { --t: var(--c-heart_rate); }
+.metric[data-k='power'] { --t: var(--c-power); }
+.metric[data-k='cadence'] { --t: var(--c-cadence); }
+.metric[data-k='temperature'] { --t: var(--c-temperature); }
+.metric:is([data-k='ascent'], [data-k='speed'], [data-k='heart_rate'], [data-k='power'], [data-k='cadence'], [data-k='temperature']) {
+  background: color-mix(in srgb, var(--t) var(--tint), var(--bg));
 }
 .k {
   color: var(--muted);
