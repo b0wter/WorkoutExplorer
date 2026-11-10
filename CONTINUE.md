@@ -2,19 +2,15 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (9 Nov 2026): v0.4.0 deployed; F-39 How to use and F-40 range link specified and designed, build not started (user: wait for the go)
+## Current (10 Nov 2026): v0.5.0 released (F-39 How to use, F-40 range link, F-41 summary tints, summary order); next: F-42 multisport sections
 
-- Phase 2 is done: F-35 ZIP upload, F-36 map preview card, F-34 iOS Shortcut link, F-37 report notification links, F-38 Impressum (QA r1 ready, minors r1-1..3 fixed). Tag v0.4.0 pushed, CI green, release assets exist. Nothing is in progress.
-- v0.4.0 deployed 9 Nov 2026 and works per the user. `deploy.sh` refuses without `{data}/site`; that refusal is untested against a real deploy.
-- User checks still open:
-  - F-35: U-1 to U-4.
-  - F-36: browser and messenger checks, VPS memory.peak.
-  - F-34: iPhone Shortcut and the About look.
-  - F-37: lock-screen text shows no key (AC 41); links work (9 Nov).
-  - F-38: `/robots.txt` blocks only the Impressum; phone and dark-mode look (page and `/api/impressum` 404 checked 9 Nov).
-- Next: F-32 launch checks, then phase-2 ideas (DS-5 summary tints, AP-19 range in URL) or phase 3 (AP-20, F-24).
+- v0.4.0 deployed 9 Nov and checked by the user. v0.5.0 tagged 10 Nov; the user deploys.
+- F-39/F-40/F-41 done; UI changes of 10 Nov: How to use as a full-width info box, range hint as info box that slides away (space collapses), range panel actions as links in their own row, dialogs scroll inside, Calories after Elapsed time.
+- F-42 multisport sections: specified and designed (MS-1 to MS-9), no open questions; build next (backend first, then frontend, then QA).
+- Entry bundle 59,202 / 60,000 gzip; reserve 798, below ADR-011's review trigger; F-42 ceiling 300. Anything after F-42 must free space first.
+- User checks still open: see the Waiting on column of features/README.md (F-35 to F-40).
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) and v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) and v0.5.0 (10 Nov 2026: F-39 to F-41) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
 Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline, route faded) and F-26 fullscreen map (CSS overlay, ADR-038; OQ-100 accepted: bars stay visible), both checked by the user. Theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash); header controls on their own line on narrow screens; F-19 download toggle hidden until F-24.
 
