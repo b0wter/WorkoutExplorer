@@ -173,8 +173,10 @@
     </div>
    {/key}
    {#if charts.length > 0 && hint !== 'none'}
-    <!-- How to select (R-12): the wording follows the primary pointer, in CSS. -->
-    <p class="select-hint">{#if hint !== 'done'}<span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span>{/if}{#if hint === 'once'}<button
+    <!-- How to select (R-12): the wording follows the primary pointer, in CSS. The viewing page's hint
+         (once/done) shares the How to use box's rules (page.css .howto); done keeps the box's space, hidden.
+         Static classes and icon: a class expression pulls in ~200 bytes of runtime. -->
+    <p class:select-hint={hint === 'plain'} class:howto={hint !== 'plain'} class:fresh={hint === 'once'} class:ready={hint === 'once'}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>{#if hint !== 'done'}<span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span>{/if}{#if hint === 'once'}<button
       type="button" class="hint-x" aria-label="Dismiss hint" onclick={() => {
         stack.focus({ preventScroll: true });
         onhint?.();
@@ -223,12 +225,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* F-39 HU-5: the text ellipsises, the × never; its 24 px hit area takes the 4 px gap above. */
-  .select-hint:has(button) {
-    display: flex;
-    overflow: visible;
+  /* F-39 HU-5 (box: user 10 Nov 2026): the text ellipsises, the × never; page.css reserves 8 + 40 px. */
+  .howto {
+    margin-top: 8px;
   }
-  .select-hint:has(button) span {
+  .howto span {
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -238,7 +239,6 @@
     flex: none;
     width: 24px;
     height: 24px;
-    margin-top: -4px;
     padding: 0;
     border: 0;
     background: none;
@@ -247,6 +247,7 @@
     font-size: 16px;
     line-height: 24px;
   }
+  .select-hint svg,
   .coarse {
     display: none;
   }

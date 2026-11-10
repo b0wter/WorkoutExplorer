@@ -106,8 +106,10 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(stack).toMatch(/\.select-hint \{\s*height: 20px;\s*margin: 4px 0 0;/);
   });
 
-  it("F-39 HU-2 (QA-39-r1-1): data-hint='done' drops the hint row on the viewing page only", () => {
+  it("F-39 HU-2 (QA-39-r1-1): the viewing page reserves the hint box (8 + 40 px, as .howto); data-hint='done' drops it there only", () => {
+    expect(css).toMatch(/^body > \.page \.charts \{\s*--hint: 48px;\s*\}/m);
     expect(css).toMatch(/^\[data-hint='done'\] body > \.page \.charts \{\s*--hint: 0px;\s*\}/m);
+    expect(readWebFile('src/components/charts/ChartStack.svelte')).toMatch(/\.howto \{\s*margin-top: 8px;\s*\}/);
     // The edit page's .page sits inside #wx-edit, never directly under body, so it keeps the row.
     const edit = readWebFile('edit.html');
     expect(edit.slice(edit.indexOf('<body>'))).not.toContain('class="page');

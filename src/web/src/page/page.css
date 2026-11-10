@@ -301,8 +301,11 @@ h1 {
   width: 16px;
   height: 16px;
 }
-/* F-39 HU-2: the head script found the hint done, so the viewing page (not the edit page under
-   #wx-edit) reserves no hint line. */
+/* F-39 HU-2: the viewing page (not the edit page under #wx-edit) reserves the hint box (8 px gap +
+   40 px, as .howto); once the head script found the hint done, nothing. */
+body > .page .charts {
+  --hint: 48px;
+}
 [data-hint='done'] body > .page .charts {
   --hint: 0px;
 }
@@ -456,7 +459,7 @@ h1 {
 }
 /* Charts: axis toolbar (--bar, F-17 R-8: only with a distance stream) + readout rows (--r) + chart
    area (--area, F-05 chartAreaHeight(n, 120)) + the selection hint (--hint, F-17 R-12: 4 px gap and
-   one 20 px line). The readout grid has fixed tracks, so its row count is known before the bundle
+   one 20 px line; the viewing page's box: see .howto). The readout grid has fixed tracks, so its row count is known before the bundle
    runs: 4 columns below 640 px and in the short-landscape right column, 8 (one row) otherwise. */
 .charts {
   --r: var(--r4);

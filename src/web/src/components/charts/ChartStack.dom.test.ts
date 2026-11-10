@@ -942,12 +942,14 @@ describe('F-17 range selection and x-axis toggle', () => {
       }
       const m = setup(ride, { hint, onhint });
       layout(900);
-      return m.target.querySelector('.select-hint');
+      return m.target.querySelector('.select-hint, .howto');
     };
+    expect(hintOf()?.className).toContain('select-hint');
     expect(hintOf()?.querySelector('button')).toBeNull();
     expect(hintOf('plain')?.querySelector('button')).toBeNull();
     const onhint = vi.fn();
     const once = hintOf('once', onhint)!;
+    expect([['howto', 'fresh', 'ready', 'select-hint'].map((c) => once.classList.contains(c)).join(), once.firstElementChild?.tagName]).toEqual(['true,true,true,false', 'svg']); // the info box, user 10 Nov 2026
     const x = once.querySelector('button')!;
     expect([x.getAttribute('aria-label'), x.textContent, once.lastElementChild === x]).toEqual(['Dismiss hint', '×', true]);
     x.focus();
@@ -955,7 +957,7 @@ describe('F-17 range selection and x-axis toggle', () => {
     expect(onhint).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(once.closest('.chart-stack')); // QA-39-r1-2: not body when the × goes
     const done = hintOf('done')!;
-    expect([done.childElementCount, done.textContent]).toEqual([0, '']);
+    expect([done.childElementCount, done.textContent, done.classList.contains('howto'), done.classList.contains('ready')]).toEqual([1, '', true, false]); // same box (icon only), hidden, same space
     expect(hintOf('none')).toBeNull();
   });
 });
