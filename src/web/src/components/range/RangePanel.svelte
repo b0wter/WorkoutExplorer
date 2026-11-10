@@ -115,7 +115,7 @@
 </script>
 
 <!-- The cell look (label line over value line, card) is shared with the cursor readout (page.css,
-     "Value cards"); the auto-fill grid, the clipping and the clear button are the panel's own. -->
+     "Value cards"); the auto-fill grid, the clipping and the action row are the panel's own. -->
 <div class="range-panel" bind:this={root}>
   {#each fields as f (f)}
     <div class="cell">
@@ -123,8 +123,10 @@
       <div class="val"><span class="value">{MISSING_TEXT}</span>{#if unitOf(f, units)}&nbsp;<span class="unit">{unitOf(f, units)}</span>{/if}</div>
     </div>
   {/each}
-  <button type="button" class="clear" onclick={() => selection.clear()}>Clear</button>
-  {#if oncopy}<button type="button" class="copy share" onclick={(e) => oncopy?.(e.currentTarget)}>Copy link to this selection</button>{/if}
+  <div class="actions">
+    <button type="button" class="clear" onclick={() => selection.clear()}>Clear</button>
+    {#if oncopy}<button type="button" class="share" onclick={(e) => oncopy?.(e.currentTarget)}>Copy link to this selection</button>{/if}
+  </div>
 </div>
 
 <style>
@@ -139,22 +141,23 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .clear {
-    height: 26px;
-    padding: 0 8px;
-    border: 1px solid var(--line, #c4c8cc);
-    border-radius: 6px;
-    background: var(--bg, #fff);
-    color: var(--fg, #111);
+  /* User 10 Nov 2026: the actions on their own full-width row, drawn as links (like the footer's
+     Report button) to save space; the copy fallback field (.copy-url, a full line) wraps below. */
+  .actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 16px;
+  }
+  .actions button {
+    min-height: 24px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
     font: inherit;
     font-size: 13px;
-  }
-  /* The Copy link look (page.css .copy); beside Clear when three tracks are left, else on its own line. */
-  .share {
-    grid-column: span 3;
-    justify-self: start;
-    background: none;
-    font-family: inherit;
-    white-space: nowrap;
+    text-decoration: underline;
+    cursor: pointer;
   }
 </style>

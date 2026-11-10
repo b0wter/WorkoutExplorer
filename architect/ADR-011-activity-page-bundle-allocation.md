@@ -39,7 +39,8 @@ ADR-002 counts the entry chunk plus its static imports plus CSS, gzip -9, 60,000
 | + F-40 shareable range, with the F-39 QA r1 follow-ups, measured 10 Nov 2026 → entry 58,855 | +510 |
 | + F-41 summary tints (+133) and the F-40 QA r1 minors, measured 10 Nov 2026 → entry 58,997 | +142 |
 | + F-39 How to use moved to its own row under the header (user 10 Nov 2026), measured 10 Nov 2026 → entry 59,026 | +29 |
-| **Reserve** | **974** (60,000 − 59,026) |
+| + Range panel actions on their own row as links (user 10 Nov 2026), measured 10 Nov 2026 → entry 59,017 | −9 |
+| **Reserve** | **983** (60,000 − 59,017) |
 | **Total** | **60,000** |
 
 Six MVP features still add code that viewers would load on the activity page, and four more add owner or optional UI. Without a plan, the budget is spent first-come, first-served, and the last feature hits the limit. Raising 60 KB is a change to the TD budget, a product decision for the user, not an architecture call.

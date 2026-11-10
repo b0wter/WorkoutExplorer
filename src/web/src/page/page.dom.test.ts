@@ -307,7 +307,7 @@ describe('range panel (F-17 R-9, AC 4, AC 5)', () => {
     expect(values()[0]).toMatch(/^\d+\.\d\d$/);
     expect(values()[1]).toMatch(/^\d+:\d\d(:\d\d)?$/);
     expect(rangeSlot().textContent).toContain('mi'); // jsdom's language is en-US: imperial (F-14 D-4)
-    (rangeSlot().querySelector('button.clear') as HTMLButtonElement).click();
+    (rangeSlot().querySelector('.range-panel .actions button.clear') as HTMLButtonElement).click();
     flushSync();
     expect([sel.start(), sel.end()]).toEqual([-1, -1]);
     expect(rangeSlot().hidden).toBe(true);
@@ -429,7 +429,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
   const range = (): [number, number] => [sel().start(), sel().end()];
   const hint = (): string | undefined => stubLog.chartStack[0].hint;
   const rangeSlot = (): HTMLElement => slot('range-slot') as HTMLElement;
-  const share = (): HTMLButtonElement | null => rangeSlot().querySelector('button.share');
+  const share = (): HTMLButtonElement | null => rangeSlot().querySelector('.range-panel .actions button.share');
   const frag = (a: number, b: number): string => `#range=${time[a]}-${time[b]}`;
   async function openAt(path: string, seam?: boolean): Promise<void> {
     window.history.replaceState({ fs: 1 }, '', path);
@@ -462,7 +462,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
 
   it('Clear also drops it, and does not count as a selection for the hint', async () => {
     await openAt('/w/x' + frag(100, 3000));
-    (rangeSlot().querySelector('button.clear') as HTMLButtonElement).click();
+    (rangeSlot().querySelector('.range-panel .actions button.clear') as HTMLButtonElement).click();
     flushSync();
     expect(window.location.hash).toBe('');
     expect(hint()).toBe('once');
