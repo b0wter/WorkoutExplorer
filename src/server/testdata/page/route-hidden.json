@@ -36,6 +36,13 @@
       "Max": ""
     },
     {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "600",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
       "Key": "speed",
       "Label": "Avg speed",
       "Value": "29.9",
@@ -69,13 +76,6 @@
       "Value": "21",
       "Unit": "°C",
       "Max": "21"
-    },
-    {
-      "Key": "calories",
-      "Label": "Calories",
-      "Value": "600",
-      "Unit": "kcal",
-      "Max": ""
     }
   ],
   "Route": {

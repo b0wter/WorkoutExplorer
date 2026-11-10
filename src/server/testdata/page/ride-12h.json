@@ -36,6 +36,13 @@
       "Max": ""
     },
     {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "7199",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
       "Key": "ascent",
       "Label": "Elevation gain",
       "Value": "2172",
@@ -76,13 +83,6 @@
       "Value": "18",
       "Unit": "°C",
       "Max": "22"
-    },
-    {
-      "Key": "calories",
-      "Label": "Calories",
-      "Value": "7199",
-      "Unit": "kcal",
-      "Max": ""
     }
   ],
   "Route": {

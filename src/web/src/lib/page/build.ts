@@ -55,6 +55,7 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   one('distance', 'Distance', has(s, 'distance'), distanceUnit(units), (v) => formatDistance(v, units));
   one('moving_time', 'Moving time', has(s, 'moving_time'), '', formatElapsed);
   one('elapsed_time', 'Elapsed time', has(s, 'elapsed_time'), '', formatElapsed);
+  one('calories', 'Calories', has(s, 'calories'), 'kcal', int);
   one('ascent', 'Elevation gain', has(s, 'ascent'), elevationUnit(units), (v) => int(toElevation(v, units)));
   const speed = (v: number): string => formatSpeedOrPace(sport, v, units);
   const temp = (v: number): string => int(toTemperature(v, units));
@@ -64,7 +65,6 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   items.push(pair('power', 'power', 'W', has(s, 'avg_power'), has(s, 'max_power'), int));
   items.push(pair('cadence', 'cadence', cadenceUnit(sport), has(s, 'avg_cadence'), has(s, 'max_cadence'), int));
   items.push(pair('temperature', 'temperature', temperatureUnit(units), has(s, 'avg_temperature'), has(s, 'max_temperature'), temp));
-  one('calories', 'Calories', has(s, 'calories'), 'kcal', int);
   return items.filter((i): i is SummaryItem => i !== null);
 }
 

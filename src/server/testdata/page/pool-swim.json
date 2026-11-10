@@ -36,6 +36,13 @@
       "Max": ""
     },
     {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "200",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
       "Key": "speed",
       "Label": "Avg pace",
       "Value": "2:00",
@@ -55,13 +62,6 @@
       "Value": "30",
       "Unit": "spm",
       "Max": "32"
-    },
-    {
-      "Key": "calories",
-      "Label": "Calories",
-      "Value": "200",
-      "Unit": "kcal",
-      "Max": ""
     }
   ],
   "Route": {

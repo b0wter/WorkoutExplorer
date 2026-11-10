@@ -266,6 +266,7 @@ func summaryItems(sport string, t totals) []SummaryItem {
 	one("distance", "Distance", "distance", "km", formatDistance)
 	one("moving_time", "Moving time", "moving_time", "", formatElapsed)
 	one("elapsed_time", "Elapsed time", "elapsed_time", "", formatElapsed)
+	one("calories", "Calories", "calories", "kcal", intText)
 	one("ascent", "Elevation gain", "ascent", "m", intText)
 	speedLabel := "speed"
 	if isPaceSport(sport) {
@@ -277,7 +278,6 @@ func summaryItems(sport string, t totals) []SummaryItem {
 	add(pair("power", "power", "W", t, "avg_power", "max_power", intText))
 	add(pair("cadence", "cadence", cadenceUnit(sport), t, "avg_cadence", "max_cadence", intText))
 	add(pair("temperature", "temperature", "°C", t, "avg_temperature", "max_temperature", intText))
-	one("calories", "Calories", "calories", "kcal", intText)
 	return items
 }
 

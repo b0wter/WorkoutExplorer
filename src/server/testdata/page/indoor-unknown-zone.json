@@ -29,18 +29,18 @@
       "Max": ""
     },
     {
-      "Key": "heart_rate",
-      "Label": "Avg heart rate",
-      "Value": "125",
-      "Unit": "bpm",
-      "Max": "153"
-    },
-    {
       "Key": "calories",
       "Label": "Calories",
       "Value": "300",
       "Unit": "kcal",
       "Max": ""
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "125",
+      "Unit": "bpm",
+      "Max": "153"
     }
   ],
   "Route": {
