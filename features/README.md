@@ -53,8 +53,8 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | done | user: lock-screen text shows no key (AC 41; links checked 9 Nov) |
 | [F-38](F-38-impressum-page.md) | Impressum page | 2 | both (backend first) | F-29, F-31, F-37 | done | user: /robots.txt check; phone and dark-mode look (page and /api 404 checked 9 Nov) |
 | [F-39](F-39-how-to-use.md) | How to use | 2 | frontend | F-14, F-17, F-18, F-26 | done | user: hand checks 1–6 (qa r1); minors r1-1..3 fixed |
-| [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | done | user: hand checks 1–7 (qa r1); minors r1-1..2 open |
-| [F-41](F-41-summary-tints.md) | Summary tints | 2 | frontend | F-13, F-14 | specified | |
+| [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | done | user: hand checks 1–7 (qa r1); minors r1-1..2 fixed |
+| [F-41](F-41-summary-tints.md) | Summary tints | 2 | frontend | F-13, F-14 | building (small lane) | |
 | [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
@@ -638,4 +638,6 @@ The original questions follow for reference.
 **Decided on 9 Nov 2026, F-42 questions** (user, AP-12): OQ-138 to OQ-143 accepted as suggested: sections only for "Multisport" workouts; leg names are sport names, transitions T1, T2, …, names in the top chart only; a separator row tap selects the leg as a range; a leg marker replaces a lap marker at the same sample and stays in fullscreen; splits without separators, lap columns by workout sport; normal lane. Updated: F-42 (scope, AC, decisions), spec AP-8, AP-15.
 
 **Decided on 10 Nov 2026, F-42 design questions** (user, AP-12, AP-15): OQ-144 accepted: the leg marker sits only at the leg's first sample and only if it has a position (lap-marker rule, AC 38); F-42 scope line reworded. OQ-145 accepted: section lines and separator-row taps appear shortly after the charts (lazy chunk). Updated: F-42 scope, architect F-42 and INDEX.
+
+**Decided on 10 Nov 2026, F-41 questions** (user, DS-5): OQ-135: tints stand out: the strongest strength at which all cell text keeps 4.5:1 in both themes (about 25 %, may differ per theme), the same for every metric, tuned by the user on screen. OQ-136: the edit page's summary is tinted too. OQ-137: small lane, frontend engineer only; the user's on-screen check in both themes is the acceptance. Updated: F-41 (lane, scope, AC). Spec unchanged (DS-5 states no strength).
 
