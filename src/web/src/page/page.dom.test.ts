@@ -483,6 +483,30 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
     expect(range()).toEqual([0, N - 1]);
   });
 
+  it('the map gets the link range: the same store as the charts (AC 1)', async () => {
+    await openAt('/w/x' + frag(100, 3000));
+    const map = stubLog.routeMap[0].selection!;
+    expect(map).toBe(sel());
+    expect([map.start(), map.end()]).toEqual([100, 3000]);
+  });
+
+  it('a link into a hidden start: cut to the first shown sample, or nothing when it is all hidden (AC 6)', async () => {
+    // Start hiding: the published file's offsets begin later. Shift the first time delta by K s.
+    const K = 600;
+    const buf = RIDE.slice(0);
+    const view = new DataView(buf);
+    const meta = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 14, view.getUint32(10, true))));
+    const off = meta.streams.find((s: { name: string }) => s.name === 'time_offset').byte_offset;
+    view.setInt32(off, view.getInt32(off, true) + K, true);
+    respond = () => new Response(buf.slice(0));
+    await openAt(`/w/x#range=0-${time[500] + K}`);
+    expect(range()).toEqual([0, 500]);
+    page?.remove();
+    resetStubLog();
+    await openAt(`/w/x#range=0-${K - 1}`);
+    expect(range()).toEqual([-1, -1]);
+  });
+
   it('without a fragment, selecting and clearing leave the address alone', async () => {
     await openAt('/w/x');
     sel().set(10, 20);

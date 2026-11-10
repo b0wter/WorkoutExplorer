@@ -176,7 +176,7 @@
     <!-- How to select (R-12): the wording follows the primary pointer, in CSS. -->
     <p class="select-hint">{#if hint !== 'done'}<span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span>{/if}{#if hint === 'once'}<button
       type="button" class="hint-x" aria-label="Dismiss hint" onclick={() => {
-        stack.focus();
+        stack.focus({ preventScroll: true });
         onhint?.();
       }}>×</button>{/if}</p>
    {/if}
