@@ -23,3 +23,7 @@
   color: var(--muted, #555);
   white-space: nowrap;
 }
+/* Separator rows are tappable once their ranges are in (MS-6, QA-42-r1-4). */
+.laps.legs tr.laps-section {
+  cursor: pointer;
+}

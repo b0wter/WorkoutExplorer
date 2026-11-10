@@ -77,7 +77,11 @@ export function enhanceLaps(
     laps = [];
   }
   let j = 0;
-  const legs = (pairs: Ranges): void => laps.forEach((a, i) => a !== a && (laps[i] = pairs[j++]));
+  const legs = (pairs: Ranges): void => {
+    laps.forEach((a, i) => a !== a && (laps[i] = pairs[j++]));
+    // QA-42-r1-4: separator rows look tappable only once they are.
+    if (laps.length) section.classList.add('legs');
+  };
   const doc = section.ownerDocument;
   const server = section.querySelector<HTMLElement>('.laps-scroll, .laps-none');
 
@@ -106,7 +110,7 @@ export function enhanceLaps(
       const row = (event.target as Element).closest<HTMLTableRowElement>('tbody tr');
       if (!row) return;
       const ranges = splits?.contains(row) ? splitRanges : laps;
-      const i = 2 * row.sectionRowIndex;
+      const i = 2 * (row.rowIndex - 1); // one thead row; a multisport table has one tbody per leg
       const a = ranges[i];
       const b = ranges[i + 1];
       // Not selectable (fewer than 2 samples, or a markup that does not match); the same range again.

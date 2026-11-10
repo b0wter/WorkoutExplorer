@@ -206,7 +206,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     map?.startLoading();
     // F-42 MS-1, MS-9: section lines, names and separator ranges are a lazy chunk, for a workout
     // whose sessions hold two or more sports only; failing, the page stays as it is.
-    if (new Set(data.meta.sessions.map((s) => s.sport)).size > 1) import('../sections').then((m) => m.startSections(data, look, laps.legs), () => {});
+    if (new Set(data.meta.sessions.map((s) => s.sport)).size > 1) import('../sections').then((m) => m.startSections(data, look, laps.legs), () => console.warn('page: sections chunk failed'));
   };
   if (map && mapSlot) {
     mount(RouteMap, { target: mapSlot, props: map.props });

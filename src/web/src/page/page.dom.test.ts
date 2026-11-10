@@ -236,6 +236,26 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(charts.selection?.end()).toBe(charts.data.meta.sessions[1].start_index);
   });
 
+  it('F-42 MS-9, QA-42-r1-4: a failed sections chunk warns once; separators stay without taps', async () => {
+    const g = loadGolden().find((x) => x.name === 'triathlon');
+    if (!g) throw new Error('no golden triathlon');
+    respond = () => new Response(g.bin.slice(0), { status: 200 });
+    vi.doMock('../sections', () => {
+      throw new Error('chunk failed');
+    });
+    try {
+      await open('triathlon');
+      const [charts] = stubLog.chartStack;
+      charts.onready?.();
+      await vi.waitFor(() => expect(console.warn).toHaveBeenCalledWith('page: sections chunk failed'));
+      expect(console.warn).toHaveBeenCalledTimes(1);
+      expect(charts.decorate).toBeUndefined();
+      expect(document.querySelector('section.laps')?.classList.contains('legs')).toBe(false);
+    } finally {
+      vi.doUnmock('../sections');
+    }
+  });
+
   it('F-42 MS-1: a single-sport workout never gets a decorator', async () => {
     const two = loadGolden().find((x) => x.name === 'chained-ride-ride'); // two sessions, one sport
     if (!two) throw new Error('no golden chained-ride-ride');

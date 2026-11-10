@@ -569,7 +569,7 @@ html:not(.wx-fs) .wx-strip,
   color: var(--on-accent);
 }
 /* Rows select their range (F-18 L-3); the selected row is marked by its background only. */
-.laps.live tbody tr {
+.laps.live tbody tr:not(.laps-section) {
   cursor: pointer;
 }
 .laps tbody tr.on {
@@ -604,12 +604,9 @@ th:first-child,
 td:first-child {
   text-align: left;
 }
-tbody tr:nth-child(even) {
+/* Separator rows don't count (F-42 MS-6); one tbody per leg restarts the stripes. */
+tbody tr:nth-child(even of :not(.laps-section)) {
   background: var(--card);
-}
-/* A leg's separator row (F-42 MS-6): its name across all columns, never striped. */
-tbody tr.laps-section {
-  background: none;
 }
 .laps-section th {
   color: var(--fg);

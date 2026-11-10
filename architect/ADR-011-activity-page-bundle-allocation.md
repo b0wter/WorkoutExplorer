@@ -43,7 +43,8 @@ ADR-002 counts the entry chunk plus its static imports plus CSS, gzip -9, 60,000
 | + F-39 range hint as an info box under the charts (user 10 Nov 2026), measured 10 Nov 2026 → entry 59,142 | +125 |
 | + F-39 range hint collapses during the visit, animated (user 10 Nov 2026), measured 10 Nov 2026 → entry 59,202 | +60 |
 | + F-42 multisport sections, static part (sessions check, `import()` call site, chart decoration seam, separator rows in the laps and units enhancers, CSS), measured 10 Nov 2026 → entry 59,487 | +285 |
-| **Reserve** | **513** (60,000 − 59,487) |
+| + F-42 QA r1 minors (one tbody per leg, stripe selector, chunk-failure warn, separator pointer class), measured 10 Nov 2026 → entry 59,510 | +23 |
+| **Reserve** | **490** (60,000 − 59,510) |
 | **Total** | **60,000** |
 
 Six MVP features still add code that viewers would load on the activity page, and four more add owner or optional UI. Without a plan, the budget is spent first-come, first-served, and the last feature hits the limit. Raising 60 KB is a change to the TD budget, a product decision for the user, not an architecture call.
@@ -74,7 +75,7 @@ Six MVP features still add code that viewers would load on the activity page, an
    | (rev. 13) F-39 How to use: button enhancer, `import()` call site, hint mode and ×, two prefs entries, CSS | **600 planned; measured 599** (9 Nov 2026: entry 58,345 − 57,746) |
    | (rev. 13) F-40 shareable range: `lib/rangelink`, read and apply, `replaceState`, panel button | **700 planned; measured 510** (10 Nov 2026: entry 58,855 − 58,345, including the F-39 QA r1 follow-ups) |
    | (rev. 14) F-42 multisport sections: the sessions check, the `import()` call site, a chart decoration seam, separator rows in the laps and units enhancers, CSS | **300 ceiling; measured 285** (10 Nov 2026: entry 59,487 − 59,202, F-42 frontend); the rest is lazy (`src/sections/`, 825 + 191 CSS gzip, and the shared `lib/sections` chunk, 398) |
-   | Reserve (architect decides who gets it) | **1,655** after F-39 (9 Nov 2026: 60,000 − entry 58,345). The baseline before F-39 was 57,746, not 57,399: F-36 to F-38 took 347 unbooked, so the reserve was 2,254, not 2,601. **1,145 after F-40's measured 510** (planned 955 after its 700, below the review trigger, decision 5). (rev. 14) **845 after F-42's ceiling**; measured **513** after F-42's 285 (10 Nov 2026, entry 59,487; F-41 and the 10 Nov page changes took 347 in between, table above). Review result: F-42 goes lazy (item 2); the next feature that adds static code applies a remedy of decision 5 before it is built |
+   | Reserve (architect decides who gets it) | **1,655** after F-39 (9 Nov 2026: 60,000 − entry 58,345). The baseline before F-39 was 57,746, not 57,399: F-36 to F-38 took 347 unbooked, so the reserve was 2,254, not 2,601. **1,145 after F-40's measured 510** (planned 955 after its 700, below the review trigger, decision 5). (rev. 14) **845 after F-42's ceiling**; measured **513** after F-42's 285 (10 Nov 2026, entry 59,487; F-41 and the 10 Nov page changes took 347 in between, table above); **490** after the F-42 QA r1 minors (+23, entry 59,510). Review result: F-42 goes lazy (item 2); the next feature that adds static code applies a remedy of decision 5 before it is built |
 
 5. **Review trigger (rev. 7):** the reserve falls **below 1,000**, or a feature cannot fit its share plus the reserve. The architect then revisits this ADR before that feature is implemented.
    - From F-07 on, the CI line measures the activity page itself, because the prototype page replaced the F-01 placeholder as `index.html`'s entry. The ledger is therefore read from the CI line plus the open shares.

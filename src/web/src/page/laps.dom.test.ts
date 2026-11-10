@@ -279,9 +279,14 @@ describe('separator rows (F-42 MS-6; AC 2, AC 3)', () => {
     if (!secs) throw new Error('no sections');
     const sep = p.rows().filter((r) => r.className === 'laps-section');
     expect(sep).toHaveLength(5);
+    // QA-42-r1-2, r1-3: one tbody per leg, each headed by its separator.
+    expect(sep.map((r) => [r.parentElement?.firstElementChild === r, r.cells[0].getAttribute('scope')])).toEqual(Array(5).fill([true, 'rowgroup']));
+    expect(p.section?.querySelectorAll('.laps-scroll tbody')).toHaveLength(5);
     sep[2].click();
     expect(p.selection.start()).toBe(-1);
+    expect(p.section?.classList.contains('legs')).toBe(false); // QA-42-r1-4: no pointer before the ranges
     p.legs(sectionRanges(secs, p.data.sampleCount));
+    expect(p.section?.classList.contains('legs')).toBe(true);
     sep[2].querySelector('th')?.click();
     expect([p.selection.start(), p.selection.end()]).toEqual([secs[2].start, secs[3].start]);
     p.frame();

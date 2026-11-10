@@ -2,13 +2,17 @@ package publish
 
 import (
 	"bytes"
+	"context"
 	"os"
+	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"workout-explorer/internal/datafile"
+	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/page"
 )
 
@@ -120,9 +124,13 @@ func TestSectionRows(t *testing.T) {
 			if n := strings.Count(laps, `<tr class="laps-section">`); n != len(c.want) {
 				t.Fatalf("%d separator rows, want %d:\n%s", n, len(c.want), laps)
 			}
+			// QA-42-r1-2, r1-3: one tbody per leg, the separator heads its row group.
+			if n := strings.Count(laps, "<tbody>"); n != max(len(c.want), 1) {
+				t.Errorf("%d tbody, want one per leg", n)
+			}
 			cols := strings.Count(laps, "<th data-k=")
 			for i, name := range c.want {
-				row := `<tr class="laps-section"><th colspan="` + strconv.Itoa(cols) + `">` + name + "</th></tr>"
+				row := `<tbody><tr class="laps-section"><th colspan="` + strconv.Itoa(cols) + `" scope="rowgroup">` + name + "</th></tr>"
 				next := "<td>" + strconv.Itoa(i+1) + "</td>"
 				at := strings.Index(laps, row)
 				if at < 0 || !strings.HasPrefix(strings.TrimSpace(laps[at+len(row):]), "<tr>"+next) {
@@ -130,5 +138,49 @@ func TestSectionRows(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestSectionsHidden (F-42 AC 7, SH-4, QA-42-r1-1): the triathlon published
+// with start and end hiding keeps its sessions (the leg lines) and separator
+// rows, and a leg start inside a hidden part has no public position, so the
+// browser draws no leg marker there (routeMarkers reads public positions only).
+// The swim and T1 are folded onto the start, so T1 and the ride begin inside
+// the hidden start.
+func TestSectionsHidden(t *testing.T) {
+	orig, err := os.ReadFile(filepath.Join(synthetic, "triathlon.fit"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w, err := ingest.NewParser(ingest.DefaultLimits, nil).Parse(context.Background(), orig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lat, lon := slices.Clone(w.Samples.Lat), slices.Clone(w.Samples.Lon)
+	for i := 1; i <= 700; i++ { // 1 Hz: swim 0..599, T1 600..659
+		lat[i], lon[i] = lat[0], lon[0]
+	}
+	w.Samples.Lat, w.Samples.Lon = lat, lon
+	fx := newFixtureWith(t, orig, fakeParser{string(orig): w})
+	d := draft()
+	d.HideEnds = true
+	fx.change(t, d, published(d))
+	o := fx.read(t)
+	if n := strings.Count(lapsSection(o.page), `<tr class="laps-section">`); n != 5 {
+		t.Errorf("%d separator rows with hiding on, want 5", n)
+	}
+	if n := len(o.file.Meta.Sessions); n != 5 {
+		t.Fatalf("%d sessions with hiding on, want 5", n)
+	}
+	pos, ok := stream(o.file, "latitude")
+	if !ok {
+		t.Fatal("route fully hidden; the case needs a partly hidden route")
+	}
+	var hidden []bool
+	for _, s := range o.file.Meta.Sessions[1:] {
+		hidden = append(hidden, !pos.Valid[s.StartIndex])
+	}
+	if want := []bool{true, true, false, false}; !slices.Equal(hidden, want) {
+		t.Errorf("leg starts hidden %v, want %v (T1, Ride, T2, Run)", hidden, want)
 	}
 }
