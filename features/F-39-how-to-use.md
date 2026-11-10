@@ -2,7 +2,7 @@
 
 - **Phase:** 2
 - **Owner:** frontend
-- **Lane:** normal
+- **Lane:** normal (button placement and look changed 10 Nov 2026 in the small lane)
 - **Requirements:** AP-22 (Could, phase 2); changes the AP-7 hint on the viewing page; texts describe AP-6, AP-7, AP-8, AP-15, DS-1, DS-4 (and AP-19 once F-40 ships); NFR Performance (budgets unchanged), NFR Privacy (no cookie, nothing to the server)
 - **Depends on:** F-14, F-17, F-18, F-26
 
@@ -10,7 +10,7 @@
 A first-time viewer finds out how to explore the page (cursor, ranges, laps, fullscreen map, units) without anyone explaining it.
 
 ## Scope
-- **Button.** On the viewing page (`/w/{id}`) only: a text button "How to use" with a small icon in the header's control row, next to Copy link and the units and theme drop-downs; visible on phones too, never in a menu. Until it has been opened once on the device it is emphasised (the accent background of the selected axis toggle); then plain (the Copy link look). Not shown without JavaScript.
+- **Button.** On the viewing page (`/w/{id}`) only: a full-width box in its own row directly under the header row (title, Copy link, units, theme) and above the map and summary, styled like Bootstrap's info alert: light accent-tinted background, thin accent border, rounded corners, an info icon and the text "How to use this page"; the whole box is the button. One line, about 40 px high, its space reserved from first paint (no layout shift). Until it has been opened once on the device it uses the accent colours; afterwards it stays, in neutral grey. Visible on phones too, never in a menu. Not shown without JavaScript (decision log, 10 Nov 2026).
 - **Dialog.** Title "How to use this page"; one line per section, worded for touch when the primary pointer is coarse (CSS `pointer: coarse`, as the existing hint), otherwise for mouse (a laptop with a touchscreen gets the mouse wording). Every workout shows the same lines; the map lines say they apply only to workouts with GPS. Closes with its close button, Esc or a tap outside; opening it adds no history entry (Android browsers also close it on the back gesture, OQ-134). Its code and text load only when the button is first used.
 
   | Section | Touch | Mouse |
@@ -33,8 +33,8 @@ A first-time viewer finds out how to explore the page (cursor, ranges, laps, ful
 - Tours, animations, videos, other languages (DS-3); keyboard shortcuts.
 
 ## Acceptance criteria
-- [ ] On `/w/{id}`, the header's control row shows "How to use" with an icon on a 360 px wide phone (portrait and landscape) and on desktop; not on `/edit/`, `/published/`, upload, About or Impressum pages.
-- [ ] Fresh browser: the button is emphasised; after opening it once and reloading (also another workout), it is plain.
+- [ ] On `/w/{id}`, a one-line, full-width "How to use this page" box with an info icon sits directly under the header row and above the map and summary, on a 360 px wide phone (portrait and landscape) and on desktop, without a layout shift; the user's on-screen check is the acceptance for its look; not on `/edit/`, `/published/`, upload, About or Impressum pages.
+- [ ] Fresh browser: the box uses the accent colours; after opening it once and reloading (also another workout), it is neutral grey.
 - [ ] The dialog shows the sections with the texts above, touch wording on a touch phone and mouse wording on desktop (a touchscreen laptop gets mouse wording); a workout without GPS, without laps and splits, or without charts shows the same lines as one with all of them.
 - [ ] The dialog closes with its close button, Esc and a tap outside it; opening the dialog adds no history entry.
 - [ ] Network log: no request for the dialog's code until the button is first used; the entry chunk stays under 60,000 bytes gzip (CI) and within the ADR-011 share.
