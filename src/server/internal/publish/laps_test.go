@@ -3,6 +3,7 @@ package publish
 import (
 	"bytes"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -94,6 +95,39 @@ func TestNoLapsModule(t *testing.T) {
 			}
 			if lapsSection(buf.Bytes()) != "" {
 				t.Error("laps module without laps and distance")
+			}
+		})
+	}
+}
+
+// TestSectionRows (F-42 MS-6, AC 2, AC 8): the published triathlon has one
+// separator row per leg before its lap, spanning every column; a two-ride
+// file has none.
+func TestSectionRows(t *testing.T) {
+	for _, c := range []struct {
+		file string
+		want []string
+	}{
+		{"triathlon.fit", []string{"Swim", "T1", "Ride", "T2", "Run"}},
+		{"chained-ride-ride.fit", nil},
+	} {
+		t.Run(c.file, func(t *testing.T) {
+			fx := newFixture(t, c.file)
+			d := draft()
+			fx.change(t, d, published(d))
+			_, html := fx.complete(t)
+			laps := lapsSection(html)
+			if n := strings.Count(laps, `<tr class="laps-section">`); n != len(c.want) {
+				t.Fatalf("%d separator rows, want %d:\n%s", n, len(c.want), laps)
+			}
+			cols := strings.Count(laps, "<th data-k=")
+			for i, name := range c.want {
+				row := `<tr class="laps-section"><th colspan="` + strconv.Itoa(cols) + `">` + name + "</th></tr>"
+				next := "<td>" + strconv.Itoa(i+1) + "</td>"
+				at := strings.Index(laps, row)
+				if at < 0 || !strings.HasPrefix(strings.TrimSpace(laps[at+len(row):]), "<tr>"+next) {
+					t.Errorf("no %q directly before lap %d:\n%s", name, i+1, laps)
+				}
 			}
 		})
 	}

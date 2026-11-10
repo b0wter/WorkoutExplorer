@@ -41,6 +41,19 @@ export function withoutHeartRate(data: WorkoutData): WorkoutData {
   };
 }
 
+/** F-42 MS-3: the swim lap runs 30 s into T1, T1's lap starts there: the crossing lap stays under Swim. */
+export function lapCrossing(data: WorkoutData): WorkoutData {
+  const laps = data.meta.laps.map((l, i) =>
+    i === 0 ? { ...l, end: 629, end_index: 630 } : i === 1 ? { ...l, start: 630, start_index: 630 } : l,
+  );
+  return { ...data, meta: { ...data.meta, laps } };
+}
+
+/** F-42 MS-3: T2 has no lap, so its separator row stands alone before Run's. */
+export function legWithoutLaps(data: WorkoutData): WorkoutData {
+  return { ...data, meta: { ...data.meta, laps: data.meta.laps.filter((_, i) => i !== 3) } };
+}
+
 export const EXPIRES_AT = '2026-10-30T09:15:00Z';
 
 /** F-23 PC-6: the Open Graph card is built in Go only, so every sample carries this placeholder for the
@@ -56,6 +69,10 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'indoor-unknown-zone', golden: 'indoor-no-distance-no-gps', title: '', description: '' },
   { name: 'route-hidden', golden: 'indoor-no-gps', title: '', description: '', routeHidden: true },
   { name: 'triathlon', golden: 'triathlon', title: '', description: '' },
+  { name: 'triathlon-lap-crossing', golden: 'triathlon', title: '', description: '', transform: lapCrossing },
+  { name: 'triathlon-leg-without-laps', golden: 'triathlon', title: '', description: '', transform: legWithoutLaps },
+  { name: 'triathlon-cut', golden: 'triathlon-cut-90', title: '', description: '' },
+  { name: 'two-rides', golden: 'chained-ride-ride', title: '', description: '' },
   { name: 'pool-swim', golden: 'pool-swim', title: '', description: '' },
   { name: 'ride-no-laps', golden: 'ride-no-laps', title: '', description: '' },
   {

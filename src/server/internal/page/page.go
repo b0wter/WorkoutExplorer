@@ -53,6 +53,10 @@ type Laps struct {
 	Columns []Column
 	Rows    [][]string
 	None    string
+	// Sections are Rows grouped under their separator rows (F-42 MS-3,
+	// MS-6), empty without sections; when set, the template prints them
+	// instead of Rows.
+	Sections []LapsSection
 }
 
 // Settings are the workout's settings besides the data file (lib/page PageSettings).
@@ -129,6 +133,9 @@ func Build(f datafile.File, s Settings) ViewModel {
 		Route:       route,
 		ChartsClass: chartsClass(f),
 		Laps:        lapsOrNone(f),
+	}
+	if vm.Laps != nil && vm.Laps.None == "" {
+		vm.Laps.Sections = lapSections(sections(m), m.Laps, vm.Laps.Rows, len(vm.Laps.Columns))
 	}
 	desc := make([]string, 0, 3)
 	for _, i := range CardItems(f, vm) {
@@ -210,7 +217,7 @@ func lapsOrNone(f datafile.File) *Laps {
 		return l
 	}
 	if distanceAdvances(f) {
-		return &Laps{Columns: []Column{}, Rows: [][]string{}, None: "yes"}
+		return &Laps{Columns: []Column{}, Rows: [][]string{}, None: "yes", Sections: []LapsSection{}}
 	}
 	return nil
 }
@@ -329,7 +336,7 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 			}
 		}
 	}
-	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps))}
+	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps)), Sections: []LapsSection{}}
 	for _, c := range shown {
 		out.Columns = append(out.Columns, Column{Key: c.key, Label: c.label})
 	}

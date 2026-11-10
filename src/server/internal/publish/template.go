@@ -45,5 +45,6 @@ var probe = page.ViewModel{
 	Summary:     []page.SummaryItem{{Key: "k", Label: "l", Value: "1", Unit: "u", Max: "2"}},
 	Route:       page.Route{Map: "yes", NoLocation: "yes", Hidden: "yes"},
 	ChartsClass: "charts-1 cells-2",
-	Laps:        &page.Laps{Columns: []page.Column{{Key: "number", Label: "#"}}, Rows: [][]string{{"1"}}},
+	Laps: &page.Laps{Columns: []page.Column{{Key: "number", Label: "#"}}, Rows: [][]string{{"1"}},
+		Sections: []page.LapsSection{{Name: "Swim", Span: "1", Rows: [][]string{{"1"}}}}},
 }

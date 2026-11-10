@@ -156,7 +156,7 @@ describe('modules (AP-3, D-5, D-10)', () => {
   });
 
   it('L-8: without laps but with an advancing distance the module says "No laps recorded."', () => {
-    expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes' });
+    expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes', Sections: [] });
     expect(byName('ride-12h').Laps?.None).toBe('');
   });
 

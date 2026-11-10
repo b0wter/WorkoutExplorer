@@ -4,6 +4,8 @@
 // name; the committed samples in src/server/testdata/page/ are the contract with F-15's Go builder.
 // A group that does not apply is null: the template only tests it, never prints it.
 
+import type { LapsSection } from '../sections';
+
 export interface PageGroup {
   /** The document title: the workout title, or the default ("Ride, 9 Oct 2026"). */
   readonly Title: string;
@@ -59,7 +61,14 @@ export interface PageViewModel {
    *  distance stream (F-17 R-8), or '' with no charts. */
   readonly ChartsClass: string;
   /** Null when the file has neither laps nor an advancing distance (F-18 L-8). */
-  readonly Laps: LapsGroup | null;
+  readonly Laps: PageLaps | null;
+}
+
+/** The laps group of the page view model. Sections (F-42 MS-3, MS-6): Rows grouped under their
+ *  separator rows, every section in order; empty without sections. When set, the template prints
+ *  them instead of Rows. */
+export interface PageLaps extends LapsGroup {
+  readonly Sections: readonly LapsSection[];
 }
 
 /** What the builder needs besides the decoded data file: the settings of the workout. */

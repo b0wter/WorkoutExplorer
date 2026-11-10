@@ -54,8 +54,10 @@
         <div class="laps-head"><h2>Laps</h2><span class="laps-slot" id="laps-slot"></span></div>
         {{if .None}}<p class="laps-none">No laps recorded.</p>{{else}}<div class="laps-scroll"><table>
           <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
-          <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
-          {{end}}</tbody>
+          <tbody>{{if .Sections}}{{range .Sections}}<tr class="laps-section"><th colspan="{{.Span}}">{{.Name}}</th></tr>
+          {{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+          {{end}}{{end}}{{else}}{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+          {{end}}{{end}}</tbody>
         </table></div>{{end}}
       </section>{{end}}
       <footer class="foot"><a href="/about">About</a> <!--wx:impressum--> <button type="button" data-report hidden>Report</button></footer>

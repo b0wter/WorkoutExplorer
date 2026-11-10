@@ -7,11 +7,12 @@ import type { WorkoutData } from '../datafile';
 import { presentCharts } from '../charts';
 import { routePresence } from '../route/presence';
 import { formatDate, formatLocalStart, sportIcon, sportName } from '../format/dates';
+import { sections, lapSections } from '../sections';
 import { distanceAdvances, lapsGroup, summaryItems } from './build';
-import type { LapsGroup, PageSettings, PageViewModel } from './model';
+import type { PageLaps, PageSettings, PageViewModel } from './model';
 
 /** The laps module of a file without laps but with an advancing distance (F-18 L-8). */
-const NO_LAPS: LapsGroup = { Columns: [], Rows: [], None: 'yes' };
+const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Sections: [] };
 
 /** The default title of an untitled workout (UP-4): "Ride, 9 Oct 2026". */
 export function defaultTitle(sport: string, startTime: string, offsetSeconds: number): string {
@@ -40,6 +41,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
   const title = settings.title.trim() === '' ? defaultTitle(meta.sport, meta.start_time, offset) : settings.title;
   const base = '/w/' + settings.publicId;
   const presence = routePresence(data);
+  const laps = lapsGroup(meta.sport, meta.laps);
   return {
     Page: { Title: title, ViewPath: base, DataURL: base + '/' + settings.dataFile },
     Header: {
@@ -58,6 +60,8 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
       Hidden: presence === 'no-location-data' && settings.routeHidden ? 'yes' : '',
     },
     ChartsClass: chartsClass(data),
-    Laps: lapsGroup(meta.sport, meta.laps) ?? (distanceAdvances(data) ? NO_LAPS : null),
+    Laps: laps
+      ? { ...laps, Sections: lapSections(sections(meta), meta.laps, laps.Rows, laps.Columns.length) }
+      : distanceAdvances(data) ? NO_LAPS : null,
   };
 }

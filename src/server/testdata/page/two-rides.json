@@ -1,0 +1,179 @@
+{
+  "Page": {
+    "Title": "Ride, 1 Jul 2026",
+    "ViewPath": "/w/two-rides",
+    "DataURL": "/w/two-rides/data.f68338e4492fd7b7.bin"
+  },
+  "Header": {
+    "Title": "Ride, 1 Jul 2026",
+    "SportName": "Ride",
+    "SportIcon": "cycling",
+    "Start": "1 Jul 2026, 07:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "6.00",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "19:58",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "24:58",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "198",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "102",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg speed",
+      "Value": "18.0",
+      "Unit": "km/h",
+      "Max": "18.7"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "149",
+      "Unit": "bpm",
+      "Max": "159"
+    },
+    {
+      "Key": "power",
+      "Label": "Avg power",
+      "Value": "239",
+      "Unit": "W",
+      "Max": "290"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "89",
+      "Unit": "rpm",
+      "Max": "93"
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "18",
+      "Unit": "°C",
+      "Max": "19"
+    }
+  ],
+  "Route": {
+    "Map": "yes",
+    "NoLocation": "",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-6 cells-8 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Speed (km/h)"
+      },
+      {
+        "Key": "ascent",
+        "Label": "Gain (m)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_power",
+        "Label": "Power (W)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (rpm)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "5:00",
+        "1.50",
+        "18.0",
+        "49",
+        "144",
+        "258",
+        "89"
+      ],
+      [
+        "2",
+        "4:59",
+        "1.50",
+        "18.0",
+        "1",
+        "155",
+        "222",
+        "89"
+      ],
+      [
+        "3",
+        "5:00",
+        "1.50",
+        "18.0",
+        "49",
+        "144",
+        "257",
+        "89"
+      ],
+      [
+        "4",
+        "4:59",
+        "1.49",
+        "18.0",
+        "1",
+        "155",
+        "221",
+        "89"
+      ]
+    ],
+    "None": "",
+    "Sections": []
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

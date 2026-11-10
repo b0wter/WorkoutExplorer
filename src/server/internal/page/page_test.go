@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,6 +43,19 @@ func withoutHeartRate(f *datafile.File) {
 	}
 }
 
+// lapCrossing mirrors samples.ts lapCrossing (F-42 MS-3).
+func lapCrossing(f *datafile.File) {
+	laps := slices.Clone(f.Meta.Laps)
+	laps[0].End, laps[0].EndIndex = 629, 630
+	laps[1].Start, laps[1].StartIndex = 630, 630
+	f.Meta.Laps = laps
+}
+
+// legWithoutLaps mirrors samples.ts legWithoutLaps (F-42 MS-3).
+func legWithoutLaps(f *datafile.File) {
+	f.Meta.Laps = slices.Delete(slices.Clone(f.Meta.Laps), 3, 4)
+}
+
 var samples = []sampleSpec{
 	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false},
 	{"ride-12h", "ride-12h", "", "", nil, false},
@@ -49,6 +65,10 @@ var samples = []sampleSpec{
 	{"indoor-unknown-zone", "indoor-no-distance-no-gps", "", "", nil, false},
 	{"route-hidden", "indoor-no-gps", "", "", nil, true},
 	{"triathlon", "triathlon", "", "", nil, false},
+	{"triathlon-lap-crossing", "triathlon", "", "", lapCrossing, false},
+	{"triathlon-leg-without-laps", "triathlon", "", "", legWithoutLaps, false},
+	{"triathlon-cut", "triathlon-cut-90", "", "", nil, false},
+	{"two-rides", "chained-ride-ride", "", "", nil, false},
 	{"pool-swim", "pool-swim", "", "", nil, false},
 	{"ride-no-laps", "ride-no-laps", "", "", nil, false},
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
@@ -292,5 +312,43 @@ func TestRowTitle(t *testing.T) {
 	}
 	if title, s := RowTitle("", "cycling", &start, &off); title != "Ride, 10 Oct 2026" || s != "10 Oct 2026, 00:30" {
 		t.Errorf("%q %q", title, s)
+	}
+}
+
+// TestSections (F-42 MS-1 to MS-3) holds the edge cases no sample has;
+// lib/sections' tests hold the same table. Rows are lap numbers.
+func TestSections(t *testing.T) {
+	type s = datafile.Session
+	type l = datafile.Lap
+	for _, c := range []struct {
+		name     string
+		sessions []s
+		laps     []l
+		want     string
+	}{
+		{"one sport", []s{{Sport: "cycling"}, {Sport: "cycling", Start: 9, StartIndex: 5}}, []l{{}}, ""},
+		{"no laps", []s{{Sport: "running"}, {Sport: "cycling", Start: 9, StartIndex: 5}}, nil, ""},
+		{"start order, ties in file order, T numbers",
+			[]s{{Sport: "running", Start: 20, StartIndex: 8}, {Sport: "transition", Start: 10, StartIndex: 4}, {Sport: "swimming", Start: 0, StartIndex: 3}, {Sport: "transition", Start: 20, StartIndex: 8}},
+			[]l{{StartIndex: 0}}, "Swim[1] T1[] Run[] T2[]"},
+		{"lap out of order stays under the separator above; trailing sections",
+			[]s{{Sport: "swimming"}, {Sport: "cycling", Start: 5, StartIndex: 5}, {Sport: "running", Start: 9, StartIndex: 9}},
+			[]l{{StartIndex: 6}, {StartIndex: 1}}, "Swim[] Ride[1 2] Run[]"},
+	} {
+		rows := make([][]string, len(c.laps))
+		for i := range rows {
+			rows[i] = []string{strconv.Itoa(i + 1)}
+		}
+		var got []string
+		for _, x := range lapSections(sections(datafile.Meta{Sessions: c.sessions}), c.laps, rows, 3) {
+			n := []string{}
+			for _, r := range x.Rows {
+				n = append(n, r[0])
+			}
+			got = append(got, x.Name+"["+strings.Join(n, " ")+"]")
+		}
+		if g := strings.Join(got, " "); g != c.want {
+			t.Errorf("%s: %q, want %q", c.name, g, c.want)
+		}
 	}
 }

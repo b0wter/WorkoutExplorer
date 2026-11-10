@@ -94,7 +94,8 @@
   "Laps": {
     "Columns": [],
     "Rows": [],
-    "None": "yes"
+    "None": "yes",
+    "Sections": []
   },
   "Card": {
     "Title": "Sample",
