@@ -1,5 +1,5 @@
 /* The report dialog (F-28 RF-10): nearly full width below 1024 px, centred with a max width above;
-   the UA's modal dialog already scrolls inside itself. Colours from the page's theme (page.css). */
+   its content scrolls inside it. Colours from the page's theme (page.css). */
 .report {
   box-sizing: border-box;
   width: calc(100% - 16px);
@@ -8,6 +8,15 @@
   border-radius: 8px;
   background: var(--bg);
   color: var(--fg);
+  /* Scroll inside the dialog within the visible viewport, never chain to the page. */
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* The page stays put while the dialog is open; the gutter keeps a vanishing scrollbar from shifting it. */
+html:has(dialog.report[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 @media (min-width: 1024px) {
   .report {

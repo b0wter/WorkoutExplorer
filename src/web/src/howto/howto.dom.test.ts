@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 // The How to use dialog (F-39 HU-7; AC 3, AC 4). jsdom has no showModal: a minimal stand-in.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+// @ts-expect-error no @types/node here; vitest runs in node
+import { readFileSync } from 'node:fs';
 import { openHowto } from './index';
 
 beforeEach(() => {
@@ -52,5 +54,22 @@ describe('openHowto', () => {
     dialog().querySelector('button')!.click();
     expect(dialog().open).toBe(false);
     expect(document.querySelectorAll('dialog').length).toBe(1);
+  });
+});
+
+// jsdom lays nothing out: check the rules that keep a tall dialog scrolling inside itself, not the page.
+describe('dialog scrolling (How to use, Report)', () => {
+  it.each([
+    ['./howto.css', 'howto-dlg'],
+    ['../report/report.css', 'report'],
+  ])('%s scrolls inside the dialog and locks the page', (file, cls) => {
+    const css = (readFileSync(new URL(file, import.meta.url), 'utf8') as string).replace(/\/\*[\s\S]*?\*\//g, '');
+    const own = css.match(new RegExp(`\\.${cls} \\{([^}]*)\\}`))![1];
+    expect(own).toMatch(/max-height: calc\(100dvh - 16px\);/);
+    expect(own).toMatch(/overflow-y: auto;/);
+    expect(own).toMatch(/overscroll-behavior: contain;/);
+    const lock = css.match(new RegExp(`html:has\\(dialog\\.${cls}\\[open\\]\\) \\{([^}]*)\\}`))![1];
+    expect(lock).toMatch(/overflow: hidden;/);
+    expect(lock).toMatch(/scrollbar-gutter: stable;/);
   });
 });
