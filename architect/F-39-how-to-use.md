@@ -20,6 +20,8 @@
 | HU-7 | **The dialog is a lazy chunk `src/howto/`**, plain DOM, one native modal `<dialog>` built on first open and reused, CSS in the chunk, reached only through one `import()` from `src/page` (the F-28 pattern; ADR-011 item 2 gains it). Both wordings are in the dialog, chosen in CSS by `(pointer: coarse)` as the hint. Close button, Esc (native) and a tap on the backdrop close it; no history entry. A failed load shows one line next to the button, as Report. "Opened" is written when the dialog is shown | AC 4, AC 5; the chunk holds every text, so it costs nothing static |
 | HU-8 | **Phones:** the control row may wrap to a second line on narrow phones (OQ-133, accepted). The box is reserved in the markup, so this is a taller header, not a shift | Spec: on phones too, never in a menu |
 
+- **Placement change (user 10 Nov 2026, small lane):** HU-6 and HU-8 now put the button not in `.ctl` but in its own full-width row (`.howto-row`) right under the header, one 40 px line styled as an info box ("How to use this page"; accent-tinted until opened, then grey). Still reserved in the markup and invisible without JavaScript, as HU-6 already accepts for the box; the desktop map grid gains one row.
+
 ## Cost
 
 | What | Decision |

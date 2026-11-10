@@ -132,9 +132,11 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(rule('.head-text')).toContain('min-width: min(160px, 100% - 44px)');
     expect(css).toMatch(/@media \(min-width: 560px\) \{\s*\.head-text \{\s*min-width: min\(240px, 100% - 44px\);/);
     expect(rule('.units-slot,\n.theme-slot')).toMatch(/width: 104px;\s*height: 32px;/);
-    expect(rule('.copy,\n.howto')).toMatch(/height: 32px;/);
-    expect(rule('.copy')).toContain('min-width: 84px;');
-    expect(css).toMatch(/^\.howto \{[^}]*\swidth: 120px;/m); // F-39 HU-6: the same box emphasised, plain and before the bundle
+    expect(rule('.copy')).toMatch(/height: 32px;\s*min-width: 84px;/);
+    // F-39 HU-6 (user 10 Nov 2026): one full-width 40 px row, the same box emphasised, plain and before the bundle.
+    expect(rule('.howto')).toMatch(/width: 100%;\s*height: 40px;/);
+    expect(template).toMatch(/<\/header>\s*<div class="howto-row"><button type="button" class="howto" data-howto>/);
+    expect(template).not.toMatch(/class="ctl"[^\n]*howto/);
   });
 
   it('viewport units only in the desktop and landscape maps and the pinned phone map, never dvh/svh', () => {

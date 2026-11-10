@@ -253,40 +253,49 @@ h1 {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.copy,
-.howto {
+.copy {
   box-sizing: border-box;
+  flex: none;
   height: 32px;
+  min-width: 84px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--fg);
   font-size: 14px;
-}
-.copy {
-  flex: none;
-  min-width: 84px;
-  padding: 0 10px;
   line-height: 30px;
   text-align: center;
   text-decoration: none;
 }
-/* How to use (F-39 HU-6): a fixed box, invisible and inert until the enhancer adds .ready; .fresh (not
-   yet opened on this device) has the selected axis toggle's look in the same box. */
+/* How to use (F-39 HU-6, user 10 Nov 2026): a full-width info box under the header, viewing page only.
+   Reserved in the markup (one 40 px line), invisible and inert until the enhancer adds .ready; .fresh
+   (not yet opened on this device) is accent-tinted, afterwards grey, in the same box. */
+.howto-row {
+  margin-bottom: 8px;
+}
 .howto {
-  display: inline-flex;
+  box-sizing: border-box;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 120px;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   background: none;
-  font-family: inherit;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
 }
 .howto:not(.ready) {
   visibility: hidden;
 }
 .howto.fresh {
-  background: var(--accent);
-  color: var(--on-accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  color: var(--accent);
 }
 .howto svg {
   width: 16px;
@@ -714,7 +723,7 @@ tbody tr:nth-child(even) {
     display: grid;
     /* Map track at most --map-w (the splitter), the minimums win; unset it is 1:1 as before. */
     grid-template-columns: minmax(320px, var(--map-w, 50%)) minmax(608px, 1fr);
-    grid-template-rows: repeat(6, auto) 1fr;
+    grid-template-rows: repeat(7, auto) 1fr;
   }
   .has-map .layout > * {
     grid-column: 2;
@@ -726,7 +735,7 @@ tbody tr:nth-child(even) {
   }
   .has-map .map-slot {
     grid-column: 1;
-    grid-row: 1 / 8;
+    grid-row: 1 / 9;
     align-self: start;
     position: sticky;
     top: 0;

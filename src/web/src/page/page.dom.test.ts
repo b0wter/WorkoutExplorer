@@ -378,15 +378,15 @@ describe('How to use and the range hint (F-39 HU-1 to HU-6; AC 2, AC 6, AC 7)', 
 
   it('the button is emphasised until opened on this device; storage is untouched by loading', async () => {
     page = renderSample('ride-30min');
-    const ctl = () => document.querySelector('.ctl')!;
-    ctl().insertAdjacentHTML('beforeend', '<button type="button" class="howto" data-howto>How to use</button>');
+    const row = () => document.querySelector('.head')!.insertAdjacentHTML('afterend', '<div class="howto-row"><button type="button" class="howto" data-howto>How to use this page</button></div>');
+    row();
     await startPage(document);
     expect(document.querySelector('.howto')?.className).toBe('howto ready fresh');
     expect(localStorage.length).toBe(0);
     page.remove();
     localStorage.setItem('wx.howto.opened', '1');
     page = renderSample('ride-30min');
-    ctl().insertAdjacentHTML('beforeend', '<button type="button" class="howto" data-howto>How to use</button>');
+    row();
     await startPage(document);
     expect(document.querySelector('.howto')?.className).toBe('howto ready');
   });
