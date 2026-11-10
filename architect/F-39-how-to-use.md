@@ -21,7 +21,8 @@
 | HU-8 | **Phones:** the control row may wrap to a second line on narrow phones (OQ-133, accepted). The box is reserved in the markup, so this is a taller header, not a shift | Spec: on phones too, never in a menu |
 
 - **Placement change (user 10 Nov 2026, small lane):** HU-6 and HU-8 now put the button not in `.ctl` but in its own full-width row (`.howto-row`) right under the header, one 40 px line styled as an info box ("How to use this page"; accent-tinted until opened, then grey). Still reserved in the markup and invisible without JavaScript, as HU-6 already accepts for the box; the desktop map grid gains one row.
-- **Range hint as an info box (user 10 Nov 2026, small lane):** on the viewing page (`once`/`done`) the hint under the charts reuses the `.howto` box rules (fresh look, info icon, × at its end); the reserve there grows from 24 px to 48 px (8 px gap + 40 px box), `done` keeps the hidden box until the next load, and `[data-hint='done']` still reserves 0. The edit page's `plain` line is unchanged.
+- **Range hint as an info box (user 10 Nov 2026, small lane):** on the viewing page (`once`/`done`) the hint under the charts reuses the `.howto` box rules (fresh look, info icon, × at its end); the reserve there grows from 24 px to 48 px (8 px gap + 40 px box), and `[data-hint='done']` still reserves 0. The edit page's `plain` line is unchanged.
+- **Hint collapses during the visit (user 10 Nov 2026, small lane; overrides the "keeps its space" part of HU-3 and OQ-127 for the viewing page):** on × or the first range the page sets `data-hint='gone'` (box fades, `.charts` height shrinks by the 48 px, 200 ms, clipped; no transition under `prefers-reduced-motion: reduce`), then `data-hint='done'` and the box is removed; focus stays on the chart stack (`preventScroll`). Later loads are unchanged.
 
 ## Cost
 

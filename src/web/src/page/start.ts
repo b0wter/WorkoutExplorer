@@ -116,8 +116,14 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const hint = edit ? 'plain' : win.document.documentElement.dataset.hint === 'done' ? 'none' : 'once';
   const look = createLook(units, typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-color-scheme: dark)') : null, prefs.theme(), hint);
   const hintDone = (): void => {
-    if (look.hint !== 'once') return;
-    look.hint = 'done'; // the line empties but keeps its space until the next load
+    const html = win.document.documentElement;
+    if (look.hint !== 'once' || html.dataset.hint) return;
+    // The box fades and its reserve shrinks (page.css 'gone', 200 ms), then goes (user 10 Nov 2026).
+    html.dataset.hint = 'gone';
+    win.setTimeout(() => {
+      look.hint = 'none';
+      html.dataset.hint = 'done';
+    }, 200);
     prefs.setHintDone();
   };
   // DS-4: the head script applied the stored theme before the first paint; a choice sets the

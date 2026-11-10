@@ -19,6 +19,6 @@ export type {
   RangeAction,
   TouchAxis,
 } from './gesture';
-/** The range hint's state (F-39 HU-3): `plain` as before (edit page), `once` with its ×, `done`
- *  an empty line that keeps its space, `none` no line (the page reserved none). */
-export type HintMode = 'plain' | 'once' | 'done' | 'none';
+/** The range hint's state (F-39 HU-3): `plain` as before (edit page), `once` the box with its ×,
+ *  `none` no line (the page reserves none). */
+export type HintMode = 'plain' | 'once' | 'none';

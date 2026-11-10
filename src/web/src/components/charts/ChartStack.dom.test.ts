@@ -200,7 +200,7 @@ function setup(
     selection?: SelectionStore;
     initialAxis?: 'time' | 'distance';
     onaxis?: (a: 'time' | 'distance') => void;
-    hint?: 'plain' | 'once' | 'done' | 'none';
+    hint?: 'plain' | 'once' | 'none';
     onhint?: () => void;
   } = {},
 ): Mounted {
@@ -935,7 +935,7 @@ describe('F-17 range selection and x-axis toggle', () => {
 
   it('F-39 HU-3, HU-5: plain has no ×; once adds "Dismiss hint", which only reports; done keeps an empty line; none has no line', () => {
     const ride = golden('ride-4h');
-    const hintOf = (hint?: 'plain' | 'once' | 'done' | 'none', onhint?: () => void): Element | null => {
+    const hintOf = (hint?: 'plain' | 'once' | 'none', onhint?: () => void): Element | null => {
       if (current) {
         unmount(current.app);
         current.target.remove();
@@ -956,8 +956,6 @@ describe('F-17 range selection and x-axis toggle', () => {
     x.click();
     expect(onhint).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(once.closest('.chart-stack')); // QA-39-r1-2: not body when the × goes
-    const done = hintOf('done')!;
-    expect([done.childElementCount, done.textContent, done.classList.contains('howto'), done.classList.contains('ready')]).toEqual([1, '', true, false]); // same box (icon only), hidden, same space
     expect(hintOf('none')).toBeNull();
   });
 });

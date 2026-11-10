@@ -309,6 +309,20 @@ body > .page .charts {
 [data-hint='done'] body > .page .charts {
   --hint: 0px;
 }
+/* The hint done during the visit (start.ts): box fades, space shrinks, then data-hint='done'. */
+[data-hint='gone'] body > .page .charts {
+  --hint: 0px;
+  overflow: hidden;
+}
+[data-hint='gone'] .charts .howto {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-hint='gone'] body > .page .charts,
+  [data-hint='gone'] .charts .howto {
+    transition: height 0.2s, opacity 0.2s;
+  }
+}
 /* Control group (D-8): Copy link, the units and the theme slot (DS-4); on their own line below the title
    on narrow phones, beside it from 560 px when the title keeps its width. The slots reserve their size,
    so a select's arrival moves nothing. */

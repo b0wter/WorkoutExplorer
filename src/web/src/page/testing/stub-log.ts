@@ -16,7 +16,7 @@ export interface ChartStackStubProps {
   onready?: () => void;
   initialAxis?: 'time' | 'distance';
   onaxis?: (axis: 'time' | 'distance') => void;
-  hint?: 'plain' | 'once' | 'done' | 'none';
+  hint?: 'plain' | 'once' | 'none';
   onhint?: () => void;
 }
 

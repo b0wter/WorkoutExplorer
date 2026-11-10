@@ -60,7 +60,10 @@ beforeEach(() => {
   performance.clearMarks();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // A range hint still collapsing (start.ts, 200 ms) must not land in the next test.
+  if (document.documentElement.dataset.hint === 'gone') await new Promise((r) => setTimeout(r, 250));
+  delete document.documentElement.dataset.hint;
   page?.remove();
   page = null;
   window.history.replaceState(null, '', '/');
@@ -348,22 +351,28 @@ describe('How to use and the range hint (F-39 HU-1 to HU-6; AC 2, AC 6, AC 7)', 
     delete document.documentElement.dataset.hint;
   });
   const hint = (): string | undefined => stubLog.chartStack[0].hint;
+  // User 10 Nov 2026: the box fades and its space shrinks (data-hint 'gone', 200 ms), then it goes.
+  const collapsed = async (): Promise<void> => {
+    expect([hint(), document.documentElement.dataset.hint]).toEqual(['once', 'gone']);
+    await new Promise((r) => setTimeout(r, 250));
+    flushSync();
+    expect([hint(), document.documentElement.dataset.hint]).toEqual(['none', 'done']);
+  };
 
-  it('fresh: the hint with its ×; the first range writes the flag once and empties the line', async () => {
+  it('fresh: the hint with its ×; the first range writes the flag once and removes the box and its space', async () => {
     await open();
     expect(hint()).toBe('once');
     stubLog.chartStack[0].selection?.set(10, 20);
     flushSync();
-    expect(hint()).toBe('done');
+    await collapsed();
     expect(localStorage.getItem('wx.hint.done')).toBe('1');
-    expect(document.documentElement.dataset.hint).toBeUndefined(); // never set at runtime
   });
 
   it('the × does the same', async () => {
     await open();
     stubLog.chartStack[0].onhint?.();
     flushSync();
-    expect(hint()).toBe('done');
+    await collapsed();
     expect(localStorage.getItem('wx.hint.done')).toBe('1');
   });
 
@@ -402,7 +411,7 @@ describe('How to use and the range hint (F-39 HU-1 to HU-6; AC 2, AC 6, AC 7)', 
     expect(hint()).toBe('once');
     stubLog.chartStack[0].onhint?.();
     flushSync();
-    expect(hint()).toBe('done');
+    await collapsed();
   });
 });
 
@@ -428,6 +437,13 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
   const sel = () => stubLog.chartStack[0].selection!;
   const range = (): [number, number] => [sel().start(), sel().end()];
   const hint = (): string | undefined => stubLog.chartStack[0].hint;
+  // User 10 Nov 2026: the box fades and its space shrinks (data-hint 'gone', 200 ms), then it goes.
+  const collapsed = async (): Promise<void> => {
+    expect([hint(), document.documentElement.dataset.hint]).toEqual(['once', 'gone']);
+    await new Promise((r) => setTimeout(r, 250));
+    flushSync();
+    expect([hint(), document.documentElement.dataset.hint]).toEqual(['none', 'done']);
+  };
   const rangeSlot = (): HTMLElement => slot('range-slot') as HTMLElement;
   const share = (): HTMLButtonElement | null => rangeSlot().querySelector('.range-panel .actions button.share');
   const frag = (a: number, b: number): string => `#range=${time[a]}-${time[b]}`;
@@ -457,7 +473,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
     expect([window.location.pathname, window.location.search, window.location.hash]).toEqual(['/w/x', '?q=1', '']);
     expect(window.history.length).toBe(length);
     expect(window.history.state).toEqual({ fs: 1 });
-    expect(hint()).toBe('done');
+    await collapsed();
   });
 
   it('Clear also drops it, and does not count as a selection for the hint', async () => {

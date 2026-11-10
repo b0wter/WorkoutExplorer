@@ -110,6 +110,9 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(css).toMatch(/^body > \.page \.charts \{\s*--hint: 48px;\s*\}/m);
     expect(css).toMatch(/^\[data-hint='done'\] body > \.page \.charts \{\s*--hint: 0px;\s*\}/m);
     expect(readWebFile('src/components/charts/ChartStack.svelte')).toMatch(/\.howto \{\s*margin-top: 8px;\s*\}/);
+    // Done during the visit: 'gone' collapses at once, animated only without reduced motion (user 10 Nov 2026).
+    expect(css).toMatch(/^\[data-hint='gone'\] body > \.page \.charts \{\s*--hint: 0px;/m);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\) \{\s*\[data-hint='gone'\] body > \.page \.charts,\s*\[data-hint='gone'\] \.charts \.howto \{\s*transition: height 0\.2s, opacity 0\.2s;/);
     // The edit page's .page sits inside #wx-edit, never directly under body, so it keeps the row.
     const edit = readWebFile('edit.html');
     expect(edit.slice(edit.indexOf('<body>'))).not.toContain('class="page');
