@@ -19,11 +19,14 @@
   opacity: 0.6;
 }
 .wx-leg-name {
-  padding-left: 4px;
   font-size: 11px;
   line-height: 14px;
   color: var(--muted, #555);
   white-space: nowrap;
+}
+/* Clear of the leg's line; the first leg has no line, so its name sits at the plot's left edge. */
+.wx-leg-line + .wx-leg-name {
+  padding-left: 4px;
 }
 /* Separator rows are tappable once their ranges are in (MS-6, QA-42-r1-4). */
 .laps.legs tr.laps-section {

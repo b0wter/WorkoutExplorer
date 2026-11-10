@@ -22,11 +22,11 @@ describe('sections chunk', () => {
   const n = data.sampleCount;
   /** One px per sample. */
   const x = (i: number): number => i;
-  const draw = (nameWidth = 0): HTMLElement => {
+  const draw = (nameWidth = 0, scale = x): HTMLElement => {
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(nameWidth);
     const over = document.createElement('div');
     over.appendChild(document.createElement('span')); // the shade, drawn above
-    decorator(secs, n)(over, x);
+    decorator(secs, n)(over, scale);
     return over;
   };
   const marks = (over: HTMLElement, cls: string) => [...over.querySelectorAll<HTMLElement>('.' + cls)];
@@ -43,11 +43,20 @@ describe('sections chunk', () => {
 
   it('a name wider than its leg is left out, its line stays; a redraw replaces the marks', () => {
     const t1 = secs[2].start - secs[1].start;
-    const over = draw(t1);
+    const over = draw(t1 + 1);
     expect(marks(over, 'wx-leg-name').map((l) => l.textContent)).not.toContain('T1');
     expect(marks(over, 'wx-leg-line')).toHaveLength(4);
     decorator(secs, n)(over, x);
     expect(over.querySelectorAll('.wx-legs')).toHaveLength(1);
+  });
+
+  it('a first leg exactly as wide as its name keeps it: no line, so no gap is reserved (real triathlon, 390 px iPhone)', () => {
+    // The real file's samples start 776 s into the swim: the swim is ~10 % of the axis, ~30 px of a
+    // 294 px plot, and "Swim" at 11 px is ~27 px. The old check added 8 px of gaps and dropped it.
+    const swim = secs[1].start;
+    const names = marks(draw(27, (i) => (i * 30) / swim), 'wx-leg-name');
+    expect(names[0].textContent).toBe('Swim');
+    expect(names[0].style.transform).toBe('translateX(0px)');
   });
 
   it('startSections: separator ranges to the laps, the decorator to the look; nothing without sections', () => {

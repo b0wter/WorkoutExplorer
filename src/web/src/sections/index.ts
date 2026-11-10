@@ -7,9 +7,6 @@ import type { WorkoutData } from '../lib/datafile';
 import { legs, sectionRanges, sections, type Section } from '../lib/sections';
 import type { ChartDecorator } from '../components/charts/uplot-options';
 
-/** Space after a leg's name, in CSS px (the CSS pads as much before it). */
-const GAP = 4;
-
 /** MS-7: in every chart a line at each leg start after the first and each leg's name from its left
  *  edge (the first leg's at sample 0), left out when wider than the leg. Replaces what it drew before. */
 export function decorator(secs: readonly Section[], n: number): ChartDecorator {
@@ -31,8 +28,8 @@ export function decorator(secs: readonly Section[], n: number): ChartDecorator {
       if (g.start > 0) add('wx-leg-line');
       const name = add('wx-leg-name');
       name.textContent = g.name;
-      // offsetWidth holds the gap before the name (CSS padding); one more after it.
-      if (name.offsetWidth + GAP > x(g.end) - left) name.remove();
+      // offsetWidth holds the gap after a line (CSS); the first leg has none, so a narrow one keeps its name.
+      if (name.offsetWidth > x(g.end) - left) name.remove();
     }
   };
 }
