@@ -972,12 +972,11 @@ describe('F-42 MS-7: the decoration seam', () => {
     const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
     const m = setup(data, { look, selection });
     layout(900);
-    const calls: [HTMLElement, number, boolean][] = [];
-    look.decorate = (over, x, top) => calls.push([over, x(100), top]);
+    const calls: [HTMLElement, number][] = [];
+    look.decorate = (over, x) => calls.push([over, x(100)]);
     flushSync();
     const n = overs(m).length;
     expect(calls.map((c) => c[0])).toEqual(overs(m));
-    expect(calls.map((c) => c[2])).toEqual(overs(m).map((_, k) => k === 0));
     expect(calls[0][1]).toBe(env.charts[0].u.valToPos(data.time[100], 'x'));
     m.cursor.set(50);
     selection.set(10, 20);

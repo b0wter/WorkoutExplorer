@@ -10,11 +10,11 @@ import type { ChartDecorator } from '../components/charts/uplot-options';
 /** Space after a leg's name, in CSS px (the CSS pads as much before it). */
 const GAP = 4;
 
-/** MS-7: a line at each leg start after the first in every chart; in the top chart each leg's name
- *  from its left edge, left out when wider than the leg. Replaces what it drew before. */
+/** MS-7: in every chart a line at each leg start after the first and each leg's name from its left
+ *  edge (the first leg's at sample 0), left out when wider than the leg. Replaces what it drew before. */
 export function decorator(secs: readonly Section[], n: number): ChartDecorator {
   const drawn = legs(secs, n);
-  return (over, x, top) => {
+  return (over, x) => {
     const doc = over.ownerDocument;
     over.querySelector('.wx-legs')?.remove();
     const box = doc.createElement('div');
@@ -29,7 +29,6 @@ export function decorator(secs: readonly Section[], n: number): ChartDecorator {
         return el;
       };
       if (g.start > 0) add('wx-leg-line');
-      if (!top) continue;
       const name = add('wx-leg-name');
       name.textContent = g.name;
       // offsetWidth holds the gap before the name (CSS padding); one more after it.

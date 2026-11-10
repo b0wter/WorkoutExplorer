@@ -168,7 +168,6 @@
             {width}
             height={plotHeight}
             isBottom={k === charts.length - 1}
-            isTop={k === 0}
             {decorate}
             onfirstdata={() => chartHasData(data, charts.length)}
           />

@@ -44,14 +44,13 @@
     /** Plot area height in CSS px. */
     height: number;
     isBottom: boolean;
-    isTop?: boolean;
     /** See ChartDecorator; called from layout only. */
     decorate?: ChartDecorator;
     /** Called once, after the first layout: after the first setData, or with no data when the width gives 0 buckets. */
     onfirstdata?: () => void;
   }
 
-  let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, isTop, decorate, onfirstdata }: Props = $props();
+  let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, decorate, onfirstdata }: Props = $props();
 
   let host: HTMLDivElement;
   let layout: ((w: number, f?: ChartDecorator) => void) | null = null;
@@ -155,7 +154,7 @@
           firstData?.();
         }
       }
-      f?.(over, (i) => u.valToPos(at[i], 'x'), !!isTop);
+      f?.(over, (i) => u.valToPos(at[i], 'x'));
     };
     layout(width);
 
@@ -341,7 +340,7 @@
     left: 0;
     width: 1px;
     height: 100%;
-    background: var(--cursor, #222);
+    background: var(--cursor);
     pointer-events: none;
     will-change: transform;
   }

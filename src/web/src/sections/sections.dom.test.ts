@@ -22,31 +22,31 @@ describe('sections chunk', () => {
   const n = data.sampleCount;
   /** One px per sample. */
   const x = (i: number): number => i;
-  const draw = (top: boolean, nameWidth = 0): HTMLElement => {
+  const draw = (nameWidth = 0): HTMLElement => {
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(nameWidth);
     const over = document.createElement('div');
     over.appendChild(document.createElement('span')); // the shade, drawn above
-    decorator(secs, n)(over, x, top);
+    decorator(secs, n)(over, x);
     return over;
   };
   const marks = (over: HTMLElement, cls: string) => [...over.querySelectorAll<HTMLElement>('.' + cls)];
 
-  it('AC 1: 4 lines at the leg starts after the first, in every chart; names in the top chart only', () => {
+  it('AC 1: in every chart 4 lines at the leg starts after the first and every leg name, the first at sample 0', () => {
     expect(secs.map((g) => g.name)).toEqual(['Swim', 'T1', 'Ride', 'T2', 'Run']);
-    for (const top of [false, true]) {
-      const over = draw(top);
-      expect(over.firstElementChild?.className).toBe('wx-legs');
-      expect(marks(over, 'wx-leg-line').map((l) => l.style.transform)).toEqual(secs.slice(1).map((g) => `translateX(${g.start}px)`));
-      expect(marks(over, 'wx-leg-name').map((l) => l.textContent)).toEqual(top ? ['Swim', 'T1', 'Ride', 'T2', 'Run'] : []);
-    }
+    const over = draw();
+    expect(over.firstElementChild?.className).toBe('wx-legs');
+    expect(marks(over, 'wx-leg-line').map((l) => l.style.transform)).toEqual(secs.slice(1).map((g) => `translateX(${g.start}px)`));
+    const names = marks(over, 'wx-leg-name');
+    expect(names.map((l) => l.textContent)).toEqual(['Swim', 'T1', 'Ride', 'T2', 'Run']);
+    expect(names[0].style.transform).toBe('translateX(0px)');
   });
 
   it('a name wider than its leg is left out, its line stays; a redraw replaces the marks', () => {
     const t1 = secs[2].start - secs[1].start;
-    const over = draw(true, t1);
+    const over = draw(t1);
     expect(marks(over, 'wx-leg-name').map((l) => l.textContent)).not.toContain('T1');
     expect(marks(over, 'wx-leg-line')).toHaveLength(4);
-    decorator(secs, n)(over, x, true);
+    decorator(secs, n)(over, x);
     expect(over.querySelectorAll('.wx-legs')).toHaveLength(1);
   });
 

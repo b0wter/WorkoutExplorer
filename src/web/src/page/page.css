@@ -15,7 +15,7 @@
   --accent: #1f6fc5;
   --on-accent: #fff;
   --grid: rgba(0, 0, 0, 0.1);
-  --cursor: #222;
+  --cursor: var(--fg); /* the text colour: solid, unlike the dashed grey leg lines (F-42 MS-7) */
   --range: #1f6fc5;
   --range-shade: rgba(31, 111, 197, 0.16);
   --c-altitude: #5b8c3a;
@@ -78,7 +78,6 @@
     --accent: #6aa9f0;
     --on-accent: #0b0b0d;
     --grid: rgba(255, 255, 255, 0.12);
-    --cursor: #ececf0;
     --range: #6aa9f0;
     --range-shade: rgba(106, 169, 240, 0.22);
     --c-altitude: #8cc063;
@@ -135,7 +134,6 @@
   --accent: #6aa9f0;
   --on-accent: #0b0b0d;
   --grid: rgba(255, 255, 255, 0.12);
-  --cursor: #ececf0;
   --range: #6aa9f0;
   --range-shade: rgba(106, 169, 240, 0.22);
   --c-altitude: #8cc063;

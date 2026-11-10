@@ -14,7 +14,9 @@
 .wx-leg-line {
   width: 1px;
   height: 100%;
-  background: var(--muted, #555);
+  /* Dashed and faint, so the solid --fg cursor line stands out (user 10 Nov 2026). */
+  background: repeating-linear-gradient(var(--muted, #555) 0 3px, transparent 3px 6px);
+  opacity: 0.6;
 }
 .wx-leg-name {
   padding-left: 4px;
