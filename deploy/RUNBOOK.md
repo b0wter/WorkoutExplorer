@@ -2,6 +2,8 @@
 
 Workout Explorer turns an uploaded FIT file (from a bike computer or sports watch) into a shareable page with map, charts and laps. There are no accounts. Every workout is deleted after 7 days by default (at most 30). Nothing is backed up, on purpose: a lost server loses its workouts.
 
+To run the containers rootless with Podman and systemd instead of Docker, see [PODMAN.md](PODMAN.md).
+
 Design background: `architect/F-31-server-deploy-and-monitoring.md` (DP-1 to DP-18), ADR-034, ADR-035.
 
 ## Which way should I run it?
