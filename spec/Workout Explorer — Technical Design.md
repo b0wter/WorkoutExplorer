@@ -92,15 +92,15 @@ The parser reads the messages below and builds one normalised workout: sessions,
 
 | FIT message | Used for |
 | --- | --- |
-| `file_id` | File type check, device manufacturer and product, creation time |
-| `session` | Sport and sub-sport, totals and averages as the device computed them |
+| `file_id` | File type check, device manufacturer and product (device name, F-43), creation time |
+| `session` | Sport and sub-sport, totals and averages as the device computed them; pool length and active lengths (AP-16, F-44) |
 | `lap` | Laps table (AP-8) |
 | `record` | All streams: position, altitude, distance, speed, heart rate, cadence, power, temperature. Running dynamics are not parsed in the MVP |
 | `event` | Timer start and stop, used to split moving from paused time |
 | `activity` | The workout's fixed UTC offset (F-02 D-7) |
 | `sport` | Sport hints for samples no session covers (F-08 D-12) |
-| `length` | Pool swim lengths and stroke type |
-| `device_info` | Device and sensor list (AP-14) |
+| `length` | Pool swim lengths and stroke type (not read yet; F-44 uses the session's count) |
+| `device_info` | Creator's product name and recognised sensor types (AP-14, F-43); a read allow-list, never descriptors, serial or ANT+ numbers (F-43 DI-1) |
 | `zones_target`, `time_in_zone` | Heart-rate and power zones when the device stores them |
 | Developer fields | Not parsed in the MVP; extra sensor streams come later |
 
@@ -128,12 +128,12 @@ Keep a test corpus and run every parser change against it (ADR-004). Only genera
 
 ## Workout data file
 
-Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 2"); the decisions behind them are ADR-005.
+Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 3"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044).
 
 **Layout** (little-endian, every column starts on a 4-byte boundary so typed-array views need no copy)
 
 1. Magic `WEXD`, format version (uint16), sample count (uint32).
-2. Length-prefixed JSON metadata: sport, start time and time zone, summary, laps, sessions, and one descriptor per stream (name, type, scale, unit, offset in the file).
+2. Length-prefixed JSON metadata: sport, start time and time zone, summary (with the pool values, F-44), device name and sensor types (F-43, never an identifier), laps, sessions, and one descriptor per stream (name, type, scale, unit, offset in the file).
 3. One column per stream that the workout has; absent streams are simply not written.
 
 | Stream | Stored as | Resolution | Encoding |
@@ -512,6 +512,8 @@ The ubiquitous language: use these names in code, API fields and documents. Add 
 | Decoded workout data | `WorkoutData`: the browser's form of a data file; `Float64Array`s in the format's units plus metadata (F-04, ADR-007). | Data file (the bytes) |
 | Moving time | Time with the timer running, or above a speed threshold when there are no timer events (F-02 R-7). | Timer time (device total) |
 | Device totals | Session values as the device recorded them; shown as recorded (AP-2), except that running cadence is doubled (F-02 R-5) and transition sessions and laps lose their speed, cadence and power totals (F-08 R-13). Lap values the device did not record are computed (see Session / lap). | Derived values (computed from streams) |
+| Device name / sensor type | The recording device's display name (model, manufacturer or both, at most 40 recorded characters) and the types of recognised external sensors, shown in the device line under the summary (AP-14, [F-43](../architect/F-43-device-info.md)). Never a serial number, ANT+ number or user-chosen descriptor. | Device totals; a sensor's make or model (not shown) |
+| Pool swim | A session with sub-sport lap swimming; only its pool length and active lengths feed the Pool and Lengths cells (AP-16, [F-44](../architect/F-44-pool-summary.md)). | Open-water swim (no pool cells, whatever its recorded pool length) |
 | Corpus / golden report | Test FIT files in `src/server/testdata/corpus/` and their expected JSON reports (ADR-004). | |
 | Format version | The `uint16` in the data file header. Exactly one is live, except that kept workouts stay on their previous version and bundle until rebuilt; each bundle reads exactly one version (Versioning, ADR-005). | Report version (golden report shape) |
 | Descriptor | The metadata entry for one column: name, type, encoding, scale, unit, byte offset (F-03). | |

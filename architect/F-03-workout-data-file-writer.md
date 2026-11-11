@@ -1,8 +1,8 @@
 # F-03 Workout data file writer: architecture
 
-- **Version:** 1.5
+- **Version:** 1.6
 - **Status:** accepted
-- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029)
+- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044)
 - **History:** [architect/history/F-03-workout-data-file-writer.md](history/F-03-workout-data-file-writer.md) (change log, closed questions)
 - **Feature:** [`features/F-03-workout-data-file-writer.md`](../features/F-03-workout-data-file-writer.md)
 - **Depends on:** TD (system-wide picture), [F-02 design](F-02-fit-parsing-and-normalisation.md) v1.6, [ADR-001](ADR-001-repository-layout-and-build-entry-point.md), [ADR-002](ADR-002-bundle-size-budget-measurement.md) (decimal KB), [ADR-004](ADR-004-parser-corpus-and-golden-reports.md) rev. 3, [ADR-005](ADR-005-workout-data-file-format-v1.md), [ADR-006](ADR-006-brotli-pre-compression.md)
@@ -19,7 +19,7 @@
 | D-4 | Quantise the absolute value, then take deltas; a missing sample is the sentinel and is skipped by the running sum | Format §3; ADR-005 items 3–4 |
 | D-5 | Out-of-range values are clamped to the type's range without the sentinel, never an error | Format §3; ADR-005 item 5 |
 | D-6 | A stream with no valid value is not written; latitude and longitude are written as a pair | Format §2; ADR-005 item 6 |
-| D-7 | Metadata v1 is a closed JSON schema with **no coordinates**, no device and no timer events | Format §5; ADR-005 item 7 |
+| D-7 | Metadata v1 is a closed JSON schema with **no coordinates**, no device and no timer events. (v1.6) Version 3 adds the device's display name and sensor types, never an identifier | Format §5; ADR-005 item 7; ADR-044 |
 | D-8 | Laps and sessions carry time offsets and half-open sample index ranges | Format §5.4 |
 | D-9 | A workout with zero samples cannot be encoded (error). F-08 rejects such files before encoding | Encoder rules |
 | D-10 | Golden files `testdata/datafile/synthetic/<name>.bin` and `<name>.json` (decoded-integer digests) for every synthetic corpus file. They are the contract for F-04. No golden files from real files | Golden fixtures; ADR-005 item 10 |
@@ -49,7 +49,7 @@ src/server/
 ├── cmd/workout-explorer/
 │   ├── parse.go                         + -datafile flag
 │   └── parse_test.go                    + -datafile cases
-├── internal/datafile/                   pure codec, format v2 (ADR-005, ADR-029)
+├── internal/datafile/                   pure codec, format v3 (ADR-005, ADR-029, ADR-044)
 │   ├── datafile.go                      Magic, Version, stream table, File, Stream, Meta types
 │   ├── encode.go                        Encode
 │   ├── quantise.go                      quantise, clamp, delta (small tested functions)
@@ -105,6 +105,7 @@ type Meta struct {                  // JSON key order = field order (Format §5)
     StartTime string       `json:"start_time"`
     TimeZone  TimeZone     `json:"time_zone"`
     Summary   Summary      `json:"summary"`
+    Device    Device       `json:"device"`   // v1.6, §5.7
     Sessions  []Session    `json:"sessions"`
     Laps      []Lap        `json:"laps"`
     Streams   []Descriptor `json:"streams"`
@@ -121,9 +122,9 @@ func Brotli(src []byte) ([]byte, error)
 
 ---
 
-## Data file format, version 2 (normative)
+## Data file format, version 3 (normative)
 
-(v1.5) Version 2 adds the streams 11 and 12 of §2 and nothing else; the header, the metadata schema and every other rule are those of version 1.
+(v1.5) Version 2 adds the streams 11 and 12 of §2 and nothing else; the header, the metadata schema and every other rule are those of version 1. (v1.6) Version 3 adds the top-level `device` (§5.1, §5.7) and the summary's pool keys (§5.2) and nothing else (ADR-044).
 
 This section is the format description required by the feature's scope. It is written for an independent decoder in any language. Terms: *N* is the sample count; *L* is the metadata length; `align4(x)` is the smallest multiple of 4 that is ≥ x. All multi-byte integers are **little-endian two's complement**. Byte positions count from 0 at the start of the file.
 
@@ -132,7 +133,7 @@ This section is the format description required by the feature's scope. It is wr
 | Bytes | Type | Field | Value |
 | --- | --- | --- | --- |
 | 0–3 | 4 × ASCII | magic | `WEXD` (`57 45 58 44`) |
-| 4–5 | uint16 | format version | `2` |
+| 4–5 | uint16 | format version | `3` |
 | 6–9 | uint32 | sample count *N* | ≥ 1 |
 | 10–13 | uint32 | metadata length *L* | length of the JSON in bytes |
 | 14 … 14+L−1 | UTF-8 | metadata | one JSON object (§5), no BOM, no trailing newline |
@@ -199,7 +200,7 @@ Every intermediate `acc` is a valid stored value, so it stays within ±1,000,000
 - Every `byte_offset` is a multiple of 4. A reader can therefore create `Int32Array`, `Uint16Array`, `Uint8Array` or `Int8Array` views directly on the `ArrayBuffer` of the whole file, without copying. Readers must use `byte_offset` and must not compute positions themselves.
 - Typed arrays use the platform's byte order. Every browser platform in scope is little-endian. A reader may assert this once and otherwise fall back to `DataView`.
 
-### 5. Metadata JSON (schema unchanged since v1, closed)
+### 5. Metadata JSON (closed; version 3 adds `device` and the pool keys)
 
 One JSON object with exactly these keys, in this order. Readers use a standard JSON parser. Numbers are JSON numbers. Unknown keys do not occur.
 
@@ -209,6 +210,7 @@ One JSON object with exactly these keys, in this order. Readers use a standard J
   "start_time": "2026-06-06T05:00:00Z",
   "time_zone": {"known": true, "offset_seconds": 7200},
   "summary": {"elapsed_time": 3600, "distance": 27012.5, "ascent": 112, "avg_heart_rate": 141, "moving_time": 3580},
+  "device": {"name": "Garmin Edge 530", "sensors": ["heart_rate_monitor", "power_meter"]},
   "sessions": [
     {"sport": "cycling", "sub_sport": "road", "start": 0, "end": 3600, "start_index": 0, "end_index": 3601,
      "totals": {"elapsed_time": 3600, "distance": 27012.5}}
@@ -233,7 +235,8 @@ One JSON object with exactly these keys, in this order. Readers use a standard J
 | `sport` | string | yes | Workout sport (F-02 R-9): FIT profile name in snake_case (`cycling`, `running`, `e_biking`, …), `multisport` for 2+ sessions, `unknown_<n>` for values not in the profile, `""` when not recorded |
 | `start_time` | string | yes | Time offset 0 in UTC, RFC 3339 with whole seconds and `Z`: `YYYY-MM-DDTHH:MM:SSZ` |
 | `time_zone` | object | yes | `known` (bool), `offset_seconds` (integer, multiple of 900). Local start time = `start_time` + `offset_seconds` when `known`; otherwise show UTC, labelled as UTC (decision 13, F-02 R-9) |
-| `summary` | Totals + `moving_time` | yes (may be `{}`) | `workout.Summary` (F-02 R-10): the numbers the page shows (AP-2) |
+| `summary` | Totals + `moving_time` and the pool keys (§5.2) | yes (may be `{}`) | `workout.Summary` (F-02 R-10): the numbers the page shows (AP-2) |
+| `device` | object (§5.7) | yes | (v1.6) Device name and sensor types for the device line (F-43) |
 | `sessions` | array of Session | yes (may be `[]`) | File order |
 | `laps` | array of Lap | yes (may be `[]`) | File order |
 | `streams` | array of Descriptor | yes, ≥ 1 | Column order (§2), `time_offset` first |
@@ -242,7 +245,7 @@ One JSON object with exactly these keys, in this order. Readers use a standard J
 
 An object whose keys are a subset of the list below, in this order. **A key that is absent means "not recorded".** The viewer hides that metric and never shows 0 (AP-2). Units are those of F-02 section Units.
 
-`elapsed_time` (s), `timer_time` (s), `distance` (m), `ascent` (m), `descent` (m), `calories` (kcal), `avg_speed` (m/s), `max_speed` (m/s), `avg_heart_rate` (bpm), `max_heart_rate` (bpm), `avg_cadence` (1/min), `max_cadence` (1/min), `avg_power` (W), `max_power` (W), `avg_temperature` (°C), `max_temperature` (°C). `summary` alone adds `moving_time` (s) as its last key.
+`elapsed_time` (s), `timer_time` (s), `distance` (m), `ascent` (m), `descent` (m), `calories` (kcal), `avg_speed` (m/s), `max_speed` (m/s), `avg_heart_rate` (bpm), `max_heart_rate` (bpm), `avg_cadence` (1/min), `max_cadence` (1/min), `avg_power` (W), `max_power` (W), `avg_temperature` (°C), `max_temperature` (°C). `summary` alone adds `moving_time` (s), then (v1.6, F-44 PS-3) `pool_length_m` (whole metres) or `pool_length_yd` (whole yards), at most one of the two, and `lengths` (count of active lengths), each absent when not set.
 
 **Number format:** the value rounded to 3 decimals (half away from zero), then written in the shortest form that reads back exactly (Go `strconv.FormatFloat(r, 'f', -1, 64)`), with `-0` written as `0`. Examples: `3600`, `27012.5`, `7.999`.
 
@@ -279,16 +282,23 @@ The lap's samples are `start_index ≤ i < end_index`. The range is empty when t
 
 #### 5.6 What the metadata never contains
 
-No latitude or longitude in any form (no positions, bounding box, start point or lap positions), no device or serial number, no file type, no timer events, no derived values beyond `summary` and the computed lap values (§5.3). Coordinates exist **only** in the `latitude` and `longitude` columns (D-7; F-16 relies on this).
+No latitude or longitude in any form (no positions, bounding box, start point or lap positions), no device identifier (serial number, ANT+ number, descriptor, product number, versions; the device appears only as §5.7), no file type, no timer events, no derived values beyond `summary` and the computed lap values (§5.3). Coordinates exist **only** in the `latitude` and `longitude` columns (D-7; F-16 relies on this).
+
+#### 5.7 Device (v1.6)
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `name` | string | Display name, `""` when none ([F-43](F-43-device-info.md) DI-2 to DI-4). Sanitised by the writer; readers treat it as plain text |
+| `sensors` | array of string | Each at most once, in this order: `heart_rate_monitor`, `power_meter`, `speed_sensor`, `cadence_sensor`, `speed_cadence_sensor`, `foot_pod`, `radar`. May be `[]` (F-43 DI-5) |
 
 ### 6. Reader validation (both the Go `Decode` and the F-04 decoder)
 
 A reader rejects the file, with an error and never a crash, when any of these holds:
 
 1. Fewer than 14 bytes, or magic ≠ `WEXD`.
-2. Version ≠ the reader's version (exactly `2`; there are no readers for other versions, TD Versioning).
+2. Version ≠ the reader's version (exactly `3`; there are no readers for other versions, TD Versioning).
 3. *N* = 0, or `14 + L` > file length.
-4. The metadata is not valid UTF-8 JSON, or a key from §5.1 is missing or has the wrong type. **Nested keys (v1.3):** a nested value of the wrong type (for example a lap `start` that is a string) is rejected by every reader. A **missing or `null`** nested key (a key of `time_zone`, §5.3 or §5.5, or a `null` array element) is not covered by the writer's output, since the writer always emits every key; Go `Decode` zero-fills it, F-04 rejects it. Both are allowed by this format; neither affects a file the writer produced.
+4. The metadata is not valid UTF-8 JSON, or a key from §5.1 is missing or has the wrong type. **Nested keys (v1.3):** a nested value of the wrong type (for example a lap `start` that is a string) is rejected by every reader. A **missing or `null`** nested key (a key of `time_zone`, §5.3, §5.5 or §5.7, or a `null` array element) is not covered by the writer's output, since the writer always emits every key; Go `Decode` zero-fills it, F-04 rejects it. Both are allowed by this format; neither affects a file the writer produced.
 5. `streams` is empty, its first entry is not `time_offset`, a name is unknown or repeated, the names are not in §2 order (v1.2), exactly one of `latitude` and `longitude` is present (v1.2), or a descriptor differs from its §2 row.
 6. A `byte_offset` is not a multiple of 4, is greater than the file length (v1.2), is below `align4(14 + L)`, is below the end of the previous column, or `N × size` > file length − `byte_offset`; or the file is longer than the end of the last column (trailing bytes, v1.1). Evaluate the bounds in a form that cannot overflow: in Go, check `byte_offset ≤ len` first, then `N ≤ (len − byte_offset) / size`. In JS, numbers up to 2⁵³ are exact (v1.2). This rule applies to F-04 as well.
 7. (Go `Decode`; optional in this format, implemented by F-04 too, v1.3.) `time_offset` has a missing sample or is not strictly increasing; a session or lap index range is not `0 ≤ start_index ≤ end_index ≤ N`; a session or lap has `end < start`; latitude and longitude are not missing at the same indices (v1.2); `moving_time` or `elevation_gain` has a missing sample (v1.5).
@@ -316,7 +326,7 @@ Five samples. Offsets 0, 1, 2, 10, 11 (one gap of 8 s). Assume the metadata is *
 
 | Bytes | Content |
 | --- | --- |
-| 0–13 | `57 45 58 44` · `02 00` · `05 00 00 00` · `91 01 00 00` (L = 401) |
+| 0–13 | `57 45 58 44` · `03 00` · `05 00 00 00` · `91 01 00 00` (L = 401) |
 | 14–414 | metadata JSON |
 | 415 | `00` (padding to 416) |
 | 416–435 | `time_offset` int32 delta: `0, 1, 1, 8, 1` |
@@ -330,7 +340,7 @@ The descriptors carry `byte_offset` 416, 436, 456, 476 and 484. The file length 
 
 ### 9. Versioning
 
-`Version = 2` (v1.5; 1 before F-17). Any change to §1–§7 bumps it. The writer, the F-04 reader, this section and the golden files change together. Only one version is live at a time: every deploy regenerates every workout (TD Versioning, F-30), so readers support exactly one version (ADR-005 item 9). (v1.4, OQ-55) Exception: a workout kept after a failed rebuild keeps its previous data file and the previous bundle that reads it until a later run rebuilds it; an old bundle is deleted only once no kept workout refers to it. Each reader still supports exactly one version (ADR-005 rev. 1 item 9).
+`Version = 3` (v1.6, F-43 and F-44; 2 from F-17, 1 before). Any change to §1–§7 bumps it. The writer, the F-04 reader, this section and the golden files change together. Only one version is live at a time: every deploy regenerates every workout (TD Versioning, F-30), so readers support exactly one version (ADR-005 item 9). (v1.4, OQ-55) Exception: a workout kept after a failed rebuild keeps its previous data file and the previous bundle that reads it until a later run rebuilds it; an old bundle is deleted only once no kept workout refers to it. Each reader still supports exactly one version (ADR-005 rev. 1 item 9).
 
 ---
 
@@ -462,7 +472,7 @@ cd $(SERVER_DIR) && go test ./internal/ingest -run '^TestCorpus$$' -update && go
 
 | Area | Must cover |
 | --- | --- |
-| Header | Magic, version 2, *N*, *L* at bytes 10–13; the JSON at 14 parses; padding bytes are `00`; the first column is at `align4(14 + L)` |
+| Header | Magic, version 3, *N*, *L* at bytes 10–13; the JSON at 14 parses; padding bytes are `00`; the first column is at `align4(14 + L)` |
 | Worked example | The Format §8 workout encodes to exactly those column bytes, offsets relative to `align4(14 + L)`, and decodes back to the listed values |
 | Alignment | Every `byte_offset % 4 == 0` for all of these: every stream; time with only uint8 streams (padding of 1–3 bytes between columns); *N* = 1, 2, 3, 5; no trailing padding |
 | Order and presence | Canonical order; absent stream (nil) → no descriptor; all-`NaN` stream → no descriptor; `±Inf` → missing |
@@ -506,7 +516,7 @@ cd $(SERVER_DIR) && go test ./internal/ingest -run '^TestCorpus$$' -update && go
 | 3 Round trip within resolution, sentinels where missing | `TestRoundTripCorpus`; unit tests Round trip, Delta, Quantisation |
 | 4 Indoor: no latitude/longitude | `TestRoundTripCorpus` on the three files without positions; `testdata/datafile/synthetic/indoor-no-gps.json` has no position entries |
 | 5 4-hour ride under 500 KB as `.br`; sizes recorded | `TestSizeBudget4h` in CI; `MEASUREMENTS.md` section for synthetic files; real-file sizes by manufacturer in the QA report |
-| 6 Format description exists and matches the writer | This document, section "Data file format, version 2", which `Decode` implements; the golden files in `testdata/datafile/synthetic/`. **The cross-language check ("checked by the F-04 decoder tests") completes in F-04** (F-04 AC 2 reads these fixtures). F-03 QA verifies that the description, `Decode` and the fixtures agree, and does not block on F-04's tests |
+| 6 Format description exists and matches the writer | This document, section "Data file format, version 3", which `Decode` implements; the golden files in `testdata/datafile/synthetic/`. **The cross-language check ("checked by the F-04 decoder tests") completes in F-04** (F-04 AC 2 reads these fixtures). F-03 QA verifies that the description, `Decode` and the fixtures agree, and does not block on F-04's tests |
 
 ## Open questions
 
