@@ -43,13 +43,6 @@
       "Max": ""
     },
     {
-      "Key": "ascent",
-      "Label": "Elevation gain",
-      "Value": "112",
-      "Unit": "m",
-      "Max": ""
-    },
-    {
       "Key": "speed",
       "Label": "Max speed",
       "Value": "28.8",
@@ -69,6 +62,13 @@
       "Value": "225",
       "Unit": "W",
       "Max": "240"
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "112",
+      "Unit": "m",
+      "Max": ""
     },
     {
       "Key": "temperature",

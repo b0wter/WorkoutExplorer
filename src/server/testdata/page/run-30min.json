@@ -43,13 +43,6 @@
       "Max": ""
     },
     {
-      "Key": "ascent",
-      "Label": "Elevation gain",
-      "Value": "104",
-      "Unit": "m",
-      "Max": ""
-    },
-    {
       "Key": "speed",
       "Label": "Avg pace",
       "Value": "5:03",
@@ -69,6 +62,13 @@
       "Value": "171",
       "Unit": "spm",
       "Max": "174"
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "104",
+      "Unit": "m",
+      "Max": ""
     },
     {
       "Key": "temperature",
