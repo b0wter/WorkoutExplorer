@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -56,9 +56,11 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | done | user: 360 px wrap, plain-HTTP fallback field, no range= in the Caddy log (qa r1); link round trip and Back checked 10 Nov |
 | [F-41](F-41-summary-tints.md) | Summary tints | 2 | frontend | F-13, F-14 | done | checked by the user 10 Nov (both themes) |
 | [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | done | checked by the user 11 Nov (charts, map, real triathlon); open: hidden start/end, no-JS, dark mode (qa r1) |
+| [F-43](F-43-device-info.md) | Device and sensor info | 2 | both (backend first) | F-15, F-19, F-29 | specified | |
+| [F-44](F-44-pool-summary.md) | Pool length and lengths in the summary | 2 | both (backend first) | F-15, F-19, F-41 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 9 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 11 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -91,6 +93,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-19 Range in the link | Could (phase 2) | F-40 (phase 2) |
 | AP-22 How to use, first-visit range hint | Could (phase 2) | F-39 (phase 2) |
 | AP-12 Multisport legs as sections | Could (phase 2) | F-08 (MVP: one workout, sport, transitions); F-42 (phase 2) |
+| AP-14 Device and sensor info | Could (phase 2) | F-43 (phase 2) |
+| AP-16 Pool length and lengths in the summary | Could (phase 2) | F-44 (phase 2) |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -137,8 +141,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1
 - Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5
-- Pool swims: lengths and stroke type instead of a map; pool length and number of lengths in the summary (needs a workout data file format change: backend and frontend) — AP-13, AP-16
-- Device and sensor info — AP-14
+- Pool swims: lengths and stroke type instead of a map — AP-13
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11
 - Privacy zones of 200 m to 1 km — SH-3
 - iframe embed with compact layout — SH-7
@@ -146,6 +149,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
 - Summary colours — DS-5: detailed in [F-41](F-41-summary-tints.md).
 - Multisport legs and transitions as sections — AP-12: detailed in [F-42](F-42-multisport-sections.md).
+- Device and sensor info — AP-14: detailed in [F-43](F-43-device-info.md).
+- Pool length and number of lengths in the summary — AP-16: detailed in [F-44](F-44-pool-summary.md).
 
 ## Questions for review
 
@@ -648,3 +653,5 @@ The original questions follow for reference.
 **Decided on 10 Nov 2026, F-39 range hint** (user, AP-7, AP-22): on the viewing page the first-visit range hint is styled as the accent info box like "How to use this page"; the edit page keeps the plain line. Reverses part of OQ-127: when the hint goes away during a visit (× or first range selection), its box and space collapse at once; the layout jump (laps table moves up) is accepted, the space is preferred. Later loads unchanged (no space from first paint). Updated: F-39 scope and AC. Spec unchanged (it made no no-jump claim).
 
 **Decided on 10 Nov 2026, summary order** (user, AP-2, DS-5): Calories moves to right after Elapsed time, so the untinted cells come first, then the tinted ones (F-41). Updated: spec AP-2.
+
+**Decided on 11 Nov 2026, device info and pool summary** (user, AP-14, AP-16): AP-14 device name falls back from the full model name to the manufacturer to no device name; only sensors of a recognised type are listed, unknown ones left out; only names and types are shown, never identifiers (UP-9); a workout built before F-43 may show no device line. AP-16 cells are hidden without pool data, the summary as today; a data file format change may break or lose older workouts, no compatibility work. Open: OQ-146 to OQ-150 (F-43, F-44). Updated: F-43, F-44 (new), spec AP-14.
