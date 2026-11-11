@@ -151,12 +151,12 @@ func TestSamplePages(t *testing.T) {
 				t.Errorf("%d script elements, or not the module and theme scripts", c)
 			}
 			if name == "hostile-text" {
-				for _, bad := range []string{"<b>Bold", "<script>alert", "<img", "onerror=alert(3)>"} {
+				for _, bad := range []string{"<b>Bold", "<script>alert", "<img", "onerror=alert(3)>", "<i>"} {
 					if strings.Contains(page, bad) {
 						t.Errorf("unescaped %q", bad)
 					}
 				}
-				for _, good := range []string{"&lt;b&gt;Bold&lt;/b&gt; &amp; &#34;quoted&#34;", "&lt;script&gt;alert(2)&lt;/script&gt;", "&lt;img src=x onerror=alert(3)&gt; &amp;amp; done"} {
+				for _, good := range []string{"&lt;b&gt;Bold&lt;/b&gt; &amp; &#34;quoted&#34;", "&lt;script&gt;alert(2)&lt;/script&gt;", "&lt;img src=x onerror=alert(3)&gt; &amp;amp; done", `<p class="device">Recorded with &lt;i&gt;Dev&lt;/i&gt; &amp;amp; &#34;x&#34;</p>`} {
 					if !strings.Contains(page, good) {
 						t.Errorf("escaped form %q missing", good)
 					}

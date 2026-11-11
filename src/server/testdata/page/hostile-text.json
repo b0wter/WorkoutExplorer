@@ -85,7 +85,7 @@
       "Max": "20"
     }
   ],
-  "Device": "Recorded with corpusgen",
+  "Device": "Recorded with <i>Dev</i> &amp; \"x\"",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

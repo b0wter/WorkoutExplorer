@@ -13,14 +13,16 @@ import (
 // TestDeviceIdentifiersNeverPublished (F-43 AC 5, critical lane): the sensors
 // of identifying-data.fit are shown by type, while their serial numbers, ANT+
 // device numbers, descriptors and product names reach neither draft.bin, the
-// public data file, the viewing page nor the owner API. original.fit keeps
+// public data file, the viewing page nor the owner API. Neither file_id nor
+// the creator has a product name, so a name taken from a sensor or from a
+// descriptor would show here (QA-43-r1-1). original.fit keeps
 // descriptors and product names by design (ADR-023) and is never public.
 func TestDeviceIdentifiersNeverPublished(t *testing.T) {
 	a := startApp(t, settings{})
 	pub, token := a.published("identifying-data.fit")
 
 	markers := [][]byte{
-		[]byte("Marker Descriptor"), []byte("Marker Sensor Product"), []byte("Descriptor Chest"),
+		[]byte("Marker Descriptor"), []byte("Marker Sensor Product"), []byte("Descriptor Creator"), []byte("Descriptor Chest"),
 		[]byte("Descriptor Left Crank"), []byte("Product HR"), []byte("Product PM"),
 	}
 	for _, n := range []uint32{3_735_928_559, 2_882_400_001, 2_882_400_002, 2_882_400_003} {
@@ -54,10 +56,10 @@ func TestDeviceIdentifiersNeverPublished(t *testing.T) {
 	}
 
 	// The shown values are there: the line on the page, name and codes in the data file.
-	if !bytes.Contains(searched["index.html"], []byte(`<p class="device">Recorded with corpusgen · heart-rate monitor, power meter</p>`)) {
+	if !bytes.Contains(searched["index.html"], []byte(`<p class="device">Sensors: heart-rate monitor, power meter</p>`)) {
 		t.Errorf("viewing page lacks the device line")
 	}
-	if !bytes.Contains(searched["draft.bin"], []byte(`"device":{"name":"corpusgen","sensors":["heart_rate_monitor","power_meter"]}`)) {
+	if !bytes.Contains(searched["draft.bin"], []byte(`"device":{"name":"","sensors":["heart_rate_monitor","power_meter"]}`)) {
 		t.Errorf("draft.bin lacks the device")
 	}
 	// original.fit still holds the descriptor: the search above would find it.

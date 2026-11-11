@@ -54,9 +54,10 @@ describe('ActivityPage', () => {
 
   it('AC 5: HTML and script in the title and description appear as literal text', () => {
     fx = renderSample('hostile-text');
-    expect(fx.target.querySelector('script, b, img')).toBeNull();
+    expect(fx.target.querySelector('script, b, i, img')).toBeNull();
     expect(text('h1')).toBe('<b>Bold</b> & "quoted" <script>alert(1)</script>');
     expect(text('.desc')).toBe('<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done');
+    expect(text('.device')).toBe('Recorded with <i>Dev</i> &amp; "x"');
   });
 
   it('AC 8: an indoor workout shows the hint and no map slot; the charts slot is reserved', () => {

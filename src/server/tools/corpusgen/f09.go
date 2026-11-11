@@ -24,9 +24,11 @@ func identifyingData() file {
 	ts := func(t int) time.Time { return start.Add(time.Duration(t) * time.Second) }
 
 	pre := []proto.Message{
-		// The device that wrote the file and two sensors.
+		// The device that wrote the file and two sensors. F-43 (QA-43-r1-1):
+		// no product name in file_id or here, only a descriptor, so that a name
+		// taken from any other field or device would show in the byte search.
 		mesgdef.NewDeviceInfo(nil).SetTimestamp(ts(0)).SetDeviceIndex(0).SetManufacturer(typedef.ManufacturerDevelopment).
-			SetProduct(1).SetSerialNumber(2_882_400_001).ToMesg(nil),
+			SetProduct(1).SetSerialNumber(2_882_400_001).SetDescriptor("Marker Descriptor Creator").ToMesg(nil),
 		// F-43: recognised sensors whose identifiers, descriptors and product
 		// names must never reach a page or data file.
 		mesgdef.NewDeviceInfo(nil).SetTimestamp(ts(0)).SetDeviceIndex(1).SetSerialNumber(2_882_400_002).
@@ -80,6 +82,7 @@ func identifyingData() file {
 	}
 
 	f := file{name: "identifying-data.fit", start: start, localOffset: intp(7200), enhanced: true, developer: true,
+		device:     &fileDevice{typedef.ManufacturerDevelopment, 1, ""},
 		fileSerial: 3_735_928_559, devName: "marker_dev_field", preamble: pre,
 		sessions: []span{{typedef.SportCycling, typedef.SubSportRoad, 0, end}},
 		laps:     []span{{from: 0, to: end}},

@@ -61,6 +61,11 @@ export function withoutLengths(data: WorkoutData): WorkoutData {
   return { ...data, meta: { ...data.meta, summary } };
 }
 
+/** QA-43-r1-3: markup in a recorded device name; the renderers print it as text. */
+export function hostileDevice(data: WorkoutData): WorkoutData {
+  return { ...data, meta: { ...data.meta, device: { ...data.meta.device, name: '<i>Dev</i> &amp; "x"' } } };
+}
+
 export const EXPIRES_AT = '2026-10-30T09:15:00Z';
 
 /** F-23 PC-6: the Open Graph card is built in Go only, so every sample carries this placeholder for the
@@ -89,6 +94,7 @@ export const SAMPLES: readonly SampleSpec[] = [
     golden: 'ride-30min',
     title: '<b>Bold</b> & "quoted" <script>alert(1)</script>',
     description: '<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done',
+    transform: hostileDevice,
   },
 ];
 

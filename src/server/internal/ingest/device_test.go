@@ -1,6 +1,8 @@
 package ingest
 
 import (
+	"bytes"
+	"encoding/binary"
 	"os"
 	"strings"
 	"testing"
@@ -24,7 +26,7 @@ func TestSanitiseName(t *testing.T) {
 		{"a\x00b\x1bc\u0085d", "abc d"},    // NUL and ESC removed, NEL is white space
 		{"\ufeffName\u200b", "Name"},       // BOM and zero-width space (Cf)
 		{"x\u2028y\u00a0z", "x y z"},       // line separator, no-break space
-		{"\xff\xfe broken", ""},            // invalid UTF-8: not known
+		{"\xff broken", "\ufffd broken"},   // never met: the decoder drops invalid bytes (see TestDeviceNameAndSensors)
 		{"\u202e\u202c\t", ""},             // nothing left
 		{"<b>&amp;</b>", "<b>&amp;</b>"},   // markup is text; the renderers escape it
 		{"\u00dcn\u00efc\u00f6d\u00e9 \u540d\u524d \U0001f6b4", "\u00dcn\u00efc\u00f6d\u00e9 \u540d\u524d \U0001f6b4"}, // kept as written
@@ -152,6 +154,10 @@ func TestDeviceNameAndSensors(t *testing.T) {
 		{"other maker's number is not looked up", []proto.Message{deviceFileID(typedef.ManufacturerWahooFitness, uint16(typedef.GarminProductEdge530), "")}, "Wahoo Fitness", []string{}},
 		{"creator's device_info name", []proto.Message{deviceFileID(typedef.ManufacturerWahooFitness, 63, ""), devInfo(0, typedef.SourceTypeLocal, 0, "ELEMNT BOLT")}, "Wahoo Fitness ELEMNT BOLT", []string{}},
 		{"file_id name wins over the creator's", []proto.Message{deviceFileID(typedef.ManufacturerDevelopment, 1, "A"), devInfo(0, typedef.SourceTypeLocal, 0, "B")}, "A", []string{}},
+		{"creator name empty after cleaning does not block a later one", []proto.Message{deviceFileID(typedef.ManufacturerGarmin, uint16(typedef.GarminProductEdge530), ""),
+			devInfo(0, typedef.SourceTypeLocal, 0, "\u202e\u200b"), devInfo(0, typedef.SourceTypeLocal, 0, "Real Name")}, "Garmin Real Name", []string{}},
+		{"first creator name wins", []proto.Message{deviceFileID(typedef.ManufacturerDevelopment, 1, ""),
+			devInfo(0, typedef.SourceTypeLocal, 0, "One"), devInfo(0, typedef.SourceTypeLocal, 0, "Two")}, "One", []string{}},
 		{"sanitised to empty falls back", []proto.Message{deviceFileID(typedef.ManufacturerGarmin, uint16(typedef.GarminProductFenix6), "\u202e\u200b")}, "Garmin Fenix6", []string{}},
 		{"sensor product names never used", []proto.Message{deviceFileID(typedef.ManufacturerDevelopment, 1, ""), devInfo(1, ant, hr, "Marker Sensor")}, "", []string{"heart_rate_monitor"}},
 		{"development, unknown and invalid makers are not known", []proto.Message{deviceFileID(typedef.ManufacturerDevelopment, 1, "")}, "", []string{}},
@@ -168,6 +174,18 @@ func TestDeviceNameAndSensors(t *testing.T) {
 		if got := w.Device.Sensors.Codes(); strings.Join(got, ",") != strings.Join(c.sensors, ",") {
 			t.Errorf("%s: sensors %v, want %v", c.name, got, c.sensors)
 		}
+	}
+}
+
+// TestDeviceNameInvalidUTF8 (DI-2, QA-43-r1-2): the decoder drops invalid
+// UTF-8 bytes before sanitiseName sees the name, so the rest is shown.
+func TestDeviceNameInvalidUTF8(t *testing.T) {
+	b := encodeFIT(t, deviceFileID(typedef.ManufacturerDevelopment, 1, "zzAB"), record(0, 100).ToMesg(nil), record(1, 101).ToMesg(nil))
+	i := bytes.Index(b, []byte("zzAB"))
+	copy(b[i:], "\xff\xfe")
+	binary.LittleEndian.PutUint16(b[len(b)-2:], fitCRC(0, b[:len(b)-2]))
+	if got := parseBytes(t, b).Device.Name(); got != "AB" {
+		t.Errorf("name %q, want AB", got)
 	}
 }
 

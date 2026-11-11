@@ -38,11 +38,10 @@ type listener struct {
 	skip         bool     // this sequence is of another file type: its messages are dropped
 	seqMessages  int      // messages delivered in this sequence
 
-	// For the log line.
-	recordMessages int    // record messages read, all sequences
-	garminProduct  string // product name from the FIT profile (Garmin family only)
+	recordMessages int    // record messages read, all sequences (log line)
+	garminProduct  string // product name from the FIT profile (Garmin family only): log line and F-43 model fallback
 
-	creatorName string // F-43 DI-2: the creator's device_info product name, first sequence, raw
+	creatorName string // F-43 DI-2: the creator's device_info product name, first sequence, sanitised
 }
 
 func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {

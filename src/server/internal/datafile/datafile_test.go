@@ -568,6 +568,14 @@ func TestDecodeErrors(t *testing.T) {
 		{"invalid UTF-8", set(15, 0xFF), "UTF-8"},
 		{"missing key", meta(func(m map[string]any) { delete(m, "laps") }), "laps missing"},
 		{"wrong type", meta(func(m map[string]any) { m["sport"] = json.Number("5") }), "sport is not a JSON string"},
+		{"device missing", meta(func(m map[string]any) { delete(m, "device") }), "device missing"},
+		{"device not an object", meta(func(m map[string]any) { m["device"] = "x" }), "device is not a JSON object"},
+		{"device name a number", meta(func(m map[string]any) {
+			m["device"] = map[string]any{"name": json.Number("1"), "sensors": []any{}}
+		}), "device.name"},
+		{"device sensor code a number", meta(func(m map[string]any) {
+			m["device"] = map[string]any{"name": "", "sensors": []any{json.Number("1")}}
+		}), "device.sensors"},
 		{"empty streams", meta(func(m map[string]any) { m["streams"] = []any{} }), "no streams"},
 		{"first stream not time_offset", meta(func(m map[string]any) {
 			d := descriptors(m)

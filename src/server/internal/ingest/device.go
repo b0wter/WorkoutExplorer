@@ -26,8 +26,8 @@ const maxModel = 40
 func (l *listener) deviceInfo(m *proto.Message) {
 	index := m.FieldValueByNum(fieldnum.DeviceInfoDeviceIndex).Uint8()
 	if typedef.DeviceIndex(index) == typedef.DeviceIndexCreator {
-		if l.seqNo <= 1 && l.creatorName == "" {
-			l.creatorName = m.FieldValueByNum(fieldnum.DeviceInfoProductName).String()
+		if l.seqNo <= 1 && l.creatorName == "" { // the first name left after cleaning wins (decision of 11 Nov 2026)
+			l.creatorName = sanitiseName(m.FieldValueByNum(fieldnum.DeviceInfoProductName).String())
 		}
 		return // the recording device's own sensors are built in
 	}
@@ -83,8 +83,8 @@ func (l *listener) model() string {
 	if s := sanitiseName(l.rec.Device.ProductName); s != "" {
 		return s
 	}
-	if s := sanitiseName(l.creatorName); s != "" {
-		return s
+	if l.creatorName != "" {
+		return l.creatorName
 	}
 	return readable(l.garminProduct)
 }
@@ -104,14 +104,12 @@ func readable(name string) string {
 	return strings.Join(words, " ")
 }
 
-// sanitiseName is DI-2's text rule: "" unless valid UTF-8; white space
-// becomes a space, other control and format characters (Cc, Cf: bidi
+// sanitiseName is DI-2's text rule: white space becomes a space, other control and format characters (Cc, Cf: bidi
 // controls included) are removed, space runs collapse to one, trimmed, cut
 // to maxModel code points and trimmed again.
+// The decoder has already dropped invalid UTF-8 bytes (QA-43-r1-2); any left
+// would come out as U+FFFD, so the result is always valid UTF-8.
 func sanitiseName(s string) string {
-	if !utf8.ValidString(s) {
-		return ""
-	}
 	var b strings.Builder
 	space := false
 	n := 0

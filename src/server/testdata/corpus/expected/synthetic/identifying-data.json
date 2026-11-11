@@ -3,8 +3,7 @@
   "file_type": "activity",
   "device": {
     "manufacturer": "development",
-    "product_id": 1,
-    "product_name": "corpusgen"
+    "product_id": 1
   },
   "sport": "cycling",
   "start_time": "2026-07-03T05:00:00Z",

@@ -236,7 +236,7 @@ func localOffset(timestamp, local time.Time) *int64 {
 // manufacturers whose product numbers are in it (garmin, dynastream,
 // dynastream_oem, tacx; ADR-018 item 4), "unknown_<n>" if the number is not
 // in the profile, and "" for other manufacturers or an absent product. Used
-// for the log line only.
+// for the log line and as the F-43 model fallback (DI-2), made readable.
 func garminProductName(f *mesgdef.FileId) string {
 	switch f.Manufacturer {
 	case typedef.ManufacturerGarmin, typedef.ManufacturerDynastream, typedef.ManufacturerDynastreamOem, typedef.ManufacturerTacx:

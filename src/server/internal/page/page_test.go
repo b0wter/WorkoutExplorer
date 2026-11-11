@@ -59,6 +59,9 @@ func legWithoutLaps(f *datafile.File) {
 // withoutLengths mirrors samples.ts withoutLengths (F-44 PS-5).
 func withoutLengths(f *datafile.File) { f.Meta.Summary.Lengths = "" }
 
+// hostileDevice mirrors samples.ts hostileDevice (QA-43-r1-3): markup in a recorded device name.
+func hostileDevice(f *datafile.File) { f.Meta.Device.Name = `<i>Dev</i> &amp; "x"` }
+
 var samples = []sampleSpec{
 	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false},
 	{"ride-12h", "ride-12h", "", "", nil, false},
@@ -77,7 +80,7 @@ var samples = []sampleSpec{
 	{"pool-swim-no-lengths", "pool-swim", "", "", withoutLengths, false},
 	{"ride-no-laps", "ride-no-laps", "", "", nil, false},
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
-		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", nil, false},
+		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", hostileDevice, false},
 }
 
 const (
