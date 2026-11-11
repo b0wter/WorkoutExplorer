@@ -106,6 +106,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | SH-10 Fast removal, recall notice | Must | F-15, F-16, F-20, F-21, F-22, F-30; F-24 in phase 3 |
 | AC-1 Edit link shown only on the published page | Must | F-09, F-11, F-20 |
 | AC-2, AC-3 | Removed | — (removed in the spec) |
+| SH-7 iframe embed | Removed | — (removed in the spec, 11 Nov 2026) |
 | AC-4 Delete removes everything | Must | F-12, F-20, F-21 |
 | AC-5 Owner changes everything (MVP fields) | Must | F-12, F-19 (trim and pins: phase 2) |
 | AC-6 Published page with both links | Must | F-20, F-22 |
@@ -144,7 +145,6 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Pool swims: lengths and stroke type instead of a map — AP-13
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11
 - Privacy zones of 200 m to 1 km — SH-3
-- iframe embed with compact layout — SH-7
 - Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
 - Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
 - Summary colours — DS-5: detailed in [F-41](F-41-summary-tints.md).
@@ -657,3 +657,5 @@ The original questions follow for reference.
 **Decided on 11 Nov 2026, device info and pool summary** (user, AP-14, AP-16): AP-14 device name falls back from the full model name to the manufacturer to no device name; only sensors of a recognised type are listed, unknown ones left out; only names and types are shown, never identifiers (UP-9); a workout built before F-43 may show no device line. AP-16 cells are hidden without pool data, the summary as today; a data file format change may break or lose older workouts, no compatibility work. Open: OQ-146 to OQ-150 (F-43, F-44). Updated: F-43, F-44 (new), spec AP-14.
 
 **Decided on 11 Nov 2026, OQ-146 to OQ-150** (user, AP-14, AP-16): suggestions accepted. Model name from the recorded product name (cut to 40 characters), else the Garmin profile name; app-written product names accepted as risk. Manufacturer from the profile name; `development`, `unknown` not known. Seven recognised sensor types in fixed order; sensors shown alone without a device name. Pool cells only for lap-swimming sessions; pool length in whole metres or yards, rounded to nearest. Updated: F-43, F-44, spec AP-14, AP-16.
+
+**Decided on 11 Nov 2026, iframe embed dropped** (user, SH-7): SH-7 (iframe embed with a compact layout, Could, phase 2) is removed; workouts are short-lived, so embedding them in other pages makes no sense. The `frame-ancestors 'none'` header stays. Updated: spec SH-7 (removed), scope table and roadmap phase 2 row.
