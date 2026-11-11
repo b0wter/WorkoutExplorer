@@ -15,8 +15,8 @@ A viewer of a pool swim sees the pool length and the number of lengths swum, for
 
 ## Scope
 - **Values, as AP-16.** The device's session values only, never computed: the number of active lengths (rest lengths not counted) and the pool length in the pool's own unit (`pool_length_unit`: metres or yards), not converted by the units setting (DS-1). Several pool-swim sessions: lengths summed; pool length shown only when every pool-swim session has the same one.
-- **Which sessions count:** OQ-149.
-- **Cells.** Two summary cells, "Pool" ("25 m", "25 yd") and "Lengths" ("64"), each hidden on its own when its value is missing, never shown as zero. Precision: OQ-150.
+- **Which sessions count:** only sessions with sub-sport "lap swimming", their values used as recorded; a pool length recorded on any other session (open water) is ignored.
+- **Cells.** Two summary cells, "Pool" ("25 m", "25 yd") and "Lengths" ("64"), each hidden on its own when its value is missing, never shown as zero. Pool length in whole metres or yards, rounded to nearest, no decimal (33.3 m shows "33 m").
 - **Place and tint.** No chart line, so untinted (DS-5, F-41), placed with the untinted cells: after Calories, before the first tinted cell (summary order, 10 Nov 2026).
 - **Pages.** Viewing page (rendered on the server, works without JavaScript) and edit page, the same cells.
 - **Without pool data** (older workouts, files without these values, truncated files without session totals, UP-3, open water, other sports): no cells, the summary exactly as today.
@@ -30,6 +30,7 @@ A viewer of a pool swim sees the pool length and the number of lengths swum, for
 
 ## Acceptance criteria
 - [ ] `pool-swim.fit` shows "Pool 25 m" and "Lengths" equal to the session's `num_active_lengths`; the rest length is not counted.
+- [ ] A 33.3 m pool length shows "33 m".
 - [ ] A 25 yd pool swim shows "25 yd" in both metric and imperial units.
 - [ ] A lap-swimming session with `pool_length` but no `num_active_lengths` shows "Pool" only; with neither, no pool cells.
 - [ ] Open-water swims (`triathlon.fit`), rides and runs show no pool cells.
@@ -39,6 +40,3 @@ A viewer of a pool swim sees the pool length and the number of lengths swum, for
 - [ ] A truncated pool swim without session totals (UP-3) shows no pool cells and no error.
 - [ ] Data file size and LCP are unchanged within noise; every corpus file still uploads and renders.
 
-## Open questions
-- [ ] **OQ-149 Which sessions count as pool swims?** Devices may record a pool length on open-water swims (the synthetic triathlons do). Suggestion: only sessions with sub-sport "lap swimming"; their values are used as recorded. Affects which workouts show the cells and the multi-session rule.
-- [ ] **OQ-150 How precise is the pool length?** Suggestion: whole metres or yards, one decimal only when not whole (33.3 m), recorded value rounded to the nearest 0.1 in the pool's unit. Affects the "Pool" cell.
