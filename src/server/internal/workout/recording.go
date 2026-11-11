@@ -31,6 +31,7 @@ type RawSession struct {
 	Sport, SubSport string
 	Start, End      time.Time
 	Totals          Totals
+	Pool            Pool
 }
 
 // RawLap is a FIT lap as recorded.

@@ -44,6 +44,7 @@
       <section class="summary">{{range .Summary}}
         <div class="metric" data-k="{{.Key}}"><div class="k">{{.Label}}</div><div class="v"><span class="n">{{.Value}}</span>{{if .Unit}}&nbsp;<span class="u">{{.Unit}}</span>{{end}}{{if .Max}}<span class="max">max {{.Max}}</span>{{end}}</div></div>{{end}}
       </section>
+      {{if .Device}}<p class="device">{{.Device}}</p>{{end}}
       <p class="notice">Parts of the route, such as the start and end, may be hidden for privacy. Totals include them.</p>
       {{if .Route.Map}}<div id="map-slot" class="map-slot"></div>{{end}}
       {{if .Route.NoLocation}}<p class="hint">No location data in this workout.</p>{{end}}

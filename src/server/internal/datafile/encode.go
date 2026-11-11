@@ -18,7 +18,7 @@ type column struct {
 	valid []bool
 }
 
-// Encode writes w as a data file, format version 2. It is deterministic (the
+// Encode writes w as a data file, format version 3. It is deterministic (the
 // same workout gives identical bytes, W-9) and returns an error instead of
 // panicking when w breaks an invariant the format relies on (W-1). Errors
 // never contain coordinates (W-10).
@@ -44,6 +44,7 @@ func Encode(w workout.Workout) ([]byte, error) {
 		StartTime: w.StartTime.UTC().Format(time.RFC3339),
 		TimeZone:  TimeZone{Known: w.TimeZone.Known},
 		Summary:   summaryOf(w),
+		Device:    Device{Name: w.Device.Name(), Sensors: w.Device.Sensors.Codes()},
 		Sessions:  make([]Session, 0, len(w.Sessions)),
 		Laps:      make([]Lap, 0, len(w.Laps)),
 		Streams:   make([]Descriptor, len(cols)),
@@ -105,7 +106,9 @@ func Encode(w workout.Workout) ([]byte, error) {
 }
 
 func summaryOf(w workout.Workout) Summary {
-	return Summary{Totals: totals(w.Summary.Totals), MovingTime: total(w.Summary.MovingTime)}
+	s := w.Summary
+	return Summary{Totals: totals(s.Totals), MovingTime: total(s.MovingTime),
+		PoolLengthM: total(s.PoolLengthM), PoolLengthYd: total(s.PoolLengthYd), Lengths: total(s.Lengths)}
 }
 
 // SummaryJSON returns exactly the bytes of the "summary" value in the

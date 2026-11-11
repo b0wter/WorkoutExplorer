@@ -20,6 +20,7 @@ type ViewModel struct {
 	Page        Group
 	Header      Header
 	Summary     []SummaryItem
+	Device      string // F-43 DI-7: the device line, "" = none
 	Route       Route
 	ChartsClass string
 	Laps        *Laps
@@ -130,6 +131,7 @@ func Build(f datafile.File, s Settings) ViewModel {
 			ExpiresText: "Expires around " + formatDate(expires, offset),
 		},
 		Summary:     summaryItems(m.Sport, totalsOf(m.Summary)),
+		Device:      deviceLine(m.Device),
 		Route:       route,
 		ChartsClass: chartsClass(f),
 		Laps:        lapsOrNone(f),
@@ -274,6 +276,9 @@ func summaryItems(sport string, t totals) []SummaryItem {
 	one("moving_time", "Moving time", "moving_time", "", formatElapsed)
 	one("elapsed_time", "Elapsed time", "elapsed_time", "", formatElapsed)
 	one("calories", "Calories", "calories", "kcal", intText)
+	one("pool", "Pool", "pool_length_m", "m", intText)
+	one("pool", "Pool", "pool_length_yd", "yd", intText)
+	one("lengths", "Lengths", "lengths", "", intText)
 	one("ascent", "Elevation gain", "ascent", "m", intText)
 	speedLabel := "speed"
 	if isPaceSport(sport) {
@@ -286,6 +291,33 @@ func summaryItems(sport string, t totals) []SummaryItem {
 	add(pair("cadence", "cadence", cadenceUnit(sport), t, "avg_cadence", "max_cadence", intText))
 	add(pair("temperature", "temperature", "°C", t, "avg_temperature", "max_temperature", intText))
 	return items
+}
+
+// sensorLabels are the device line's names of the sensor codes (F-43 DI-7).
+var sensorLabels = map[string]string{
+	"heart_rate_monitor": "heart-rate monitor", "power_meter": "power meter", "speed_sensor": "speed sensor",
+	"cadence_sensor": "cadence sensor", "speed_cadence_sensor": "speed and cadence sensor", "foot_pod": "foot pod", "radar": "radar",
+}
+
+// deviceLine is F-43 DI-7: "Recorded with {name} · {labels}", "Recorded with
+// {name}", "Sensors: {labels}" or "". Codes without a label are skipped.
+func deviceLine(d datafile.Device) string {
+	var labels []string
+	for _, c := range d.Sensors {
+		if l, ok := sensorLabels[c]; ok {
+			labels = append(labels, l)
+		}
+	}
+	list := strings.Join(labels, ", ")
+	switch {
+	case d.Name != "" && list != "":
+		return "Recorded with " + d.Name + " · " + list
+	case d.Name != "":
+		return "Recorded with " + d.Name
+	case list != "":
+		return "Sensors: " + list
+	}
+	return ""
 }
 
 type lapColumn struct {

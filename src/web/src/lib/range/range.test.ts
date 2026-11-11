@@ -53,7 +53,7 @@ function synthetic(seed: number, n = 400): WorkoutData {
     metrics: { altitude: alt, distance: dist, heart_rate: hr, power, cadence: cad, temperature: temp },
     movingTime: moving,
     elevationGain: gain,
-    meta: { sport: 'cycling', start_time: '2026-10-01T08:00:00Z', time_zone: { known: false, offset_seconds: 0 }, summary: {}, sessions: [], laps: [] },
+    meta: { sport: 'cycling', start_time: '2026-10-01T08:00:00Z', time_zone: { known: false, offset_seconds: 0 }, summary: {}, device: { name: '', sensors: [] }, sessions: [], laps: [] },
   };
 }
 

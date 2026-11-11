@@ -41,6 +41,8 @@ type listener struct {
 	// For the log line.
 	recordMessages int    // record messages read, all sequences
 	garminProduct  string // product name from the FIT profile (Garmin family only)
+
+	creatorName string // F-43 DI-2: the creator's device_info product name, first sequence, raw
 }
 
 func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {
@@ -144,6 +146,8 @@ func (l *listener) OnMesg(m proto.Message) {
 		l.record(mesgdef.NewRecord(&m))
 	case mesgnum.Sport:
 		l.sport(mesgdef.NewSport(&m))
+	case mesgnum.DeviceInfo:
+		l.deviceInfo(&m)
 	}
 }
 
@@ -171,6 +175,7 @@ func (l *listener) fileID(f *mesgdef.FileId) {
 	}
 	l.rec.Device.ProductName = f.ProductName
 	l.garminProduct = garminProductName(f)
+	l.rec.Device.Brand = readable(l.rec.Device.Manufacturer)
 	if otherType {
 		l.stop(errUnsupportedType)
 	}
@@ -206,6 +211,7 @@ func (l *listener) session(s *mesgdef.Session) {
 			avgPower: s.AvgPower, maxPower: s.MaxPower,
 			avgTemp: s.AvgTemperature, maxTemp: s.MaxTemperature,
 		}),
+		Pool: pool(s.PoolLength, s.PoolLengthUnit, s.NumActiveLengths),
 	})
 }
 

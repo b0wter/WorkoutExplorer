@@ -5,7 +5,7 @@
 //
 // Error messages name the key or the element index, never a value from the file.
 
-import type { DataFileError, DataFileErrorCode, Lap, Session, Summary, TimeZone, Totals, TotalKey, WorkoutMeta } from './model';
+import type { DataFileError, DataFileErrorCode, Device, Lap, Session, Summary, SummaryKey, TimeZone, Totals, TotalKey, WorkoutMeta } from './model';
 
 /** A stream descriptor as written in the metadata (F-03 §5.5); consumed by the decoder. */
 export interface Descriptor {
@@ -48,7 +48,7 @@ const TOTAL_KEYS: readonly TotalKey[] = [
   'avg_temperature',
   'max_temperature',
 ];
-const SUMMARY_KEYS: readonly (TotalKey | 'moving_time')[] = [...TOTAL_KEYS, 'moving_time'];
+const SUMMARY_KEYS: readonly SummaryKey[] = [...TOTAL_KEYS, 'moving_time', 'pool_length_m', 'pool_length_yd', 'lengths'];
 
 const INT32_MIN = -2147483648;
 const INT32_MAX = 2147483647;
@@ -139,6 +139,13 @@ function lap(v: unknown, i: number): Lap {
   };
 }
 
+/** §5.7: the name as plain text, every sensor code a string. */
+function device(o: Json): Device {
+  const sensors = arr(o, 'sensors', 'device.');
+  if (!sensors.every((s) => typeof s === 'string')) throw new MetaError('device.sensors holds a non-string');
+  return { name: str(o, 'name', 'device.'), sensors: sensors as string[] };
+}
+
 function descriptor(v: unknown, i: number): Descriptor {
   const w = `stream ${i}: `;
   const o = element(v, `stream ${i}`);
@@ -178,6 +185,7 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
     ['start_time', 'string'],
     ['time_zone', 'object'],
     ['summary', 'object'],
+    ['device', 'object'],
     ['sessions', 'array'],
     ['laps', 'array'],
     ['streams', 'array'],
@@ -199,6 +207,7 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
       start_time: top.start_time as string,
       time_zone,
       summary: totals(top.summary as Json, SUMMARY_KEYS, 'summary.') as Summary,
+      device: device(top.device as Json),
       sessions: (top.sessions as unknown[]).map(session),
       laps: (top.laps as unknown[]).map(lap),
     };

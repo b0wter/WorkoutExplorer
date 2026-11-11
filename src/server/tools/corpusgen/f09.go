@@ -27,10 +27,16 @@ func identifyingData() file {
 		// The device that wrote the file and two sensors.
 		mesgdef.NewDeviceInfo(nil).SetTimestamp(ts(0)).SetDeviceIndex(0).SetManufacturer(typedef.ManufacturerDevelopment).
 			SetProduct(1).SetSerialNumber(2_882_400_001).ToMesg(nil),
+		// F-43: recognised sensors whose identifiers, descriptors and product
+		// names must never reach a page or data file.
 		mesgdef.NewDeviceInfo(nil).SetTimestamp(ts(0)).SetDeviceIndex(1).SetSerialNumber(2_882_400_002).
-			SetAntDeviceNumber(54_321).SetAntTransmissionType(1).ToMesg(nil),
+			SetAntDeviceNumber(54_321).SetAntTransmissionType(1).
+			SetSourceType(typedef.SourceTypeAntplus).SetDeviceType(uint8(typedef.AntplusDeviceTypeHeartRate)).
+			SetDescriptor("Marker Descriptor Chest").SetProductName("Marker Sensor Product HR").ToMesg(nil),
 		mesgdef.NewDeviceInfo(nil).SetTimestamp(ts(0)).SetDeviceIndex(2).SetSerialNumber(2_882_400_003).
-			SetAntDeviceNumber(12_345).SetAntTransmissionType(5).ToMesg(nil),
+			SetAntDeviceNumber(12_345).SetAntTransmissionType(5).
+			SetSourceType(typedef.SourceTypeAntplus).SetDeviceType(uint8(typedef.AntplusDeviceTypeBikePower)).
+			SetDescriptor("Marker Descriptor Left Crank").SetProductName("Marker Sensor Product PM").ToMesg(nil),
 		mesgdef.NewUserProfile(nil).SetFriendlyName("Marker Person").SetGender(typedef.GenderFemale).SetAge(41).
 			SetHeightScaled(1.71).SetWeightScaled(63.5).SetRestingHeartRate(47).SetDefaultMaxHeartRate(187).
 			SetGlobalId([6]byte{'M', 'k', 'r', 'G', 'i', 'd'}).ToMesg(nil),

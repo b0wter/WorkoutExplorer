@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Trainer",
     "ViewPath": "/w/indoor-ride",
-    "DataURL": "/w/indoor-ride/data.3fd9708351b577b5.bin"
+    "DataURL": "/w/indoor-ride/data.58ceb4c1b6477fb5.bin"
   },
   "Header": {
     "Title": "Trainer",
@@ -78,6 +78,7 @@
       "Max": "21"
     }
   ],
+  "Device": "Recorded with Wahoo Fitness ELEMNT BOLT · heart-rate monitor, power meter",
   "Route": {
     "Map": "",
     "NoLocation": "yes",

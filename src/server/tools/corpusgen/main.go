@@ -142,7 +142,32 @@ type file struct {
 	sportHints  bool            // a sport message at each session's start, lap.sport from the containing session (F-08 v1.1)
 	fileSerial  uint32          // file_id.serial_number, 0 = none (F-09 identifying-data.fit)
 	devName     string          // developer field name, "" = "corpus_dev_field"
-	preamble    []proto.Message // messages between the head and the first timed message (F-09 identifying-data.fit)
+	preamble    []proto.Message // messages between the head and the first timed message (F-09 identifying-data.fit; F-43 device_info)
+	device      *fileDevice     // file_id manufacturer, product and product name; nil = development, 1, "corpusgen" (F-43)
+	pool        *poolSpec       // pool values of every lap-swimming session; nil = 25 m, no lengths count (F-44)
+}
+
+// fileDevice is the recording device in file_id (F-43). product 0 and name ""
+// are not written.
+type fileDevice struct {
+	manufacturer typedef.Manufacturer
+	product      uint16
+	name         string
+}
+
+// poolSpec is a lap-swimming session's pool (F-44): pool_length raw
+// (centimetres), its unit and num_active_lengths (0 = not written).
+type poolSpec struct {
+	length  uint16
+	unit    typedef.DisplayMeasure
+	lengths uint16
+}
+
+// sensor is a device_info message of an external sensor (F-43): index,
+// source type and device type.
+func sensor(t time.Time, index uint8, source typedef.SourceType, deviceType uint8) proto.Message {
+	return mesgdef.NewDeviceInfo(nil).SetTimestamp(t).SetDeviceIndex(typedef.DeviceIndex(index)).
+		SetSourceType(source).SetDeviceType(deviceType).ToMesg(nil)
 }
 
 type timed struct {
@@ -175,6 +200,7 @@ func corpus() []file {
 		noDistanceWithGPS(),
 		unknownMessages(),
 		poolSwim(),
+		poolSwimYards(),
 		rollingHills(),
 		systemTimeRecord(),
 		ride30min(),
@@ -205,7 +231,8 @@ func rideNoLaps() file {
 	const end = 899
 	f := file{name: "ride-no-laps.fit", start: baseStart.Add(31 * 24 * time.Hour), localOffset: intp(3600), enhanced: true,
 		sessions: []span{{typedef.SportCycling, typedef.SubSportRoad, 0, end}},
-		timer:    []timerEvent{{0, true}, {end, false}}}
+		timer:    []timerEvent{{0, true}, {end, false}},
+		device:   &fileDevice{manufacturer: typedef.ManufacturerDevelopment}} // F-43: no device line
 	f.samples = outdoorRide(43, end, steady(rand.New(rand.NewPCG(43, 44))), hills)
 	return f
 }
@@ -237,9 +264,21 @@ func round1(v float64) float64 { return math.Round(v) }
 
 func indoorNoGPS() file {
 	rng := rand.New(rand.NewPCG(1, 1))
+	// F-43: brand and recorded model; a BLE power meter, an ANT+ heart-rate
+	// monitor, a second power meter, a sensor of an unknown type (shifting)
+	// and a built-in one: "heart-rate monitor, power meter" only.
 	f := file{name: "indoor-no-gps.fit", start: baseStart, localOffset: intp(7200),
 		sessions: []span{{typedef.SportCycling, typedef.SubSportIndoorCycling, 0, 3600}},
-		timer:    []timerEvent{{0, true}, {3600, false}}}
+		timer:    []timerEvent{{0, true}, {3600, false}},
+		device:   &fileDevice{typedef.ManufacturerWahooFitness, 31, "ELEMNT BOLT"},
+		preamble: []proto.Message{
+			sensor(baseStart, 0, typedef.SourceTypeLocal, 0),
+			sensor(baseStart, 1, typedef.SourceTypeBluetoothLowEnergy, uint8(typedef.BleDeviceTypeBikePower)),
+			sensor(baseStart, 2, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeHeartRate)),
+			sensor(baseStart, 3, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeBikePower)),
+			sensor(baseStart, 4, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeShifting)),
+			sensor(baseStart, 5, typedef.SourceTypeLocal, uint8(typedef.AntplusDeviceTypeBikeSpeed)),
+		}}
 	for i := 0; i < 4; i++ {
 		f.laps = append(f.laps, span{from: i * 900, to: (i + 1) * 900})
 	}
@@ -262,10 +301,13 @@ func indoorNoGPS() file {
 
 func indoorNoDistanceNoGPS() file {
 	rng := rand.New(rand.NewPCG(2, 2))
+	// F-43: no device name, one sensor: "Sensors: heart-rate monitor".
 	f := file{name: "indoor-no-distance-no-gps.fit", start: baseStart.Add(24 * time.Hour),
 		sessions: []span{{typedef.SportTraining, typedef.SubSportCardioTraining, 0, 1800}},
 		laps:     []span{{from: 0, to: 1800}},
-		timer:    []timerEvent{{0, true}, {1800, false}}}
+		timer:    []timerEvent{{0, true}, {1800, false}},
+		device:   &fileDevice{manufacturer: typedef.ManufacturerDevelopment},
+		preamble: []proto.Message{sensor(baseStart.Add(24*time.Hour), 1, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeHeartRate))}}
 	for t := 0; t <= 1800; t++ {
 		s := newSample(t)
 		s.hr = round1(120 + 30*math.Sin(float64(t)/120) + rng.Float64()*3)
@@ -648,20 +690,35 @@ func unknownMessages() file {
 	return f
 }
 
+// poolSwim is pool-swim.fit, a 25 m pool (F-44: num_active_lengths 40
+// and one rest length).
 func poolSwim() file {
+	return lapSwim("pool-swim.fit", 14, 27, poolSpec{2500, typedef.DisplayMeasureMetric, 40})
+}
+
+// poolSwimYards is pool-swim-25yd.fit (F-44): the same swim in a 25 yd pool
+// (22.86 m).
+func poolSwimYards() file {
+	return lapSwim("pool-swim-25yd.fit", 29, 31, poolSpec{2286, typedef.DisplayMeasureStatute, 40})
+}
+
+// lapSwim is 40 active lengths of 30 s each, one lap per 4 lengths, and a
+// rest length of 0 s after the last one, in pool p.
+func lapSwim(name string, day int, seed uint64, p poolSpec) file {
 	const lengths, lengthSecs = 40, 30
+	poolM := float64(p.length) / 100
 	end := lengths * lengthSecs
-	f := file{name: "pool-swim.fit", start: baseStart.Add(14 * 24 * time.Hour), localOffset: intp(-14400),
+	f := file{name: name, start: baseStart.Add(time.Duration(day) * 24 * time.Hour), localOffset: intp(-14400),
 		sessions: []span{{typedef.SportSwimming, typedef.SubSportLapSwimming, 0, end}},
-		timer:    []timerEvent{{0, true}, {end, false}}}
+		timer:    []timerEvent{{0, true}, {end, false}}, pool: &p}
 	for i := 0; i < lengths; i += 4 { // one lap per 100 m
 		f.laps = append(f.laps, span{from: i * lengthSecs, to: (i + 4) * lengthSecs})
 	}
-	rng := rand.New(rand.NewPCG(27, 28))
+	rng := rand.New(rand.NewPCG(seed, seed+1))
 	for t := 0; t <= end; t++ {
 		s := newSample(t)
-		s.dist = float64(25 * (t / lengthSecs))
-		s.speed = 25.0 / lengthSecs
+		s.dist = poolM * float64(t/lengthSecs)
+		s.speed = poolM / lengthSecs
 		s.hr = round1(128 + rng.Float64()*8)
 		s.cad = round1(28 + rng.Float64()*4) // strokes per minute
 		f.samples = append(f.samples, s)
@@ -678,6 +735,9 @@ func poolSwim() file {
 			SetLengthType(typedef.LengthTypeActive)
 		f.extra = append(f.extra, timed{t: from + lengthSecs, order: orderRecord + 1, mesg: l.ToMesg(nil)})
 	}
+	rest := mesgdef.NewLength(nil).SetTimestamp(at(f, end)).SetStartTime(at(f, end)).
+		SetTotalElapsedTime(0).SetTotalTimerTime(0).SetLengthType(typedef.LengthTypeIdle)
+	f.extra = append(f.extra, timed{t: end, order: orderRecord + 1, mesg: rest.ToMesg(nil)})
 	return f
 }
 
@@ -764,12 +824,17 @@ func encode(f file) ([]byte, error) {
 		return msgs[i].order < msgs[j].order
 	})
 
+	dev := cmp.Or(f.device, &fileDevice{typedef.ManufacturerDevelopment, 1, "corpusgen"})
 	fid := mesgdef.NewFileId(nil).
 		SetType(typedef.FileActivity).
-		SetManufacturer(typedef.ManufacturerDevelopment).
-		SetProduct(1).
-		SetProductName("corpusgen").
+		SetManufacturer(dev.manufacturer).
 		SetTimeCreated(f.start)
+	if dev.product != 0 {
+		fid.SetProduct(dev.product)
+	}
+	if dev.name != "" {
+		fid.SetProductName(dev.name)
+	}
 	if f.fileSerial != 0 {
 		fid.SetSerialNumber(f.fileSerial)
 	}
@@ -1033,7 +1098,12 @@ func sessionMesg(f file, sp span) proto.Message {
 		m.SetAvgSpeed(uint16(speedRaw(st.avgSpeed - 1)))
 	}
 	if sp.sport == typedef.SportSwimming {
-		m.SetPoolLength(2500).SetPoolLengthUnit(typedef.DisplayMeasureMetric) // 25 m
+		// Open-water swims keep 25 m too: the negative case of F-44 PS-1.
+		p := cmp.Or(f.pool, &poolSpec{2500, typedef.DisplayMeasureMetric, 0})
+		m.SetPoolLength(p.length).SetPoolLengthUnit(p.unit)
+		if p.lengths != 0 && sp.subSport == typedef.SubSportLapSwimming {
+			m.SetNumActiveLengths(p.lengths).SetNumLengths(p.lengths + 1) // one rest length
+		}
 	}
 	return m.ToMesg(nil)
 }

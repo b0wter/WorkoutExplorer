@@ -1,11 +1,11 @@
-// Data file format version 2 as constants: F-03 design, normative format §1–§2.
+// Data file format version 3 as constants: F-03 design, normative format §1–§2.
 // Any change here is a format change (F-03 §9) and goes together with the Go
 // writer and the golden fixtures.
 
 import type { CumulativeName, MetricName } from './model';
 
 export const MAGIC = 'WEXD';
-export const VERSION = 2;
+export const VERSION = 3;
 /** Magic (4) + version (2) + sample count (4) + metadata length (4). */
 export const HEADER_SIZE = 14;
 /** Two consecutive samples this far apart or more form a gap (F-02 R-3, F-03 §7). */

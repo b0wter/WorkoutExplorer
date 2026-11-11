@@ -55,6 +55,9 @@ export interface PageViewModel {
   readonly Header: HeaderGroup;
   /** AP-2 order; metrics the workout lacks are absent. */
   readonly Summary: readonly SummaryItem[];
+  /** F-43 DI-7: 'Recorded with {name} · {sensors}', 'Recorded with {name}', 'Sensors: {sensors}' or ''
+   *  (no line). Plain text. */
+  readonly Device: string;
   /** AP-3, as strings the template only tests: Map 'yes' reserves the map box, NoLocation 'yes' shows the hint, Hidden 'yes' shows the fully-hidden notice (F-16 FE-1). At most one is set. */
   readonly Route: { readonly Map: string; readonly NoLocation: string; readonly Hidden: string };
   /** Reserved-size classes of the chart slot: 'charts-4 cells-6' (D-10), plus ' has-distance' with a

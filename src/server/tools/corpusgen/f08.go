@@ -299,16 +299,25 @@ func workoutPlanFile() ([]byte, error) {
 func chainedRideRun() ([]byte, error) {
 	const rideEnd, runEnd, pause = 1199, 899, 900
 	rideStart := baseStart.Add(21 * 24 * time.Hour)
+	// F-43: a Garmin-family device without a recorded name (profile name
+	// edge_530); the ride's sensors and the run's foot pod make one line.
+	edge := &fileDevice{manufacturer: typedef.ManufacturerGarmin, product: uint16(typedef.GarminProductEdge530)}
 	ride := file{name: "ride", start: rideStart, localOffset: intp(7200), enhanced: true,
 		sessions: []span{{typedef.SportCycling, typedef.SubSportRoad, 0, rideEnd}},
 		laps:     []span{{from: 0, to: 600}, {from: 600, to: rideEnd}},
-		timer:    []timerEvent{{0, true}, {rideEnd, false}}}
+		timer:    []timerEvent{{0, true}, {rideEnd, false}}, device: edge,
+		preamble: []proto.Message{
+			sensor(rideStart, 1, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeBikeRadar)),
+			sensor(rideStart, 2, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeBikeSpeedCadence)),
+		}}
 	ride.samples = outdoorRide(43, rideEnd, steady(rand.New(rand.NewPCG(43, 44))), hills)
 
-	run := file{name: "run", start: rideStart.Add((rideEnd + pause) * time.Second), localOffset: intp(7200), enhanced: true,
+	runStart := rideStart.Add((rideEnd + pause) * time.Second)
+	run := file{name: "run", start: runStart, localOffset: intp(7200), enhanced: true,
 		sessions: []span{{typedef.SportRunning, typedef.SubSportRoad, 0, runEnd}},
 		laps:     []span{{from: 0, to: runEnd}},
-		timer:    []timerEvent{{0, true}, {runEnd, false}}}
+		timer:    []timerEvent{{0, true}, {runEnd, false}}, device: edge,
+		preamble: []proto.Message{sensor(runStart, 1, typedef.SourceTypeBluetoothLowEnergy, uint8(typedef.BleDeviceTypeFootpod))}}
 	rng := rand.New(rand.NewPCG(45, 46))
 	for _, s := range outdoorRide(45, runEnd, func(int) float64 { return 3.3 + rng.Float64()*0.4 - 0.2 }, hills) {
 		s.cad = 85 + 64.0/128 // one leg; 171 steps per minute after R-5
@@ -341,7 +350,8 @@ func chainedRideRide() ([]byte, error) {
 		f := file{name: "ride", start: start, localOffset: intp(7200), enhanced: true, sportHints: true,
 			sessions: []span{{typedef.SportCycling, typedef.SubSportRoad, 0, end}},
 			laps:     []span{{from: 0, to: 300}, {from: 300, to: end}},
-			timer:    []timerEvent{{0, true}, {end, false}}}
+			timer:    []timerEvent{{0, true}, {end, false}},
+			device:   &fileDevice{manufacturer: typedef.ManufacturerWahooFitness}} // F-43: manufacturer only
 		rng := rand.New(rand.NewPCG(uint64(53+2*i), uint64(54+2*i)))
 		f.samples = outdoorRide(uint64(53+2*i), end, func(int) float64 { return 5 + rng.Float64()*0.4 - 0.2 }, hills)
 		b, err := encode(f)
@@ -358,7 +368,14 @@ func chainedRideRide() ([]byte, error) {
 // session; timer start and stop. Records at 1 Hz throughout.
 func triathlon() file {
 	const swimEnd, t1End, bikeEnd, t2End, runEnd = 599, 659, 2459, 2519, 3719
-	f := file{name: "triathlon.fit", start: baseStart.Add(22 * 24 * time.Hour), localOffset: intp(7200), enhanced: true, sportHints: true,
+	start := baseStart.Add(22 * 24 * time.Hour)
+	f := file{name: "triathlon.fit", start: start, localOffset: intp(7200), enhanced: true, sportHints: true,
+		device: &fileDevice{manufacturer: typedef.ManufacturerGarmin, product: uint16(typedef.GarminProductFenix6)}, // F-43
+		preamble: []proto.Message{
+			sensor(start, 1, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeStrideSpeedDistance)),
+			sensor(start, 2, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeHeartRate)),
+			sensor(start, 3, typedef.SourceTypeAntplus, uint8(typedef.AntplusDeviceTypeBikePower)),
+		},
 		sessions: []span{
 			{typedef.SportSwimming, typedef.SubSportOpenWater, 0, swimEnd},
 			{typedef.SportTransition, typedef.SubSportGeneric, swimEnd + 1, t1End},

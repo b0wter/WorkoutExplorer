@@ -92,7 +92,7 @@ func TestListenerIgnoresUnknownMessagesFieldsAndDeveloperFields(t *testing.T) {
 
 func TestListenerDeviceWithoutSerialNumber(t *testing.T) {
 	w := parseBytes(t, encodeFIT(t, fileID(), record(0, 100).ToMesg(nil)))
-	want := workout.Device{Manufacturer: "garmin", ProductID: 3122, ProductName: "Edge Test"}
+	want := workout.Device{Manufacturer: "garmin", ProductID: 3122, ProductName: "Edge Test", Brand: "Garmin", Model: "Edge Test"}
 	if w.Device != want {
 		t.Errorf("Device = %+v, want %+v", w.Device, want)
 	}

@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Swim, 20 Jun 2026",
     "ViewPath": "/w/pool-swim",
-    "DataURL": "/w/pool-swim/data.c5cf6e7040773aeb.bin"
+    "DataURL": "/w/pool-swim/data.11e6f4041295e888.bin"
   },
   "Header": {
     "Title": "Swim, 20 Jun 2026",
@@ -43,6 +43,20 @@
       "Max": ""
     },
     {
+      "Key": "pool",
+      "Label": "Pool",
+      "Value": "25",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "lengths",
+      "Label": "Lengths",
+      "Value": "40",
+      "Unit": "",
+      "Max": ""
+    },
+    {
       "Key": "speed",
       "Label": "Avg pace",
       "Value": "2:00",
@@ -64,6 +78,7 @@
       "Max": "32"
     }
   ],
+  "Device": "Recorded with corpusgen",
   "Route": {
     "Map": "",
     "NoLocation": "yes",

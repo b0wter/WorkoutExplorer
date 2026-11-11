@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 )
 
-// Decode reads a data file of format version 2. It is strict: it implements
+// Decode reads a data file of format version 3. It is strict: it implements
 // every check of Format §6, including rule 7, and returns an error (prefixed
 // "datafile:") instead of panicking on any malformed input.
 func Decode(b []byte) (File, error) {
@@ -144,7 +144,7 @@ func decodeMeta(js []byte) (Meta, error) {
 	}
 	for _, k := range []struct{ key, kind string }{
 		{"sport", "string"}, {"start_time", "string"}, {"time_zone", "object"}, {"summary", "object"},
-		{"sessions", "array"}, {"laps", "array"}, {"streams", "array"},
+		{"device", "object"}, {"sessions", "array"}, {"laps", "array"}, {"streams", "array"},
 	} {
 		raw, ok := top[k.key]
 		if !ok {

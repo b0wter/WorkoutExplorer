@@ -15,7 +15,7 @@ func Normalise(rec Recording) Workout {
 	for _, s := range rec.Sessions {
 		start, end := spanOffsets(w.StartTime, s.Start, s.End)
 		w.Sessions = append(w.Sessions, Session{
-			Sport: s.Sport, SubSport: s.SubSport, Start: start, End: end, Totals: s.Totals,
+			Sport: s.Sport, SubSport: s.SubSport, Start: start, End: end, Totals: s.Totals, Pool: s.Pool,
 		})
 	}
 	w.Laps = make([]Lap, 0, len(rec.Laps))
@@ -74,6 +74,7 @@ func Normalise(rec Recording) Workout {
 	// session that is the whole recording, in one FIT sequence.
 	single := len(w.Sessions) == 1 && len(legs) == 1 && recordSequences(rec) <= 1
 	w.Summary = summarise(legs, sports, w.Derived, single)
+	w.Summary.PoolLengthM, w.Summary.PoolLengthYd, w.Summary.Lengths = poolSummary(w.Sessions)
 
 	// F-18 L-1: lap values the device did not record, as for a range.
 	completeLaps(&w, tl)

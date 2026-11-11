@@ -1,0 +1,198 @@
+{
+  "Page": {
+    "Title": "Swim, 20 Jun 2026",
+    "ViewPath": "/w/pool-swim-no-lengths",
+    "DataURL": "/w/pool-swim-no-lengths/data.11e6f4041295e888.bin"
+  },
+  "Header": {
+    "Title": "Swim, 20 Jun 2026",
+    "SportName": "Swim",
+    "SportIcon": "swimming",
+    "Start": "20 Jun 2026, 01:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "1.00",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "20:00",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "20:00",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "200",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
+      "Key": "pool",
+      "Label": "Pool",
+      "Value": "25",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg pace",
+      "Value": "2:00",
+      "Unit": "/100 m",
+      "Max": "2:00"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "132",
+      "Unit": "bpm",
+      "Max": "136"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "30",
+      "Unit": "spm",
+      "Max": "32"
+    }
+  ],
+  "Device": "Recorded with corpusgen",
+  "Route": {
+    "Map": "",
+    "NoLocation": "yes",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-3 cells-5 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Pace (/100 m)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (spm)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "2",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "3",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "4",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "5",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "6",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "7",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "8",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "9",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ],
+      [
+        "10",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30"
+      ]
+    ],
+    "None": "",
+    "Sections": []
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

@@ -24,8 +24,8 @@ func TestHeader(t *testing.T) {
 	if string(b[:4]) != "WEXD" {
 		t.Errorf("magic = %q", b[:4])
 	}
-	if v := binary.LittleEndian.Uint16(b[4:]); v != 2 {
-		t.Errorf("version = %d, want 2", v)
+	if v := binary.LittleEndian.Uint16(b[4:]); v != 3 {
+		t.Errorf("version = %d, want 3", v)
 	}
 	if n := binary.LittleEndian.Uint32(b[6:]); n != 10 {
 		t.Errorf("sample count = %d, want 10", n)
@@ -49,7 +49,7 @@ func TestHeader(t *testing.T) {
 	if got := f.Streams[0].Descriptor.ByteOffset; got != first {
 		t.Errorf("first column at %d, want align4(14 + L) = %d", got, first)
 	}
-	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 2 {
+	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 3 {
 		t.Errorf("File = version %d, N %d, L %d", f.Version, f.SampleCount, f.MetadataLength)
 	}
 }
@@ -386,7 +386,7 @@ func TestMetadata(t *testing.T) {
 	js := string(metaBytes(mustEncode(t, w)))
 	want := `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":true,"offset_seconds":7200},` +
 		`"summary":{"elapsed_time":3600,"distance":27012.5,"ascent":0,"avg_speed":7.999,"avg_heart_rate":141,"moving_time":3580},` +
-		`"sessions":[{"sport":"cycling","sub_sport":"road","start":0,"end":3600,"start_index":0,"end_index":3601,` +
+		`"device":{"name":"","sensors":[]},"sessions":[{"sport":"cycling","sub_sport":"road","start":0,"end":3600,"start_index":0,"end_index":3601,` +
 		`"totals":{"elapsed_time":3600,"calories":612.346,"max_temperature":0}}],` +
 		`"laps":[],"streams":[{"name":"time_offset","type":"int32","encoding":"delta","scale":1,"unit":"s","byte_offset":`
 	if !strings.HasPrefix(js, want) {
@@ -400,7 +400,7 @@ func TestMetadata(t *testing.T) {
 	w = offsetsOnly(2)
 	w.TimeZone = workout.TimeZone{Known: false, OffsetSeconds: 3600}
 	js = string(metaBytes(mustEncode(t, w)))
-	want = `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":false,"offset_seconds":0},"summary":{},"sessions":[],"laps":[],"streams":[`
+	want = `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":false,"offset_seconds":0},"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"streams":[`
 	if !strings.HasPrefix(js, want) {
 		t.Errorf("metadata =\n%s\nwant prefix\n%s", js, want)
 	}
@@ -431,8 +431,12 @@ func TestMetadataHasNoCoordinates(t *testing.T) {
 			t.Errorf("metadata contains %q:\n%s", digits, js)
 		}
 	}
-	// Keys only: "latitude" and "longitude" occur as descriptor names.
-	if k := regexp.MustCompile(`"(lat|lon|position|bbox|bound|device|timer|start_lat|end_lat)[a-z_]*":`).FindString(js); k != "" {
+	// Keys only: "latitude" and "longitude" occur as descriptor names; "device"
+	// is the device line's object (§5.7) and no other key starts with it.
+	if !strings.Contains(js, `"device":{"name":"","sensors":[]},`) {
+		t.Errorf("device object missing or not exactly name and sensors:\n%s", js)
+	}
+	if k := regexp.MustCompile(`"(lat|lon|position|bbox|bound|device_|timer|start_lat|end_lat)[a-z_]*":`).FindString(js); k != "" {
 		t.Errorf("metadata has the key %s", k)
 	}
 }
@@ -795,7 +799,7 @@ func TestFixtureWorkedExample(t *testing.T) {
 	if err := json.Unmarshal(got, &fx); err != nil {
 		t.Fatal(err)
 	}
-	if fx.FixtureVersion != 1 || fx.FormatVersion != 2 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
+	if fx.FixtureVersion != 1 || fx.FormatVersion != 3 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
 		t.Errorf("fixture header = %+v", fx)
 	}
 	want := []st{

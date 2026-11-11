@@ -2,9 +2,8 @@
   "report_version": 2,
   "file_type": "activity",
   "device": {
-    "manufacturer": "development",
-    "product_id": 1,
-    "product_name": "corpusgen"
+    "manufacturer": "garmin",
+    "product_id": 3290
   },
   "sport": "multisport",
   "start_time": "2026-06-28T05:00:00Z",

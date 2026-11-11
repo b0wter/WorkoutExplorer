@@ -6,7 +6,7 @@
 // Layout as the writer's (F-03 §4): header, metadata JSON, zero padding,
 // columns at align4. Overrides let a test break exactly one thing.
 
-import { HEADER_SIZE, STREAM_SPECS, align4, type StreamName } from '../format';
+import { HEADER_SIZE, STREAM_SPECS, VERSION, align4, type StreamName } from '../format';
 import type { CumulativeName, MetricName } from '../model';
 
 /** A stored absolute integer, or null for a missing sample. */
@@ -27,6 +27,7 @@ export interface MetaFields {
   start_time: unknown;
   time_zone: unknown;
   summary: unknown;
+  device: unknown;
   sessions: unknown;
   laps: unknown;
 }
@@ -61,6 +62,7 @@ const DEFAULT_META: MetaFields = {
   start_time: '2026-06-06T05:00:00Z',
   time_zone: { known: true, offset_seconds: 7200 },
   summary: {},
+  device: { name: '', sensors: [] },
   sessions: [],
   laps: [],
 };
@@ -137,7 +139,7 @@ export function buildDataFile(o: BuildOptions): ArrayBuffer {
   const view = new DataView(buffer);
   const magic = o.magic ?? 'WEXD';
   for (let i = 0; i < 4; i++) view.setUint8(i, magic.charCodeAt(i));
-  view.setUint16(4, o.version ?? 2, true);
+  view.setUint16(4, o.version ?? VERSION, true);
   view.setUint32(6, o.sampleCount ?? n, true);
   view.setUint32(10, metaBytes.length, true);
   new Uint8Array(buffer, HEADER_SIZE, metaBytes.length).set(metaBytes);

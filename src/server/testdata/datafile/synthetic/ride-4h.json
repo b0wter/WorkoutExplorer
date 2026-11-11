@@ -1,13 +1,13 @@
 {
   "fixture_version": 1,
-  "format_version": 2,
-  "byte_length": 511560,
+  "format_version": 3,
+  "byte_length": 511604,
   "sample_count": 14400,
-  "metadata_length": 7545,
+  "metadata_length": 7588,
   "streams": [
     {
       "name": "time_offset",
-      "byte_offset": 7560,
+      "byte_offset": 7604,
       "valid": 14400,
       "missing": 0,
       "first": 0,
@@ -18,7 +18,7 @@
     },
     {
       "name": "latitude",
-      "byte_offset": 65160,
+      "byte_offset": 65204,
       "valid": 14400,
       "missing": 0,
       "first": 47050011,
@@ -29,7 +29,7 @@
     },
     {
       "name": "longitude",
-      "byte_offset": 122760,
+      "byte_offset": 122804,
       "valid": 14400,
       "missing": 0,
       "first": 8300018,
@@ -40,7 +40,7 @@
     },
     {
       "name": "altitude",
-      "byte_offset": 180360,
+      "byte_offset": 180404,
       "valid": 14400,
       "missing": 0,
       "first": 4198,
@@ -51,7 +51,7 @@
     },
     {
       "name": "distance",
-      "byte_offset": 237960,
+      "byte_offset": 238004,
       "valid": 14400,
       "missing": 0,
       "first": 0,
@@ -62,7 +62,7 @@
     },
     {
       "name": "speed",
-      "byte_offset": 295560,
+      "byte_offset": 295604,
       "valid": 14400,
       "missing": 0,
       "first": 7103,
@@ -73,7 +73,7 @@
     },
     {
       "name": "heart_rate",
-      "byte_offset": 324360,
+      "byte_offset": 324404,
       "valid": 14400,
       "missing": 0,
       "first": 136,
@@ -84,7 +84,7 @@
     },
     {
       "name": "cadence",
-      "byte_offset": 338760,
+      "byte_offset": 338804,
       "valid": 14400,
       "missing": 0,
       "first": 89,
@@ -95,7 +95,7 @@
     },
     {
       "name": "power",
-      "byte_offset": 353160,
+      "byte_offset": 353204,
       "valid": 14400,
       "missing": 0,
       "first": 148,
@@ -106,7 +106,7 @@
     },
     {
       "name": "temperature",
-      "byte_offset": 381960,
+      "byte_offset": 382004,
       "valid": 14400,
       "missing": 0,
       "first": 18,
@@ -117,7 +117,7 @@
     },
     {
       "name": "moving_time",
-      "byte_offset": 396360,
+      "byte_offset": 396404,
       "valid": 14400,
       "missing": 0,
       "first": 0,
@@ -128,7 +128,7 @@
     },
     {
       "name": "elevation_gain",
-      "byte_offset": 453960,
+      "byte_offset": 454004,
       "valid": 14400,
       "missing": 0,
       "first": 0,

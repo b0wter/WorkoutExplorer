@@ -32,6 +32,12 @@ type Device struct {
 	Manufacturer string // FIT profile name, e.g. "garmin"; "" if not recorded
 	ProductID    uint16 // 0 = absent
 	ProductName  string
+
+	// F-43, set by ingest (DI-2, DI-3, DI-5): display texts and sensor kinds
+	// only, never an identifier.
+	Brand   string  // manufacturer made readable; "" = not known
+	Model   string  // model, sanitised or from the profile; "" = not known
+	Sensors Sensors // recognised external sensor kinds
 }
 
 // TimeZone is a fixed UTC offset for the whole workout (decision 13).
@@ -49,6 +55,15 @@ type Session struct {
 	Start    int32
 	End      int32
 	Totals   Totals
+	Pool     Pool
+}
+
+// Pool holds a session's pool values as recorded (F-44 PS-2); zero = not
+// recorded.
+type Pool struct {
+	Length  float64 // pool_length in metres
+	Statute bool    // pool_length_unit is statute: the pool is measured in yards
+	Lengths uint16  // num_active_lengths
 }
 
 // Lap is a FIT lap; Start and End are time offsets in seconds. Its Totals
@@ -145,4 +160,6 @@ type Integrity struct {
 type Summary struct {
 	Totals
 	MovingTime *float64
+	// F-44 PS-3: whole metres or yards (at most one set) and active lengths.
+	PoolLengthM, PoolLengthYd, Lengths *float64
 }

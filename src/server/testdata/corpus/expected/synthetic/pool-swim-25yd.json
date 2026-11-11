@@ -1,0 +1,282 @@
+{
+  "report_version": 2,
+  "file_type": "activity",
+  "device": {
+    "manufacturer": "development",
+    "product_id": 1,
+    "product_name": "corpusgen"
+  },
+  "sport": "swimming",
+  "start_time": "2026-07-05T05:00:00Z",
+  "time_zone": {
+    "known": true,
+    "offset_seconds": -14400
+  },
+  "integrity": {
+    "truncated": false,
+    "crc_failed": false,
+    "sequences": 1,
+    "skipped_sequences": 0,
+    "ignored_bytes": 0
+  },
+  "sessions": [
+    {
+      "sport": "swimming",
+      "sub_sport": "lap_swimming",
+      "start": 0,
+      "end": 1200,
+      "totals": {
+        "elapsed_time": 1200.000,
+        "timer_time": 1200.000,
+        "distance": 914.400,
+        "calories": 200.000,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 29.992,
+        "max_cadence": 32.000
+      }
+    }
+  ],
+  "laps": [
+    {
+      "start": 0,
+      "end": 120,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 29.883,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 120,
+      "end": 240,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 29.961,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 240,
+      "end": 360,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 30.031,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 360,
+      "end": 480,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 30.023,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 480,
+      "end": 600,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 29.922,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 600,
+      "end": 720,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 29.984,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 720,
+      "end": 840,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 30.008,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 840,
+      "end": 960,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 29.922,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 960,
+      "end": 1080,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 30.102,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 1080,
+      "end": 1200,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 91.440,
+        "avg_speed": 0.762,
+        "max_speed": 0.762,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 30.125,
+        "max_cadence": 32.000
+      }
+    }
+  ],
+  "timer_events": [
+    {
+      "offset": 0,
+      "kind": "start"
+    },
+    {
+      "offset": 1200,
+      "kind": "stop"
+    }
+  ],
+  "samples": {
+    "count": 1201,
+    "last_offset": 1200,
+    "filled": 0,
+    "gaps": {
+      "count": 0,
+      "total_seconds": 0,
+      "longest_seconds": 0
+    },
+    "offsets_digest": "f7d739fc3a5cb44d"
+  },
+  "streams": {
+    "distance": {
+      "present": 1201,
+      "missing": 0,
+      "min": 0.00,
+      "max": 914.40,
+      "first": 0.00,
+      "last": 914.40,
+      "mean": 446.16,
+      "digest": "ceb3cdff9c4329f7"
+    },
+    "speed": {
+      "present": 1201,
+      "missing": 0,
+      "min": 0.762,
+      "max": 0.762,
+      "first": 0.762,
+      "last": 0.762,
+      "mean": 0.762,
+      "digest": "7f63a12e13a1f231"
+    },
+    "heart_rate": {
+      "present": 1201,
+      "missing": 0,
+      "min": 128.00,
+      "max": 136.00,
+      "first": 131.00,
+      "last": 134.00,
+      "mean": 131.85,
+      "digest": "dc060046ff8bb6ea"
+    },
+    "cadence": {
+      "present": 1201,
+      "missing": 0,
+      "min": 28.00,
+      "max": 32.00,
+      "first": 28.00,
+      "last": 31.00,
+      "mean": 29.99,
+      "digest": "357004037afba3ac"
+    }
+  },
+  "derived": {
+    "elapsed_time": 1200.000,
+    "moving_time": 1200.000,
+    "moving_time_source": "timer",
+    "distance": 914.400,
+    "avg_speed": 0.762,
+    "max_speed": 0.762,
+    "avg_heart_rate": 131.846,
+    "max_heart_rate": 136.000,
+    "avg_cadence": 29.994,
+    "max_cadence": 32.000
+  },
+  "summary": {
+    "elapsed_time": 1200.000,
+    "timer_time": 1200.000,
+    "distance": 914.400,
+    "calories": 200.000,
+    "avg_speed": 0.762,
+    "max_speed": 0.762,
+    "avg_heart_rate": 132.000,
+    "max_heart_rate": 136.000,
+    "avg_cadence": 29.992,
+    "max_cadence": 32.000,
+    "moving_time": 1200.000
+  }
+}

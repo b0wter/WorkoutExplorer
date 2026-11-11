@@ -54,6 +54,13 @@ export function legWithoutLaps(data: WorkoutData): WorkoutData {
   return { ...data, meta: { ...data.meta, laps: data.meta.laps.filter((_, i) => i !== 3) } };
 }
 
+/** F-44 PS-5: a pool swim whose session recorded no lengths count: "Pool" only. */
+export function withoutLengths(data: WorkoutData): WorkoutData {
+  const summary = { ...data.meta.summary };
+  delete summary.lengths;
+  return { ...data, meta: { ...data.meta, summary } };
+}
+
 export const EXPIRES_AT = '2026-10-30T09:15:00Z';
 
 /** F-23 PC-6: the Open Graph card is built in Go only, so every sample carries this placeholder for the
@@ -74,6 +81,8 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'triathlon-cut', golden: 'triathlon-cut-90', title: '', description: '' },
   { name: 'two-rides', golden: 'chained-ride-ride', title: '', description: '' },
   { name: 'pool-swim', golden: 'pool-swim', title: '', description: '' },
+  { name: 'pool-swim-25yd', golden: 'pool-swim-25yd', title: '', description: '' },
+  { name: 'pool-swim-no-lengths', golden: 'pool-swim', title: '', description: '', transform: withoutLengths },
   { name: 'ride-no-laps', golden: 'ride-no-laps', title: '', description: '' },
   {
     name: 'hostile-text',

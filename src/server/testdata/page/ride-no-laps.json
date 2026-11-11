@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Ride, 7 Jul 2026",
     "ViewPath": "/w/ride-no-laps",
-    "DataURL": "/w/ride-no-laps/data.65f1fc9b293e1f9e.bin"
+    "DataURL": "/w/ride-no-laps/data.8ffd1f69d54b44d2.bin"
   },
   "Header": {
     "Title": "Ride, 7 Jul 2026",
@@ -85,6 +85,7 @@
       "Max": "19"
     }
   ],
+  "Device": "",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

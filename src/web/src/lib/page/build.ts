@@ -2,7 +2,7 @@
 // the whole model is view.ts. Pure. Renderers select and format; they never compute: every number is the data file's
 // metadata as written. The Go builder (F-15) must reproduce the committed samples exactly.
 
-import type { Lap, TotalKey, WorkoutData } from '../datafile';
+import type { Lap, SummaryKey, TotalKey, WorkoutData } from '../datafile';
 import {
   MISSING_TEXT,
   cadenceUnit,
@@ -21,10 +21,10 @@ import {
 } from '../format';
 import type { LapsGroup, SummaryItem } from './model';
 
-type Totals = Readonly<Partial<Record<TotalKey | 'moving_time', number>>>;
+type Totals = Readonly<Partial<Record<SummaryKey, number>>>;
 
 
-function has(t: Totals, k: TotalKey | 'moving_time'): number | undefined {
+function has(t: Totals, k: SummaryKey): number | undefined {
   const v = t[k];
   return v === undefined || !Number.isFinite(v) ? undefined : v;
 }
@@ -56,6 +56,10 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   one('moving_time', 'Moving time', has(s, 'moving_time'), '', formatElapsed);
   one('elapsed_time', 'Elapsed time', has(s, 'elapsed_time'), '', formatElapsed);
   one('calories', 'Calories', has(s, 'calories'), 'kcal', int);
+  // F-44 PS-5: whole metres or yards as recorded, the same in both unit systems (DS-1).
+  one('pool', 'Pool', has(s, 'pool_length_m'), 'm', int);
+  one('pool', 'Pool', has(s, 'pool_length_yd'), 'yd', int);
+  one('lengths', 'Lengths', has(s, 'lengths'), '', int);
   one('ascent', 'Elevation gain', has(s, 'ascent'), elevationUnit(units), (v) => int(toElevation(v, units)));
   const speed = (v: number): string => formatSpeedOrPace(sport, v, units);
   const temp = (v: number): string => int(toTemperature(v, units));

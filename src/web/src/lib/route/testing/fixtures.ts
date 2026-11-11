@@ -48,6 +48,7 @@ export function positioned(
       start_time: '2026-06-06T05:00:00Z',
       time_zone: { known: true, offset_seconds: 0 },
       summary: {},
+      device: { name: '', sensors: [] },
       sessions: [],
       laps,
     },

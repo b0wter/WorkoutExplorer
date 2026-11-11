@@ -1,8 +1,8 @@
 // Package datafile encodes a normalised workout as the binary data file the
-// browser reads (format version 2, magic WEXD) and decodes it again.
+// browser reads (format version 3, magic WEXD) and decodes it again.
 //
 // The normative format description is architect/F-03-workout-data-file-writer.md,
-// section "Data file format, version 2"; the decisions behind it are in
+// section "Data file format, version 3"; the decisions behind it are in
 // ADR-005. The package is pure: it depends on package workout and the
 // standard library only, does no I/O and never logs (Technical Design,
 // Code structure: Dependency rules).
@@ -20,7 +20,7 @@ const Magic = "WEXD"
 
 // Version is the only format version this package writes and reads
 // (Format §9, ADR-005 item 9).
-const Version uint16 = 2
+const Version uint16 = 3
 
 // headerSize is magic, version, sample count and metadata length (Format §1).
 const headerSize = 14
@@ -69,6 +69,7 @@ type Meta struct {
 	StartTime string       `json:"start_time"`
 	TimeZone  TimeZone     `json:"time_zone"`
 	Summary   Summary      `json:"summary"`
+	Device    Device       `json:"device"` // version 3, §5.7
 	Sessions  []Session    `json:"sessions"`
 	Laps      []Lap        `json:"laps"`
 	Streams   []Descriptor `json:"streams"`
@@ -101,10 +102,21 @@ type Totals struct {
 	MaxTemperature json.Number `json:"max_temperature,omitempty"`
 }
 
-// Summary is the workout summary: Totals plus moving_time as its last key.
+// Summary is the workout summary: Totals plus moving_time and (version 3)
+// the pool keys (Format §5.2).
 type Summary struct {
 	Totals
-	MovingTime json.Number `json:"moving_time,omitempty"`
+	MovingTime   json.Number `json:"moving_time,omitempty"`
+	PoolLengthM  json.Number `json:"pool_length_m,omitempty"`
+	PoolLengthYd json.Number `json:"pool_length_yd,omitempty"`
+	Lengths      json.Number `json:"lengths,omitempty"`
+}
+
+// Device is the device line's data (Format §5.7): the display name ("" =
+// none) and the sensor codes in their fixed order.
+type Device struct {
+	Name    string   `json:"name"`
+	Sensors []string `json:"sensors"`
 }
 
 // Session is a session with its sample range (Format §5.3, §5.4).

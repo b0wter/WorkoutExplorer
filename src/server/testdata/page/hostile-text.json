@@ -2,7 +2,7 @@
   "Page": {
     "Title": "<b>Bold</b> & \"quoted\" <script>alert(1)</script>",
     "ViewPath": "/w/hostile-text",
-    "DataURL": "/w/hostile-text/data.7c52329de9b4fc7c.bin"
+    "DataURL": "/w/hostile-text/data.5683f49f34dd0804.bin"
   },
   "Header": {
     "Title": "<b>Bold</b> & \"quoted\" <script>alert(1)</script>",
@@ -85,6 +85,7 @@
       "Max": "20"
     }
   ],
+  "Device": "Recorded with corpusgen",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

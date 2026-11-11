@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Run, 30 Jun 2026",
     "ViewPath": "/w/run-30min",
-    "DataURL": "/w/run-30min/data.1d9012abc33a327f.bin"
+    "DataURL": "/w/run-30min/data.b9b9698c37af04cf.bin"
   },
   "Header": {
     "Title": "Run, 30 Jun 2026",
@@ -78,6 +78,7 @@
       "Max": "20"
     }
   ],
+  "Device": "Recorded with corpusgen",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

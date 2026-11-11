@@ -74,14 +74,14 @@ describe('F-03 §8 worked example, written byte by byte', () => {
         .join(',');
       json =
         '{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":true,"offset_seconds":7200},' +
-        `"summary":{},"sessions":[],"laps":[],"streams":[${streams}]}`;
+        `"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"streams":[${streams}]}`;
       if (enc.encode(json).length === l) break;
       l = enc.encode(json).length;
     }
     const meta = enc.encode(json);
     const length = offsets[4] + 5;
     const b = new Uint8Array(length);
-    b.set([0x57, 0x45, 0x58, 0x44, 0x02, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
+    b.set([0x57, 0x45, 0x58, 0x44, 0x03, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
     new DataView(b.buffer).setUint32(10, meta.length, true);
     b.set(meta, 14);
     const int32le = (vals: number[]) => new Uint8Array(new Int32Array(vals).buffer);
@@ -389,8 +389,9 @@ describe('metadata', () => {
     summary: {
       elapsed_time: 11, timer_time: 10, distance: 27012.5, ascent: 112, descent: 100, calories: 500, avg_speed: 7.999,
       max_speed: 12, avg_heart_rate: 141, max_heart_rate: 180, avg_cadence: 85, max_cadence: 110, avg_power: 200,
-      max_power: 600, avg_temperature: -2, max_temperature: 3, moving_time: 9,
+      max_power: 600, avg_temperature: -2, max_temperature: 3, moving_time: 9, pool_length_yd: 25, lengths: 64,
     },
+    device: { name: 'Wahoo Fitness ELEMNT BOLT', sensors: ['heart_rate_monitor', 'power_meter'] },
     sessions: [
       { sport: 'running', sub_sport: '', start: 0, end: 2, start_index: 0, end_index: 3, totals: { elapsed_time: 2, distance: 10 } },
       { sport: 'cycling', sub_sport: 'road', start: 10, end: 11, start_index: 3, end_index: 5, totals: {} },
@@ -430,13 +431,15 @@ describe('metadata', () => {
         meta: {
           time_zone: { known: true, offset_seconds: 0, name: 'x' },
           summary: { distance: 1, bogus: 'x' },
+          device: { name: 'x', sensors: [], serial: 1 },
           sessions: [{ sport: 's', sub_sport: '', start: 0, end: 1, start_index: 0, end_index: 2, totals: { moving_time: 1, x: 1 }, extra: 1 }],
           laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, totals: { avg_power: 1, y: 'z' }, sport: 'x' }],
         },
         patch: (m) => ({ ...m, extra: { a: 1 }, streams: m.streams.map((s) => ({ ...s, note: 'x' })) }),
       }),
     );
-    expect(Object.keys(d.meta)).toEqual(['sport', 'start_time', 'time_zone', 'summary', 'sessions', 'laps']);
+    expect(Object.keys(d.meta)).toEqual(['sport', 'start_time', 'time_zone', 'summary', 'device', 'sessions', 'laps']);
+    expect(d.meta.device).toEqual({ name: 'x', sensors: [] });
     expect(d.meta.time_zone).toEqual({ known: true, offset_seconds: 0 });
     expect(d.meta.summary).toEqual({ distance: 1 });
     expect(d.meta.sessions[0]).toEqual({ sport: 's', sub_sport: '', start: 0, end: 1, start_index: 0, end_index: 2, totals: {} });
@@ -472,12 +475,13 @@ describe('rejects (AC 3)', () => {
     delete c[key];
     return c;
   };
-  const topKeys = ['sport', 'start_time', 'time_zone', 'summary', 'sessions', 'laps', 'streams'] as const;
+  const topKeys = ['sport', 'start_time', 'time_zone', 'summary', 'device', 'sessions', 'laps', 'streams'] as const;
   const wrongType: Record<(typeof topKeys)[number], unknown> = {
     sport: 1,
     start_time: null,
     time_zone: [],
     summary: 'x',
+    device: [],
     sessions: {},
     laps: 'x',
     streams: {},
@@ -526,6 +530,10 @@ describe('rejects (AC 3)', () => {
     ['time_zone.offset_seconds fractional', () => build({ meta: { time_zone: { known: true, offset_seconds: 0.5 } } }), 'corrupt', 4],
     ['summary total as quoted number', () => build({ meta: { summary: { distance: '12' } } }), 'corrupt', 4],
     ['summary total null', () => build({ meta: { summary: { distance: null } } }), 'corrupt', 4],
+    ['device.name missing', () => build({ meta: { device: { sensors: [] } } }), 'corrupt', 4],
+    ['device.name not a string', () => build({ meta: { device: { name: 1, sensors: [] } } }), 'corrupt', 4],
+    ['device.sensors not an array', () => build({ meta: { device: { name: '', sensors: 'x' } } }), 'corrupt', 4],
+    ['device.sensors holds a number', () => build({ meta: { device: { name: '', sensors: [1] } } }), 'corrupt', 4],
     ['lap start as string', () => build({ meta: { laps: [{ ...lap, start: '0' }] } }), 'corrupt', 4],
     ['lap start_index missing', () => build({ meta: { laps: [without(lap, 'start_index')] } }), 'corrupt', 4],
     ['lap totals missing', () => build({ meta: { laps: [without(lap, 'totals')] } }), 'corrupt', 4],

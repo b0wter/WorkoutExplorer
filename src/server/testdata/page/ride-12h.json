@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Ride, 12 Jun 2026",
     "ViewPath": "/w/ride-12h",
-    "DataURL": "/w/ride-12h/data.1e9d7967d88fe744.bin"
+    "DataURL": "/w/ride-12h/data.c37f514544a045cd.bin"
   },
   "Header": {
     "Title": "Ride, 12 Jun 2026",
@@ -85,6 +85,7 @@
       "Max": "22"
     }
   ],
+  "Device": "Recorded with corpusgen",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

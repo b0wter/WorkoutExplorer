@@ -3,7 +3,7 @@
 // only the edit page's owner chunk carries it (F-19, bundle budget). The Go builder (F-15) must
 // reproduce the committed samples exactly.
 
-import type { WorkoutData } from '../datafile';
+import type { Device, WorkoutData } from '../datafile';
 import { presentCharts } from '../charts';
 import { routePresence } from '../route/presence';
 import { formatDate, formatLocalStart, sportIcon, sportName } from '../format/dates';
@@ -27,6 +27,27 @@ function chartsClass(data: WorkoutData): string {
   const distance = data.metrics.distance !== undefined;
   const cells = 1 + (distance ? 1 : 0) + n;
   return 'charts-' + n + ' cells-' + cells + (distance ? ' has-distance' : '');
+}
+
+/** The device line's sensor names (F-43 DI-7). */
+const SENSOR_LABELS: Readonly<Record<string, string>> = {
+  heart_rate_monitor: 'heart-rate monitor',
+  power_meter: 'power meter',
+  speed_sensor: 'speed sensor',
+  cadence_sensor: 'cadence sensor',
+  speed_cadence_sensor: 'speed and cadence sensor',
+  foot_pod: 'foot pod',
+  radar: 'radar',
+};
+
+/** F-43 DI-7: the device line, '' without a name and sensors. Codes without a label are skipped. */
+export function deviceLine(device: Device): string {
+  const list = device.sensors
+    .filter((c) => Object.hasOwn(SENSOR_LABELS, c))
+    .map((c) => SENSOR_LABELS[c])
+    .join(', ');
+  if (device.name !== '') return 'Recorded with ' + device.name + (list === '' ? '' : ' · ' + list);
+  return list === '' ? '' : 'Sensors: ' + list;
 }
 
 /** Display date of an instant in the workout's zone: for the expiry estimate (OQ-62). */
@@ -54,6 +75,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
       ExpiresText: expiryEstimate(settings.expiresAt, offset),
     },
     Summary: summaryItems(meta.sport, meta.summary),
+    Device: deviceLine(meta.device),
     Route: {
       Map: presence === 'route' ? 'yes' : '',
       NoLocation: presence === 'no-location-data' && !settings.routeHidden ? 'yes' : '',

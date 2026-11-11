@@ -63,7 +63,15 @@ export type TotalKey =
 
 /** Device totals; an absent key means "not recorded" (AP-2), never 0. */
 export type Totals = Readonly<Partial<Record<TotalKey, number>>>;
-export type Summary = Readonly<Partial<Record<TotalKey | 'moving_time', number>>>;
+/** Summary keys beyond the totals: moving time and (version 3, F-44) the pool values, whole units. */
+export type SummaryKey = TotalKey | 'moving_time' | 'pool_length_m' | 'pool_length_yd' | 'lengths';
+export type Summary = Readonly<Partial<Record<SummaryKey, number>>>;
+
+/** The device line's data (F-03 §5.7, F-43): display name ('' = none) and sensor codes in their fixed order. */
+export interface Device {
+  readonly name: string;
+  readonly sensors: readonly string[];
+}
 
 export interface TimeZone {
   readonly known: boolean;
@@ -94,6 +102,7 @@ export interface WorkoutMeta {
   readonly start_time: string;
   readonly time_zone: TimeZone;
   readonly summary: Summary;
+  readonly device: Device;
   readonly sessions: readonly Session[];
   readonly laps: readonly Lap[];
 }

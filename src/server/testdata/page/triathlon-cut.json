@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Multisport, 28 Jun 2026",
     "ViewPath": "/w/triathlon-cut",
-    "DataURL": "/w/triathlon-cut/data.675ba6d4ca9c33ea.bin"
+    "DataURL": "/w/triathlon-cut/data.a1cba234b94fe415.bin"
   },
   "Header": {
     "Title": "Multisport, 28 Jun 2026",
@@ -78,6 +78,7 @@
       "Max": "21"
     }
   ],
+  "Device": "Recorded with Garmin Fenix6 · heart-rate monitor, power meter, foot pod",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

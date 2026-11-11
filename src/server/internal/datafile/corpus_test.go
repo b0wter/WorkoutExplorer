@@ -95,8 +95,8 @@ func TestRoundTripCorpus(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Decode: %v", err)
 				}
-				if f.Version != 2 || f.SampleCount != len(w.Samples.Offset) {
-					t.Errorf("version %d, N %d; want 2, %d", f.Version, f.SampleCount, len(w.Samples.Offset))
+				if f.Version != Version || f.SampleCount != len(w.Samples.Offset) {
+					t.Errorf("version %d, N %d; want %d, %d", f.Version, f.SampleCount, Version, len(w.Samples.Offset))
 				}
 				// AC 2: alignment.
 				for _, s := range f.Streams {

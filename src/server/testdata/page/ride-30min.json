@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Morning loop",
     "ViewPath": "/w/ride-30min",
-    "DataURL": "/w/ride-30min/data.7c52329de9b4fc7c.bin"
+    "DataURL": "/w/ride-30min/data.5683f49f34dd0804.bin"
   },
   "Header": {
     "Title": "Morning loop",
@@ -85,6 +85,7 @@
       "Max": "20"
     }
   ],
+  "Device": "Recorded with corpusgen",
   "Route": {
     "Map": "yes",
     "NoLocation": "",

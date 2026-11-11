@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Ride, 6 Jun 2026",
     "ViewPath": "/w/route-hidden",
-    "DataURL": "/w/route-hidden/data.3fd9708351b577b5.bin"
+    "DataURL": "/w/route-hidden/data.58ceb4c1b6477fb5.bin"
   },
   "Header": {
     "Title": "Ride, 6 Jun 2026",
@@ -78,6 +78,7 @@
       "Max": "21"
     }
   ],
+  "Device": "Recorded with Wahoo Fitness ELEMNT BOLT · heart-rate monitor, power meter",
   "Route": {
     "Map": "",
     "NoLocation": "",

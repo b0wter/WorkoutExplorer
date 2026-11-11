@@ -56,6 +56,9 @@ func legWithoutLaps(f *datafile.File) {
 	f.Meta.Laps = slices.Delete(slices.Clone(f.Meta.Laps), 3, 4)
 }
 
+// withoutLengths mirrors samples.ts withoutLengths (F-44 PS-5).
+func withoutLengths(f *datafile.File) { f.Meta.Summary.Lengths = "" }
+
 var samples = []sampleSpec{
 	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false},
 	{"ride-12h", "ride-12h", "", "", nil, false},
@@ -70,6 +73,8 @@ var samples = []sampleSpec{
 	{"triathlon-cut", "triathlon-cut-90", "", "", nil, false},
 	{"two-rides", "chained-ride-ride", "", "", nil, false},
 	{"pool-swim", "pool-swim", "", "", nil, false},
+	{"pool-swim-25yd", "pool-swim-25yd", "", "", nil, false},
+	{"pool-swim-no-lengths", "pool-swim", "", "", withoutLengths, false},
 	{"ride-no-laps", "ride-no-laps", "", "", nil, false},
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
 		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", nil, false},
