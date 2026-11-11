@@ -43,11 +43,11 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
 | [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, delete prompt via exec, report query with sudo) |
 | [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov) |
-| [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | built, QA r2 ready | user: browser check of /about (phone, dark mode, details without JS), privacy wording edit, open the Garmin FIT licence page once |
+| [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | done | checked by the user 11 Nov |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
 | [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
-| [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | QA r1 ready | user: U-1 to U-4 (qa r1) |
+| [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | done | zip uploads checked by the user 11 Nov |
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | done | user: browser, messenger and card look checks (qa r1 list), VPS memory.peak |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
 | [F-37](F-37-report-notification-links.md) | Report notification links | 2 | both (backend first) | F-27, F-29, F-31 | done | user: lock-screen text shows no key (AC 41; links checked 9 Nov) |
