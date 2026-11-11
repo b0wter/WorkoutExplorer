@@ -60,7 +60,6 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   one('pool', 'Pool', has(s, 'pool_length_m'), 'm', int);
   one('pool', 'Pool', has(s, 'pool_length_yd'), 'yd', int);
   one('lengths', 'Lengths', has(s, 'lengths'), '', int);
-  one('ascent', 'Elevation gain', has(s, 'ascent'), elevationUnit(units), (v) => int(toElevation(v, units)));
   const speed = (v: number): string => formatSpeedOrPace(sport, v, units);
   const temp = (v: number): string => int(toTemperature(v, units));
   // A pace from a speed <= 0 is '' and so hidden (D-4). For a pace the best (fastest) value is the max.
@@ -68,6 +67,7 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   items.push(pair('heart_rate', 'heart rate', 'bpm', has(s, 'avg_heart_rate'), has(s, 'max_heart_rate'), int));
   items.push(pair('power', 'power', 'W', has(s, 'avg_power'), has(s, 'max_power'), int));
   items.push(pair('cadence', 'cadence', cadenceUnit(sport), has(s, 'avg_cadence'), has(s, 'max_cadence'), int));
+  one('ascent', 'Elevation gain', has(s, 'ascent'), elevationUnit(units), (v) => int(toElevation(v, units)));
   items.push(pair('temperature', 'temperature', temperatureUnit(units), has(s, 'avg_temperature'), has(s, 'max_temperature'), temp));
   return items.filter((i): i is SummaryItem => i !== null);
 }

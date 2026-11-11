@@ -35,7 +35,7 @@ describe('summary (AP-2, D-4)', () => {
   it('a ride has every metric in AP-2 order, with maximums as a second value (OQ-61)', () => {
     const m = byName('ride-30min');
     expect(m.Summary.map((i) => i.Key)).toEqual([
-      'distance', 'moving_time', 'elapsed_time', 'calories', 'ascent', 'speed', 'heart_rate', 'power', 'cadence', 'temperature',
+      'distance', 'moving_time', 'elapsed_time', 'calories', 'speed', 'heart_rate', 'power', 'cadence', 'ascent', 'temperature',
     ].filter((k) => item(m, k)));
     for (const k of ['speed', 'heart_rate', 'power', 'cadence', 'temperature']) {
       expect(item(m, k)?.Max, k).not.toBe('');
