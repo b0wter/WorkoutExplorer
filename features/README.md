@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -58,9 +58,10 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | done | checked by the user 11 Nov (charts, map, real triathlon); open: hidden start/end, no-JS, dark mode (qa r1) |
 | [F-43](F-43-device-info.md) | Device and sensor info | 2 | both (backend first) | F-15, F-19, F-29 | done | user: hand checks 1–4 (qa r1); minors r1-1..4 fixed |
 | [F-44](F-44-pool-summary.md) | Pool length and lengths in the summary | 2 | both (backend first) | F-15, F-19, F-41 | done | user: hand checks 1–4 (qa r1); minors r1-1..4 fixed |
+| [F-45](F-45-suggested-title.md) | Suggested title | 2 | both (backend first) | F-16, F-19, F-29, F-42 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 11 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 12 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -77,6 +78,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | UP-9 Identifying data removed on upload | Must | F-09, F-12, F-29 |
 | UP-10 Upload messages | Must | F-09, F-11 |
 | UP-11 Zip archive opened in the browser | Should (phase 2) | F-35 (phase 2) |
+| UP-5 Suggested title (sport, time of day, nearest town) | Could (phase 2) | F-45 (phase 2) |
 | AP-1 Header | Must | F-13 |
 | AP-2 Summary strip | Must | F-02, F-08, F-13 |
 | AP-3 Map, no-location hint | Must | F-06, F-16 |
@@ -140,7 +142,6 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 
 ## Phase 2 (not broken down)
 
-- Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1
 - Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5
 - Pool swims: lengths and stroke type instead of a map — AP-13
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11
@@ -151,6 +152,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Multisport legs and transitions as sections — AP-12: detailed in [F-42](F-42-multisport-sections.md).
 - Device and sensor info — AP-14: detailed in [F-43](F-43-device-info.md).
 - Pool length and number of lengths in the summary — AP-16: detailed in [F-44](F-44-pool-summary.md).
+- Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1: detailed in [F-45](F-45-suggested-title.md).
 
 ## Questions for review
 
@@ -663,3 +665,5 @@ The original questions follow for reference.
 **Decided on 11 Nov 2026, OQ-151 to OQ-153** (user, AP-14, AP-16): device name includes the brand ("Wahoo Fitness ELEMNT BOLT", "Garmin Edge 530"); backend engineer checks local real files for sensor `source_type`, a missing one counts as ANT+ if sensors are lost; "Lengths" hidden when any pool swim lacks a lengths count. Updated: F-43, F-44.
 
 **Decided on 11 Nov 2026, F-43 follow-ups** (user, AP-14): OQ-152 outcome: devices that record sensors without source type and device type (e.g. some Wahoo files) show the device name without sensors; accepted, nothing can be done. An empty-after-cleaning first recording-device product name no longer blocks a later valid one in the same file; the first non-empty name after cleaning is used. Updated: none.
+
+**Decided on 11 Nov 2026, OQ-154 to OQ-161** (user, UP-5, F-45): suggestions accepted, except the town spelling. OQ-154: the suggestion is the empty-title fallback (replacing sport and date, item 17) and the field placeholder, never prefilled. OQ-155: rebuilt with the page, so it follows hiding and trim. OQ-156: no position, no "near …". OQ-157: "triathlon" for swim, bike, run in order, else "multisport". OQ-158: morning 05–12, afternoon 12–17, evening 17–21, night 21–05, workout offset, else UTC. OQ-159: no "near …" beyond 25 km. OQ-160: "<Time of day> <sport> near <town>", English words, town from the GeoNames `name` field (local spelling, "Köln"), not the ASCII name. OQ-161: no start time, no time-of-day word. Updated: spec UP-4, UP-5, open questions; technical design (suggested title); F-45.

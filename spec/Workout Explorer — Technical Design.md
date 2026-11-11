@@ -112,7 +112,7 @@ The parser reads the messages below and builds one normalised workout: sessions,
 - Elevation gain, where the device recorded none, uses smoothing plus a 3 m hysteresis, one parameter set for barometric and GPS altitude, so altitude noise is not counted as climbing (F-02 R-8).
 - Distance is taken from the file and never decreases: where the device's distance falls, the last higher value is kept (F-08 R-14); missing samples stay missing. If the file has no distance, it is computed from GPS points with the haversine formula.
 - Session totals from the device are shown as recorded, also when positions are hidden for privacy (AP-2, SH-9). After a trim (UP-6), totals are recomputed from the remaining streams. Values for a selected range (AP-7) are computed in the browser from the streams; moving time and gain come from the server's cumulative streams (ADR-029).
-- Suggested title (UP-5): sport, a time-of-day word from the local start time (morning, afternoon, evening, night), and the nearest town of 15,000+ people to the first point that remains visible after hiding and trim. The GeoNames licence needs an attribution line on the site.
+- Suggested title (UP-5, wording and rules there; F-45): the town is the GeoNames `name` field (local spelling, UTF-8), not `asciiname`; time of day uses the workout's UTC offset (time zones below). The GeoNames licence needs an attribution line on the site.
 - Irregular sampling (smart recording) is resampled to 1 s only where gaps are under 5 s; longer gaps stay gaps, so pauses draw as breaks.
 
 **Edge cases to test**
