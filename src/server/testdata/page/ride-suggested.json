@@ -1,0 +1,200 @@
+{
+  "Page": {
+    "Title": "Morning ride near Köln",
+    "ViewPath": "/w/ride-suggested",
+    "DataURL": "/w/ride-suggested/data.5683f49f34dd0804.bin"
+  },
+  "Header": {
+    "Title": "Morning ride near Köln",
+    "SportName": "Ride",
+    "SportIcon": "cycling",
+    "Start": "23 Jun 2026, 07:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "13.46",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "29:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "29:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "299",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg speed",
+      "Value": "26.9",
+      "Unit": "km/h",
+      "Max": "28.8"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "142",
+      "Unit": "bpm",
+      "Max": "159"
+    },
+    {
+      "Key": "power",
+      "Label": "Avg power",
+      "Value": "216",
+      "Unit": "W",
+      "Max": "290"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "89",
+      "Unit": "rpm",
+      "Max": "93"
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "104",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "19",
+      "Unit": "°C",
+      "Max": "20"
+    }
+  ],
+  "Device": "Recorded with corpusgen",
+  "Route": {
+    "Map": "yes",
+    "NoLocation": "",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-6 cells-8 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Speed (km/h)"
+      },
+      {
+        "Key": "ascent",
+        "Label": "Gain (m)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_power",
+        "Label": "Power (W)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (rpm)"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "5:00",
+        "2.24",
+        "26.9",
+        "49",
+        "144",
+        "257",
+        "89"
+      ],
+      [
+        "2",
+        "5:00",
+        "2.25",
+        "27.0",
+        "1",
+        "155",
+        "222",
+        "89"
+      ],
+      [
+        "3",
+        "5:00",
+        "2.25",
+        "27.0",
+        "8",
+        "156",
+        "166",
+        "89"
+      ],
+      [
+        "4",
+        "5:00",
+        "2.25",
+        "26.9",
+        "40",
+        "147",
+        "248",
+        "89"
+      ],
+      [
+        "5",
+        "5:00",
+        "2.25",
+        "26.9",
+        "5",
+        "132",
+        "235",
+        "89"
+      ],
+      [
+        "6",
+        "4:59",
+        "2.23",
+        "26.9",
+        "0",
+        "121",
+        "164",
+        "89"
+      ]
+    ],
+    "None": "",
+    "Sections": []
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

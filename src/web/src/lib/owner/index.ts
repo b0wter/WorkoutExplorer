@@ -21,6 +21,8 @@ export interface Settings {
   readonly view_url: string;
   /** ADR-030: inclusive [first, last] sample ranges into draft.bin that hiding removes. */
   readonly hide_ends_ranges: readonly (readonly [number, number])[];
+  /** Read-only, F-45 ST-6: the UP-5 suggestion for an empty title; '' = none. */
+  readonly suggested_title: string;
 }
 
 /** F-36 MC-2, MC-4: the server's preview frame for the public route, its key and whether a stored

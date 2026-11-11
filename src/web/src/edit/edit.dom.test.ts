@@ -50,6 +50,7 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   data_end_s: null,
   view_url: '/w/' + ID,
   hide_ends_ranges: RANGES,
+  suggested_title: '',
   ...over,
 });
 
@@ -283,6 +284,32 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
 });
 
 describe('AC 2, E-6: saving', () => {
+  it('F-45 ST-7: the suggestion is header, tab and placeholder while the title is empty; it follows the save response and is never sent', async () => {
+    settings = fresh({ suggested_title: 'Morning ride near Köln' });
+    onPatch = (body) => Response.json((settings = { ...settings, ...body, suggested_title: body.hide_ends ? 'Morning ride near Bonn' : settings.suggested_title } as Settings));
+    await open();
+    expect($('h1')?.textContent).toBe('Morning ride near Köln');
+    expect(document.title).toBe('Morning ride near Köln');
+    expect(field('title').placeholder).toBe('Morning ride near Köln');
+    expect(field('title').value).toBe('');
+    toggle('hide_ends');
+    flushSync();
+    expect(field('title').placeholder).toBe('Morning ride near Köln'); // not from an unsaved toggle
+    await save();
+    expect(patches()).toEqual([{ hide_ends: true }]);
+    expect($('h1')?.textContent).toBe('Morning ride near Bonn');
+    expect(document.title).toBe('Morning ride near Bonn');
+    expect(field('title').placeholder).toBe('Morning ride near Bonn');
+    type('title', 'Loop');
+    await save();
+    expect($('h1')?.textContent).toBe('Loop');
+    type('title', '');
+    await save();
+    expect($('h1')?.textContent).toBe('Morning ride near Bonn');
+    expect(field('title').value).toBe('');
+    for (const p of patches()) expect(p).not.toHaveProperty('suggested_title');
+  });
+
   it('sends only the changed field, and the header re-renders from the response', async () => {
     await open();
     type('title', 'Evening <b>loop</b>');

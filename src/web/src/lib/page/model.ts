@@ -85,4 +85,6 @@ export interface PageSettings {
   readonly dataFile: string;
   /** F-16 H-5: the uploader hid the entire route; not derivable from the data file. */
   readonly routeHidden?: boolean;
+  /** F-45 ST-7: the server's UP-5 suggestion, shown while the title is empty; '' or absent = none. */
+  readonly suggestedTitle?: string;
 }

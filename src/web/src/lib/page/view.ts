@@ -59,7 +59,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
   const meta = data.meta;
   const zone = meta.time_zone;
   const offset = zone.known ? zone.offset_seconds : 0;
-  const title = settings.title.trim() === '' ? defaultTitle(meta.sport, meta.start_time, offset) : settings.title;
+  const title = settings.title.trim() === '' ? settings.suggestedTitle || defaultTitle(meta.sport, meta.start_time, offset) : settings.title;
   const base = '/w/' + settings.publicId;
   const presence = routePresence(data);
   const laps = lapsGroup(meta.sport, meta.laps);

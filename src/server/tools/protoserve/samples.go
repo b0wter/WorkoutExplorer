@@ -24,6 +24,7 @@ var dataFor = map[string]string{
 	"ride-no-hr":          "ride-30min",
 	"indoor-ride":         "indoor-no-gps",
 	"route-hidden":        "indoor-no-gps",
+	"ride-suggested":      "ride-30min",
 	"indoor-unknown-zone": "indoor-no-distance-no-gps",
 	"hostile-text":        "ride-30min",
 }

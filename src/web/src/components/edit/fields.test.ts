@@ -16,6 +16,7 @@ const STORED: Settings = {
   data_end_s: null,
   view_url: '/w/x',
   hide_ends_ranges: [],
+  suggested_title: '',
 };
 
 afterEach(() => {

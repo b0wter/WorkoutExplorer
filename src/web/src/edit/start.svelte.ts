@@ -113,7 +113,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   /** Apart from settings: a restore updates it without refilling the form (C-2). */
   let visibility = $state(got.value.visibility);
   const build = (s: Settings) =>
-    data && buildPageViewModel(data, { title: s.title, description: s.description, expiresAt: s.expires_at, publicId: owner.publicId, dataFile: '' });
+    data && buildPageViewModel(data, { title: s.title, description: s.description, expiresAt: s.expires_at, publicId: owner.publicId, dataFile: '', suggestedTitle: s.suggested_title });
   const first = build(got.value);
   let model = $state.raw(first);
 
@@ -225,7 +225,10 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       get status() {
         return ui.status;
       },
-      placeholder: data && zone ? defaultTitle(data.meta.sport, data.meta.start_time, zone.known ? zone.offset_seconds : 0) : '',
+      // F-45 ST-7: follows the saved settings, so a save that changes the suggestion updates it.
+      get placeholder() {
+        return settings.suggested_title || (data && zone ? defaultTitle(data.meta.sport, data.meta.start_time, zone.known ? zone.offset_seconds : 0) : '');
+      },
       now: Date.now(),
       origin: loc.origin,
       onsave: (patch: SettingsPatch) => void save(patch),
