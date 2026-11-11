@@ -37,5 +37,7 @@ A sharer who leaves the title empty gets a fitting one, such as "Morning ride ne
 - [ ] Swim, bike, run with transitions shows "triathlon"; any other multisport workout (F-42), e.g. run, bike, run, shows "multisport".
 - [ ] A network log of upload, edit and publish shows no request to any third party; the server makes no outbound connection for the lookup.
 - [ ] A typed title always wins, keeps the F-12 limits and is never overwritten; clearing it brings the suggestion back.
+- [ ] A first public point next to a city district (GeoNames PPLX) names the city, not the district (OQ-162).
+- [ ] The operator's delete confirmation shows sport and date for an empty title, never the suggestion (OQ-163).
 - [ ] The About page lists GeoNames with its CC BY 4.0 licence.
 - [ ] Every corpus file still uploads and renders; upload time, data file size and LCP unchanged within noise; the binary grows by no more than the size of the bundled place data.
