@@ -1,7 +1,7 @@
 # F-45 Suggested title: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (11 Nov 2026). Critical lane. OQ-162, OQ-163 open (below), neither blocks the code
+- **Status:** accepted (11 Nov 2026). Critical lane. OQ-162, OQ-163 resolved 11 Nov 2026 (below)
 - **Feature:** [`features/F-45-suggested-title.md`](../features/F-45-suggested-title.md); rules in UP-5, decision log OQ-154 to OQ-161
 - **Requirements:** UP-5, UP-4, SH-4, SH-5, SH-9, SH-10, UP-6 (phase 2), UP-7, AC-4, AP-12, INF-1, DS-3; NFR Privacy, NFR Performance; invariants I-3, I-5
 - **Builds on:** new [ADR-045](ADR-045-place-data-vendored-and-embedded.md); [F-16](F-16-start-and-end-hiding.md) H-4, H-7, FE-1; [ADR-030](ADR-030-to-be-hidden-ranges-computed-at-upload.md); [ADR-028](ADR-028-public-files-rebuilt-whole-page-as-commit-point.md); [ADR-026](ADR-026-activity-page-template-adopted-not-hydrated.md); [F-19](F-19-edit-page-and-settings.md) E-5 to E-7; [F-42](F-42-multisport-sections.md) MS-1, MS-2; [F-29](F-29-about-page-and-attributions.md) AB-5. No migration, no setting, no data file format change
@@ -47,5 +47,5 @@
 
 | ID | Question | Suggestion | Blocks |
 | --- | --- | --- | --- |
-| OQ-162 | `cities15000` probably also lists city districts (feature code `PPLX`, e.g. a Köln district above 15,000 people), so a ride 5 km from Köln's centre could read "near Ehrenfeld" instead of "near Köln" (AC 31) | Drop `PPLX` rows at refresh (one filter in ST-1's command); the engineer first confirms such rows exist in the snapshot | The table's content only, not the code |
-| OQ-163 | The operator's delete confirmation page (F-37 DK-7) shows the row's title or sport and date. Show the suggestion there too? | No: it is the operator's page, built from the row alone; keeping sport and date avoids reading `draft.bin` on a key-authenticated path | Nothing (unchanged unless the user objects) |
+| OQ-162 | **Resolved 11 Nov 2026 (user): drop `PPLX` rows at refresh.** Confirmed present in the snapshot: 2,393 of 34,214 rows dropped, 31,821 remain | | |
+| OQ-163 | **Resolved 11 Nov 2026 (user): the operator's delete confirmation keeps sport and date.** `page.RowTitle` unchanged | | |

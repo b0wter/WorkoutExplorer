@@ -85,7 +85,7 @@ func TestPublishEndToEnd(t *testing.T) {
 	}
 	rec := a.owner("POST", "/api/workouts/"+pub+"/publish", token, "")
 	var s map[string]any
-	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 11 {
+	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 12 {
 		t.Fatalf("publish: %d %s", rec.Code, rec.Body)
 	}
 	row := a.rows()[0]
@@ -112,7 +112,7 @@ func TestPublishEndToEnd(t *testing.T) {
 	// F-23 AC 4 (PC-7): every OG/Twitter tag before the preload, the image URL absolute.
 	head, _, _ := strings.Cut(page, `<link rel="preload"`)
 	for _, want := range []string{
-		`<meta property="og:title" content="Ride, 23 Jun 2026" />`,
+		`<meta property="og:title" content="Morning ride near Luzern" />`,
 		`<meta property="og:description" content="Distance 13.46 km · Moving time 29:59 · Elevation gain 104 m · Avg speed 26.9 km/h · Avg heart rate 142 bpm" />`,
 		`<meta property="og:image" content="` + testBaseURL + `/w/` + pub + `/` + preview + `" />`,
 		`<meta property="og:image:width" content="1200" />`, `<meta property="og:image:height" content="630" />`,

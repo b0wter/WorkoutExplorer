@@ -26,6 +26,7 @@ type Owner interface {
 	OpenOriginal(ctx context.Context, publicID, token string) (lifecycle.Download, error)
 	DeleteByOwner(ctx context.Context, publicID, token string) error
 	Publish(ctx context.Context, publicID, token string) (lifecycle.Record, error)
+	SuggestedTitle(rec lifecycle.Record) string
 	PreviewFrame(ctx context.Context, publicID, token string) (lifecycle.MapFrame, error)
 	PutPreviewMap(ctx context.Context, publicID, token, key string, body io.Reader) error
 }
@@ -72,10 +73,12 @@ type settingsBody struct {
 	ViewURL       string `json:"view_url"`
 	// HideEndsRanges is read-only (ADR-030): never nil, so it encodes as [].
 	HideEndsRanges [][2]int `json:"hide_ends_ranges"`
+	// SuggestedTitle is read-only (F-45 ST-6): the UP-5 suggestion whatever the title, "" = none.
+	SuggestedTitle string `json:"suggested_title"`
 }
 
-func settingsOf(r lifecycle.Record) settingsBody {
-	return settingsBody{
+func settingsOf(r lifecycle.Record, suggested string) settingsBody {
+	return settingsBody{SuggestedTitle: suggested,
 		Title: r.Title, Description: r.Description, HideEnds: r.HideEnds, AllowDownload: r.AllowDownload,
 		Visibility: string(r.Visibility), LifetimeDays: r.LifetimeDays(),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339), ExpiresAt: r.ExpiresAt.UTC().Format(time.RFC3339),
@@ -177,7 +180,7 @@ func (h *ownerHandler) publish(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, settingsOf(rec))
+	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.SuggestedTitle(rec)))
 }
 
 // begin applies ADR-025 items 2 and 3 and the deadlines of O-12. ok is false
@@ -232,7 +235,7 @@ func (h *ownerHandler) get(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, settingsOf(rec))
+	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.SuggestedTitle(rec)))
 }
 
 func (h *ownerHandler) delete(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +310,7 @@ func (h *ownerHandler) patch(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, settingsOf(rec))
+	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.SuggestedTitle(rec)))
 }
 
 // parsePatch reads the body of a PATCH: one JSON object whose keys are

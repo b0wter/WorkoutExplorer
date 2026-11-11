@@ -62,3 +62,7 @@ func holdDistance(s *Samples) {
 		}
 	}
 }
+
+// Haversine is haversine for other packages, so the 25 km town radius of
+// F-45 ST-2 uses the same distance as R-6.
+func Haversine(lat1, lon1, lat2, lon2 float64) float64 { return haversine(lat1, lon1, lat2, lon2) }

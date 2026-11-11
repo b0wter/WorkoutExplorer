@@ -13,6 +13,8 @@ import (
 	"workout-explorer/internal/lifecycle"
 )
 
+func (o *fakeOwner) SuggestedTitle(lifecycle.Record) string { return "Morning ride near Köln" }
+
 type fakeOwner struct {
 	calls []string
 	token string
@@ -135,7 +137,7 @@ func TestOwnerResponses(t *testing.T) {
 		!strings.Contains(rec.Body.String(), `"title":"\u003cb\u003e"`) || !strings.Contains(rec.Body.String(), `"lifetime_days":7`) ||
 		!strings.Contains(rec.Body.String(), `"created_at":"2026-10-01T00:00:00Z"`) || !strings.Contains(rec.Body.String(), `"data_end_s":null`) ||
 		!strings.Contains(rec.Body.String(), `"view_url":"/w/pppppppppppppppppppppp"`) ||
-		!strings.Contains(rec.Body.String(), `"hide_ends_ranges":[]`) {
+		!strings.Contains(rec.Body.String(), `"hide_ends_ranges":[]`) || !strings.Contains(rec.Body.String(), `"suggested_title":"Morning ride near Köln"`) {
 		t.Errorf("get: %d %s", rec.Code, rec.Body)
 	}
 
@@ -191,7 +193,7 @@ func TestPatchBody(t *testing.T) {
 	bad := []string{
 		``, `[]`, `"x"`, `null`, `{`, `{} {}`, `{}x`,
 		`{"unknown":1}`, `{"created_at":"2026-01-01T00:00:00Z"}`, `{"expires_at":"x"}`, `{"view_url":"/x"}`, `{"data_end_s":1}`,
-		`{"hide_ends_ranges":[]}`, `{"hide_ends_ranges":[[0,1]]}`, `{"title":"x","hide_ends_ranges":null}`,
+		`{"hide_ends_ranges":[]}`, `{"suggested_title":"x"}`, `{"hide_ends_ranges":[[0,1]]}`, `{"title":"x","hide_ends_ranges":null}`,
 		`{"title":null}`, `{"title":null,"title":"x"}`, `{"title":"a","title":"b"}`, `{"title":1}`, `{"hide_ends":"yes"}`, `{"allow_download":1}`, `{"lifetime_days":7.5}`,
 		`{"lifetime_days":"7"}`, `{"visibility":3}`, `{"description":["a"]}`,
 		`{"visibility":"unlisted"}`, `{"visibility":"draft"}`, `{"visibility":"private"}`, `{"title":"x","visibility":"unlisted"}`, // read-only (O-6)

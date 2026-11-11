@@ -38,6 +38,7 @@ import (
 	"workout-explorer/internal/datafile"
 	"workout-explorer/internal/lifecycle"
 	"workout-explorer/internal/page"
+	"workout-explorer/internal/places"
 	"workout-explorer/internal/precompress"
 	"workout-explorer/internal/preview"
 	"workout-explorer/internal/workout"
@@ -69,6 +70,7 @@ type Deps struct {
 	Storage   *lifecycle.Storage // nil: no total (tests)
 	Logger    *slog.Logger       // nil: no log lines (tests)
 	BaseURL   string             // origin of absolute links, checked by cmd (F-23 PC-8)
+	Places    *places.Index      // nil: no suggested title (F-45 ST-5)
 	// Rows reads the row again inside the lock before a write phase (F-30
 	// RG-5); nil: no re-read (tests).
 	Rows Rows
@@ -400,6 +402,15 @@ func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
 	s := page.Settings{
 		Title: r.Title, Description: r.Description, ExpiresAt: r.ExpiresAt,
 		PublicID: r.PublicID, DataFile: name, RouteHidden: routeHidden, BaseURL: a.d.BaseURL,
+	}
+	// The town comes from the public file only, after the transform (F-45
+	// ST-4); the page uses it only while the title is empty. Never logged.
+	if a.d.Places != nil {
+		town := ""
+		if lat, lon, ok := f.FirstPosition(); ok {
+			town, _ = a.d.Places.Nearest(lat, lon)
+		}
+		s.Suggested = page.Suggest(f.Meta, town)
 	}
 	// The preview is drawn from the decoded public file and the card text
 	// (F-23 PC-1); its name then goes into the page's image URL.

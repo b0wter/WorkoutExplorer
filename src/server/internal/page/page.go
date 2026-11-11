@@ -70,6 +70,9 @@ type Settings struct {
 	RouteHidden bool   // F-16 H-5: the uploader hid the entire route
 	BaseURL     string // F-23 PC-8: origin for absolute links, no trailing slash
 	Preview     string // "preview.{hash}.png" (F-23 PC-2)
+	// Suggested is the UP-5 title shown while Title is empty ("" = none:
+	// sport and date); worked out by the caller from the public file (F-45 ST-5).
+	Suggested string
 }
 
 // totals is a set of metadata totals as numbers; absent keys are missing.
@@ -104,6 +107,9 @@ func Build(f datafile.File, s Settings) ViewModel {
 	title := s.Title
 	if jsTrim(title) == "" {
 		title = DefaultTitle(f)
+		if s.Suggested != "" {
+			title = s.Suggested
+		}
 	}
 	expires := s.ExpiresAt.UTC().Format(time.RFC3339)
 	base := "/w/" + s.PublicID

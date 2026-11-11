@@ -15,6 +15,7 @@ import (
 	"workout-explorer/internal/httpapi"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/places"
 	"workout-explorer/internal/privatedir"
 	"workout-explorer/internal/publish"
 	"workout-explorer/internal/pushover"
@@ -108,7 +109,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	// The total starts at 0 and gets the measured usage after recovery, so
 	// removed orphans and staging never count (ADR-022, F-10 design).
 	storage := lifecycle.NewStorage(limit, 0)
-	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Maps: files, Parser: parser, Storage: storage, Logger: logger, BaseURL: s.baseURL, Rows: db})
+	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Maps: files, Parser: parser, Storage: storage, Logger: logger, BaseURL: s.baseURL, Rows: db, Places: places.Default()})
 	if err != nil {
 		return fail(err)
 	}
@@ -120,6 +121,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		Hook:    public,
 		Public:  public,
 		Frames:  public,
+		Places:  places.Default(),
 		Logger:  logger,
 	})
 	if err := svc.Recover(ctx); err != nil {

@@ -56,7 +56,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-42 Multisport sections | [F-42-multisport-sections.md](F-42-multisport-sections.md) | accepted (9 Nov 2026; normal lane; owner both, B-1 backend first; no format change; browser part lazy; OQ-144, OQ-145 resolved) | 0.1 | ADR-009, ADR-011, ADR-026, ADR-027 |
 | F-43 Device and sensor info | [F-43-device-info.md](F-43-device-info.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-44; format version 3; static ceiling 100; OQ-151, OQ-152 resolved) | 0.1 | ADR-003, ADR-011, ADR-023, ADR-026, ADR-044 |
 | F-44 Pool length and lengths in the summary | [F-44-pool-summary.md](F-44-pool-summary.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-43; format version 3; static ceiling 150; OQ-153 resolved) | 0.1 | ADR-011, ADR-026, ADR-027, ADR-044 |
-| F-45 Suggested title | [F-45-suggested-title.md](F-45-suggested-title.md) | accepted (11 Nov 2026; critical lane; owner both, backend first; no format, schema or setting change; static share 0; ADR-030 and F-12 noted in place; OQ-162, OQ-163 open, not blocking) | 0.1 | ADR-005, ADR-011, ADR-026, ADR-028, ADR-030, ADR-045 |
+| F-45 Suggested title | [F-45-suggested-title.md](F-45-suggested-title.md) | accepted (11 Nov 2026; critical lane; owner both, backend first; no format, schema or setting change; static share 0; ADR-030 and F-12 noted in place; OQ-162, OQ-163 resolved 11 Nov 2026) | 0.1 | ADR-005, ADR-011, ADR-026, ADR-028, ADR-030, ADR-045 |
 
 ## Decisions (ADRs)
 
@@ -132,8 +132,8 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-109 | F-35: an AppleDouble `._ride.fit` in the root counts as a second FIT file under UP-11. Suggestion: ignore root names starting with `._` | Nothing (UP-11 built as written until decided) | user (product). **Decided 9 Nov 2026: root names starting with `._` are ignored (built in Z-7)** |
 | OQ-110 | F-35: "the picker accepts `.fit` and `.zip`" met without an `accept` filter (F-11 U-6). Suggestion: no filter | Nothing | user (product). **Decided 9 Nov 2026: no file filter (Z-12)** |
 | OQ-111 | F-35: a root `.fit` entry that holds a zip. Suggestion: refused as damaged, nothing sent (F-35 Z-10) | Nothing | user (product). **Decided 9 Nov 2026: refused as damaged, nothing sent (Z-10)** |
-| OQ-162 | F-45: `cities15000` probably lists city districts (`PPLX`), so a ride near Köln could read "near Ehrenfeld". Suggestion: drop `PPLX` rows at refresh, after the engineer confirms they exist (F-45 ST-1) | The vendored table's content only | user (product) |
-| OQ-163 | F-45: the operator's delete confirmation page (F-37 DK-7) keeps sport and date for an empty title. Suggestion: keep (operator page, row only) | Nothing (unchanged unless the user objects) | user (product) |
+| OQ-162 | **Resolved 11 Nov 2026: drop `PPLX` rows (user).** 2,393 of 34,214 rows dropped at refresh (F-45 ST-1); the table has 31,821 towns | none | none |
+| OQ-163 | **Resolved 11 Nov 2026: keep sport and date (user).** The delete confirmation page is unchanged | none | none |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

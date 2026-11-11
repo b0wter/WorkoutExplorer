@@ -54,5 +54,12 @@
     "licence": "FIT Protocol License",
     "link": "https://thisisant.developer.garmin.com/pages/developer/ant/licensing/flexible-and-interoperable-data-transfer-fit-protocol-license/index.html",
     "origins": []
+  },
+  {
+    "name": "GeoNames",
+    "attribution": "Town names for suggested titles from the GeoNames gazetteer (cities15000), reduced to name and position (modified)",
+    "licence": "CC BY 4.0",
+    "link": "https://www.geonames.org/",
+    "origins": []
   }
 ]

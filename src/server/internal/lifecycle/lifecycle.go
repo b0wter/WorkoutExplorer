@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/datafile"
+	"workout-explorer/internal/places"
 )
 
 // Deps are the collaborators of a Service.
@@ -31,6 +32,8 @@ type Deps struct {
 	Public PublicFiles
 	// Frames computes preview frames (F-36 MC-2); nil: the preview-map operations answer not found.
 	Frames Frames
+	// Places is the town index for the owner's suggested_title (F-45 ST-6); nil: none.
+	Places *places.Index
 	Logger *slog.Logger
 	Now    func() time.Time // nil: time.Now
 	Rand   io.Reader        // nil: crypto/rand.Reader

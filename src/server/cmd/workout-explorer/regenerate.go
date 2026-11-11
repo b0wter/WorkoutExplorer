@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/places"
 	"workout-explorer/internal/privatedir"
 	"workout-explorer/internal/publish"
 	"workout-explorer/internal/store"
@@ -91,7 +92,7 @@ func regenerate(ctx context.Context, dataDir string, s settings, stdout, stderr 
 		return failed(err)
 	}
 	parser := newParser(s.parseTimeout, true, logger)
-	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Maps: files, Parser: parser, Logger: logger, BaseURL: s.baseURL, Rows: db})
+	public, err := publish.Open(dataDir, publish.Deps{Template: tmpl, Originals: files, Maps: files, Parser: parser, Logger: logger, BaseURL: s.baseURL, Rows: db, Places: places.Default()})
 	if err != nil {
 		return failed(err)
 	}

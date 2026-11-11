@@ -10,6 +10,9 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"workout-explorer/internal/datafile"
+	"workout-explorer/internal/page"
 )
 
 // The owner operations of F-12 (architect/F-12-owner-api.md,
@@ -386,4 +389,37 @@ func (s *Service) DeleteByOperator(ctx context.Context, r Record) error {
 	}
 	s.checkpoint(ctx)
 	return nil
+}
+
+// SuggestedTitle is the UP-5 suggestion for the owner's settings object
+// (F-45 ST-6): read-only, "" when none or on any failure (F-19 E-5). The town
+// comes from the first position of draft.bin outside the stored hiding ranges
+// (ADR-030) when hide_ends is on, so a hidden start never names its town. Never
+// logged (I-5).
+func (s *Service) SuggestedTitle(rec Record) string {
+	if s.d.Places == nil {
+		return ""
+	}
+	body, size, err := s.d.Files.Read(rec.ID, DraftName)
+	if err != nil {
+		return ""
+	}
+	defer body.Close()
+	ra, ok := body.(io.ReaderAt)
+	if !ok {
+		return ""
+	}
+	var skip [][2]int
+	if rec.HideEnds {
+		skip = rec.HiddenRanges
+	}
+	m, lat, lon, ok, err := datafile.FirstPositionAt(ra, size, skip)
+	if err != nil {
+		return ""
+	}
+	town := ""
+	if ok {
+		town, _ = s.d.Places.Nearest(lat, lon)
+	}
+	return page.Suggest(m, town)
 }
