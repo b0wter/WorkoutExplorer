@@ -1,6 +1,7 @@
 package places
 
 import (
+	"math"
 	"strings"
 	"testing"
 	"unicode"
@@ -62,6 +63,18 @@ func TestNearestRadius(t *testing.T) {
 	}
 	if _, ok := (*Index)(nil).Nearest(0, 0); ok {
 		t.Error("nil index found a town")
+	}
+}
+
+// The radius is inclusive: a town exactly radius away is found, one float less is not.
+func TestWithinBoundaryInclusive(t *testing.T) {
+	ix, _ := Parse("A\t10\t10\n")
+	d := workout.Haversine(10.1, 10, 10, 10)
+	if n, ok := ix.within(10.1, 10, d); !ok || n != "A" {
+		t.Error("town at exactly the radius not found")
+	}
+	if _, ok := ix.within(10.1, 10, math.Nextafter(d, 0)); ok {
+		t.Error("town beyond the radius found")
 	}
 }
 

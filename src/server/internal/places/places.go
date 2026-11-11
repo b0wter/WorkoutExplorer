@@ -7,6 +7,7 @@ import (
 	"bufio"
 	_ "embed"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"sync"
@@ -56,18 +57,27 @@ var (
 // Default is the embedded table, built once per process; nil if it does not
 // parse (a defect make ci catches).
 func Default() *Index {
-	once.Do(func() { def, _ = Parse(table) })
+	once.Do(func() {
+		var err error
+		if def, err = Parse(table); err != nil {
+			slog.Error("place table unusable, suggested titles fall back to sport and date", "err", err) // Parse errors name a line number only
+		}
+	})
 	return def
 }
 
 // Nearest is the town nearest to the point within Radius; ties go to the
 // earlier row. ok is false when none is near or the index is empty.
-// shortcut: linear scan (about 32,000 haversines), add a grid if a lookup measures over 2 ms.
+// shortcut: linear scan (about 32,000 haversines), add a grid if a lookup measures over 10 ms.
 func (ix *Index) Nearest(lat, lon float64) (name string, ok bool) {
+	return ix.within(lat, lon, Radius)
+}
+
+func (ix *Index) within(lat, lon, radius float64) (name string, ok bool) {
 	if ix == nil {
 		return "", false
 	}
-	best := float64(Radius)
+	best := radius
 	for _, t := range ix.towns {
 		if d := workout.Haversine(lat, lon, t.lat, t.lon); d <= best && (!ok || d < best) {
 			best, name, ok = d, t.name, true

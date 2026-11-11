@@ -57,9 +57,9 @@
   },
   {
     "name": "GeoNames",
-    "attribution": "Town names for suggested titles from the GeoNames gazetteer (cities15000), reduced to name and position (modified)",
+    "attribution": "Town names for suggested titles from the GeoNames gazetteer (cities15000, geonames.org), reduced to name and position (modified)",
     "licence": "CC BY 4.0",
-    "link": "https://www.geonames.org/",
+    "link": "https://creativecommons.org/licenses/by/4.0/",
     "origins": []
   }
 ]

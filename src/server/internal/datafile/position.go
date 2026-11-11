@@ -64,8 +64,8 @@ func FirstPositionAt(r io.ReaderAt, size int64, skip [][2]int) (m Meta, lat, lon
 	la := bufio.NewReaderSize(io.NewSectionReader(r, lao, n*4), 4096)
 	lo := bufio.NewReaderSize(io.NewSectionReader(r, loo, n*4), 4096)
 	var a, b, x, y int64
+	var v [4]byte // one buffer for every read: no allocation per sample
 	next := func(br *bufio.Reader, acc *int64) (bool, error) {
-		var v [4]byte
 		if _, err := io.ReadFull(br, v[:]); err != nil {
 			return false, bad
 		}
@@ -86,6 +86,9 @@ func FirstPositionAt(r io.ReaderAt, size int64, skip [][2]int) (m Meta, lat, lon
 		skipped := false
 		for _, s := range skip {
 			skipped = skipped || i >= s[0] && i <= s[1]
+			if i >= s[0] && s[1] >= int(n)-1 { // the rest is hidden: nothing left to find
+				return m, 0, 0, false, nil
+			}
 		}
 		if okA && okB && !skipped {
 			return m, float64(x) * 1e-6, float64(y) * 1e-6, true, nil
