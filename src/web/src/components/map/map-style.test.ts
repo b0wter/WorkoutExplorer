@@ -224,7 +224,11 @@ describe('baseStyle', () => {
     expect(src.data.features[0].properties).toEqual({ kind: 'leg', name: 'T1' });
     const byId = new Map(s.layers.map((l) => [l.id, l]));
     expect(byId.get('wx-lap-circle')).toMatchObject({ filter: ['in', ['get', 'kind'], ['literal', ['lap', 'leg']]] });
-    expect(byId.get('wx-leg-label')).toMatchObject({ filter: ['==', ['get', 'kind'], 'leg'], layout: { 'text-field': ['get', 'name'] } });
+    expect(byId.get('wx-leg-label')).toMatchObject({ filter: ['==', ['get', 'kind'], 'leg'], layout: { 'text-field': ['get', 'name'], 'text-allow-overlap': false } });
+    // Colliding labels are moved to another side of the marker, starting right of it.
+    const anchors = (byId.get('wx-leg-label') as { layout: Record<string, unknown[]> }).layout['text-variable-anchor-offset'];
+    expect(anchors.filter((_, i) => i % 2 === 0)).toEqual(['left', 'right', 'top', 'bottom', 'top-left', 'bottom-left', 'top-right', 'bottom-right']);
+    expect(anchors[1]).toEqual([0.8, 0]);
   });
 });
 

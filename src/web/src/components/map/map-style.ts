@@ -335,7 +335,13 @@ export function baseStyle(
       type: 'symbol',
       source: MARKER_SOURCE,
       filter: kindIs('leg'),
-      layout: { 'text-field': ['get', 'name'], 'text-font': [LABEL_FONT], 'text-size': 12, 'text-anchor': 'left', 'text-offset': [0.8, 0], 'text-allow-overlap': true },
+      layout: {
+        'text-field': ['get', 'name'], 'text-font': [LABEL_FONT], 'text-size': 12,
+        // Colliding leg labels (legs starting at one place) move to another side of their marker; MapLibre
+        // drops one only when every position collides, and shows it again when zoomed in.
+        'text-variable-anchor-offset': ['left', [0.8, 0], 'right', [-0.8, 0], 'top', [0, 0.8], 'bottom', [0, -0.8], 'top-left', [0.6, 0.6], 'bottom-left', [0.6, -0.6], 'top-right', [-0.6, 0.6], 'bottom-right', [-0.6, -0.6]],
+        'text-justify': 'auto', 'text-allow-overlap': false,
+      },
       paint: { 'text-color': colours.lapText, 'text-halo-color': colours.lapFill, 'text-halo-width': 1.5 },
     },
     markerCircle('wx-start', 'start', colours.start, colours),
