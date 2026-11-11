@@ -661,3 +661,5 @@ The original questions follow for reference.
 **Decided on 11 Nov 2026, iframe embed dropped** (user, SH-7): SH-7 (iframe embed with a compact layout, Could, phase 2) is removed; workouts are short-lived, so embedding them in other pages makes no sense. The `frame-ancestors 'none'` header stays. Updated: spec SH-7 (removed), scope table and roadmap phase 2 row.
 
 **Decided on 11 Nov 2026, OQ-151 to OQ-153** (user, AP-14, AP-16): device name includes the brand ("Wahoo Fitness ELEMNT BOLT", "Garmin Edge 530"); backend engineer checks local real files for sensor `source_type`, a missing one counts as ANT+ if sensors are lost; "Lengths" hidden when any pool swim lacks a lengths count. Updated: F-43, F-44.
+
+**Decided on 11 Nov 2026, F-43 follow-ups** (user, AP-14): OQ-152 outcome: devices that record sensors without source type and device type (e.g. some Wahoo files) show the device name without sensors; accepted, nothing can be done. An empty-after-cleaning first recording-device product name no longer blocks a later valid one in the same file; the first non-empty name after cleaning is used. Updated: none.
