@@ -2,6 +2,8 @@
 
 A small, free viewer for FIT files: upload one, get a shareable page with linked map, charts and laps. For the operator and their friends; no accounts, no external services, store as little as possible.
 
+Keep answers to the user concise unless the user asks for detail or an explanation. Present open decisions as a numbered list with a suggestion each; the user answers by number.
+
 ## Where things live
 
 | Folder | Contents | Written by |
