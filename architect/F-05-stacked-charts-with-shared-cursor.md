@@ -77,7 +77,7 @@ src/web/
 | --- | --- |
 | `lib/cursor` | nothing |
 | `lib/charts` | `lib/datafile` (its `index.ts`, types and constants only) |
-| `components/charts` | `lib/cursor`, `lib/charts`, `lib/datafile` (each via `index.ts`), `svelte`, `uplot`, `uplot/dist/uPlot.min.css` |
+| `components/charts` | `lib/cursor`, `lib/charts`, `lib/datafile` (each via `index.ts`), `svelte`, `uplot` (its CSS: the used rules in `components/charts/uplot.css`, ADR-009 item 7) |
 | `bench/charts.ts` | the above, plus `lib/datafile`'s public surface; never imported by `src/` |
 
 Nothing outside `components/charts` imports `uplot`. Inside it, only the `.svelte` files import the uPlot *value*; `uplot-options.ts` uses `import type`. Later features (F-06 map, F-17 selection) talk to the charts only through stores, never by importing `MetricChart` or reaching into uPlot.

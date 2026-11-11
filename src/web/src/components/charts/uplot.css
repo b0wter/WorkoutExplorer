@@ -1,0 +1,10 @@
+/* The rules of uplot/dist/uPlot.min.css this page needs (ADR-009, ADR-011 C2): no title, legend,
+   select or cursor (all off), no text in uPlot's own DOM. Recheck after a uPlot upgrade. */
+.uplot, .uplot *, .uplot *::before, .uplot *::after { box-sizing: border-box; }
+.uplot { width: min-content; }
+.u-wrap { position: relative; user-select: none; }
+.u-over, .u-under { position: absolute; }
+.u-under { overflow: hidden; }
+.uplot canvas { display: block; position: relative; width: 100%; height: 100%; }
+.u-axis { position: absolute; }
+.u-axis.u-off { display: none; }

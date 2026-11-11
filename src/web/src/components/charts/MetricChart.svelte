@@ -8,7 +8,7 @@
   // only allocation; the DOM needs a string.
   import { onMount } from 'svelte';
   import uPlot from 'uplot';
-  import 'uplot/dist/uPlot.min.css';
+  import './uplot.css';
   import type { WorkoutData } from '../../lib/datafile';
   import { nearestIndex, type CursorIndex, type CursorStore } from '../../lib/cursor';
   import type { SelectionStore } from '../../lib/selection';
