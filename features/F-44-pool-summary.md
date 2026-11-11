@@ -14,7 +14,7 @@ A viewer of a pool swim sees the pool length and the number of lengths swum, for
 - `pool-swim.fit` (synthetic) has a lap-swimming session with `pool_length` 25 m and 40 active `length` messages, but no `num_active_lengths`. Every synthetic swimming session gets `pool_length` 25 m, including the open-water swims of the triathlon samples.
 
 ## Scope
-- **Values, as AP-16.** The device's session values only, never computed: the number of active lengths (rest lengths not counted) and the pool length in the pool's own unit (`pool_length_unit`: metres or yards), not converted by the units setting (DS-1). Several pool-swim sessions: lengths summed; pool length shown only when every pool-swim session has the same one.
+- **Values, as AP-16.** The device's session values only, never computed: the number of active lengths (rest lengths not counted) and the pool length in the pool's own unit (`pool_length_unit`: metres or yards), not converted by the units setting (DS-1). Several pool-swim sessions: lengths summed, hidden when any of them lacks a lengths count; pool length shown only when every pool-swim session has the same one.
 - **Which sessions count:** only sessions with sub-sport "lap swimming", their values used as recorded; a pool length recorded on any other session (open water) is ignored.
 - **Cells.** Two summary cells, "Pool" ("25 m", "25 yd") and "Lengths" ("64"), each hidden on its own when its value is missing, never shown as zero. Pool length in whole metres or yards, rounded to nearest, no decimal (33.3 m shows "33 m").
 - **Place and tint.** No chart line, so untinted (DS-5, F-41), placed with the untinted cells: after Calories, before the first tinted cell (summary order, 10 Nov 2026).

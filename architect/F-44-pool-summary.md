@@ -1,7 +1,7 @@
 # F-44 Pool length and lengths in the summary: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (11 Nov 2026). Normal lane. OQ-149, OQ-150 decided by the user on 11 Nov 2026 and built in here; OQ-153 open, not blocking
+- **Status:** accepted (11 Nov 2026). Normal lane. OQ-149, OQ-150, OQ-153 decided by the user on 11 Nov 2026 and built in here
 - **Feature:** [`features/F-44-pool-summary.md`](../features/F-44-pool-summary.md)
 - **Requirements:** AP-16, AP-2, DS-1, DS-5, UP-3; NFR Performance
 - **Builds on:** [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md) (format version 3, shared with F-43); [F-03](F-03-workout-data-file-writer.md) §5.2; F-08 R-10 (summary); ADR-026, ADR-027, ADR-011; F-41 tints
@@ -22,6 +22,4 @@
 
 ## Open questions
 
-| ID | Question | Suggestion |
-| --- | --- | --- |
-| OQ-153 | Several pool swims, one without `num_active_lengths`: hide "Lengths", or show the sum of the others? (Feature scope says "lengths summed", silent on a missing one) | Hide, as built in PS-3: a partial sum would undercount without saying so |
+None. OQ-153 (hide "Lengths" when any pool swim lacks a lengths count, as PS-3) accepted by the user on 11 Nov 2026 (decision log, `features/README.md`).

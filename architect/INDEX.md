@@ -54,8 +54,8 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-39 How to use | [F-39-how-to-use.md](F-39-how-to-use.md) | accepted (9 Nov 2026; normal lane; owner frontend; head script also sets `data-hint`, new CSP hash; OQ-133, OQ-134 resolved) | 0.1 | ADR-011, ADR-026, ADR-032 |
 | F-40 Shareable range | [F-40-shareable-range.md](F-40-shareable-range.md) | accepted (9 Nov 2026; normal lane; owner frontend; built after F-39; no open questions) | 0.1 | ADR-011, ADR-020, ADR-038 |
 | F-42 Multisport sections | [F-42-multisport-sections.md](F-42-multisport-sections.md) | accepted (9 Nov 2026; normal lane; owner both, B-1 backend first; no format change; browser part lazy; OQ-144, OQ-145 resolved) | 0.1 | ADR-009, ADR-011, ADR-026, ADR-027 |
-| F-43 Device and sensor info | [F-43-device-info.md](F-43-device-info.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-44; format version 3; static ceiling 100; OQ-151, OQ-152 open, not blocking) | 0.1 | ADR-003, ADR-011, ADR-023, ADR-026, ADR-044 |
-| F-44 Pool length and lengths in the summary | [F-44-pool-summary.md](F-44-pool-summary.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-43; format version 3; static ceiling 150; OQ-153 open, not blocking) | 0.1 | ADR-011, ADR-026, ADR-027, ADR-044 |
+| F-43 Device and sensor info | [F-43-device-info.md](F-43-device-info.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-44; format version 3; static ceiling 100; OQ-151, OQ-152 resolved) | 0.1 | ADR-003, ADR-011, ADR-023, ADR-026, ADR-044 |
+| F-44 Pool length and lengths in the summary | [F-44-pool-summary.md](F-44-pool-summary.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-43; format version 3; static ceiling 150; OQ-153 resolved) | 0.1 | ADR-011, ADR-026, ADR-027, ADR-044 |
 
 ## Decisions (ADRs)
 
@@ -130,9 +130,6 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-109 | F-35: an AppleDouble `._ride.fit` in the root counts as a second FIT file under UP-11. Suggestion: ignore root names starting with `._` | Nothing (UP-11 built as written until decided) | user (product). **Decided 9 Nov 2026: root names starting with `._` are ignored (built in Z-7)** |
 | OQ-110 | F-35: "the picker accepts `.fit` and `.zip`" met without an `accept` filter (F-11 U-6). Suggestion: no filter | Nothing | user (product). **Decided 9 Nov 2026: no file filter (Z-12)** |
 | OQ-111 | F-35: a root `.fit` entry that holds a zip. Suggestion: refused as damaged, nothing sent (F-35 Z-10) | Nothing | user (product). **Decided 9 Nov 2026: refused as damaged, nothing sent (Z-10)** |
-| OQ-151 | F-43 DI-4: the device name prefixes the manufacturer ("Wahoo Fitness ELEMNT BOLT", "Garmin Edge 530") unless the model already starts with it. Suggestion: accept; alternative model alone | Nothing (wording only, small lane) | user (product) |
-| OQ-152 | F-43 DI-5: a sensor `device_info` without `source_type` is left out. Do the local real files write it? Suggestion: engineer checks during the build; if sensors are lost, read a missing `source_type` as ANT+ | Nothing (small lane if needed) | senior-backend-engineer, then senior-architect |
-| OQ-153 | F-44 PS-3: several pool swims, one without `num_active_lengths`. Suggestion: hide "Lengths" (as built), no partial sum | Nothing (suggestion built unless the user objects) | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

@@ -7,7 +7,7 @@
 - **Depends on:** F-15, F-19, F-29
 
 ## Goal
-A viewer sees what the workout was recorded with: "Recorded with Wahoo ELEMNT BOLT · power meter, heart-rate monitor".
+A viewer sees what the workout was recorded with: "Recorded with Wahoo Fitness ELEMNT BOLT · power meter, heart-rate monitor".
 
 ## What exists
 - The parser reads `file_id` manufacturer, product number and product name (never the serial number) into `Workout.Device`; it is used only for the parse log line and the parse report. `device_info` is not read.
@@ -15,7 +15,7 @@ A viewer sees what the workout was recorded with: "Recorded with Wahoo ELEMNT BO
 - UP-9 blanks every serial number and ANT+ device number in the stored file; `device_info` messages are otherwise kept, including user-chosen names (decision log, "Other identifying fields", answer 5).
 
 ## Scope
-- **Device name, fallback chain (decision 1).** Full model name, for example "Wahoo ELEMNT BOLT"; if the model is not known, the manufacturer only, for example "Wahoo"; if neither is known, no device name.
+- **Device name, fallback chain (decision 1).** Manufacturer and model, for example "Wahoo Fitness ELEMNT BOLT" or "Garmin Edge 530" (no repeated brand when the model already starts with it); if the model is not known, the manufacturer only, for example "Wahoo Fitness"; if neither is known, no device name.
 - **Model name source.** The product name the device recorded (`file_id`, else the creator's `device_info`), cut to 40 characters; else, for Garmin-family devices, the FIT profile's product name made readable ("edge_530" → "Edge 530"). No maintained name table. Text an app writes into the product name is shown as recorded (accepted risk).
 - **Manufacturer.** The FIT profile name made readable ("wahoo_fitness" → "Wahoo Fitness"); `development`, `unknown` and numbers not in the profile count as not known.
 - **Sensors (decision 1).** Only sensors of a recognised type, named by their type only, each type once, in this order: heart-rate monitor, power meter, speed sensor, cadence sensor, speed and cadence sensor, foot pod, radar. Unknown types and the recording device's built-in sensors are left out. A chained file lists the sensors of every recording it shows.

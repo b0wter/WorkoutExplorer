@@ -1,7 +1,7 @@
 # F-43 Device and sensor info: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (11 Nov 2026). Normal lane. OQ-146 to OQ-148 decided by the user on 11 Nov 2026 and built in here; OQ-151, OQ-152 open, not blocking
+- **Status:** accepted (11 Nov 2026). Normal lane. OQ-146 to OQ-148, OQ-151, OQ-152 decided by the user on 11 Nov 2026 and built in here
 - **Feature:** [`features/F-43-device-info.md`](../features/F-43-device-info.md)
 - **Requirements:** AP-14, AP-2, UP-9, INF-1; NFR Privacy, NFR Performance
 - **Builds on:** [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md) (format version 3, shared with F-44); [F-03](F-03-workout-data-file-writer.md) §5.7; ADR-003 (only `ingest` knows the FIT profile), ADR-023 (UP-9 strip), ADR-026, ADR-011
@@ -32,7 +32,4 @@ QA's byte search (feature AC 35) covers the public data file, `draft.bin`, both 
 
 ## Open questions
 
-| ID | Question | Suggestion |
-| --- | --- | --- |
-| OQ-151 | Brand prefix: a recorded "ELEMNT BOLT" by `wahoo_fitness` shows "Wahoo Fitness ELEMNT BOLT", a profile "Edge 530" by `garmin` shows "Garmin Edge 530" (DI-4) | Accept as built. Alternative: model alone ("ELEMNT BOLT"). Wording only, small lane |
-| OQ-152 | Do the local real files (Garmin Edge Explore, Wahoo, the Apple Watch app) write `source_type` on their sensors' `device_info`? Without it DI-5 leaves the sensor out | Engineer checks during the build and reports. If a real file loses sensors, read a missing `source_type` as ANT+ (small lane) |
+None. OQ-151 (brand prefix as in DI-4) and OQ-152 (engineer checks local real files for `source_type`; if sensors are lost, a missing `source_type` counts as ANT+) accepted by the user on 11 Nov 2026 (decision log, `features/README.md`).
