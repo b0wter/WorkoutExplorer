@@ -39,6 +39,7 @@ Every endpoint takes `Authorization: Bearer <token>` and no query string. On any
 | `data_end_s` | integer or `null` | no | The UP-3 notice's time (F-09 hand-off) |
 | `view_url` | string | no | `lifecycle.ViewPath`. Only `lifecycle` builds links (ADR-020 item 10) |
 | `hide_ends_ranges` | array of `[first, last]` | no | What hiding would remove, computed at upload ([ADR-030](ADR-030-to-be-hidden-ranges-computed-at-upload.md)); `[]` without positions |
+| `suggested_title` | string | no | UP-5 suggestion for the stored settings, `""` = none; computed per request, never stored ([F-45](F-45-suggested-title.md) ST-6) |
 
 A `PATCH` body with an unknown field, a read-only field, a `null`, a wrong type, or anything that is not one JSON object gets `400`. An empty object `{}` is valid and changes nothing.
 

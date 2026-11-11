@@ -21,6 +21,7 @@ F-19 marks on the edit page's map the start and end sections that hiding removes
 
    The field is the same whatever `hide_ends` says: it shows what hiding *would* remove. A `PATCH` that sends it gets `400`, like every other read-only field.
 4. **Display only.** The public build never reads these columns. It still cuts from `original.fit` on every build (F-16 H-4, ADR-028 item 2). The ranges are not logged and never leave the owner API.
+   - Note (11 Nov 2026, F-45 ST-6): the owner API also uses them to find the first public position for the read-only `suggested_title`. Still display only: the public page computes its suggestion from the public file.
 
 ## Consequences
 
