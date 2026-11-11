@@ -58,6 +58,7 @@ describe('About page', () => {
       'up to 30 days from upload',
       'The app makes no backup copies.',
       'Device and sensor serial numbers and ANT+ IDs',
+      "the recording device's model or manufacturer and the types of sensors used, never their serial numbers or IDs", // F-43 INF-1
       'The user profile (name, gender, age, height, weight, heart-rate settings)',
       'Saved locations',
       "Segment leaderboard entries, the segment leaders' activity IDs and segment account keys",

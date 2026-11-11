@@ -56,8 +56,8 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-40](F-40-shareable-range.md) | Shareable range | 2 | frontend | F-17, F-18, F-39 | done | user: 360 px wrap, plain-HTTP fallback field, no range= in the Caddy log (qa r1); link round trip and Back checked 10 Nov |
 | [F-41](F-41-summary-tints.md) | Summary tints | 2 | frontend | F-13, F-14 | done | checked by the user 10 Nov (both themes) |
 | [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | done | checked by the user 11 Nov (charts, map, real triathlon); open: hidden start/end, no-JS, dark mode (qa r1) |
-| [F-43](F-43-device-info.md) | Device and sensor info | 2 | both (backend first) | F-15, F-19, F-29 | backend built, frontend next | |
-| [F-44](F-44-pool-summary.md) | Pool length and lengths in the summary | 2 | both (backend first) | F-15, F-19, F-41 | backend built, frontend next | |
+| [F-43](F-43-device-info.md) | Device and sensor info | 2 | both (backend first) | F-15, F-19, F-29 | built, QA r1 next | |
+| [F-44](F-44-pool-summary.md) | Pool length and lengths in the summary | 2 | both (backend first) | F-15, F-19, F-41 | built, QA r1 next | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 11 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, detailed). Phase 3: 1 feature (F-24, deferred; design kept).

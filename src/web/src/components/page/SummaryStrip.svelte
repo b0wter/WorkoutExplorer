@@ -4,8 +4,10 @@
 
   interface Props {
     items: readonly SummaryItem[];
+    /** F-43 DI-7/DI-8: the device line, '' for none. Printed as text only (ADR-026). */
+    device: string;
   }
-  let { items }: Props = $props();
+  let { items, device }: Props = $props();
 </script>
 
 <section class="summary">
@@ -18,4 +20,5 @@
     </div>
   {/each}
 </section>
+{#if device}<p class="device">{device}</p>{/if}
 <p class="notice">Parts of the route, such as the start and end, may be hidden for privacy. Totals include them.</p>

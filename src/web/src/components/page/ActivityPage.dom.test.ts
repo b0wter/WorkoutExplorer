@@ -42,6 +42,16 @@ describe('ActivityPage', () => {
     fx = null;
   });
 
+  it('F-43: the device line sits between the summary and the notice with the model text; none without one', () => {
+    fx = renderSample('triathlon');
+    const line = fx.target.querySelector('.summary + p.device + p.notice')?.previousElementSibling;
+    expect(line?.textContent).toBe(fx.model.Device);
+    expect(line?.children.length).toBe(0);
+    fx.remove();
+    fx = renderSample('ride-no-laps');
+    expect(fx.target.querySelector('.device')).toBeNull();
+  });
+
   it('AC 5: HTML and script in the title and description appear as literal text', () => {
     fx = renderSample('hostile-text');
     expect(fx.target.querySelector('script, b, img')).toBeNull();

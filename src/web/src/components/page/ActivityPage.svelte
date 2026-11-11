@@ -26,7 +26,7 @@
   <div class="layout">
   {#if edit}<div id="edit-slot" class="edit-slot"></div>{/if}
   <PageHeader page={model.Page} header={model.Header} {copy} />
-  <SummaryStrip items={model.Summary} />
+  <SummaryStrip items={model.Summary} device={model.Device} />
   {#if model.Route.Map}<div id="map-slot" class="map-slot"></div>{/if}
   {#if model.Route.NoLocation}<p class="hint">No location data in this workout.</p>{/if}
   {#if model.Route.Hidden}<p class="hint">The entire route has been hidden by the uploader.</p>{/if}

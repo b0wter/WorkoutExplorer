@@ -404,7 +404,8 @@ body > .page .charts {
   font-weight: 400;
 }
 .notice,
-.hint {
+.hint,
+.device {
   margin: 8px 0;
   color: var(--muted);
   font-size: 13px;
