@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -59,9 +59,10 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-43](F-43-device-info.md) | Device and sensor info | 2 | both (backend first) | F-15, F-19, F-29 | done | user: hand checks 1–4 (qa r1); minors r1-1..4 fixed |
 | [F-44](F-44-pool-summary.md) | Pool length and lengths in the summary | 2 | both (backend first) | F-15, F-19, F-41 | done | user: hand checks 1–4 (qa r1); minors r1-1..4 fixed |
 | [F-45](F-45-suggested-title.md) | Suggested title | 2 | both (backend first) | F-16, F-19, F-29, F-42 | done | user: browser check (edit-page placeholder, published title, hidden start); minors r1-1..5 fixed |
+| [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | specified | |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 12 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 13 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -86,13 +87,14 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-5 Time/distance axis | Must | F-17 |
 | AP-6 Linked cursor | Must | F-05, F-06 |
 | AP-7 Range selection | Must | F-17 |
-| AP-8 Laps and splits | Must | F-18 |
+| AP-8 Laps and splits | Must | F-18; lap triggers, splits only without laps: F-46 (phase 2) |
 | AP-9 Route colouring | Should | F-25 |
 | AP-15 Fullscreen map (MVP part) | Should | F-26 (pins in fullscreen: phase 2) |
 | AP-17 Two columns on wide screens | Must | F-13, F-17 (splitter), F-19 |
 | AP-18 Pinned map on a phone | Must | F-13, F-19, F-26 |
 | AP-21 Cursor readout in the fullscreen map | Must | F-33 |
 | AP-19 Range in the link | Could (phase 2) | F-40 (phase 2) |
+| AP-20 Split distance presets per sport | Could (phase 2) | F-46 (phase 2) |
 | AP-22 How to use, first-visit range hint | Could (phase 2) | F-39 (phase 2) |
 | AP-12 Multisport legs as sections | Could (phase 2) | F-08 (MVP: one workout, sport, transitions); F-42 (phase 2) |
 | AP-14 Device and sensor info | Could (phase 2) | F-43 (phase 2) |
@@ -112,7 +114,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AC-4 Delete removes everything | Must | F-12, F-20, F-21 |
 | AC-5 Owner changes everything (MVP fields) | Must | F-12, F-19 (trim and pins: phase 2) |
 | AC-6 Published page with both links | Must | F-20, F-22 |
-| DS-1 Units, drop-down | Must | F-14, F-18 |
+| DS-1 Units, drop-down | Must | F-14, F-18; F-46 (phase 2) |
 | DS-2 Sport-specific pace/speed | Must | F-14, F-25 |
 | DS-3 English | Must | F-11, F-13, F-14, F-28 |
 | DS-4 Light and dark theme | Should | F-14, F-15, F-29; F-38 (Impressum page, phase 2) |
@@ -153,6 +155,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Device and sensor info — AP-14: detailed in [F-43](F-43-device-info.md).
 - Pool length and number of lengths in the summary — AP-16: detailed in [F-44](F-44-pool-summary.md).
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1: detailed in [F-45](F-45-suggested-title.md).
+- Lap triggers, splits only without device laps, split presets per sport — AP-8, AP-20: detailed in [F-46](F-46-laps-and-splits.md).
 
 ## Questions for review
 
@@ -669,3 +672,7 @@ The original questions follow for reference.
 **Decided on 11 Nov 2026, OQ-154 to OQ-161** (user, UP-5, F-45): suggestions accepted, except the town spelling. OQ-154: the suggestion is the empty-title fallback (replacing sport and date, item 17) and the field placeholder, never prefilled. OQ-155: rebuilt with the page, so it follows hiding and trim. OQ-156: no position, no "near …". OQ-157: "triathlon" for swim, bike, run in order, else "multisport". OQ-158: morning 05–12, afternoon 12–17, evening 17–21, night 21–05, workout offset, else UTC. OQ-159: no "near …" beyond 25 km. OQ-160: "<Time of day> <sport> near <town>", English words, town from the GeoNames `name` field (local spelling, "Köln"), not the ASCII name. OQ-161: no start time, no time-of-day word. Later the same day (architect suggestions, accepted): OQ-162: city districts (GeoNames feature code PPLX) are dropped from the vendored town table; OQ-163: the operator's delete confirmation keeps sport and date for an empty title, no suggested title there; about 1 MB of GeoNames data is vendored in the public repo (ADR-045). Updated: spec UP-4, UP-5, open questions; technical design (suggested title); F-45.
 
 **Decided on 11 Nov 2026, tinted summary order** (user, AP-2, DS-5): the tinted cells run speed or pace, heart rate, power, cadence, elevation gain, temperature. Updated: spec AP-2.
+
+**Decided on 11–12 Nov 2026, laps and splits** (user, AP-8, AP-20, F-46): every device lap stays a lap, auto laps never filtered. Without device laps only the splits (no laps view, no "No laps recorded.", no switch); with laps the page opens on laps. Trigger column from `lap_trigger`: Button, Time, Distance, Position (all position triggers merged), Stop, Equipment; unknown empty; shown only when a lap has a known trigger; none for splits; data file format version 4, old workouts rebuilt by `regenerate`, losses accepted. AP-20 moves to phase 2: a lazy drop-down of metric presets per sport ("metric it is"), defaults running 1 km, rowing 500 m, cycling 5 km, open water 100 m, pool 100 m (whole lengths, 33 m pool as 33⅓ m, yard pools in yards, labelled by target), other and multisport 1 km; not remembered, not in the range link, range kept. Later: time-based splits (1, 5, 10, 15, 30, 60 min) and splits per multisport leg. Open: OQ-164 imperial default and distance column (assumed: metric lists and defaults, 1 mi gone, distance column in the units setting, choice kept on a units switch); OQ-165 pools that don't fit the target or lack one pool length (assumed: nearest whole number of lengths, actual distance shown when more than 1 % off, open-water list without one pool length); OQ-166 details (assumed: column header "Trigger", no section without laps and JavaScript, every preset offered). Updated: spec (viewer stories 14, 18, scope table, AP-8, AP-20, open questions, roadmap); F-46 (new).
+
+**Decided on 12 Nov 2026, OQ-164 to OQ-166** (user, AP-8, AP-20, F-46): OQ-164 and OQ-165 as suggested: imperial pages get the metric lists and defaults (labels metric, distance column in the units setting, choice kept on a units switch); nearest whole number of lengths, at least 1, the actual distance shown when more than 1 % off the target, the open-water list without one shared pool length. OQ-166: column heading "Trigger"; with JavaScript off no laps and splits section when there are no device laps; presets longer than the workout's distance are hidden, the sport's default always offered. Also: a recorded pool length shown as 33 m or 33 yd (32.5 up to but not including 33.5, the AP-16 rounding) is computed as exactly 33⅓, so 3 lengths make 100; it is always shown as 33. Updated: spec AP-8, AP-20, open questions; F-46.
