@@ -552,7 +552,8 @@ html:not(.wx-fs) .wx-strip,
 .laps.live tbody tr:not(.laps-section) {
   cursor: pointer;
 }
-.laps tbody tr.on {
+.laps tbody tr.on,
+.laps tbody tr.on:nth-child(even of :not(.laps-section)) {
   background: var(--range-shade);
 }
 .laps-scroll {
