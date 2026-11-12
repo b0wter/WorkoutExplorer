@@ -498,7 +498,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
   async function openAt(path: string, seam?: boolean): Promise<void> {
     window.history.replaceState({ fs: 1 }, '', path);
     page = renderSample('ride-30min');
-    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [] } : undefined);
+    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {} } : undefined);
     await settle();
     stubLog.chartStack[0].onready?.();
     flushSync();

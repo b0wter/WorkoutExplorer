@@ -9,7 +9,8 @@
   import type { Settings, SettingsPatch } from '../../lib/owner';
   import { enhanceCopyLink } from '../../page/enhance';
   import DeleteControl from './DeleteControl.svelte';
-  import { DESCRIPTION_MAX, TITLE_MAX, expiryText, incompleteNotice, lifetimeOptions, patchOf, type Form } from './fields';
+  import { formatElapsed } from '../../lib/format';
+  import { DESCRIPTION_MAX, TITLE_MAX, TRIM_MIN_S, expiryText, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex, type Form } from './fields';
 
   interface Props {
     settings: Settings;
@@ -36,8 +37,14 @@
     onhide: (on: boolean) => void;
     /** The owner changed a field after a save or an error. */
     onedit: () => void;
+    /** F-47 TR-9: draft.bin's time offsets and start_time for the trim slider; null without a
+     *  decoded draft (no slider, the stored trim goes back unchanged). */
+    time: Float64Array | null;
+    startTime: string;
+    /** The trim handles as sample indices [a, b], on every move and fill, saved or not. */
+    ontrim: (a: number, b: number) => void;
   }
-  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, onedit }: Props = $props();
+  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, onedit, time, startTime, ontrim }: Props = $props();
 
   let share = $state(false);
   const draft = $derived(visibility === 'draft');
@@ -49,8 +56,25 @@
   // svelte-ignore state_referenced_locally
   const notice = incompleteNotice(settings.data_end_s);
 
+  // F-47 TR-9: the slider, only when a trim can leave 60 s (TR-4).
+  // svelte-ignore state_referenced_locally
+  const trim = time && time[time.length - 1] - time[0] >= TRIM_MIN_S ? time : null;
+  // svelte-ignore state_referenced_locally
+  const startS = Date.parse(startTime) / 1000;
+  /** The handles, for the elapsed-time text. */
+  let cut = $state<[number, number]>([0, 0]);
+  const elapsed = (t: Float64Array, i: number): string => formatElapsed(t[i] - t[0]);
+
   type Field = HTMLInputElement & HTMLTextAreaElement & HTMLSelectElement;
   const field = (f: HTMLFormElement, name: string): Field => f.elements.namedItem(name) as Field;
+
+  /** Sets both handles and tells the page (the shading follows them). */
+  const setCut = (f: HTMLFormElement, a: number, b: number): void => {
+    field(f, 'trim_a').value = String(a);
+    field(f, 'trim_b').value = String(b);
+    cut = [a, b];
+    ontrim(a, b);
+  };
 
   /** Re-runs for every new settings object (the attachment reads the prop). */
   const fill: Attachment<HTMLFormElement> = (f) => {
@@ -60,6 +84,7 @@
     field(f, 'hide_ends').checked = s.hide_ends;
     field(f, 'lifetime').value = String(s.lifetime_days);
     lifetime = s.lifetime_days;
+    if (trim) setCut(f, trimIndex(trim, startS, s.trim_start_at, false), trimIndex(trim, startS, s.trim_end_at, true));
   };
 
   const read = (f: HTMLFormElement): Form => ({
@@ -70,6 +95,8 @@
     allow_download: settings.allow_download,
     // '' when the stored lifetime is not offered (a browser clock ahead of the server's): keep it.
     lifetime_days: Number(field(f, 'lifetime').value) || settings.lifetime_days,
+    trim_start_at: trim ? trimAt(trim, startS, Number(field(f, 'trim_a').value), false) : settings.trim_start_at,
+    trim_end_at: trim ? trimAt(trim, startS, Number(field(f, 'trim_b').value), true) : settings.trim_end_at,
   });
 
   /** Runs once: it reads props only inside the listeners. */
@@ -78,7 +105,11 @@
       e.preventDefault();
       onsave(patchOf(settings, read(f)));
     });
-    f.addEventListener('input', () => onedit());
+    f.addEventListener('input', (e) => {
+      onedit();
+      const t = e.target as Field;
+      if (trim && t.name.startsWith('trim_')) setCut(f, ...trimClamp(trim, Number(field(f, 'trim_a').value), Number(field(f, 'trim_b').value), t.name === 'trim_b'));
+    });
     f.addEventListener('click', (e) => {
       const act = (e.target as Element).closest<HTMLElement>('[data-act]')?.dataset.act;
       if (act === 'publish') onpublish(patchOf(settings, read(f)));
@@ -105,6 +136,15 @@
     <textarea name="description" maxlength={DESCRIPTION_MAX} rows="3"></textarea>
   </label>
   <label class="edit-check"><input type="checkbox" name="hide_ends" /> Hide start and end</label>
+  {#if trim}
+    <div class="edit-field">Trim start and end
+      <div class="edit-trim">
+        <input type="range" name="trim_a" aria-label="Trim start" min="0" max={trim.length - 1} step="1" />
+        <input type="range" name="trim_b" aria-label="Trim end" min="0" max={trim.length - 1} step="1" />
+      </div>
+      <span class="edit-value">{elapsed(trim, cut[0])} – {elapsed(trim, cut[1])}</span>
+    </div>
+  {/if}
   <div class="edit-row">
     <span class="edit-field">Visibility <span class="edit-value">{draft ? 'Draft' : 'Unlisted'}</span></span>
     <label class="edit-field">Keep for

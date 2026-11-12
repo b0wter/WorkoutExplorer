@@ -92,10 +92,12 @@ function rangeCopy(viewUrl: string, data: WorkoutData, selection: SelectionStore
 }
 
 /** The edit page's seam (F-19 E-5): its already-decoded draft instead of the preload, and the
- *  to-be-hidden ranges to mark on the map (E-9; a getter, so the marks follow the panel). */
+ *  to-be-hidden ranges to mark on the map (E-9; a getter, so the marks follow the panel). The page's
+ *  look, handed over once, for the strip's units and the trim shading (F-47 TR-9). */
 export interface EditSeam {
   readonly data: DataFileResult;
   readonly hidden: readonly (readonly [number, number])[];
+  onlook(look: Look): void;
 }
 
 /** Enhances the server markup, then loads and mounts. Never rejects. */
@@ -116,6 +118,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   // attribute, read once, so the hint agrees with the space the CSS reserved.
   const hint = edit ? 'plain' : win.document.documentElement.dataset.hint === 'done' ? 'none' : 'once';
   const look = createLook(units, typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-color-scheme: dark)') : null, prefs.theme(), hint);
+  edit?.onlook(look);
   const hintDone = (): void => {
     const html = win.document.documentElement;
     if (look.hint !== 'once' || html.dataset.hint) return;
@@ -161,7 +164,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     return;
   }
   const data = result.data;
-  enhanceUnits(root, data.meta, units);
+  enhanceUnits(root, data.meta, units, !edit);
   addUnitsSelect(root, units, prefs.setUnits);
   const cursor = createCursorStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));

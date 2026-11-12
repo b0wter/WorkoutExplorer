@@ -11,7 +11,10 @@ import './edit.css';
 import ActivityPage from '../components/page/ActivityPage.svelte';
 import EditPanel from '../components/edit/EditPanel.svelte';
 import PublishedView from '../components/edit/PublishedView.svelte';
-import { loadDataFile } from '../lib/datafile';
+import { loadDataFile, type Summary, type WorkoutMeta } from '../lib/datafile';
+import { summaryItems } from '../lib/page';
+import type { ChartDecorator } from '../components/charts/uplot-options';
+import type { Look } from '../page/map-props.svelte';
 import { openOwner, type OwnerClient, type OwnerLocation, type OwnerResult, type Settings, type SettingsPatch } from '../lib/owner';
 import { impressum } from '../lib/page/impressum';
 import { buildPageViewModel, defaultTitle } from '../lib/page/view';
@@ -21,6 +24,26 @@ import { startPage } from '../page/start';
 import { basemapJobs } from './basemap-job';
 
 const NONE: readonly (readonly [number, number])[] = [];
+
+/** F-47 TR-9: the trimmed parts [0, a] and [b, n−1] shaded in one chart (MS-7's seam); the cut
+ *  samples a and b mark the edges. Replaces what it drew before; nothing without a trim. */
+function trimShade(a: number, b: number, n: number): ChartDecorator {
+  return (over, x) => {
+    over.querySelector('.wx-trim')?.remove();
+    if (a === 0 && b === n - 1) return;
+    const doc = over.ownerDocument;
+    const box = doc.createElement('div');
+    box.className = 'wx-trim';
+    const add = (i: number, j: number): void => {
+      const el = box.appendChild(doc.createElement('div'));
+      el.style.left = x(i) + 'px';
+      el.style.width = x(j) - x(i) + 'px';
+    };
+    if (a > 0) add(0, a);
+    if (b < n - 1) add(b, n - 1);
+    over.prepend(box);
+  };
+}
 
 /** The generic page's content (generic.html, E-4), in this page's theme. No workout data. */
 export function showGeneric(doc: Document, text = 'This workout has expired or is not available.', upload = ''): void {
@@ -116,6 +139,15 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     data && buildPageViewModel(data, { title: s.title, description: s.description, expiresAt: s.expires_at, publicId: owner.publicId, dataFile: '', suggestedTitle: s.suggested_title });
   const first = build(got.value);
   let model = $state.raw(first);
+  /** F-47 TR-9: the trim handles [a, b] as sample indices, live, unsaved too. */
+  const last = (data?.sampleCount ?? 1) - 1;
+  let cut = $state.raw<readonly [number, number]>([0, last]);
+  /** The page's look (startPage's seam): the strip's units. */
+  let look = $state.raw<Look>();
+  /** The strip's source (TR-9): with a trim stored, the server's trimmed values only, never the
+   *  draft's full totals; without them (an owner-view failure) no values at all. */
+  const strip = (s: Settings, meta: WorkoutMeta): Pick<WorkoutMeta, 'sport' | 'summary'> =>
+    s.trim_start_at === null && s.trim_end_at === null ? meta : s.trimmed ? { sport: s.trimmed.sport, summary: s.trimmed.summary as Summary } : { sport: meta.sport, summary: {} };
 
   /** Any owner result: 404 the generic page, an error its message, settings the new truth.
    *  True for settings. */
@@ -151,8 +183,8 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     return ui.run('Saving…', async () => {
       if (!apply(await owner.save(patch))) return;
       ui.status = 'Saved';
-      // MC-8(b): hiding changed on a published workout; in the background, nothing awaited or shown.
-      if ('hide_ends' in patch && visibility !== 'draft') void basemap();
+      // MC-8(b): hiding or trim changed on a published workout; in the background, nothing awaited or shown.
+      if (('hide_ends' in patch || 'trim_start_at' in patch || 'trim_end_at' in patch) && visibility !== 'draft') void basemap();
     });
   };
 
@@ -195,7 +227,10 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       target: host,
       props: {
         get model() {
-          return model!;
+          const m = model!;
+          const s = strip(settings, data!.meta);
+          // Built here, in the look's units: enhanceUnits leaves the edit page's strip alone.
+          return { ...m, Summary: summaryItems(s.sport, s.summary, look?.units) };
         },
         report: false,
         edit: true,
@@ -238,6 +273,9 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       onlinks: () => owner.toPublished(),
       onhide: (on: boolean) => (hide = on),
       onedit: () => (ui.status = ''),
+      time: data?.time ?? null,
+      startTime: data?.meta.start_time ?? '',
+      ontrim: (a: number, b: number) => (cut = [a, b]),
     },
   });
   // C-2: a back-forward cache restore (also an app resume on mobile WebKit) never reloads, which
@@ -255,8 +293,24 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   if (result.ok) {
     await startPage(doc, win, {
       data: result,
+      // E-9's marks plus the trimmed parts (F-47 TR-9), greyed alike: neither will be public.
       get hidden() {
-        return hide ? settings.hide_ends_ranges : NONE;
+        const [a, b] = cut;
+        const marks = hide ? settings.hide_ends_ranges : NONE;
+        return a === 0 && b === last ? marks : [...(a > 0 ? [[0, a] as const] : []), ...(b < last ? [[b, last] as const] : []), ...marks];
+      },
+      onlook: (l: Look) => {
+        look = l;
+        // The sections chunk sets its leg decorator later; the charts get both (MS-7 has one seam).
+        let legs = $state.raw<ChartDecorator>();
+        Object.defineProperty(l, 'decorate', {
+          get: (): ChartDecorator => {
+            const t = trimShade(cut[0], cut[1], last + 1);
+            const g = legs;
+            return g ? (over, x) => (g(over, x), t(over, x)) : t;
+          },
+          set: (d: ChartDecorator) => (legs = d),
+        });
       },
     });
   }

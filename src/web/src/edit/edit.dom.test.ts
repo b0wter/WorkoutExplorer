@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
 import { loadGolden } from '../../test-support/golden.mjs';
 import type { Settings } from '../lib/owner';
+import { decodeDataFile } from '../lib/datafile';
+import { formatElapsed } from '../lib/format';
 import { resetStubLog, stubLog } from '../page/testing/stub-log';
 import { startEdit } from './start.svelte';
 import editHtml from '../../edit.html?raw';
@@ -51,6 +53,9 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   view_url: '/w/' + ID,
   hide_ends_ranges: RANGES,
   suggested_title: '',
+  trim_start_at: null,
+  trim_end_at: null,
+  trimmed: null,
   ...over,
 });
 
@@ -1241,5 +1246,171 @@ describe('the token stays in lib/owner (E-2 source scan)', () => {
     const sprite = (html: string): string => html.slice(html.indexOf('<svg class="sprite"'), html.indexOf('</defs></svg>'));
     expect(sprite(edit)).toBe(sprite(sources['../../index.html'])); // the copy of the template's icons
     expect(sprite(edit)).toContain('sport-generic');
+  });
+});
+
+describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
+  const decoded = decodeDataFile(RIDE.slice(0));
+  if (!decoded.ok) throw new Error('ride-4h does not decode');
+  const T = decoded.data.time;
+  const S = Date.parse(decoded.data.meta.start_time) / 1000;
+  const at = (i: number): string => new Date((S + T[i]) * 1000).toISOString().slice(0, 19) + 'Z';
+  const drag = (name: 'trim_a' | 'trim_b', i: number): void => type(name, String(i));
+  const handles = (): [number, number] => [Number(field('trim_a').value), Number(field('trim_b').value)];
+  /** What the charts' decoration draws into a fresh overlay: [left, width] per shaded part. */
+  const shaded = (): number[][] => {
+    const over = document.createElement('div');
+    (stubLog.chartStack[0].decorate as (o: HTMLElement, x: (i: number) => number) => void)(over, (i) => i);
+    return [...over.querySelectorAll<HTMLElement>('.wx-trim > div')].map((d) => [parseFloat(d.style.left), parseFloat(d.style.width)]);
+  };
+  const keys = (): string[] => [...document.querySelectorAll('.summary > .metric')].map((m) => m.getAttribute('data-k')!);
+
+  it('the handles shade the charts and grey the map live; Save sends sample instants, null at the ends', async () => {
+    await open();
+    expect(handles()).toEqual([0, N - 1]);
+    expect(shaded()).toEqual([]);
+    drag('trim_a', 100);
+    drag('trim_b', N - 200);
+    expect(shaded()).toEqual([
+      [0, 100],
+      [N - 200, 199],
+    ]);
+    expect(stubLog.routeMap[0].hidden).toEqual([
+      [0, 100],
+      [N - 200, N - 1],
+    ]);
+    expect($('.edit-panel')?.textContent).toContain(formatElapsed(T[100] - T[0]) + ' – ' + formatElapsed(T[N - 200] - T[0])); // elapsed from the recording start
+    await save();
+    expect(patches()).toEqual([{ trim_start_at: at(100), trim_end_at: at(N - 200) }]);
+    expect(handles()).toEqual([100, N - 200]); // refilled from the response
+    drag('trim_a', 0);
+    drag('trim_b', N - 1);
+    expect(stubLog.routeMap[0].hidden).toEqual([]);
+    await save();
+    expect(patches()[1]).toEqual({ trim_start_at: null, trim_end_at: null });
+    expectNoTokenOutsideTheFragment();
+  });
+
+  it('with hiding on, the trim marks come first, then the stored hidden ranges', async () => {
+    settings = fresh({ hide_ends: true });
+    await open();
+    drag('trim_b', N - 500);
+    expect(stubLog.routeMap[0].hidden).toEqual([[N - 500, N - 1], ...RANGES]);
+  });
+
+  it('at least 60 s remain (AC 41): the moved handle is held back', async () => {
+    await open();
+    drag('trim_a', 1000);
+    drag('trim_b', 1000);
+    const [a, b] = handles();
+    expect(a).toBe(1000);
+    expect(T[b] - T[a]).toBeGreaterThanOrEqual(60);
+    expect(T[b - 1] - T[a]).toBeLessThan(60);
+  });
+
+  it('a stored trim: handles from it, only the summary trimmed, in the chosen units; header and laps stay full', async () => {
+    const full = fresh();
+    settings = full;
+    await open();
+    const head = $('h1')?.textContent;
+    const laps = $('section.laps')?.textContent;
+    const fullKeys = keys();
+    document.body.replaceChildren(host);
+    host.replaceChildren();
+    resetStubLog();
+    settings = fresh({ trim_start_at: at(50), trim_end_at: at(N - 300), trimmed: { sport: 'cycling', summary: { distance: 12_345, elapsed_time: 600 } } });
+    await open();
+    expect(handles()).toEqual([50, N - 300]);
+    expect(stubLog.routeMap[0].hidden).toEqual([
+      [0, 50],
+      [N - 300, N - 1],
+    ]);
+    expect(keys()).toEqual(['distance', 'elapsed_time']);
+    expect(fullKeys).not.toEqual(keys());
+    expect($('h1')?.textContent).toBe(head);
+    expect($('section.laps')?.textContent).toBe(laps);
+    const units = $<HTMLSelectElement>('#units-slot select')!;
+    for (const [u, n, unit] of [['imperial', '7.67', 'mi'], ['metric', '12.35', 'km'], ['imperial', '7.67', 'mi']]) {
+      units.value = u;
+      units.dispatchEvent(new Event('change', { bubbles: true }));
+      flushSync();
+      expect($('.summary [data-k="distance"] .n')?.textContent).toBe(n);
+      expect($('.summary [data-k="distance"] .u')?.textContent).toBe(unit);
+      expect($('section.laps thead')?.textContent).toContain('Distance (' + unit + ')'); // the laps still follow the units
+    }
+    expect(keys()).toEqual(['distance', 'elapsed_time']);
+  });
+
+  it('a stored trim whose trimmed values failed (null): no summary values, never the full totals', async () => {
+    settings = fresh({ trim_end_at: at(N - 300), trimmed: null });
+    await open();
+    expect(keys()).toEqual([]);
+  });
+
+  it('the save response replaces the strip: trimmed values after a trim save, full ones after removing it', async () => {
+    await open();
+    const fullKeys = keys();
+    onPatch = (body) => Response.json((settings = { ...settings, ...body, trimmed: body.trim_start_at ? { sport: 'cycling', summary: { elapsed_time: 900 } } : null } as Settings));
+    drag('trim_a', 300);
+    await save();
+    expect(keys()).toEqual(['elapsed_time']);
+    drag('trim_a', 0);
+    await save();
+    expect(keys()).toEqual(fullKeys);
+  });
+
+  it('multisport: the leg lines and the trim shading are both drawn', async () => {
+    draft = () => new Response(golden('triathlon').slice(0), { status: 200 });
+    settings = fresh({ hide_ends_ranges: [] });
+    await open();
+    const charts = stubLog.chartStack[0];
+    charts.onready?.();
+    await vi.waitFor(() => {
+      const over = document.createElement('div');
+      (charts.decorate as (o: HTMLElement, x: (i: number) => number) => void)(over, (i) => i);
+      expect(over.querySelector('.wx-legs')).not.toBeNull();
+    });
+    drag('trim_a', 10);
+    const over = document.createElement('div');
+    (charts.decorate as (o: HTMLElement, x: (i: number) => number) => void)(over, (i) => i);
+    expect([!!over.querySelector('.wx-legs'), over.querySelectorAll('.wx-trim > div').length]).toEqual([true, 1]);
+  });
+
+  it('indoor: the slider works without a map; no error', async () => {
+    draft = () => new Response(golden('indoor-no-gps').slice(0), { status: 200 });
+    settings = fresh({ hide_ends_ranges: [] });
+    await open();
+    drag('trim_a', 50);
+    await save();
+    expect(Object.keys(patches()[0])).toEqual(['trim_start_at']);
+    expect(stubLog.routeMap).toEqual([]);
+    expect(consoleOut.filter((a) => a.some((x) => x instanceof Error))).toEqual([]);
+  });
+
+  it('an undecodable draft: no slider, the stored trim goes back unchanged', async () => {
+    draft = () => new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+    settings = fresh({ trim_start_at: '2026-10-29T10:00:00Z' });
+    await open();
+    expect(field('trim_a')).toBeNull();
+    type('title', 'x');
+    await save();
+    expect(patches()).toEqual([{ title: 'x' }]);
+  });
+
+  it('MC-8(b): a trim save on a published workout runs the basemap job; not on a draft', async () => {
+    onFrame = () => Response.json({ frame: { lon: 11.5, lat: 48.1, zoom: 12 }, key: '0123456789abcdef', current: false });
+    const frameGets = () => calls.filter((c) => !c.init.method && c.url.endsWith('/preview-map')).length;
+    await open();
+    drag('trim_a', 100);
+    await save();
+    expect(frameGets()).toBe(0);
+    document.body.replaceChildren(host);
+    host.replaceChildren();
+    resetStubLog();
+    settings = fresh({ visibility: 'unlisted' });
+    await open();
+    drag('trim_b', N - 100);
+    await save();
+    expect(frameGets()).toBe(1);
   });
 });

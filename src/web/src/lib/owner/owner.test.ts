@@ -20,6 +20,9 @@ const SETTINGS: Settings = {
   view_url: '/w/' + ID,
   hide_ends_ranges: [],
   suggested_title: '',
+  trim_start_at: null,
+  trim_end_at: null,
+  trimmed: null,
 };
 
 function setup(hash: string, respond: () => Response | Promise<Response> = () => Response.json(SETTINGS), path = '/edit/' + ID) {

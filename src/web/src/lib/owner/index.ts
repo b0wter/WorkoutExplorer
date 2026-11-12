@@ -23,6 +23,11 @@ export interface Settings {
   readonly hide_ends_ranges: readonly (readonly [number, number])[];
   /** Read-only, F-45 ST-6: the UP-5 suggestion for an empty title; '' = none. */
   readonly suggested_title: string;
+  /** F-47 TR-3: RFC 3339 UTC instants of the first and last remaining sample; null = that end not trimmed. */
+  readonly trim_start_at: string | null;
+  readonly trim_end_at: string | null;
+  /** Read-only, F-47 TR-8: the trimmed workout's sport and summary (draft.bin's summary shape); null without a trim. */
+  readonly trimmed: { readonly sport: string; readonly summary: Readonly<Record<string, number>> } | null;
 }
 
 /** F-36 MC-2, MC-4: the server's preview frame for the public route, its key and whether a stored
@@ -32,7 +37,7 @@ export type PreviewFrame =
   | { readonly frame: { readonly lon: number; readonly lat: number; readonly zoom: number }; readonly key: string; readonly current: boolean };
 
 /** The fields a PATCH may carry (F-12). */
-export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_ends' | 'allow_download' | 'lifetime_days'>>;
+export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_ends' | 'allow_download' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at'>>;
 
 /** 'not-found' is ADR-025's single answer (the generic page, E-4); 'error' carries the server's
  *  message or UP-10's sentence. */

@@ -207,3 +207,62 @@
   margin: 24px auto 16px;
   padding: 0 16px;
 }
+
+/* F-47 TR-9: the trim slider, two native ranges on one track; only the thumbs take pointers, so
+   either handle can be dragged. */
+.edit-trim {
+  position: relative;
+  height: 24px;
+}
+.edit-trim::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 11px;
+  height: 2px;
+  background: var(--line);
+}
+.edit-trim input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.edit-trim input::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.edit-trim input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: auto;
+}
+.edit-trim input::-moz-range-track {
+  background: none;
+}
+/* The trimmed parts in every chart (MS-7's seam): below the leg lines, the range and the cursor. */
+.wx-trim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.wx-trim > div {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--hidden);
+  opacity: 0.35;
+}

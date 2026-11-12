@@ -13,12 +13,13 @@ import type { ThemeChoice } from '../lib/prefs';
  *  existing nodes, matched by `data-k` (the view model's Key) and by position. Text only; no node
  *  is added, removed or replaced. A markup that does not match is left untouched and logged.
  *  Runs once for the store's current value when it is not metric, then on every change. */
-export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' | 'summary' | 'laps'>, store: UnitsStore): void {
+export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' | 'summary' | 'laps'>, store: UnitsStore, strip = true): void {
   const apply = (): void => {
     const units = store.get();
     const writes: [Node, string][] = [];
-    const items = summaryItems(meta.sport, meta.summary, units);
-    const cells = root.querySelectorAll('.summary > .metric');
+    // The edit page renders its strip itself (F-47 TR-9: it may show the trimmed summary).
+    const items = strip ? summaryItems(meta.sport, meta.summary, units) : [];
+    const cells = strip ? root.querySelectorAll('.summary > .metric') : [];
     let ok = cells.length === items.length;
     items.forEach((item, i) => {
       const cell = cells[i];
