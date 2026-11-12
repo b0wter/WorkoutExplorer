@@ -121,6 +121,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		Hook:    public,
 		Public:  public,
 		Frames:  public,
+		Trimmer: public,
 		Places:  places.Default(),
 		Logger:  logger,
 	})

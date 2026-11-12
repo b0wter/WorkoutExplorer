@@ -39,7 +39,8 @@ func Normalise(rec Recording) Workout {
 	holdDistance(&w.Samples)
 
 	// The sport timeline needs no samples (D-12), so it is built here for R-13.
-	tl := newSportTimeline(w.Sessions, collectHints(rec, w.StartTime))
+	w.hints = collectHints(rec, w.StartTime)
+	tl := newSportTimeline(w.Sessions, w.hints)
 
 	// R-13 transition legs (D-21, D-22): after R-3, before R-4.
 	maskTransitions(&w, tl)
@@ -74,16 +75,7 @@ func Normalise(rec Recording) Workout {
 	// session that is the whole recording, in one FIT sequence.
 	single := len(w.Sessions) == 1 && len(legs) == 1 && recordSequences(rec) <= 1
 	w.Summary = summarise(legs, sports, w.Derived, single)
-	w.Summary.PoolLengthM, w.Summary.PoolLengthYd, w.Summary.Lengths = poolSummary(w.Sessions)
-	if w.Summary.PoolLengthM != nil || w.Summary.PoolLengthYd != nil {
-		for _, s := range w.Sessions {
-			if s.SubSport == "lap_swimming" {
-				v := s.Pool.Length
-				w.Summary.PoolRecordedM = &v
-				break
-			}
-		}
-	}
+	setPool(&w)
 
 	// F-18 L-1: lap values the device did not record, as for a range.
 	completeLaps(&w, tl)
@@ -96,4 +88,19 @@ func Normalise(rec Recording) Workout {
 		}
 	}
 	return w
+}
+
+// setPool sets the pool fields of the summary from the sessions (F-44 PS-3,
+// ADR-046 item 3).
+func setPool(w *Workout) {
+	w.Summary.PoolLengthM, w.Summary.PoolLengthYd, w.Summary.Lengths = poolSummary(w.Sessions)
+	if w.Summary.PoolLengthM != nil || w.Summary.PoolLengthYd != nil {
+		for _, s := range w.Sessions {
+			if s.SubSport == "lap_swimming" {
+				v := s.Pool.Length
+				w.Summary.PoolRecordedM = &v
+				break
+			}
+		}
+	}
 }

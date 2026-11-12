@@ -39,8 +39,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 5 {
-		t.Errorf("user_version = %d, want 5", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 6 {
+		t.Errorf("user_version = %d, want 6", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -75,7 +75,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 5 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 6 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -111,6 +111,7 @@ func TestSchema(t *testing.T) {
 		{"published_at", "INTEGER", false}, {"expires_at", "INTEGER", true},
 		{"hidden1_first", "INTEGER", false}, {"hidden1_last", "INTEGER", false},
 		{"hidden2_first", "INTEGER", false}, {"hidden2_last", "INTEGER", false},
+		{"trim_start_at", "INTEGER", false}, {"trim_end_at", "INTEGER", false},
 	}
 	rows, err := db.db.QueryContext(ctx, "PRAGMA table_info(workouts)")
 	if err != nil {
@@ -622,7 +623,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 5 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 6 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -694,7 +695,7 @@ func TestMigrateNoPrivate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 5 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 6 {
 		t.Errorf("user_version = %d", v)
 	}
 	if got := dump(db.db, ""); len(want) != 3 || fmt.Sprint(got) != fmt.Sprint(want) {
@@ -930,14 +931,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 6} {
+	for _, v := range []int{4, 7} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (5)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (6)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}

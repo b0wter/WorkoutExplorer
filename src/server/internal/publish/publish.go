@@ -161,6 +161,20 @@ func publicTransform(w workout.Workout, r lifecycle.Record) (workout.Workout, bo
 	return workout.HideEnds(w)
 }
 
+// trimmed is the trim of F-47 TR-2, which runs before the public transform
+// (hiding). The window is resolved again on every build; one that no longer
+// fits fails the build closed (TR-4). a is the first remaining sample.
+func trimmed(w workout.Workout, r lifecycle.Record) (out workout.Workout, a int, err error) {
+	if r.TrimStartAt == nil && r.TrimEndAt == nil {
+		return w, 0, nil
+	}
+	a, b, ok := workout.TrimWindow(w, r.TrimStartAt, r.TrimEndAt)
+	if !ok {
+		return w, 0, errors.New("publish: trim window leaves too little")
+	}
+	return workout.Trim(w, a, b), a, nil
+}
+
 // validPublicID: 22 base62 characters (ADR-020); checked before any path is built.
 func validPublicID(s string) bool {
 	if len(s) != 22 {
@@ -340,6 +354,14 @@ func (a *Area) front(ctx context.Context, r lifecycle.Record) (bin []byte, f dat
 		return nil, f, false, fmt.Errorf("publish: parse original: %w", err)
 	}
 	orig = nil
+	if w, _, err = trimmed(w, r); err != nil {
+		return nil, f, false, err
+	}
+	return a.encode(w, r)
+}
+
+// encode is the build's front half after the parse and the trim.
+func (a *Area) encode(w workout.Workout, r lifecycle.Record) (bin []byte, f datafile.File, routeHidden bool, err error) {
 	w, routeHidden = a.transform(w, r)
 	if bin, err = datafile.Encode(w); err != nil {
 		return nil, f, false, fmt.Errorf("publish: encode: %w", err)
@@ -804,4 +826,71 @@ func (a *Area) Assets() ([]string, error) {
 	}
 	slices.Sort(out)
 	return out, nil
+}
+
+// parseOriginal reads and parses the stored original for the owner side.
+func (a *Area) parseOriginal(ctx context.Context, r lifecycle.Record) (workout.Workout, error) {
+	orig, err := a.d.Originals.Original(r.ID)
+	if err != nil {
+		return workout.Workout{}, fail("read", "original", err)
+	}
+	return a.d.Parser.Parse(ctx, orig)
+}
+
+// ResolveTrim implements lifecycle.Trimmer (F-47 TR-3, TR-4): the stored
+// instants for a trim request, snapped to the samples, from a fresh parse.
+func (a *Area) ResolveTrim(ctx context.Context, r lifecycle.Record, start, end *time.Time) (s, e *time.Time, err error) {
+	w, err := a.parseOriginal(ctx, r)
+	if err != nil {
+		return nil, nil, err
+	}
+	i, j, ok := workout.TrimWindow(w, start, end)
+	if !ok {
+		return nil, nil, lifecycle.ErrTrimTooShort
+	}
+	at := func(k int) *time.Time {
+		t := w.StartTime.Add(time.Duration(w.Samples.Offset[k]) * time.Second).UTC()
+		return &t
+	}
+	if i > 0 {
+		s = at(i)
+	}
+	if j < len(w.Samples.Offset)-1 {
+		e = at(j)
+	}
+	return s, e, nil
+}
+
+// TrimmedView implements lifecycle.Trimmer (F-47 TR-8): what the public build
+// would make of the stored trim, computed by the same code. Nothing is stored.
+func (a *Area) TrimmedView(ctx context.Context, r lifecycle.Record) (lifecycle.OwnerView, error) {
+	w, err := a.parseOriginal(ctx, r)
+	if err != nil {
+		return lifecycle.OwnerView{}, err
+	}
+	wt, first, err := trimmed(w, r)
+	if err != nil {
+		return lifecycle.OwnerView{}, err
+	}
+	w = workout.Workout{}
+	sum, err := datafile.SummaryJSON(wt)
+	if err != nil {
+		return lifecycle.OwnerView{}, err
+	}
+	v := lifecycle.OwnerView{Trimmed: &lifecycle.TrimmedView{Sport: wt.Sport, Summary: sum}, Ranges: [][2]int{}}
+	for _, p := range workout.HiddenRanges(wt) {
+		v.Ranges = append(v.Ranges, [2]int{p[0] + first, p[1] + first})
+	}
+	_, f, _, err := a.encode(wt, r)
+	if err != nil {
+		return lifecycle.OwnerView{}, err
+	}
+	if a.d.Places != nil {
+		town := ""
+		if lat, lon, ok := f.FirstPosition(); ok {
+			town, _ = a.d.Places.Nearest(lat, lon)
+		}
+		v.Suggested = page.Suggest(f.Meta, town)
+	}
+	return v, nil
 }

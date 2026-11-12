@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
@@ -50,6 +51,15 @@ type SettingsPatch struct {
 	HideEnds      *bool
 	AllowDownload *bool
 	LifetimeDays  *int
+	// TrimStart and TrimEnd are the instants of F-47 TR-3; Set with a nil At
+	// is null: that end is not trimmed.
+	TrimStart, TrimEnd OptTime
+}
+
+// OptTime is an optional time that may be sent as null.
+type OptTime struct {
+	Set bool
+	At  *time.Time
 }
 
 // ApplyPatch is the pure rule of a settings change (O-3, O-4, O-5; visibility is read-only, O-6): the
@@ -84,6 +94,12 @@ func ApplyPatch(r Record, p SettingsPatch, now time.Time) (Record, error) {
 	}
 	if p.AllowDownload != nil {
 		r.AllowDownload = *p.AllowDownload
+	}
+	if p.TrimStart.Set {
+		r.TrimStartAt = p.TrimStart.At
+	}
+	if p.TrimEnd.Set {
+		r.TrimEndAt = p.TrimEnd.At
 	}
 	if p.LifetimeDays != nil {
 		days := *p.LifetimeDays
@@ -208,6 +224,11 @@ func (s *Service) Update(ctx context.Context, publicID, token string, p Settings
 		return Record{}, err
 	}
 	sctx := context.WithoutCancel(ctx)
+	if p.TrimStart.Set || p.TrimEnd.Set {
+		if p, err = s.resolveTrim(sctx, rec, p); err != nil {
+			return Record{}, err
+		}
+	}
 	var before Record
 	after, found, err := s.d.Repo.UpdateWorkout(sctx, rec.ID, func(cur Record) (Record, error) {
 		before = cur
@@ -422,4 +443,64 @@ func (s *Service) SuggestedTitle(rec Record) string {
 		town, _ = s.d.Places.Nearest(lat, lon)
 	}
 	return page.Suggest(m, town)
+}
+
+// resolveTrim checks a trim request against a fresh parse (F-47 TR-4) and
+// returns the patch with the snapped instants. Under the O-7 lock.
+func (s *Service) resolveTrim(ctx context.Context, rec Record, p SettingsPatch) (SettingsPatch, error) {
+	start, end := rec.TrimStartAt, rec.TrimEndAt
+	if p.TrimStart.Set {
+		start = p.TrimStart.At
+	}
+	if p.TrimEnd.Set {
+		end = p.TrimEnd.At
+	}
+	if start == nil && end == nil { // no trim: nothing to check
+		p.TrimStart, p.TrimEnd = OptTime{Set: true}, OptTime{Set: true}
+		return p, nil
+	}
+	if s.d.Trimmer == nil {
+		return p, s.ownerFail("trim", rec.ID, errors.New("no trimmer"))
+	}
+	a, b, err := s.d.Trimmer.ResolveTrim(ctx, rec, start, end)
+	switch {
+	case errors.Is(err, ErrTrimTooShort):
+		return p, invalid("At least 1 minute of the workout must remain.")
+	case err != nil:
+		return p, s.ownerFail("trim", rec.ID, err)
+	}
+	p.TrimStart, p.TrimEnd = OptTime{Set: true, At: a}, OptTime{Set: true, At: b}
+	return p, nil
+}
+
+// OwnerView is what the owner's settings object shows beyond the row: the
+// hidden ranges and the suggested title, and with a trim stored the trimmed
+// sport and summary (F-47 TR-8, ADR-047 item 3).
+type OwnerView struct {
+	Trimmed   *TrimmedView
+	Ranges    [][2]int
+	Suggested string
+}
+
+// TrimmedView is the sport and summary as the public metadata has them.
+type TrimmedView struct {
+	Sport   string          `json:"sport"`
+	Summary json.RawMessage `json:"summary"`
+}
+
+// View returns the owner view of rec. Without a trim it is the stored
+// ranges and ST-6's suggestion, with no parse. With a trim it is computed
+// per read from one parse under the O-7 lock; any failure gives no trimmed
+// values, no ranges and no suggestion, never an error.
+func (s *Service) View(ctx context.Context, rec Record) OwnerView {
+	if (rec.TrimStartAt == nil && rec.TrimEndAt == nil) || s.d.Trimmer == nil {
+		return OwnerView{Ranges: rec.HiddenRanges, Suggested: s.SuggestedTitle(rec)}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	v, err := s.d.Trimmer.TrimmedView(ctx, rec)
+	if err != nil {
+		return OwnerView{}
+	}
+	return v
 }

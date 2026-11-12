@@ -34,9 +34,11 @@ type Deps struct {
 	Frames Frames
 	// Places is the town index for the owner's suggested_title (F-45 ST-6); nil: none.
 	Places *places.Index
-	Logger *slog.Logger
-	Now    func() time.Time // nil: time.Now
-	Rand   io.Reader        // nil: crypto/rand.Reader
+	// Trimmer resolves and shows a trim (F-47); nil: trims are refused as a server error.
+	Trimmer Trimmer
+	Logger  *slog.Logger
+	Now     func() time.Time // nil: time.Now
+	Rand    io.Reader        // nil: crypto/rand.Reader
 }
 
 // Service runs the workout operations.
@@ -356,4 +358,16 @@ func (s *Service) Expire(ctx context.Context) error {
 		return fmt.Errorf("lifecycle: expire: %w", errors.Join(errs...))
 	}
 	return nil
+}
+
+// ErrTrimTooShort: the trim leaves less than a minute (F-47 TR-4).
+var ErrTrimTooShort = errors.New("lifecycle: trim leaves too little")
+
+// Trimmer is F-47's port, implemented by package publish (it owns the
+// parse and the public transform).
+type Trimmer interface {
+	// ResolveTrim returns the instants to store for a requested trim, or ErrTrimTooShort.
+	ResolveTrim(ctx context.Context, r Record, start, end *time.Time) (s, e *time.Time, err error)
+	// TrimmedView is the owner view of a row with a trim.
+	TrimmedView(ctx context.Context, r Record) (OwnerView, error)
 }

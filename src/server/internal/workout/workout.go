@@ -24,6 +24,10 @@ type Workout struct {
 	Derived   Derived
 	Summary   Summary
 	Integrity Integrity
+
+	// hints are the sport hints of the sport timeline (D-12), kept so that
+	// Trim can rebuild it. Never encoded.
+	hints []sportHint
 }
 
 // Device identifies the recording device. The serial number is never read

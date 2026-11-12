@@ -58,6 +58,9 @@ type Record struct {
 	// HiddenRanges is workout.HiddenRanges of the upload (ADR-030): display
 	// only, never read by the public build.
 	HiddenRanges [][2]int
+	// TrimStartAt and TrimEndAt are the instants of the first and last
+	// remaining sample (F-47 TR-3); nil: that end is not trimmed.
+	TrimStartAt, TrimEndAt *time.Time
 }
 
 // NewDraft is the row of a fresh upload: a draft with hiding and download off

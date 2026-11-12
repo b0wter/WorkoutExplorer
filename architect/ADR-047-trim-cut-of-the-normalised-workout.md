@@ -12,7 +12,7 @@ The trim must keep the trimmed part (often the way home) out of every public fil
 
 ## Decision
 
-1. **Cut the normalised workout, not the FIT records.** `workout.Trim` slices and rebases the output of `Normalise` and re-runs the summary rules on the cut (F-47 TR-1, TR-5). Hiding then runs on the result (TR-2). Sample positions of the trim are therefore positions in `draft.bin`.
+1. **Cut the normalised workout, not the FIT records** (a trim keeps the pool length and drops only the number of lengths and the calories, OQ-179). `workout.Trim` slices and rebases the output of `Normalise` and re-runs the summary rules on the cut (F-47 TR-1, TR-5). Hiding then runs on the result (TR-2). Sample positions of the trim are therefore positions in `draft.bin`.
 2. **Store instants.** `trim_start_at`, `trim_end_at` are Unix seconds of the resolved samples, nullable, settings columns. Each build resolves them inward: first sample at or after the start, last at or before the end (TR-4). Not sample indices: a parser change that alters gap filling or resampling would move an index to another moment. Not offsets: a change to R-1's start time would shift every offset, and an offset-stored start trim would then reveal that shift of the trimmed part. An instant stays at the same moment of the recording's clock, and inward rounding cannot reach outside it.
 3. **Owner view computed per read, only when a trim is stored.** `GET` and `PATCH` parse `original.fit` under the O-7 lock and run the public transform's code to return the trimmed `sport` and `summary`, the hidden ranges in `draft.bin` indices, and the suggested title (TR-8). Untrimmed workouts keep ADR-030's stored ranges and ST-6's per-request read, with no parse. Nothing derived from the trim is stored.
 

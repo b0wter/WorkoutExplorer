@@ -26,7 +26,7 @@ type Owner interface {
 	OpenOriginal(ctx context.Context, publicID, token string) (lifecycle.Download, error)
 	DeleteByOwner(ctx context.Context, publicID, token string) error
 	Publish(ctx context.Context, publicID, token string) (lifecycle.Record, error)
-	SuggestedTitle(rec lifecycle.Record) string
+	View(ctx context.Context, rec lifecycle.Record) lifecycle.OwnerView
 	PreviewFrame(ctx context.Context, publicID, token string) (lifecycle.MapFrame, error)
 	PutPreviewMap(ctx context.Context, publicID, token, key string, body io.Reader) error
 }
@@ -75,15 +75,29 @@ type settingsBody struct {
 	HideEndsRanges [][2]int `json:"hide_ends_ranges"`
 	// SuggestedTitle is read-only (F-45 ST-6): the UP-5 suggestion whatever the title, "" = none.
 	SuggestedTitle string `json:"suggested_title"`
+	// TrimStartAt and TrimEndAt are F-47 TR-3: RFC 3339 UTC, null = that end is not trimmed.
+	TrimStartAt *string `json:"trim_start_at"`
+	TrimEndAt   *string `json:"trim_end_at"`
+	// Trimmed is read-only (F-47 TR-8): the sport and summary the public
+	// metadata would have; null without a trim.
+	Trimmed *lifecycle.TrimmedView `json:"trimmed"`
 }
 
-func settingsOf(r lifecycle.Record, suggested string) settingsBody {
-	return settingsBody{SuggestedTitle: suggested,
+func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
+	at := func(t *time.Time) *string {
+		if t == nil {
+			return nil
+		}
+		s := t.UTC().Format(time.RFC3339)
+		return &s
+	}
+	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed,
+		TrimStartAt: at(r.TrimStartAt), TrimEndAt: at(r.TrimEndAt),
 		Title: r.Title, Description: r.Description, HideEnds: r.HideEnds, AllowDownload: r.AllowDownload,
 		Visibility: string(r.Visibility), LifetimeDays: r.LifetimeDays(),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339), ExpiresAt: r.ExpiresAt.UTC().Format(time.RFC3339),
 		DataEndS: r.DataEndS, ViewURL: lifecycle.ViewPath(r.PublicID),
-		HideEndsRanges: append([][2]int{}, r.HiddenRanges...),
+		HideEndsRanges: append([][2]int{}, v.Ranges...),
 	}
 }
 
@@ -180,7 +194,7 @@ func (h *ownerHandler) publish(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.SuggestedTitle(rec)))
+	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.View(r.Context(), rec)))
 }
 
 // begin applies ADR-025 items 2 and 3 and the deadlines of O-12. ok is false
@@ -235,7 +249,7 @@ func (h *ownerHandler) get(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.SuggestedTitle(rec)))
+	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.View(r.Context(), rec)))
 }
 
 func (h *ownerHandler) delete(w http.ResponseWriter, r *http.Request) {
@@ -282,6 +296,7 @@ func (h *ownerHandler) file(original bool) http.HandlerFunc {
 
 const (
 	msgBadBody = "The request must be one JSON object with only the settings that can be changed."
+	msgBadTrim = "trim_start_at and trim_end_at must be a time in RFC 3339 form with whole seconds, or null."
 	msgBadType = "The title and description must be text, hide_ends and allow_download true or false, and lifetime_days a whole number."
 )
 
@@ -310,7 +325,7 @@ func (h *ownerHandler) patch(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.SuggestedTitle(rec)))
+	writeJSON(w, http.StatusOK, settingsOf(rec, h.o.View(r.Context(), rec)))
 }
 
 // parsePatch reads the body of a PATCH: one JSON object whose keys are
@@ -346,6 +361,27 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 		case "lifetime_days":
 			p.LifetimeDays = new(int)
 			dst = p.LifetimeDays
+		case "trim_start_at", "trim_end_at":
+			// The one exception to "no null" (F-47 TR-3).
+			o := &p.TrimStart
+			if k == "trim_end_at" {
+				o = &p.TrimEnd
+			}
+			o.Set = true
+			if bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
+				continue
+			}
+			var str string
+			if json.Unmarshal(v, &str) != nil {
+				return p, msgBadType
+			}
+			t, err := time.Parse(time.RFC3339, str)
+			if err != nil || t.Nanosecond() != 0 {
+				return p, msgBadTrim
+			}
+			t = t.UTC()
+			o.At = &t
+			continue
 		default:
 			return p, msgBadBody
 		}

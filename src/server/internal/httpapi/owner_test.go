@@ -13,7 +13,9 @@ import (
 	"workout-explorer/internal/lifecycle"
 )
 
-func (o *fakeOwner) SuggestedTitle(lifecycle.Record) string { return "Morning ride near Köln" }
+func (o *fakeOwner) View(_ context.Context, r lifecycle.Record) lifecycle.OwnerView {
+	return lifecycle.OwnerView{Suggested: "Morning ride near Köln", Ranges: r.HiddenRanges}
+}
 
 type fakeOwner struct {
 	calls []string
@@ -197,6 +199,7 @@ func TestPatchBody(t *testing.T) {
 		`{"title":null}`, `{"title":null,"title":"x"}`, `{"title":"a","title":"b"}`, `{"title":1}`, `{"hide_ends":"yes"}`, `{"allow_download":1}`, `{"lifetime_days":7.5}`,
 		`{"lifetime_days":"7"}`, `{"visibility":3}`, `{"description":["a"]}`,
 		`{"visibility":"unlisted"}`, `{"visibility":"draft"}`, `{"visibility":"private"}`, `{"title":"x","visibility":"unlisted"}`, // read-only (O-6)
+		`{"trimmed":null}`, `{"trim_start_at":"x"}`, `{"trim_end_at":1}`, `{"trim_start_at":"2026-06-01T06:00:00.5Z"}`, // F-47
 		`{"title":"` + strings.Repeat("a", maxPatchBytes) + `"}`,
 	}
 	for _, b := range bad {
@@ -218,6 +221,10 @@ func TestPatchBody(t *testing.T) {
 	p := o.patch
 	if rec.Code != 200 || *p.Title != "T" || *p.Description != "D" || !*p.HideEnds || *p.AllowDownload || *p.LifetimeDays != 30 {
 		t.Errorf("full: %d %s", rec.Code, rec.Body)
+	}
+	rec = ownerDo(h, "PATCH", url, auth, `{"trim_start_at":"2026-06-01T08:00:00+02:00","trim_end_at":null}`)
+	if rec.Code != 200 || !o.patch.TrimStart.Set || !o.patch.TrimStart.At.Equal(time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)) || !o.patch.TrimEnd.Set || o.patch.TrimEnd.At != nil {
+		t.Errorf("trim: %d %s %+v", rec.Code, rec.Body, o.patch)
 	}
 	rec = ownerDo(h, "PATCH", url, auth, ` {} `)
 	if rec.Code != 200 || o.patch != (lifecycle.SettingsPatch{}) {

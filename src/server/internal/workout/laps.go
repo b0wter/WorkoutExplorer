@@ -24,29 +24,33 @@ func SampleRange(off []int32, start, end int32) (from, to int) {
 // cadence or power (R-13 removed them; OQ-78). Runs on the normalised
 // samples, before any public transform, so hiding changes no lap value.
 func completeLaps(w *Workout, tl *sportTimeline) {
-	s := &w.Samples
 	for i := range w.Laps {
 		l := &w.Laps[i]
-		from, to := SampleRange(s.Offset, l.Start, l.End)
-		if to-from < 2 {
-			continue
+		completeTotals(&w.Samples, &l.Totals, l.Start, l.End, tl)
+	}
+}
+
+// completeTotals fills the nil AP-8 columns of t, a lap's or session's totals
+// over the offsets [start, end], as completeLaps describes.
+func completeTotals(s *Samples, t *Totals, start, end int32, tl *sportTimeline) {
+	from, to := SampleRange(s.Offset, start, end)
+	if to-from < 2 {
+		return
+	}
+	v := rangeValues(s, from, to-1)
+	fill := func(dst **float64, src *float64) {
+		if *dst == nil {
+			*dst = src
 		}
-		v := rangeValues(s, from, to-1)
-		t := &l.Totals
-		fill := func(dst **float64, src *float64) {
-			if *dst == nil {
-				*dst = src
-			}
-		}
-		fill(&t.ElapsedTime, v.elapsed)
-		fill(&t.Distance, v.distance)
-		fill(&t.Ascent, v.gain)
-		fill(&t.AvgHeartRate, v.heartRate)
-		if !tl.inTransition(l.Start) {
-			fill(&t.AvgSpeed, v.speed)
-			fill(&t.AvgPower, v.power)
-			fill(&t.AvgCadence, v.cadence)
-		}
+	}
+	fill(&t.ElapsedTime, v.elapsed)
+	fill(&t.Distance, v.distance)
+	fill(&t.Ascent, v.gain)
+	fill(&t.AvgHeartRate, v.heartRate)
+	if !tl.inTransition(start) {
+		fill(&t.AvgSpeed, v.speed)
+		fill(&t.AvgPower, v.power)
+		fill(&t.AvgCadence, v.cadence)
 	}
 }
 
