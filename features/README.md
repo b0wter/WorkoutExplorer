@@ -58,7 +58,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-42](F-42-multisport-sections.md) | Multisport sections | 2 | both (backend first) | F-15, F-17, F-18, F-26 | done | checked by the user 11 Nov (charts, map, real triathlon); open: hidden start/end, no-JS, dark mode (qa r1) |
 | [F-43](F-43-device-info.md) | Device and sensor info | 2 | both (backend first) | F-15, F-19, F-29 | done | user: hand checks 1–4 (qa r1); minors r1-1..4 fixed |
 | [F-44](F-44-pool-summary.md) | Pool length and lengths in the summary | 2 | both (backend first) | F-15, F-19, F-41 | done | user: hand checks 1–4 (qa r1); minors r1-1..4 fixed |
-| [F-45](F-45-suggested-title.md) | Suggested title | 2 | both (backend first) | F-16, F-19, F-29, F-42 | done | user: browser check (edit-page placeholder, published title, hidden start); minors r1-1..5 fixed |
+| [F-45](F-45-suggested-title.md) | Suggested title | 2 | both (backend first) | F-16, F-19, F-29, F-42 | done | checked by the user 12 Nov (suggested title) |
 | [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | done | user: browser check (drop-down, Trigger column, pool splits on a real file), phone scrub trace (AC 41); minors r1-1..3 fixed |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 

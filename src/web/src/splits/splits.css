@@ -19,6 +19,7 @@
   color: var(--on-accent);
 }
 .split-select {
+  margin-left: 12px;
   height: 26px;
   font: inherit;
   font-size: 13px;
