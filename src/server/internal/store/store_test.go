@@ -527,6 +527,8 @@ func TestUpdateDerived(t *testing.T) {
 	db, _ := openTemp(t)
 	r := published(3)
 	r.Title, r.HideEnds, r.AllowDownload = "kept", true, true
+	ts, te := r.CreatedAt.Add(-50*time.Minute).Truncate(time.Second), r.CreatedAt.Add(-20*time.Minute).Truncate(time.Second)
+	r.TrimStartAt, r.TrimEndAt = &ts, &te // F-47: UpdateDerived never writes them
 	if err := db.InsertWorkout(ctx, r); err != nil {
 		t.Fatal(err)
 	}
@@ -545,7 +547,7 @@ func TestUpdateDerived(t *testing.T) {
 		t.Errorf("got\n%+v\nstored\n%+v\nwant\n%+v", got, back, want)
 	}
 	// Back to no start time and no ranges: NULLs.
-	if got, _, err = db.UpdateDerived(ctx, r.ID, lifecycle.Record{Sport: "x", SummaryJSON: "{}"}, r.CreatedAt); err != nil || got.StartTime != nil || got.HiddenRanges != nil || got.DataEndS != nil {
+	if got, _, err = db.UpdateDerived(ctx, r.ID, lifecycle.Record{Sport: "x", SummaryJSON: "{}"}, r.CreatedAt); err != nil || got.StartTime != nil || got.HiddenRanges != nil || got.DataEndS != nil || got.TrimStartAt == nil || got.TrimEndAt == nil {
 		t.Errorf("%+v %v", got, err)
 	}
 	if _, found, err := db.UpdateDerived(ctx, "missing", d, r.CreatedAt); found || err != nil {
