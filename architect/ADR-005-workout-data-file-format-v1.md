@@ -1,12 +1,12 @@
 # ADR-005 Workout data file format, version 1 (`WEXD`)
 
 - **Status:** accepted
-- **Date:** 10 Oct 2026; revision 1 of 22 Oct 2026 (item 9, kept workouts); note of 26 Oct 2026 (item 9, version 2 by ADR-029); note of 11 Nov 2026 (items 7 and 9, version 3 by ADR-044)
+- **Date:** 10 Oct 2026; revision 1 of 22 Oct 2026 (item 9, kept workouts); note of 26 Oct 2026 (item 9, version 2 by ADR-029); note of 11 Nov 2026 (items 7 and 9, version 3 by ADR-044); note of 12 Nov 2026 (item 9, version 4 by ADR-046)
 - **History:** [architect/history/ADR-005-workout-data-file-format-v1.md](history/ADR-005-workout-data-file-format-v1.md)
 - **Features:** F-03 (writer, introduces it), F-04 (browser reader), F-09 (`draft.bin`), F-15 (public data file), F-16 (hiding changes columns only), F-17 (version 2, ADR-029), F-30 (regenerate)
 - **Supersedes:** none
 - **Requirements:** AP-4, NFR Performance (data file under 500 KB compressed for a 4-hour ride; 60 fps on 12 hours), SH-4 (via F-16); TD Workout data file (Layout, stream table, Size, Versioning), TD Principles ("Fast for viewers")
-- **Normative specification:** [F-03 design, section "Data file format, version 3"](F-03-workout-data-file-writer.md#data-file-format-version-3-normative). This ADR records the decisions and why they were made. The byte-level rules are in that section.
+- **Normative specification:** [F-03 design, section "Data file format, version 4"](F-03-workout-data-file-writer.md#data-file-format-version-4-normative). This ADR records the decisions and why they were made. The byte-level rules are in that section.
 
 ## Context
 
@@ -35,6 +35,7 @@ Two constraints from later features shape the answers. F-16 must be able to prov
 9. **Versioning: one live version, strict readers.** Version is `1`. Any change to the header, the metadata schema, a descriptor field, a stream's type, scale, encoding or unit, or the column rules bumps the version. The writer and the reader change in the same release. A reader rejects every version other than its own (F-04 AC 3). Regeneration on deploy (TD Versioning, F-30) rewrites every live file, so no reader for old versions is ever needed.
    - (26 Oct 2026, [ADR-029](ADR-029-cumulative-moving-time-and-gain-in-the-data-file.md)) **The live version is 2.** It adds the cumulative moving-time and gain streams (int32 delta, no missing samples); every other decision here is unchanged. The worst case becomes 35 bytes per sample (Consequences). Byte rules in F-03's normative section.
    - (11 Nov 2026, [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md)) **The live version is 3.** It adds `device` and the summary's pool keys to the metadata; streams and columns unchanged.
+   - (12 Nov 2026, [ADR-046](ADR-046-lap-trigger-and-recorded-pool-length-in-the-data-file.md)) **The live version is 4.** It adds the lap `trigger` and the summary's `pool_length_recorded_m`; streams and columns unchanged.
    - (rev. 1, OQ-55, the user, 22 Oct 2026) **Kept workouts.** A workout whose rebuild fails for a server-side reason (F-30: `canceled`, a time limit, or an error that is not about the file) is kept unchanged: it serves its previous data file and pages, under their old content-hashed names, until a later run rebuilds it. Its pages refer to the previous content-hashed app bundle, and **an old bundle is deleted only once no kept workout refers to it**. So more than one format version and bundle can be live for a while, but each bundle reads exactly one version, and no reader for an old version is ever written. The deploy report counts kept workouts (F-09 v1.10, F-30 hand-off).
 10. **The committed contract is a set of golden files.** For every synthetic corpus file, the repository holds the writer's `data.bin` and a JSON fixture of the decoded integer values (count, statistics and digest). Go's `TestDataFileCorpus` keeps both current. F-04's decoder tests read them. Fixtures exist for synthetic files only (ADR-004 item 7, rev. 3).
 

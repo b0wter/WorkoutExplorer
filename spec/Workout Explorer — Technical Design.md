@@ -128,7 +128,7 @@ Keep a test corpus and run every parser change against it (ADR-004). Only genera
 
 ## Workout data file
 
-Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 3"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044).
+Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 4"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044; version 4: ADR-046).
 
 **Layout** (little-endian, every column starts on a 4-byte boundary so typed-array views need no copy)
 
@@ -502,7 +502,7 @@ The ubiquitous language: use these names in code, API fields and documents. Add 
 | Cursor | The shared sample index (or none) that drives charts, map marker and readouts (AP-6); held in one cursor store per workout (`lib/cursor`, ADR-008). | Selection (a range, F-17); a time or pixel position |
 | Units store | The page's one unit-system choice (metric or imperial): defaulted from the browser language, switched by the drop-down; a drop-down choice is remembered in `localStorage` through `lib/prefs` and wins over the default, never in a cookie or sent to the server (DS-1). One per page (`lib/units`, F-14 D-3), passed to every consumer. | Unit labels and factors (`lib/format`); the server markup, always metric (ADR-027) |
 | Recording | `ingest`'s library-free extraction of a FIT file, input to normalisation (F-02). | Normalised workout |
-| Session / lap | The device's `session` / `lap` with its totals as recorded (AP-2, AP-8); a lap value the device did not record is computed from the lap's samples ([F-18](../architect/F-18-laps-and-splits-table.md) L-1, [F-03](../architect/F-03-workout-data-file-writer.md) §5.3), and is absent, never 0, when the lap has no samples for it (e.g. gain without altitude). A workout has one or more sessions. | Split (computed per 1 km in the browser, F-18) |
+| Session / lap | The device's `session` / `lap` with its totals as recorded (AP-2, AP-8); a lap value the device did not record is computed from the lap's samples ([F-18](../architect/F-18-laps-and-splits-table.md) L-1, [F-03](../architect/F-03-workout-data-file-writer.md) §5.3), and is absent, never 0, when the lap has no samples for it (e.g. gain without altitude). A workout has one or more sessions. | Split (computed in the browser at the viewer's preset distance, F-18, F-46) |
 | Time offset | Whole seconds since the workout's start time; the shared time axis. One axis across every session and FIT sequence, never rebased; the elapsed time the cursor shows is the sample's offset (F-08 D-19). | Elapsed time (a total) |
 | Gap | Two consecutive samples 5 s or more apart; never filled. Drawn as a break on charts and, if both sides have a position, as a dashed bridge on the map (F-06). Shorter gaps are filled at 1 s (F-02 R-3). In the browser: an index in `WorkoutData.gaps` (F-04). | Pause (timer stopped); missing sample; GPS dropout |
 | Missing sample | A present stream has no value at an index: the sentinel in the file, `NaN` in the browser (F-03 §7, ADR-007). | Gap; absent stream |

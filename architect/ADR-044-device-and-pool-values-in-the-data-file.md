@@ -5,7 +5,8 @@
 - **Features:** F-43 (device line), F-44 (pool cells); F-19 (`draft.bin`), F-30 (regenerate)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 3 under its item 9 and narrows its item 7 ("no device")
 - **Requirements:** AP-14, AP-16, AP-2, UP-9, INF-1; NFR Privacy
-- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-3-normative) §5.2, §5.7
+- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-4-normative) §5.2, §5.7
+- **Note (12 Nov 2026):** item 4 narrowed by [ADR-046](ADR-046-lap-trigger-and-recorded-pool-length-in-the-data-file.md) item 3 (`pool_length_recorded_m`, not whole, never printed)
 
 ## Context
 
