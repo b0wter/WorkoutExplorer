@@ -15,7 +15,7 @@ The product specification and technical design (`../spec/`), cut into features t
 
 | ID | Title | Phase | Owner | Depends on | Status | Waiting on |
 | --- | --- | --- | --- | --- | --- | --- |
-| [F-01](F-01-project-skeleton-and-ci.md) | Project skeleton and CI | 0 | both | — | waiting on user | GitHub Actions run with Node 24 and the `@v7` tags (browser check passed 2026-10-11) |
+| [F-01](F-01-project-skeleton-and-ci.md) | Project skeleton and CI | 0 | both | — | done | checked by the user 12 Nov |
 | [F-02](F-02-fit-parsing-and-normalisation.md) | FIT parsing and normalisation | 0 | backend | F-01 | done | |
 | [F-03](F-03-workout-data-file-writer.md) | Workout data file writer | 0 | backend | F-02 | done | |
 | [F-04](F-04-workout-data-file-reader.md) | Workout data file reader | 0 | frontend | F-03 | done | (phone cold median 31 ms, iPhone 13 mini, recorded with F-05) |
@@ -37,12 +37,12 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-20](F-20-publish-share-delete-controls.md) | Publish, Share and delete controls | 1 | both (backend first) | F-15, F-19 | done | network log check (user) |
 | [F-21](F-21-lifetime-and-expiry.md) | Lifetime and automatic expiry | 1 | backend | F-12, F-15 | done | |
 | [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
-| [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | waiting on user | AC 3 loop-route check; AC 8/9 messengers (deployed) |
-| [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | waiting on user | first deploy: VPS and proxy checks (AC 1, 3–9) |
+| [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | done | checked by the user 12 Nov |
+| [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | done | checked by the user 12 Nov |
 | [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done (rework 8 Nov 2026) | user: AC 5 scrub record on ride-12h (qa r2) |
 | [F-26](F-26-fullscreen-map.md) | Fullscreen map | 1 | frontend | F-06, F-13 | done | |
-| [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | built, QA r2 ready | user: VPS checks (no egress without override, delete prompt via exec, report query with sudo) |
-| [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | built, QA r1 ready | user: 429 on a second report (dialog, wording, CSP, real report checked 4 Nov) |
+| [F-27](F-27-reports-api-and-operator-delete.md) | Reports API and operator delete command | 1 | backend | F-15 | done | checked by the user 12 Nov |
+| [F-28](F-28-report-form.md) | Report form | 1 | frontend | F-13, F-27 | done | checked by the user 12 Nov |
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | done | checked by the user 11 Nov |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
