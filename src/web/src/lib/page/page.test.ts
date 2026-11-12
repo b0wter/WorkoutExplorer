@@ -155,12 +155,22 @@ describe('modules (AP-3, D-5, D-10)', () => {
     expect(laps.Rows[0][0]).toBe('1');
   });
 
-  it('L-8: without laps but with an advancing distance the module says "No laps recorded."', () => {
+  it('LS-2: the trigger column is last, when a lap has a known code; others give an empty cell', () => {
+    const lap = (trigger: string) => ({ trigger, totals: { elapsed_time: 60 } });
+    const words = ['manual', 'button', 'time', 'distance', 'position', 'stop', 'equipment', 'bogus', '', 'toString'];
+    const g = lapsGroup('cycling', words.map(lap))!;
+    expect(g.Columns[g.Columns.length - 1]).toEqual({ Key: 'trigger', Label: 'Trigger' });
+    expect(g.Rows.map((r) => r[r.length - 1])).toEqual(['', 'Button', 'Time', 'Distance', 'Position', 'Stop', 'Equipment', '', '', '']);
+    expect(lapsGroup('cycling', [lap(''), lap('bogus')])!.Columns.map((c) => c.Key)).not.toContain('trigger');
+    expect(lapsGroup('cycling', [{ totals: { elapsed_time: 60 } }])!.Columns.map((c) => c.Key)).not.toContain('trigger');
+  });
+
+  it('LS-3: without laps but with an advancing distance the module is the hidden splits-only one', () => {
     expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes', Sections: [] });
     expect(byName('ride-12h').Laps?.None).toBe('');
   });
 
-  it('L-8: without laps and without an advancing distance there is no laps group', () => {
+  it('LS-3: without laps and without an advancing distance there is no laps group', () => {
     const settings = { title: '', description: '', expiresAt: EXPIRES_AT, publicId: 'x', dataFile: 'd' };
     const g = loadGolden().find((x) => x.name === 'ride-no-laps')!;
     const r = decodeDataFile(g.bin);

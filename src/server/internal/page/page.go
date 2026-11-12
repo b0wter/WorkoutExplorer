@@ -49,7 +49,8 @@ type Route struct{ Map, NoLocation, Hidden string }
 type Column struct{ Key, Label string }
 
 // Laps is the laps group. None is "yes" for a file without laps whose
-// distance advances: the module shows "No laps recorded." (F-18 L-8).
+// distance advances: the module is rendered hidden, headed "Splits", with no
+// table; the lazy splits chunk fills and reveals it (F-46 LS-3, OQ-168).
 type Laps struct {
 	Columns []Column
 	Rows    [][]string
@@ -218,8 +219,8 @@ func CardItems(f datafile.File, vm ViewModel) []SummaryItem {
 
 var cardSpeedSports = map[string]bool{"cycling": true, "running": true, "walking": true, "hiking": true, "swimming": true}
 
-// lapsOrNone is F-18 L-8: the laps group, or the "No laps recorded." module
-// when the file has no laps but its distance advances, or nil.
+// lapsOrNone is F-46 LS-3: the laps group, or the hidden "Splits" module when
+// the file has no laps but its distance advances, or nil.
 func lapsOrNone(f datafile.File) *Laps {
 	if l := lapsGroup(f.Meta.Sport, f.Meta.Laps); l != nil {
 		return l
@@ -374,14 +375,27 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 			}
 		}
 	}
+	// F-46 LS-2: the last column, when at least one lap has a known trigger.
+	words := map[string]string{"button": "Button", "time": "Time", "distance": "Distance",
+		"position": "Position", "stop": "Stop", "equipment": "Equipment"}
+	showTrigger := false
+	for _, l := range laps {
+		showTrigger = showTrigger || words[l.Trigger] != ""
+	}
 	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps)), Sections: []LapsSection{}}
 	for _, c := range shown {
 		out.Columns = append(out.Columns, Column{Key: c.key, Label: c.label})
+	}
+	if showTrigger {
+		out.Columns = append(out.Columns, Column{Key: "trigger", Label: "Trigger"})
 	}
 	for i, t := range ts {
 		row := []string{strconv.Itoa(i + 1)}
 		for _, c := range shown {
 			row = append(row, cell(t, c))
+		}
+		if showTrigger {
+			row = append(row, words[laps[i].Trigger])
 		}
 		out.Rows[i] = row
 	}

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-// The laps enhancer (F-18 design L-2 to L-7; AC 1, 3 to 9). The page is the edit page's
-// components rendered from a view model built from a synthetic golden, so rows and data agree.
+// The laps enhancer (F-18 design L-2 to L-7; AC 1, 3 to 9) with the splits chunk (F-46 LS-3 to
+// LS-8), wired as the page glue does. The page is the edit page's components rendered from a view
+// model built from a synthetic golden, so rows and data agree.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import ActivityPage from '../components/page/ActivityPage.svelte';
@@ -11,6 +12,8 @@ import { createUnitsStore, type UnitsStore } from '../lib/units';
 import { loadGolden } from '../../test-support/golden.mjs';
 import { enhanceLaps } from './laps';
 import { enhanceUnits } from './enhance';
+import { startSplits } from '../splits';
+import { distanceAdvances, lapsGroup } from '../lib/page';
 import { sectionRanges, sections } from '../lib/sections';
 import { legWithoutLaps } from '../lib/page/samples';
 
@@ -37,6 +40,10 @@ interface Page {
   /** The sections chunk's call (F-42 MS-6). */
   legs(pairs: readonly number[]): void;
   button(text: string): HTMLButtonElement | undefined;
+  /** The split-distance drop-down, or null. */
+  select(): HTMLSelectElement | null;
+  /** Chooses a split distance by its label, as a viewer does. */
+  choose(label: string): void;
 }
 
 let cleanup: (() => void) | null = null;
@@ -62,8 +69,9 @@ function open(data: WorkoutData, units: 'metric' | 'imperial' = 'metric', withUn
   });
   const store = createUnitsStore(units);
   if (withUnits) enhanceUnits(target, data.meta, store);
-  const laps = enhanceLaps(target, enhanceWith, selection, store);
+  const laps = enhanceLaps(target, enhanceWith, selection);
   laps.taps();
+  if (distanceAdvances(enhanceWith)) startSplits(target, enhanceWith, store, laps.splits, lapsGroup);
   cleanup = () => {
     unmount(app);
     target.remove();
@@ -81,6 +89,12 @@ function open(data: WorkoutData, units: 'metric' | 'imperial' = 'metric', withUn
     legs: laps.legs,
     rows: (sel = '.laps-scroll:not(.splits)') => [...target.querySelectorAll<HTMLTableRowElement>(sel + ' tbody tr')],
     button: (text) => [...target.querySelectorAll<HTMLButtonElement>('.laps-switch button')].find((b) => b.textContent === text),
+    select: () => target.querySelector<HTMLSelectElement>('#laps-slot select'),
+    choose(label) {
+      const sel = target.querySelector<HTMLSelectElement>('#laps-slot select')!;
+      sel.value = [...sel.options].find((o) => o.text === label)!.value;
+      sel.dispatchEvent(new Event('change'));
+    },
   };
 }
 
@@ -161,17 +175,25 @@ describe('the tapped row stays in place (L-7; AC 8)', () => {
   });
 });
 
-describe('laps / splits switch (L-4 to L-6)', () => {
-  it('AC 1: splits of 1 km with the last partial; imperial rebuilds them in miles; the selection stays', () => {
+const dist = (rows: HTMLTableRowElement[]): string[] => rows.map((r) => r.cells[2].textContent ?? '');
+
+describe('laps / splits switch (L-4 to L-6; F-46 LS-4, LS-7)', () => {
+  it('a ride opens its splits on 5 km; 1 km gives 14 splits; imperial keeps 1 km in miles; the selection stays', () => {
     const p = open(ride(), 'metric', true);
     const server = p.section?.querySelector<HTMLElement>('.laps-scroll:not(.splits)');
     expect(p.button('Laps')?.getAttribute('aria-pressed')).toBe('true');
     expect(p.section?.querySelector('.splits')).toBeNull(); // never built at load
+    expect(p.select()?.hidden).toBe(true); // drop-down in the splits view only
     p.button('Splits')?.click();
     expect(server?.hidden).toBe(true);
+    expect(p.select()?.hidden).toBe(false);
+    expect([...p.select()!.options].map((o) => o.text)).toEqual(['1 km', '2 km', '2.5 km', '5 km', '10 km']); // 13.46 km
+    expect(p.select()?.selectedOptions[0].text).toBe('5 km');
+    expect(p.rows('.splits')).toHaveLength(3);
+    expect(dist(p.rows('.splits'))[2]).toBe('3.46');
+    p.choose('1 km');
     const splits = p.rows('.splits');
-    expect(splits).toHaveLength(14); // 13.46 km
-    const dist = (rows: HTMLTableRowElement[]): string[] => rows.map((r) => r.cells[2].textContent ?? '');
+    expect(splits).toHaveLength(14);
     // A split ends at the first sample at or beyond k km: about 7.5 m per sample here.
     expect(dist(splits).slice(0, 13).every((t) => t === '1.00' || t === '1.01')).toBe(true);
     expect(dist(splits)[13]).toBe('0.46');
@@ -182,10 +204,13 @@ describe('laps / splits switch (L-4 to L-6)', () => {
     p.frame();
     const range = [p.selection.start(), p.selection.end()];
     expect(range[1]).toBe(p.data.sampleCount - 1);
+    expect(splits[13].classList.contains('on')).toBe(true);
+    // AC 40: units keep the chosen distance; 1 km shows as 0.62 mi.
     p.units.set('imperial');
     const mi = p.rows('.splits');
-    expect(mi).toHaveLength(9); // 8.36 mi
-    expect(dist(mi).slice(0, 8).every((t) => t === '1.00' || t === '1.01')).toBe(true);
+    expect(mi).toHaveLength(14);
+    expect(dist(mi).slice(0, 13).every((t) => t === '0.62' || t === '0.63')).toBe(true);
+    expect(p.select()?.selectedOptions[0].text).toBe('1 km');
     expect([p.selection.start(), p.selection.end()]).toEqual(range);
     expect(p.section?.querySelector('tr.on')).toBeNull();
     expect(p.section?.querySelectorAll('.splits')).toHaveLength(1);
@@ -194,7 +219,27 @@ describe('laps / splits switch (L-4 to L-6)', () => {
     expect(p.section?.querySelector<HTMLElement>('.splits')?.hidden).toBe(false);
     p.button('Laps')?.click();
     expect(server?.hidden).toBe(false);
+    expect(p.select()?.hidden).toBe(true);
     expect(p.section?.querySelector<HTMLElement>('.splits')?.hidden).toBe(true);
+  });
+
+  it('AC 37: with a range selected, a new distance keeps the range and unmarks a split row; rows of the new table select', () => {
+    const p = open(ride());
+    p.button('Splits')?.click();
+    p.rows('.splits')[1].click();
+    p.frame();
+    const range = [p.selection.start(), p.selection.end()];
+    const set = vi.spyOn(p.selection, 'set');
+    const clear = vi.spyOn(p.selection, 'clear');
+    p.choose('10 km');
+    p.frame();
+    expect(set).not.toHaveBeenCalled();
+    expect(clear).not.toHaveBeenCalled();
+    expect([p.selection.start(), p.selection.end()]).toEqual(range);
+    expect(p.section?.querySelector('tr.on')).toBeNull();
+    expect(p.rows('.splits')).toHaveLength(2);
+    p.rows('.splits')[1].click();
+    expect(p.selection.end()).toBe(p.data.sampleCount - 1);
   });
 
   it('AC 3: one device lap shows one row, and the splits still work', () => {
@@ -203,7 +248,7 @@ describe('laps / splits switch (L-4 to L-6)', () => {
     const p = open(withLaps(d, [all]));
     expect(p.rows()).toHaveLength(1);
     p.button('Splits')?.click();
-    expect(p.rows('.splits')).toHaveLength(14);
+    expect(p.rows('.splits')).toHaveLength(3);
     p.rows()[0].click();
     expect([p.selection.start(), p.selection.end()]).toEqual([0, d.sampleCount - 1]);
   });
@@ -222,27 +267,61 @@ describe('laps / splits switch (L-4 to L-6)', () => {
     expect(p.section?.querySelector('.laps-switch')).toBeNull();
   });
 
-  it('AC 5 (L-8): distance without device laps: "No laps recorded." first, the switch shows splits', () => {
+  it('LS-3: distance without device laps: the module is revealed on its splits, no switch, the drop-down shown', () => {
     const p = open(golden('ride-no-laps'));
-    const none = p.section?.querySelector<HTMLElement>('.laps-none');
-    expect(none?.textContent).toBe('No laps recorded.');
-    expect(none?.hidden).toBe(false);
-    p.button('Splits')?.click();
-    expect(none?.hidden).toBe(true);
+    expect(p.section?.hidden).toBe(false);
+    expect(p.section?.querySelector('h2')?.textContent).toBe('Splits');
+    expect(p.section?.querySelector('.laps-switch, .laps-none')).toBeNull();
+    expect(p.select()?.hidden).toBe(false);
+    expect(p.select()?.selectedOptions[0].text).toBe('5 km');
     expect(p.rows('.splits').length).toBeGreaterThan(0);
     p.rows('.splits')[0].click();
     expect(p.selection.start()).toBe(0);
   });
 
-  it('AC 9: every load starts on laps; the choice is not stored', () => {
+  it('AC 9, AC 38: every load starts on laps and the default; nothing is stored', () => {
     const d = ride();
     const p = open(d);
     p.button('Splits')?.click();
+    p.choose('1 km');
     expect(localStorage.length).toBe(0);
     cleanup?.();
     const q = open(d);
     expect(q.button('Laps')?.getAttribute('aria-pressed')).toBe('true');
     expect(q.section?.querySelector('.splits')).toBeNull();
+    expect(q.select()?.selectedOptions[0].text).toBe('5 km');
+  });
+});
+
+describe('pool splits (LS-6; AC 36)', () => {
+  it('a 33 m pool (32.5 m recorded) splits every 3 lengths as "100 m", in metres in both unit systems', () => {
+    const d = golden('pool-swim-33m');
+    expect(d.meta.summary.pool_length_m).toBe(33);
+    const p = open(d, 'imperial');
+    p.button('Splits')?.click();
+    expect([...p.select()!.options].map((o) => o.text)).toEqual(['100 m', '200 m', '400 m', '500 m', '1000 m']);
+    expect(p.select()?.selectedOptions[0].text).toBe('100 m');
+    const heads = [...(p.section?.querySelectorAll('.splits th') ?? [])].map((t) => t.textContent);
+    expect(heads[2]).toBe('Distance (m)');
+    const rows = p.rows('.splits');
+    const full = dist(rows).slice(0, -1);
+    expect(full.every((t) => t === '100')).toBe(true);
+    expect(rows.length).toBe(Math.ceil(d.meta.summary.lengths! / 3));
+    // Each split spans 3 recorded lengths in the stream.
+    const stream = d.metrics.distance!;
+    const pairs = rows.slice(0, -1).map((r) => {
+      r.click();
+      return stream[p.selection.end()] - stream[p.selection.start()];
+    });
+    expect(pairs.every((m) => Math.abs(m - 3 * d.meta.summary.pool_length_recorded_m!) < 1)).toBe(true);
+  });
+
+  it('a 25 yd pool splits by 100 yd, 4 lengths, in yards on a metric page', () => {
+    const p = open(golden('pool-swim-25yd'));
+    p.button('Splits')?.click();
+    expect(p.select()?.selectedOptions[0].text).toBe('100 yd');
+    expect(p.section?.querySelectorAll('.splits th')[2].textContent).toBe('Distance (yd)');
+    expect(dist(p.rows('.splits')).slice(0, -1).every((t) => t === '100')).toBe(true);
   });
 });
 

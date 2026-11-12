@@ -24,7 +24,7 @@ export function golden(name: string): WorkoutData {
 
 /** A lap starting at start_index (other fields are not read by lib/route). */
 export function lap(start_index: number, end_index = start_index): Lap {
-  return { start: start_index, end: end_index, start_index, end_index, totals: {} };
+  return { start: start_index, end: end_index, start_index, end_index, trigger: '', totals: {} };
 }
 
 /** WorkoutData with time 0..n−1 and the given positions (NaN = no position); no position

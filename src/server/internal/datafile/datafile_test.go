@@ -24,8 +24,8 @@ func TestHeader(t *testing.T) {
 	if string(b[:4]) != "WEXD" {
 		t.Errorf("magic = %q", b[:4])
 	}
-	if v := binary.LittleEndian.Uint16(b[4:]); v != 3 {
-		t.Errorf("version = %d, want 3", v)
+	if v := binary.LittleEndian.Uint16(b[4:]); v != 4 {
+		t.Errorf("version = %d, want 4", v)
 	}
 	if n := binary.LittleEndian.Uint32(b[6:]); n != 10 {
 		t.Errorf("sample count = %d, want 10", n)
@@ -49,7 +49,7 @@ func TestHeader(t *testing.T) {
 	if got := f.Streams[0].Descriptor.ByteOffset; got != first {
 		t.Errorf("first column at %d, want align4(14 + L) = %d", got, first)
 	}
-	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 3 {
+	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 4 {
 		t.Errorf("File = version %d, N %d, L %d", f.Version, f.SampleCount, f.MetadataLength)
 	}
 }
@@ -807,7 +807,7 @@ func TestFixtureWorkedExample(t *testing.T) {
 	if err := json.Unmarshal(got, &fx); err != nil {
 		t.Fatal(err)
 	}
-	if fx.FixtureVersion != 1 || fx.FormatVersion != 3 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
+	if fx.FixtureVersion != 1 || fx.FormatVersion != 4 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
 		t.Errorf("fixture header = %+v", fx)
 	}
 	want := []st{
@@ -822,5 +822,21 @@ func TestFixtureWorkedExample(t *testing.T) {
 	}
 	if !bytes.HasSuffix(got, []byte("}\n")) || !bytes.Contains(got, []byte("\n  \"streams\"")) {
 		t.Errorf("fixture is not indented with 2 spaces and a trailing newline:\n%s", got)
+	}
+}
+
+// TestLapTriggerAndRecordedPool (ADR-046): the lap trigger and the recorded
+// pool length survive an encode and decode.
+func TestLapTriggerAndRecordedPool(t *testing.T) {
+	w := fullWorkout(10)
+	w.Laps = []workout.Lap{{Start: 0, End: 5, Trigger: "distance"}, {Start: 5, End: 9}}
+	v := 32.5
+	w.Summary.PoolLengthM, w.Summary.PoolRecordedM = &[]float64{33}[0], &v
+	f := mustDecode(t, mustEncode(t, w))
+	if f.Meta.Laps[0].Trigger != "distance" || f.Meta.Laps[1].Trigger != "" {
+		t.Errorf("triggers = %q, %q", f.Meta.Laps[0].Trigger, f.Meta.Laps[1].Trigger)
+	}
+	if got := f.Meta.Summary.PoolLengthRecordedM; got != "32.5" {
+		t.Errorf("pool_length_recorded_m = %q", got)
 	}
 }

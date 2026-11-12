@@ -91,6 +91,7 @@ describe('withHtmlEntries (Vite 8: two pages, one module, F-19)', () => {
   it('keeps an entry Vite listed and rejects a script that is not in the manifest', () => {
     expect(withHtmlEntries(fixture, { 'index.html': page })).toEqual(fixture);
     expect(() => withHtmlEntries(shared, { 'index.html': '<script type="module" src="/assets/x.js">' })).toThrow(/x\.js/);
+    expect(() => withHtmlEntries(shared, { 'index.html': page + page })).toThrow(/2 module scripts/);
   });
 });
 

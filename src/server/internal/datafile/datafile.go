@@ -1,8 +1,8 @@
 // Package datafile encodes a normalised workout as the binary data file the
-// browser reads (format version 3, magic WEXD) and decodes it again.
+// browser reads (format version 4, magic WEXD) and decodes it again.
 //
 // The normative format description is architect/F-03-workout-data-file-writer.md,
-// section "Data file format, version 3"; the decisions behind it are in
+// section "Data file format, version 4"; the decisions behind it are in
 // ADR-005. The package is pure: it depends on package workout and the
 // standard library only, does no I/O and never logs (Technical Design,
 // Code structure: Dependency rules).
@@ -20,7 +20,7 @@ const Magic = "WEXD"
 
 // Version is the only format version this package writes and reads
 // (Format §9, ADR-005 item 9).
-const Version uint16 = 3
+const Version uint16 = 4
 
 // headerSize is magic, version, sample count and metadata length (Format §1).
 const headerSize = 14
@@ -110,6 +110,8 @@ type Summary struct {
 	PoolLengthM  json.Number `json:"pool_length_m,omitempty"`
 	PoolLengthYd json.Number `json:"pool_length_yd,omitempty"`
 	Lengths      json.Number `json:"lengths,omitempty"`
+	// Version 4 (ADR-046 item 3): used only to find whole lengths in the distance stream.
+	PoolLengthRecordedM json.Number `json:"pool_length_recorded_m,omitempty"`
 }
 
 // Device is the device line's data (Format §5.7): the display name ("" =
@@ -136,6 +138,7 @@ type Lap struct {
 	End        int32  `json:"end"`
 	StartIndex int    `json:"start_index"`
 	EndIndex   int    `json:"end_index"`
+	Trigger    string `json:"trigger"` // version 4, §5.3
 	Totals     Totals `json:"totals"`
 }
 

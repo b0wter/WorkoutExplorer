@@ -63,8 +63,8 @@ export type TotalKey =
 
 /** Device totals; an absent key means "not recorded" (AP-2), never 0. */
 export type Totals = Readonly<Partial<Record<TotalKey, number>>>;
-/** Summary keys beyond the totals: moving time and (version 3, F-44) the pool values, whole units. */
-export type SummaryKey = TotalKey | 'moving_time' | 'pool_length_m' | 'pool_length_yd' | 'lengths';
+/** Summary keys beyond the totals: moving time, (version 3, F-44) the pool values in whole units and (version 4, ADR-046) the recorded pool length in metres, never printed. */
+export type SummaryKey = TotalKey | 'moving_time' | 'pool_length_m' | 'pool_length_yd' | 'lengths' | 'pool_length_recorded_m';
 export type Summary = Readonly<Partial<Record<SummaryKey, number>>>;
 
 /** The device line's data (F-03 §5.7, F-43): display name ('' = none) and sensor codes in their fixed order. */
@@ -93,6 +93,8 @@ export interface Lap {
   readonly end: number;
   readonly start_index: number;
   readonly end_index: number;
+  /** Version 4 (ADR-046): button, time, distance, position, stop, equipment; '' or any other string = unknown. */
+  readonly trigger: string;
   readonly totals: Totals;
 }
 

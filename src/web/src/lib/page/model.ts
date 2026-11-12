@@ -45,8 +45,8 @@ export interface LapsGroup {
   readonly Columns: readonly { readonly Key: string; readonly Label: string }[];
   /** One array of cell strings per lap, one cell per column ('–' where a lap has no value). */
   readonly Rows: readonly (readonly string[])[];
-  /** 'yes': the file has no laps but its distance advances, so the module shows "No laps recorded."
-   *  instead of the table (F-18 L-8); '' otherwise. */
+  /** 'yes': the file has no laps but its distance advances: the module is rendered hidden, headed
+   *  "Splits", with no table, for the splits chunk to fill and reveal (F-46 LS-3); '' otherwise. */
   readonly None: string;
 }
 
@@ -63,7 +63,7 @@ export interface PageViewModel {
   /** Reserved-size classes of the chart slot: 'charts-4 cells-6' (D-10), plus ' has-distance' with a
    *  distance stream (F-17 R-8), or '' with no charts. */
   readonly ChartsClass: string;
-  /** Null when the file has neither laps nor an advancing distance (F-18 L-8). */
+  /** Null when the file has neither laps nor an advancing distance (F-46 LS-3). */
   readonly Laps: PageLaps | null;
 }
 

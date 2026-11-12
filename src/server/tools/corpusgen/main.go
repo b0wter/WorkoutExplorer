@@ -136,15 +136,16 @@ type file struct {
 	laps        []span // sport fields ignored
 	timer       []timerEvent
 	samples     []sample
-	extra       []timed         // further messages (lengths, unknown messages)
-	developer   bool            // developer_data_id and field_description at the start
-	sessionDist map[int]float64 // total_distance by session start offset, for the session and for the lap with the same span, instead of last - first record distance (F-08 v1.5 and v1.6, swim-bike-distance-fall only)
-	sportHints  bool            // a sport message at each session's start, lap.sport from the containing session (F-08 v1.1)
-	fileSerial  uint32          // file_id.serial_number, 0 = none (F-09 identifying-data.fit)
-	devName     string          // developer field name, "" = "corpus_dev_field"
-	preamble    []proto.Message // messages between the head and the first timed message (F-09 identifying-data.fit; F-43 device_info)
-	device      *fileDevice     // file_id manufacturer, product and product name; nil = development, 1, "corpusgen" (F-43)
-	pool        *poolSpec       // pool values of every lap-swimming session; nil = 25 m, no lengths count (F-44)
+	extra       []timed                    // further messages (lengths, unknown messages)
+	developer   bool                       // developer_data_id and field_description at the start
+	sessionDist map[int]float64            // total_distance by session start offset, for the session and for the lap with the same span, instead of last - first record distance (F-08 v1.5 and v1.6, swim-bike-distance-fall only)
+	sportHints  bool                       // a sport message at each session's start, lap.sport from the containing session (F-08 v1.1)
+	fileSerial  uint32                     // file_id.serial_number, 0 = none (F-09 identifying-data.fit)
+	devName     string                     // developer field name, "" = "corpus_dev_field"
+	preamble    []proto.Message            // messages between the head and the first timed message (F-09 identifying-data.fit; F-43 device_info)
+	device      *fileDevice                // file_id manufacturer, product and product name; nil = development, 1, "corpusgen" (F-43)
+	trigger     map[int]typedef.LapTrigger // lap_trigger by lap start offset; absent = not written (F-46)
+	pool        *poolSpec                  // pool values of every lap-swimming session; nil = 25 m, no lengths count (F-44)
 }
 
 // fileDevice is the recording device in file_id (F-43). product 0 and name ""
@@ -207,6 +208,8 @@ func corpus() []file {
 		run30min(),
 		rideLapsNoTotals(),
 		rideNoLaps(),
+		rideLapTriggers(),
+		poolSwim33(),
 	}
 }
 
@@ -223,6 +226,27 @@ func rideLapsNoTotals() file {
 		timer:    []timerEvent{{0, true}, {500, false}, {560, true}, {end, false}}}
 	f.samples = outdoorRide(41, end, steady(rand.New(rand.NewPCG(41, 42))), hills)
 	return f
+}
+
+// rideLapTriggers is F-46's golden: a 25 minute ride with five laps whose
+// lap_trigger is manual, distance, position_waypoint, session_end and not
+// written (button, distance, position, stop, none).
+func rideLapTriggers() file {
+	const end = 1499
+	f := file{name: "ride-lap-triggers.fit", start: baseStart.Add(32 * 24 * time.Hour), localOffset: intp(3600), enhanced: true,
+		sessions: []span{{typedef.SportCycling, typedef.SubSportRoad, 0, end}},
+		laps:     []span{{from: 0, to: 300}, {from: 300, to: 600}, {from: 600, to: 900}, {from: 900, to: 1200}, {from: 1200, to: end}},
+		trigger: map[int]typedef.LapTrigger{0: typedef.LapTriggerManual, 300: typedef.LapTriggerDistance,
+			600: typedef.LapTriggerPositionWaypoint, 900: typedef.LapTriggerSessionEnd},
+		timer: []timerEvent{{0, true}, {end, false}}}
+	f.samples = outdoorRide(43, end, steady(rand.New(rand.NewPCG(43, 44))), hills)
+	return f
+}
+
+// poolSwim33 is F-46's 33 m pool: pool_length recorded as 32.5 m (rounds to
+// "Pool 33 m", splits every 3 lengths at 100 m).
+func poolSwim33() file {
+	return lapSwim("pool-swim-33m.fit", 34, 35, poolSpec{3250, typedef.DisplayMeasureMetric, 40})
 }
 
 // rideNoLaps is F-18 L-8's golden: a 15 minute ride with distance, one
@@ -1127,6 +1151,9 @@ func lapMesg(f file, sp span) proto.Message {
 		SetStartTime(at(f, sp.from)).
 		SetEvent(typedef.EventLap).
 		SetEventType(typedef.EventTypeStop)
+	if t, ok := f.trigger[sp.from]; ok {
+		m.SetLapTrigger(t)
+	}
 	if f.bareLaps {
 		return m.ToMesg(nil)
 	}

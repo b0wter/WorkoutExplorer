@@ -82,10 +82,20 @@ describe('ActivityPage', () => {
     expect(fx.target.querySelector('tbody tr td')?.textContent).toBe('1');
   });
 
-  it('F-18 L-8: distance without laps shows "No laps recorded." and no table', () => {
+  it('F-46 LS-3: distance without laps renders the module hidden, headed "Splits", with no table', () => {
     fx = renderSample('ride-no-laps');
-    expect(fx.target.querySelector('.laps .laps-none')?.textContent).toBe('No laps recorded.');
-    expect(fx.target.querySelector('.laps table')).toBeNull();
+    const section = fx.target.querySelector<HTMLElement>('section.laps');
+    expect(section?.hidden).toBe(true);
+    expect(section?.querySelector('h2')?.textContent).toBe('Splits');
+    expect(section?.querySelector('table, .laps-none')).toBeNull();
+    expect(section?.textContent).not.toContain('No laps recorded.');
+  });
+
+  it('F-46 LS-2: the trigger column is last, headed "Trigger", one word per lap', () => {
+    fx = renderSample('ride-lap-triggers');
+    const heads = [...fx.target.querySelectorAll('.laps thead th')].map((t) => t.textContent);
+    expect(heads[heads.length - 1]).toBe('Trigger');
+    expect([...fx.target.querySelectorAll('.laps tbody tr')].map((r) => r.lastElementChild?.textContent)).toEqual(['Button', 'Distance', 'Position', 'Stop', '']);
   });
 
   it('AC 10: the footer has About; Report (a hidden button, F-28 RF-1) only where asked (the edit page has none)', () => {

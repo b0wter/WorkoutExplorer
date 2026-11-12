@@ -536,7 +536,7 @@ html:not(.wx-fs) .wx-strip,
   font-size: 14px;
 }
 
-/* Laps (AP-8). The heading row has a fixed height, so the bundle's switch moves nothing (F-18 L-6). */
+/* Laps (AP-8). The heading row has a fixed height, so the splits chunk's controls move nothing (F-46 LS-4). */
 .laps-head {
   display: flex;
   align-items: center;
@@ -548,25 +548,6 @@ html:not(.wx-fs) .wx-strip,
   margin: 0;
   font-size: 16px;
 }
-.laps-switch {
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.laps-switch button {
-  height: 26px;
-  padding: 0 10px;
-  border: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: inherit;
-  font-size: 13px;
-}
-.laps-switch button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
-}
 /* Rows select their range (F-18 L-3); the selected row is marked by its background only. */
 .laps.live tbody tr:not(.laps-section) {
   cursor: pointer;
@@ -576,11 +557,6 @@ html:not(.wx-fs) .wx-strip,
 }
 .laps-scroll {
   overflow-x: auto;
-}
-.laps-none {
-  margin: 4px 0;
-  color: var(--muted);
-  font-size: 14px;
 }
 table {
   width: 100%;

@@ -11,7 +11,7 @@ import { sections, lapSections } from '../sections';
 import { distanceAdvances, lapsGroup, summaryItems } from './build';
 import type { PageLaps, PageSettings, PageViewModel } from './model';
 
-/** The laps module of a file without laps but with an advancing distance (F-18 L-8). */
+/** The hidden splits-only module of a file without laps but with an advancing distance (F-46 LS-3). */
 const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Sections: [] };
 
 /** The default title of an untitled workout (UP-4): "Ride, 9 Oct 2026". */

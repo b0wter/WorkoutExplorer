@@ -1,0 +1,199 @@
+{
+  "Page": {
+    "Title": "Ride, 8 Jul 2026",
+    "ViewPath": "/w/ride-lap-triggers",
+    "DataURL": "/w/ride-lap-triggers/data.21c88c63557d48ac.bin"
+  },
+  "Header": {
+    "Title": "Ride, 8 Jul 2026",
+    "SportName": "Ride",
+    "SportIcon": "cycling",
+    "Start": "8 Jul 2026, 06:00",
+    "Description": "",
+    "ExpiresAt": "2026-10-30T09:15:00Z",
+    "ExpiresText": "Expires around 30 Oct 2026"
+  },
+  "Summary": [
+    {
+      "Key": "distance",
+      "Label": "Distance",
+      "Value": "11.25",
+      "Unit": "km",
+      "Max": ""
+    },
+    {
+      "Key": "moving_time",
+      "Label": "Moving time",
+      "Value": "24:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "elapsed_time",
+      "Label": "Elapsed time",
+      "Value": "24:59",
+      "Unit": "",
+      "Max": ""
+    },
+    {
+      "Key": "calories",
+      "Label": "Calories",
+      "Value": "249",
+      "Unit": "kcal",
+      "Max": ""
+    },
+    {
+      "Key": "speed",
+      "Label": "Avg speed",
+      "Value": "27.0",
+      "Unit": "km/h",
+      "Max": "28.8"
+    },
+    {
+      "Key": "heart_rate",
+      "Label": "Avg heart rate",
+      "Value": "147",
+      "Unit": "bpm",
+      "Max": "159"
+    },
+    {
+      "Key": "power",
+      "Label": "Avg power",
+      "Value": "226",
+      "Unit": "W",
+      "Max": "290"
+    },
+    {
+      "Key": "cadence",
+      "Label": "Avg cadence",
+      "Value": "89",
+      "Unit": "rpm",
+      "Max": "93"
+    },
+    {
+      "Key": "ascent",
+      "Label": "Elevation gain",
+      "Value": "104",
+      "Unit": "m",
+      "Max": ""
+    },
+    {
+      "Key": "temperature",
+      "Label": "Avg temperature",
+      "Value": "19",
+      "Unit": "°C",
+      "Max": "20"
+    }
+  ],
+  "Device": "Recorded with corpusgen",
+  "Route": {
+    "Map": "yes",
+    "NoLocation": "",
+    "Hidden": ""
+  },
+  "ChartsClass": "charts-6 cells-8 has-distance",
+  "Laps": {
+    "Columns": [
+      {
+        "Key": "number",
+        "Label": "#"
+      },
+      {
+        "Key": "elapsed_time",
+        "Label": "Time"
+      },
+      {
+        "Key": "distance",
+        "Label": "Distance (km)"
+      },
+      {
+        "Key": "avg_speed",
+        "Label": "Speed (km/h)"
+      },
+      {
+        "Key": "ascent",
+        "Label": "Gain (m)"
+      },
+      {
+        "Key": "avg_heart_rate",
+        "Label": "HR (bpm)"
+      },
+      {
+        "Key": "avg_power",
+        "Label": "Power (W)"
+      },
+      {
+        "Key": "avg_cadence",
+        "Label": "Cadence (rpm)"
+      },
+      {
+        "Key": "trigger",
+        "Label": "Trigger"
+      }
+    ],
+    "Rows": [
+      [
+        "1",
+        "5:00",
+        "2.26",
+        "27.1",
+        "49",
+        "144",
+        "257",
+        "89",
+        "Button"
+      ],
+      [
+        "2",
+        "5:00",
+        "2.25",
+        "27.0",
+        "1",
+        "155",
+        "222",
+        "89",
+        "Distance"
+      ],
+      [
+        "3",
+        "5:00",
+        "2.25",
+        "27.0",
+        "8",
+        "156",
+        "167",
+        "89",
+        "Position"
+      ],
+      [
+        "4",
+        "5:00",
+        "2.25",
+        "27.0",
+        "40",
+        "147",
+        "248",
+        "89",
+        "Stop"
+      ],
+      [
+        "5",
+        "4:59",
+        "2.24",
+        "26.9",
+        "5",
+        "133",
+        "236",
+        "89",
+        ""
+      ]
+    ],
+    "None": "",
+    "Sections": []
+  },
+  "Card": {
+    "Title": "Sample",
+    "Description": "Sample",
+    "Image": "http://127.0.0.1:8088/preview.png"
+  }
+}

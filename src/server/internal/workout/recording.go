@@ -37,6 +37,7 @@ type RawSession struct {
 // RawLap is a FIT lap as recorded.
 type RawLap struct {
 	Sport      string // lap.sport; "" if not recorded
+	Trigger    string // F-46 LS-1: button, time, distance, position, stop, equipment or ""
 	Start, End time.Time
 	Totals     Totals
 }

@@ -48,7 +48,8 @@ ADR-002 counts the entry chunk plus its static imports plus CSS, gzip -9, 60,000
 | + F-42 first leg's name kept when narrow (lazy chunk only; chunk hashes in the entry), measured 10 Nov 2026 → entry 59,485 | +2 |
 | (rev. 15) − size review C1–C3 (user 11 Nov 2026, [review](history/ADR-011-size-review-2026-11-11.md)): unused uPlot statics blanked at build (`wx-uplot-trim` in `vite.config.ts`, ADR-009), uPlot CSS cut to the used rules (`components/charts/uplot.css`), Svelte `discloseVersion: false`; measured 11 Nov 2026 → entry 56,507 | −2,978 |
 | + F-43 device line and F-44 pool cells (reader keys, two `summaryItems` cells, `.device` CSS; the edit page's line is in the owner chunk), measured 11 Nov 2026 → entry 56,655 | +148 |
-| **Reserve** | **3,345** (60,000 − 56,655) |
+| + F-46 laps and splits (LS-4: switch, splits table and drop-down leave for the lazy `src/splits/`, 1,602 + 226 CSS gzip; trigger column and the LS-8 seam join), measured 12 Nov 2026 → entry 56,351 (F-45 had left it at 56,661) | −304 |
+| **Reserve** | **3,649** (60,000 − 56,351) |
 | **Total** | **60,000** |
 
 Six MVP features still add code that viewers would load on the activity page, and four more add owner or optional UI. Without a plan, the budget is spent first-come, first-served, and the last feature hits the limit. Raising 60 KB is a change to the TD budget, a product decision for the user, not an architecture call.

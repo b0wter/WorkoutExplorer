@@ -48,7 +48,7 @@ const TOTAL_KEYS: readonly TotalKey[] = [
   'avg_temperature',
   'max_temperature',
 ];
-const SUMMARY_KEYS: readonly SummaryKey[] = [...TOTAL_KEYS, 'moving_time', 'pool_length_m', 'pool_length_yd', 'lengths'];
+const SUMMARY_KEYS: readonly SummaryKey[] = [...TOTAL_KEYS, 'moving_time', 'pool_length_m', 'pool_length_yd', 'lengths', 'pool_length_recorded_m'];
 
 const INT32_MIN = -2147483648;
 const INT32_MAX = 2147483647;
@@ -135,6 +135,7 @@ function lap(v: unknown, i: number): Lap {
     end: int32(o, 'end', w),
     start_index: int(o, 'start_index', w),
     end_index: int(o, 'end_index', w),
+    trigger: str(o, 'trigger', w),
     totals: totals(obj(o, 'totals', w), TOTAL_KEYS, `${w}totals.`) as Totals,
   };
 }

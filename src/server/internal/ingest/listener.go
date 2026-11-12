@@ -217,9 +217,10 @@ func (l *listener) session(s *mesgdef.Session) {
 func (l *listener) lap(s *mesgdef.Lap) {
 	start, end := span(s.StartTime, s.Timestamp, s.TotalElapsedTime)
 	l.rec.Laps = append(l.rec.Laps, workout.RawLap{
-		Sport: enumName(s.Sport.String(), uint64(s.Sport), uint64(typedef.SportInvalid)),
-		Start: start,
-		End:   end,
+		Sport:   enumName(s.Sport.String(), uint64(s.Sport), uint64(typedef.SportInvalid)),
+		Start:   start,
+		End:     end,
+		Trigger: lapTrigger(s.LapTrigger),
 		Totals: totals(rawTotals{
 			elapsed: s.TotalElapsedTime, timer: s.TotalTimerTime, distance: s.TotalDistance,
 			ascent: s.TotalAscent, descent: s.TotalDescent, calories: s.TotalCalories,
@@ -232,6 +233,27 @@ func (l *listener) lap(s *mesgdef.Lap) {
 			avgTemp: s.AvgTemperature, maxTemp: s.MaxTemperature,
 		}),
 	})
+}
+
+// lapTrigger maps FIT lap_trigger to the F-46 LS-1 code (AP-8 merges the
+// four position triggers so the file does not hint at saved places); any
+// other or invalid value is "".
+func lapTrigger(t typedef.LapTrigger) string {
+	switch t {
+	case typedef.LapTriggerManual:
+		return "button"
+	case typedef.LapTriggerTime:
+		return "time"
+	case typedef.LapTriggerDistance:
+		return "distance"
+	case typedef.LapTriggerPositionStart, typedef.LapTriggerPositionLap, typedef.LapTriggerPositionWaypoint, typedef.LapTriggerPositionMarked:
+		return "position"
+	case typedef.LapTriggerSessionEnd:
+		return "stop"
+	case typedef.LapTriggerFitnessEquipment:
+		return "equipment"
+	}
+	return ""
 }
 
 // span completes a session's or lap's start and end from start_time,

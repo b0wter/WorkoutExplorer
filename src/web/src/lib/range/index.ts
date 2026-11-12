@@ -142,20 +142,21 @@ export function createRangeStats(data: WorkoutData): RangeStats {
 }
 
 /** Split boundaries over d̄ (F-18 L-4) for splits of `length` metres: boundary 0 is sample 0,
- *  boundary k the first sample with d̄ − d̄[0] ≥ k·length (k·length per k, never accumulated), and
- *  split k is [boundary k−1, boundary k]. A last partial split ends at N−1 when its distance is > 0.
- *  A sample that crosses several multiples ends one split only, so no split is empty. O(N). */
-export function splitBounds(d: Float64Array, length: number): number[] {
+ *  boundary k the first sample with d̄ − d̄[0] ≥ k·length − tol (k·length per k, never accumulated),
+ *  and split k is [boundary k−1, boundary k]. A last partial split ends at N−1 when its distance is
+ *  > tol. A sample that crosses several multiples ends one split only, so no split is empty. O(N).
+ *  The default tol absorbs float error only, far below the 0.1 m quantisation; a pool split passes
+ *  1 % of a recorded length (F-46 LS-6). */
+export function splitBounds(d: Float64Array, length: number, tol = 1e-6): number[] {
   const out = [0];
   const n = d.length;
   const d0 = d[0];
   let k = 1;
-  // The tolerance absorbs float error of the subtraction; it is far below the 0.1 m quantisation.
   for (let i = 1; i < n; i++) {
-    if (d[i] - d0 < k * length - 1e-6) continue;
+    if (d[i] - d0 < k * length - tol) continue;
     out.push(i);
-    while (d[i] - d0 >= k * length - 1e-6) k++;
+    while (d[i] - d0 >= k * length - tol) k++;
   }
-  if (d[n - 1] > d[out[out.length - 1]]) out.push(n - 1);
+  if (d[n - 1] - d[out[out.length - 1]] > tol) out.push(n - 1);
   return out;
 }

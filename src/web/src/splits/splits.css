@@ -1,0 +1,25 @@
+/* The laps / splits switch and the split-distance drop-down in the laps heading slot (F-46 LS-4). */
+.laps-switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.laps-switch button {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+}
+.laps-switch button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.split-select {
+  height: 26px;
+  font: inherit;
+  font-size: 13px;
+}

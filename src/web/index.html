@@ -51,9 +51,9 @@
       {{if .Route.Hidden}}<p class="hint">The entire route has been hidden by the uploader.</p>{{end}}
       {{if .ChartsClass}}<div id="charts-slot" class="charts {{.ChartsClass}}"></div>{{end}}
       <div id="range-slot" class="range-slot"></div>
-      {{with .Laps}}<section class="laps">
-        <div class="laps-head"><h2>Laps</h2><span class="laps-slot" id="laps-slot"></span></div>
-        {{if .None}}<p class="laps-none">No laps recorded.</p>{{else}}<div class="laps-scroll"><table>
+      {{with .Laps}}<section class="laps" {{if .None}}hidden{{end}}>
+        <div class="laps-head"><h2>{{if .None}}Splits{{else}}Laps{{end}}</h2><span class="laps-slot" id="laps-slot"></span></div>
+        {{if .Columns}}<div class="laps-scroll"><table>
           <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
           {{if .Sections}}{{range .Sections}}<tbody><tr class="laps-section"><th colspan="{{.Span}}" scope="rowgroup">{{.Name}}</th></tr>
           {{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>

@@ -260,3 +260,18 @@ func TestValidDateTime(t *testing.T) {
 		}
 	}
 }
+
+// TestLapTrigger (F-46 LS-1, AP-8): every FIT lap_trigger maps to its code.
+func TestLapTrigger(t *testing.T) {
+	for in, want := range map[typedef.LapTrigger]string{
+		typedef.LapTriggerManual: "button", typedef.LapTriggerTime: "time", typedef.LapTriggerDistance: "distance",
+		typedef.LapTriggerPositionStart: "position", typedef.LapTriggerPositionLap: "position",
+		typedef.LapTriggerPositionWaypoint: "position", typedef.LapTriggerPositionMarked: "position",
+		typedef.LapTriggerSessionEnd: "stop", typedef.LapTriggerFitnessEquipment: "equipment",
+		typedef.LapTriggerInvalid: "", typedef.LapTrigger(99): "",
+	} {
+		if got := lapTrigger(in); got != want {
+			t.Errorf("lapTrigger(%d) = %q, want %q", in, got, want)
+		}
+	}
+}

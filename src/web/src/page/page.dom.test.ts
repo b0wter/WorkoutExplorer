@@ -131,10 +131,10 @@ describe('load failure (AC 9, D-13, OQ-10)', () => {
     expect(console.warn).toHaveBeenCalledWith('data file: HTTP status 404');
   });
 
-  it('a different format version (bytes 4 and 5 = 4): the text ends in "Reload the page."', async () => {
+  it('a different format version (bytes 4 and 5 = 5): the text ends in "Reload the page."', async () => {
     respond = () => {
       const b = RIDE.slice(0);
-      new DataView(b).setUint16(4, 4, true);
+      new DataView(b).setUint16(4, 5, true);
       return new Response(b, { status: 200 });
     };
     await open();

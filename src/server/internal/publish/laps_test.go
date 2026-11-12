@@ -19,7 +19,7 @@ import (
 // lapsSection returns the laps module of a rendered page, or "" without one.
 func lapsSection(html []byte) string {
 	s := string(html)
-	i := strings.Index(s, `<section class="laps">`)
+	i := strings.Index(s, `<section class="laps"`)
 	if i < 0 {
 		return ""
 	}
@@ -28,14 +28,14 @@ func lapsSection(html []byte) string {
 }
 
 // TestLapsMarkup (F-18 AC 6, L-8): the published page has the laps table in
-// its markup; a file with distance but no laps has the module with "No laps
-// recorded." and no table.
+// its markup; a file with distance but no laps has the module hidden,
+// headed "Splits", with no table (F-46 LS-3).
 func TestLapsMarkup(t *testing.T) {
 	for _, c := range []struct {
 		file, want, not string
 	}{
-		{"ride-laps-no-totals.fit", "<td>3</td>", "No laps recorded."},
-		{"ride-no-laps.fit", "No laps recorded.", "<table"},
+		{"ride-laps-no-totals.fit", "<td>3</td>", "Splits"},
+		{"ride-no-laps.fit", "<h2>Splits</h2>", "<table"},
 	} {
 		t.Run(c.file, func(t *testing.T) {
 			fx := newFixture(t, c.file)

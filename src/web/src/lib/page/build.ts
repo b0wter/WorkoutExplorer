@@ -72,10 +72,15 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   return items.filter((i): i is SummaryItem => i !== null);
 }
 
+/** AP-8 trigger words (F-46 LS-2); any other code is an empty cell. */
+const TRIGGERS: Readonly<Record<string, string>> = { button: 'Button', time: 'Time', distance: 'Distance', position: 'Position', stop: 'Stop', equipment: 'Equipment' };
+const triggerWord = (code = ''): string => (Object.hasOwn(TRIGGERS, code) ? TRIGGERS[code] : '');
+
 /** AP-8 laps from the lap totals as written: the device's values, completed by the server where the
  *  device recorded none (D-5, F-18 L-1). Columns provisional (OQ-28). Null without laps. The
- *  browser's splits go through it too (F-18 L-5), as range values mapped to lap totals. */
-export function lapsGroup(sport: string, laps: readonly Pick<Lap, 'totals'>[], units: Units = 'metric'): LapsGroup | null {
+ *  browser's splits go through it too (F-18 L-5), as range values mapped to lap totals, without a
+ *  trigger and so without the trigger column (LS-2: last, when any lap has a known trigger). */
+export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & { readonly trigger?: string })[], units: Units = 'metric'): LapsGroup | null {
   if (laps.length === 0) return null;
   const speedLabel = (isPaceSport(sport) ? 'Pace' : 'Speed') + ' (' + speedOrPaceUnit(sport, units) + ')';
   const cols: { key: string; label: string; cell: (t: Totals) => string }[] = [
@@ -89,9 +94,10 @@ export function lapsGroup(sport: string, laps: readonly Pick<Lap, 'totals'>[], u
   ];
   // A column appears when at least one lap has its value; a cell without one shows '–'.
   const shown = cols.filter((c) => laps.some((l) => c.cell(l.totals) !== MISSING_TEXT));
+  const trigger = laps.some((l) => triggerWord(l.trigger) !== '');
   return {
-    Columns: [{ Key: 'number', Label: '#' }, ...shown.map((c) => ({ Key: c.key, Label: c.label }))],
-    Rows: laps.map((l, i) => [String(i + 1), ...shown.map((c) => c.cell(l.totals))]),
+    Columns: [{ Key: 'number', Label: '#' }, ...shown.map((c) => ({ Key: c.key, Label: c.label })), ...(trigger ? [{ Key: 'trigger', Label: 'Trigger' }] : [])],
+    Rows: laps.map((l, i) => [String(i + 1), ...shown.map((c) => c.cell(l.totals)), ...(trigger ? [triggerWord(l.trigger)] : [])]),
     None: '',
   };
 }

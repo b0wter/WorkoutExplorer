@@ -81,6 +81,8 @@ var samples = []sampleSpec{
 	{"pool-swim-25yd", "pool-swim-25yd", "", "", nil, false, ""},
 	{"pool-swim-no-lengths", "pool-swim", "", "", withoutLengths, false, ""},
 	{"ride-no-laps", "ride-no-laps", "", "", nil, false, ""},
+	{"ride-lap-triggers", "ride-lap-triggers", "", "", nil, false, ""},
+	{"pool-swim-33m", "pool-swim-33m", "", "", nil, false, ""},
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
 		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", hostileDevice, false, ""},
 }
@@ -359,6 +361,32 @@ func TestSections(t *testing.T) {
 		}
 		if g := strings.Join(got, " "); g != c.want {
 			t.Errorf("%s: %q, want %q", c.name, g, c.want)
+		}
+	}
+}
+
+// TestTriggerColumn (F-46 LS-2): the last column shows when a lap has one of
+// the six codes; an unlisted code is an empty cell, and without any known
+// code there is no column.
+func TestTriggerColumn(t *testing.T) {
+	lap := func(trigger string) datafile.Lap {
+		return datafile.Lap{Trigger: trigger, Totals: datafile.Totals{ElapsedTime: "60"}}
+	}
+	l := lapsGroup("cycling", []datafile.Lap{lap("button"), lap("position"), lap("bogus"), lap("")})
+	if last := l.Columns[len(l.Columns)-1]; last != (Column{Key: "trigger", Label: "Trigger"}) {
+		t.Fatalf("last column = %+v", last)
+	}
+	var got []string
+	for _, r := range l.Rows {
+		got = append(got, r[len(r)-1])
+	}
+	if !reflect.DeepEqual(got, []string{"Button", "Position", "", ""}) {
+		t.Errorf("cells = %q", got)
+	}
+	l = lapsGroup("cycling", []datafile.Lap{lap("bogus"), lap("")})
+	for _, c := range l.Columns {
+		if c.Key == "trigger" {
+			t.Error("trigger column without a known trigger")
 		}
 	}
 }

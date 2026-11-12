@@ -18,7 +18,7 @@ type column struct {
 	valid []bool
 }
 
-// Encode writes w as a data file, format version 3. It is deterministic (the
+// Encode writes w as a data file, format version 4. It is deterministic (the
 // same workout gives identical bytes, W-9) and returns an error instead of
 // panicking when w breaks an invariant the format relies on (W-1). Errors
 // never contain coordinates (W-10).
@@ -62,7 +62,7 @@ func Encode(w workout.Workout) ([]byte, error) {
 	for _, l := range w.Laps {
 		from, to := workout.SampleRange(w.Samples.Offset, l.Start, l.End)
 		meta.Laps = append(meta.Laps, Lap{
-			Start: l.Start, End: l.End, StartIndex: from, EndIndex: to, Totals: totals(l.Totals),
+			Start: l.Start, End: l.End, StartIndex: from, EndIndex: to, Trigger: l.Trigger, Totals: totals(l.Totals),
 		})
 	}
 	for i, c := range cols {
@@ -108,7 +108,8 @@ func Encode(w workout.Workout) ([]byte, error) {
 func summaryOf(w workout.Workout) Summary {
 	s := w.Summary
 	return Summary{Totals: totals(s.Totals), MovingTime: total(s.MovingTime),
-		PoolLengthM: total(s.PoolLengthM), PoolLengthYd: total(s.PoolLengthYd), Lengths: total(s.Lengths)}
+		PoolLengthM: total(s.PoolLengthM), PoolLengthYd: total(s.PoolLengthYd), Lengths: total(s.Lengths),
+		PoolLengthRecordedM: total(s.PoolRecordedM)}
 }
 
 // SummaryJSON returns exactly the bytes of the "summary" value in the

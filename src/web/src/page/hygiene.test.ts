@@ -42,11 +42,11 @@ describe('template', () => {
     expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="howto" data-howto>', '<button type="button" data-report hidden>']);
   });
 
-  it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6)', () => {
-    const slot = '<div class="laps-head"><h2>Laps</h2><span class="laps-slot" id="laps-slot"></span></div>';
-    expect(template).toContain(slot);
-    expect(sources['../components/page/LapsTable.svelte']).toContain(slot);
-    expect(template).not.toMatch(/laps-switch|Splits/);
+  it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6; F-46 LS-3)', () => {
+    const slot = '</h2><span class="laps-slot" id="laps-slot"></span></div>';
+    expect(template).toContain('<div class="laps-head"><h2>{{if .None}}Splits{{else}}Laps{{end}}' + slot);
+    expect(sources['../components/page/LapsTable.svelte']).toContain(`<div class="laps-head"><h2>{laps.None ? 'Splits' : 'Laps'}` + slot);
+    expect(template).not.toMatch(/laps-switch|laps-none|No laps recorded/);
   });
 
   it('carries the head of D-11', () => {

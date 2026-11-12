@@ -9,7 +9,7 @@ import (
 	"unicode/utf8"
 )
 
-// Decode reads a data file of format version 3. It is strict: it implements
+// Decode reads a data file of format version 4. It is strict: it implements
 // every check of Format §6, including rule 7, and returns an error (prefixed
 // "datafile:") instead of panicking on any malformed input.
 func Decode(b []byte) (File, error) {

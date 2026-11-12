@@ -92,6 +92,8 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'pool-swim-25yd', golden: 'pool-swim-25yd', title: '', description: '' },
   { name: 'pool-swim-no-lengths', golden: 'pool-swim', title: '', description: '', transform: withoutLengths },
   { name: 'ride-no-laps', golden: 'ride-no-laps', title: '', description: '' },
+  { name: 'ride-lap-triggers', golden: 'ride-lap-triggers', title: '', description: '' },
+  { name: 'pool-swim-33m', golden: 'pool-swim-33m', title: '', description: '' },
   {
     name: 'hostile-text',
     golden: 'ride-30min',

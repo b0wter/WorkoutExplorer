@@ -5,7 +5,7 @@ import { lapSections, legs, sectionRanges, sections } from '.';
 
 const s = (sport: string, start = 0, start_index = 0): Session =>
   ({ sport, sub_sport: '', start, end: start, start_index, end_index: start_index, totals: {} });
-const l = (start_index: number): Lap => ({ start: 0, end: 0, start_index, end_index: start_index, totals: {} });
+const l = (start_index: number): Lap => ({ start: 0, end: 0, start_index, end_index: start_index, trigger: '', totals: {} });
 /** Go TestSections' notation: name[lap numbers]. */
 const names = (sessions: Session[], laps: Lap[]) =>
   lapSections(sections({ sessions }), laps, laps.map((_, i) => [String(i + 1)]), 3)

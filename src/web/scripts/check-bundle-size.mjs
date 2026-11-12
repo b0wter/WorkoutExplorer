@@ -83,7 +83,10 @@ export function withHtmlEntries(manifest, pages) {
   const out = { ...manifest };
   for (const [name, html] of Object.entries(pages)) {
     if (out[name]?.isEntry) continue;
-    const src = html.match(/<script type="module"[^>]*\ssrc="\/([^"]+)"/)?.[1];
+    const srcs = [...html.matchAll(/<script type="module"[^>]*\ssrc="\/([^"]+)"/g)].map((m) => m[1]);
+    // Only the first would be counted (F-46: Vite once split lib/format into a second script).
+    if (srcs.length > 1) throw new Error(`manifest: ${name} loads ${srcs.length} module scripts; only one is counted`);
+    const src = srcs[0];
     if (!src) continue;
     const key = Object.keys(manifest).find((k) => manifest[k].file === src);
     if (!key) throw new Error(`manifest: ${name} loads ${src}, which is not in the manifest`);

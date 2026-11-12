@@ -70,9 +70,10 @@ type Pool struct {
 // are the device's values where recorded; Normalise fills the AP-8 columns
 // the device left out from the samples, as for a range (F-18 L-1).
 type Lap struct {
-	Start  int32
-	End    int32
-	Totals Totals
+	Start   int32
+	End     int32
+	Trigger string // F-46 LS-1, as RawLap.Trigger
+	Totals  Totals
 }
 
 // TimerKind is the kind of a timer event.
@@ -162,4 +163,7 @@ type Summary struct {
 	MovingTime *float64
 	// F-44 PS-3: whole metres or yards (at most one set) and active lengths.
 	PoolLengthM, PoolLengthYd, Lengths *float64
+	// ADR-046 item 3: the first pool swim's recorded length in metres; set
+	// exactly when PoolLengthM or PoolLengthYd is.
+	PoolRecordedM *float64
 }
