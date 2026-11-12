@@ -285,6 +285,8 @@ describe('laps / splits switch (L-4 to L-6; F-46 LS-4, LS-7)', () => {
     p.button('Splits')?.click();
     p.choose('1 km');
     expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+    expect(location.hash).toBe('');
     cleanup?.();
     const q = open(d);
     expect(q.button('Laps')?.getAttribute('aria-pressed')).toBe('true');

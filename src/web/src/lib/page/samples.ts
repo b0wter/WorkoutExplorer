@@ -56,6 +56,12 @@ export function legWithoutLaps(data: WorkoutData): WorkoutData {
   return { ...data, meta: { ...data.meta, laps: data.meta.laps.filter((_, i) => i !== 3) } };
 }
 
+/** QA-46-r1-2 LS-2: lap triggers on a multisport file, so the Trigger column meets the leg separator rows. */
+export function withTriggers(data: WorkoutData): WorkoutData {
+  const laps = data.meta.laps.map((l, i) => (i === 0 ? { ...l, trigger: 'manual' } : i === 1 ? { ...l, trigger: 'distance' } : l));
+  return { ...data, meta: { ...data.meta, laps } };
+}
+
 /** F-44 PS-5: a pool swim whose session recorded no lengths count: "Pool" only. */
 export function withoutLengths(data: WorkoutData): WorkoutData {
   const summary = { ...data.meta.summary };
@@ -86,6 +92,7 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'triathlon', golden: 'triathlon', title: '', description: '' },
   { name: 'triathlon-lap-crossing', golden: 'triathlon', title: '', description: '', transform: lapCrossing },
   { name: 'triathlon-leg-without-laps', golden: 'triathlon', title: '', description: '', transform: legWithoutLaps },
+  { name: 'triathlon-triggers', golden: 'triathlon', title: '', description: '', transform: withTriggers },
   { name: 'triathlon-cut', golden: 'triathlon-cut-90', title: '', description: '' },
   { name: 'two-rides', golden: 'chained-ride-ride', title: '', description: '' },
   { name: 'pool-swim', golden: 'pool-swim', title: '', description: '' },

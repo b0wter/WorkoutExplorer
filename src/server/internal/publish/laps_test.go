@@ -46,6 +46,9 @@ func TestLapsMarkup(t *testing.T) {
 			if laps == "" {
 				t.Fatal("no laps module")
 			}
+			if hidden := strings.Contains(laps, `class="laps" hidden`); hidden != (c.file == "ride-no-laps.fit") {
+				t.Errorf("hidden attribute = %v:\n%s", hidden, laps)
+			}
 			if !strings.Contains(laps, c.want) || strings.Contains(laps, c.not) {
 				t.Errorf("laps module: want %q, not %q:\n%s", c.want, c.not, laps)
 			}

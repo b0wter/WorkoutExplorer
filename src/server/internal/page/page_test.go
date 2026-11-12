@@ -57,6 +57,13 @@ func legWithoutLaps(f *datafile.File) {
 	f.Meta.Laps = slices.Delete(slices.Clone(f.Meta.Laps), 3, 4)
 }
 
+// withTriggers mirrors samples.ts withTriggers (QA-46-r1-2).
+func withTriggers(f *datafile.File) {
+	laps := slices.Clone(f.Meta.Laps)
+	laps[0].Trigger, laps[1].Trigger = "manual", "distance"
+	f.Meta.Laps = laps
+}
+
 // withoutLengths mirrors samples.ts withoutLengths (F-44 PS-5).
 func withoutLengths(f *datafile.File) { f.Meta.Summary.Lengths = "" }
 
@@ -75,6 +82,7 @@ var samples = []sampleSpec{
 	{"triathlon", "triathlon", "", "", nil, false, ""},
 	{"triathlon-lap-crossing", "triathlon", "", "", lapCrossing, false, ""},
 	{"triathlon-leg-without-laps", "triathlon", "", "", legWithoutLaps, false, ""},
+	{"triathlon-triggers", "triathlon", "", "", withTriggers, false, ""},
 	{"triathlon-cut", "triathlon-cut-90", "", "", nil, false, ""},
 	{"two-rides", "chained-ride-ride", "", "", nil, false, ""},
 	{"pool-swim", "pool-swim", "", "", nil, false, ""},
