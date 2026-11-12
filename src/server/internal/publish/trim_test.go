@@ -28,6 +28,12 @@ const markerHR = 197 // occurs only in the part that is trimmed away
 // 300 s drive 100 km away (heart rate markerHR, altitude 3000 m, 20 m/s). With
 // driveFirst the drive comes first.
 func trimTrack(driveFirst bool) workout.Workout {
+	return trimTrackWith(driveFirst, false)
+}
+
+// trimTrackWith with sessions adds two (run, drive) whose device totals carry
+// marker values: calories 5071 / 43219, distance 999999 / 888888.
+func trimTrackWith(driveFirst, sessions bool) workout.Workout {
 	t0 := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
 	recs := make([]workout.RawRecord, 900)
 	for i := range recs {
@@ -51,7 +57,23 @@ func trimTrack(driveFirst bool) workout.Workout {
 		}
 		recs[i] = r
 	}
-	return workout.Normalise(workout.Recording{FileType: "activity", Records: recs})
+	rec := workout.Recording{FileType: "activity", Records: recs}
+	if sessions {
+		f := func(v float64) *float64 { return &v }
+		at := func(i int) time.Time { return t0.Add(time.Duration(i) * time.Second) }
+		run := workout.RawSession{Sport: "running", Start: at(0), End: at(599),
+			Totals: workout.Totals{Calories: f(5071), Distance: f(999999), TimerTime: f(600)}}
+		drive := workout.RawSession{Sport: "cycling", Start: at(600), End: at(899),
+			Totals: workout.Totals{Calories: f(43219), Distance: f(888888), TimerTime: f(300)}}
+		if driveFirst {
+			run.Start, run.End, drive.Start, drive.End = at(300), at(899), at(0), at(299)
+		}
+		rec.Sessions = []workout.RawSession{run, drive}
+		if driveFirst {
+			rec.Sessions = []workout.RawSession{drive, run}
+		}
+	}
+	return workout.Normalise(rec)
 }
 
 func trimIndex(t *testing.T) *places.Index {
@@ -138,6 +160,82 @@ func TestTrimKeepsTheTrimmedPartOutOfEveryPublicFile(t *testing.T) {
 			if hide && (len(v.Ranges) != 2 || v.Ranges[0][0] != runFrom || v.Ranges[1][1] != runTo) {
 				t.Errorf("ranges %v", v.Ranges)
 			}
+		}
+	}
+}
+
+// TestTrimKeepsDeviceTotalsOfTheTrimmedPartOut (AC 33, 34, 39; TR-5): with
+// sessions, no value of a cut session's device totals and no device total in
+// the summary is public, in the data file, the metadata or the page.
+func TestTrimKeepsDeviceTotalsOfTheTrimmedPartOut(t *testing.T) {
+	for _, c := range []struct {
+		name       string
+		driveFirst bool
+		from, to   int // the kept samples; -1: not trimmed at that end
+		cutRun     bool
+	}{
+		{"end inside the run", false, -1, 449, true},
+		{"end at the run's end", false, -1, 599, false},
+		{"start inside the run", true, 400, -1, true},
+		{"start at the run's start", true, 300, -1, false},
+	} {
+		w := trimTrackWith(c.driveFirst, true)
+		d := draft()
+		if c.from >= 0 {
+			d.TrimStartAt = instant(w, c.from)
+		}
+		if c.to >= 0 {
+			d.TrimEndAt = instant(w, c.to)
+		}
+		fx := newFixtureWith(t, []byte("trk"), fakeParser{"trk": w})
+		fx.a.d.Places = trimIndex(t)
+		fx.change(t, d, published(d))
+		out := fx.read(t)
+		meta, _ := json.Marshal(out.file.Meta)
+		sum, _ := json.Marshal(out.file.Meta.Summary)
+		for _, m := range []string{"43219", "888888"} { // the drive is gone entirely
+			if bytes.Contains(meta, []byte(m)) || bytes.Contains(out.page, []byte(m)) {
+				t.Errorf("%s: the drive's total %s is public", c.name, m)
+			}
+		}
+		if c.cutRun {
+			for _, m := range []string{"5071", "999999"} {
+				if bytes.Contains(meta, []byte(m)) || bytes.Contains(out.page, []byte(m)) {
+					t.Errorf("%s: the cut run's device total %s is public", c.name, m)
+				}
+			}
+		}
+		for _, k := range []string{`"calories"`, `"timer_time"`, "999999"} {
+			if bytes.Contains(sum, []byte(k)) {
+				t.Errorf("%s: summary has a device total %s: %s", c.name, k, sum)
+			}
+		}
+	}
+}
+
+// TestTrimLeavingNoPositions (AC 42): a window without fixes gets the
+// no-location hint, not the entirely-hidden one, hiding off and on.
+func TestTrimLeavingNoPositions(t *testing.T) {
+	t0 := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
+	recs := make([]workout.RawRecord, 400)
+	for i := range recs {
+		r := workout.RawRecord{At: t0.Add(time.Duration(i) * time.Second), Lat: math.NaN(), Lon: math.NaN(),
+			Cadence: math.NaN(), Power: math.NaN(), Temperature: math.NaN(), HeartRate: 120}
+		if i < 200 {
+			r.Lat, r.Lon = 50+float64(i)*1.4/111195.08, 8
+		}
+		recs[i] = r
+	}
+	w := workout.Normalise(workout.Recording{FileType: "activity", Records: recs})
+	for _, hide := range []bool{false, true} {
+		d := draft()
+		d.HideEnds = hide
+		d.TrimStartAt = instant(w, 250)
+		fx := newFixtureWith(t, []byte("trk"), fakeParser{"trk": w})
+		fx.change(t, d, published(d))
+		out := fx.read(t)
+		if !bytes.Contains(out.page, []byte(indoorHint)) || bytes.Contains(out.page, []byte(notice)) {
+			t.Errorf("hide %v: wrong hint", hide)
 		}
 	}
 }

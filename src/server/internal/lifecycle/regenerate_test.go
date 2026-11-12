@@ -312,3 +312,20 @@ func TestRegenerateRemovesWhenGoneAfterBuild(t *testing.T) {
 		t.Errorf("removed %v", pub.removed)
 	}
 }
+
+// TestRegenerateKeepsTheTrim (F-47 AC 47): regenerate never writes the trim
+// columns, and the hook builds from the row with the trim still in it.
+func TestRegenerateKeepsTheTrim(t *testing.T) {
+	s, p, r, _, h, _, _, rec := regenFixture(t, Unlisted)
+	a, b := t0.Add(-30*time.Minute), t0.Add(-10*time.Minute)
+	rec.TrimStartAt, rec.TrimEndAt = &a, &b
+	r.rows["w1"] = rec
+	if o, err := s.Regenerate(context.Background(), rec.PublicID, p); o != Rebuilt || err != nil {
+		t.Fatalf("%s %v", o, err)
+	}
+	for name, got := range map[string]Record{"row": r.rows["w1"], "hook": h.calls[0]} {
+		if got.TrimStartAt == nil || !got.TrimStartAt.Equal(a) || got.TrimEndAt == nil || !got.TrimEndAt.Equal(b) {
+			t.Errorf("%s: trim %v %v", name, got.TrimStartAt, got.TrimEndAt)
+		}
+	}
+}

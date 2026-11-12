@@ -104,14 +104,15 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 type ownerHandler struct {
 	o Owner
 	// build is the write deadline of the requests that run a public build
-	// (PATCH, publish; F-15 P-15): a wait for the lock behind one other
-	// build, then the parse time limit, one compression and the writes, twice.
+	// (PATCH, publish; F-15 P-15) and of the owner read: a wait for the lock
+	// behind one other build, then the parse time limit, one compression and
+	// the writes, three times (a trim PATCH parses to resolve, build and view).
 	build time.Duration
 }
 
 // buildDeadline is F-15 P-15's write deadline for a parse time limit T.
 func buildDeadline(parseTimeout time.Duration) time.Duration {
-	return 2 * (ownerTimeout + parseTimeout)
+	return 3 * (ownerTimeout + parseTimeout)
 }
 
 func registerOwner(mux *http.ServeMux, cfg Config) {
@@ -240,7 +241,7 @@ func fail(w http.ResponseWriter, err error) {
 }
 
 func (h *ownerHandler) get(w http.ResponseWriter, r *http.Request) {
-	id, token, ok := h.begin(w, r, ownerTimeout)
+	id, token, ok := h.begin(w, r, h.build) // a trimmed workout's view parses (F-47 TR-10)
 	if !ok {
 		return
 	}
@@ -373,7 +374,7 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 			}
 			var str string
 			if json.Unmarshal(v, &str) != nil {
-				return p, msgBadType
+				return p, msgBadTrim
 			}
 			t, err := time.Parse(time.RFC3339, str)
 			if err != nil || t.Nanosecond() != 0 {

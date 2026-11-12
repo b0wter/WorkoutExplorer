@@ -216,6 +216,10 @@ func TestPatchBody(t *testing.T) {
 		}
 	}
 
+	if rec := ownerDo(h, "PATCH", url, auth, `{"trim_start_at":12345}`); !strings.Contains(rec.Body.String(), "trim_start_at") {
+		t.Errorf("a number as a trim time: %s", rec.Body)
+	}
+
 	o.calls = nil
 	rec := ownerDo(h, "PATCH", url, auth, `{"title":"T","description":"D","hide_ends":true,"allow_download":false,"lifetime_days":30}`)
 	p := o.patch
