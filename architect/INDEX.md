@@ -58,6 +58,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | F-44 Pool length and lengths in the summary | [F-44-pool-summary.md](F-44-pool-summary.md) | accepted (11 Nov 2026; normal lane; owner both, backend first in one step with F-43; format version 3; static ceiling 150; OQ-153 resolved) | 0.1 | ADR-011, ADR-026, ADR-027, ADR-044 |
 | F-45 Suggested title | [F-45-suggested-title.md](F-45-suggested-title.md) | accepted (11 Nov 2026; critical lane; owner both, backend first; no format, schema or setting change; static share 0; ADR-030 and F-12 noted in place; OQ-162, OQ-163 resolved 11 Nov 2026) | 0.1 | ADR-005, ADR-011, ADR-026, ADR-028, ADR-030, ADR-045 |
 | F-46 Laps and splits: lap triggers and split presets | [F-46-laps-and-splits.md](F-46-laps-and-splits.md) | accepted (12 Nov 2026; normal lane; owner both, backend first; format version 4; splits code lazy in `src/splits/`, static net ≤ +100; F-18 L-4, L-6, L-8 noted in place; OQ-167, OQ-168 open, not blocking) | 0.1 | ADR-005, ADR-008, ADR-011, ADR-026, ADR-027, ADR-046 |
+| F-47 Trim start and end | [F-47-trim.md](F-47-trim.md) | accepted (12 Nov 2026; critical lane; owner both, backend first; trim then hiding in one transform in `workout`; two instant columns; owner view per read; no format change; static share 0, ceiling 100; ADR-030, F-12, F-45 noted in place; OQ-178, OQ-179 open, not blocking) | 0.1 | ADR-017, ADR-019, ADR-026, ADR-028, ADR-029, ADR-030, ADR-045, ADR-047 |
 
 ## Decisions (ADRs)
 
@@ -109,6 +110,7 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md) | Device name, sensor types and pool values in the data file metadata: format version 3 for F-43 and F-44 together; `device` (display name composed and sanitised on the server, sensor codes), never an identifier; pool values as whole numbers in `summary`, unit in the key | accepted (11 Nov 2026) | F-43, F-44, F-19, F-30 | — (bumps ADR-005 to version 3, narrows its item 7) |
 | [ADR-045](ADR-045-place-data-vendored-and-embedded.md) | Place data for UP-5: a GeoNames `cities15000` snapshot projected to name and position, vendored in `internal/places` and embedded with `go:embed`; refreshed by hand; CC BY 4.0 kept; not fetched at build time (no versioned upstream URL) | accepted (11 Nov 2026) | F-45, F-29, F-30 | — (narrows the TD "Place names" row: linear scan) |
 | [ADR-046](ADR-046-lap-trigger-and-recorded-pool-length-in-the-data-file.md) | Lap trigger and recorded pool length in the data file: format version 4; `trigger` per lap from a closed set of six codes (`""` unknown), mapped in `ingest` so position subtypes never leave it; summary `pool_length_recorded_m` to find whole lengths in the distance stream, never printed | accepted (12 Nov 2026) | F-46, F-19, F-30 | — (bumps ADR-005 to version 4, narrows ADR-044 item 4) |
+| [ADR-047](ADR-047-trim-cut-of-the-normalised-workout.md) | Trim: `workout.Trim` cuts the normalised workout (before hiding) between two stored instants `trim_start_at`, `trim_end_at` (Unix seconds, resolved inward); the owner's trimmed summary, ranges and suggestion computed per read under the O-7 lock, only when a trim is stored | accepted (12 Nov 2026) | F-47, F-12, F-15, F-16, F-19, F-30, F-45 | — (narrows ADR-030 for trimmed workouts; replaces the TD's reserved `trim_start_s`, `trim_end_s`) |
 
 ## Open questions
 
@@ -138,6 +140,8 @@ The system-wide picture lives in `spec/Workout Explorer — Technical Design.md`
 | OQ-163 | **Resolved 11 Nov 2026: keep sport and date (user).** The delete confirmation page is unchanged | none | none |
 | OQ-167 | F-46: AP-20 names "cycling"; `e_biking` is its own FIT sport. Suggestion: cycling list for `e_biking` too (F-46 LS-5) | Nothing (suggestion built unless the user objects) | user (product) |
 | OQ-168 | F-46: heading of the module on a workout without device laps (spec silent). Suggestion: "Splits" (F-46 LS-3) | Nothing (wording only) | user (product) |
+| OQ-178 | F-47: besides the summary (OQ-170), do the edit page's header, laps, sections and time axis stay the full recording? Suggestion: yes, trimmed parts shaded (F-47 TR-9) | Nothing (suggestion built unless the user objects) | user (product) |
+| OQ-179 | F-47: a trimmed pool swim drops its pool length (PS-8), so its splits offer the open-water list. Suggestion: accept | Nothing | user (product) |
 | OQ-87 | While Go is down, Caddy keeps serving published pages whose lifetime ended meanwhile (SH-10 cannot hold then). Suggestion: accept; F-31 restarts Go automatically (F-21 design) | Wording of F-21 AC 6 only. **Resolved 31 Oct 2026: accepted** (decision log) | user (product) |
 
 ## Resolved questions

@@ -39,7 +39,7 @@
 
 | To | What |
 | --- | --- |
-| UP-6 trim, SH-3 zones (phase 2) | The public side follows by ST-4 with no change. The owner side (ST-6) must then also skip trimmed or zoned samples and use the trimmed start time; that feature's design decides how (ADR-030 "Would choose differently if") |
+| UP-6 trim, SH-3 zones (phase 2) | The public side follows by ST-4 with no change. The owner side (ST-6) must then also skip trimmed or zoned samples and use the trimmed start time; that feature's design decides how (ADR-030 "Would choose differently if"). Trim: settled by F-47 TR-8 (per-read owner view, ADR-047) |
 | F-12 design | Settings object gains `suggested_title` (read-only, ST-6) |
 | Requirements (TD) | Place names row: vendored snapshot, linear scan (ADR-045). Code structure: `internal/places` (lookup, embedded table); dependency rules `publish`, `lifecycle` → `places`; `lifecycle` → `page` for the wording; `places` → `workout` only. Glossary: "Suggested title" (UP-5; derived, never stored) |
 
