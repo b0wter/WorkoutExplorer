@@ -421,6 +421,32 @@ func TestCaddy(t *testing.T) {
 		}
 	})
 
+	t.Run("asset br", func(t *testing.T) { // H-7: the build's .br sidecars
+		sidecars, _ := filepath.Glob(filepath.Join(r.web, "assets", "*.js.br"))
+		if len(sidecars) == 0 {
+			t.Fatal("make build wrote no .br sidecar")
+		}
+		for _, sc := range sidecars {
+			name := strings.TrimSuffix(filepath.Base(sc), ".br")
+			plain, _ := os.ReadFile(filepath.Join(r.web, "assets", name))
+			br, _ := os.ReadFile(sc)
+			got := r.get("/assets/"+name, "Accept-Encoding", "br, gzip, zstd")
+			r.check("asset br "+name, got, 200, ccAsset)
+			if got.h.Get("Content-Encoding") != "br" || !slices.Contains(strings.Split(got.h.Get("Vary"), ", "), "Accept-Encoding") ||
+				got.h.Get("Content-Range") != "" || !bytes.Equal(got.body, br) || got.h.Get("Content-Type") == "" || strings.Contains(got.h.Get("Content-Type"), "brotli") {
+				t.Errorf("%s br: encoding %q, vary %q, range %q, type %q", name, got.h.Get("Content-Encoding"), got.h.Get("Vary"), got.h.Get("Content-Range"), got.h.Get("Content-Type"))
+			}
+			got = r.get("/assets/"+name, "Accept-Encoding", "gzip")
+			r.check("asset gzip "+name, got, 200, ccAsset)
+			if got.h.Get("Content-Encoding") != "gzip" && len(plain) >= 1024 { // encode skips tiny bodies
+				t.Errorf("%s without br: encoding %q", name, got.h.Get("Content-Encoding"))
+			}
+			if got = r.get("/assets/" + name); got.h.Get("Content-Encoding") != "" || !bytes.Equal(got.body, plain) {
+				t.Errorf("%s identity: encoding %q", name, got.h.Get("Content-Encoding"))
+			}
+		}
+	})
+
 	t.Run("never reachable", func(t *testing.T) { // H-10, F-12 AC 6 through Caddy
 		orig, draft := r.a.privateFile(id, "original.fit"), r.a.privateFile(id, "draft.bin")
 		db, err := os.ReadFile(filepath.Join(r.a.dir, "workouts.db"))

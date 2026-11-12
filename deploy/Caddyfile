@@ -55,7 +55,7 @@
 {$WX_SITE:http://127.0.0.1:8088} {
 	import security
 
-	# H-7: on the fly for everything without a .br sidecar, draft.bin (octet-stream) included.
+	# H-7: on the fly for everything without a .br sidecar (clients without br too), draft.bin (octet-stream) included.
 	encode zstd gzip {
 		match {
 			header Content-Type text/*
@@ -160,7 +160,9 @@
 	handle /assets/* {
 		header Cache-Control "public, max-age=31536000, immutable"
 		root * {$WX_WEB}
-		file_server
+		file_server {
+			precompressed br
+		}
 	}
 	handle / {
 		header Cache-Control no-cache

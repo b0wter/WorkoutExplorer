@@ -20,7 +20,7 @@ COPY src/server src/server
 RUN make VERSION="$VERSION" build-server && sh deploy/fetch-caddy.sh build/caddy
 COPY --from=web /src/build/web build/web
 # The attribution list into about.html (F-29 AB-5): needs the web build, the binary, the module cache and the Caddyfile.
-RUN make attributions
+RUN make attributions precompress-assets
 COPY deploy/Caddyfile conf/Caddyfile
 RUN chmod -R a+rX build conf && chmod 755 build/workout-explorer build/caddy
 

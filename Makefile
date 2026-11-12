@@ -25,7 +25,7 @@ DEV_BASE_URL ?= http://127.0.0.1:8088
 .PHONY: deps deps-server deps-web \
         lint lint-server lint-web \
         test test-server test-web \
-        build build-server build-web attributions \
+        build build-server build-web attributions precompress-assets \
         size ci caddy caddy-check docker-check corpus corpus-update corpus-gen prototype-data prototype-serve dev-server dev-web clean
 
 # ---- dependencies ---------------------------------------------------------
@@ -65,7 +65,7 @@ test-web: deps-web
 # ---- build ----------------------------------------------------------------
 
 build: build-server build-web
-	$(MAKE) attributions
+	$(MAKE) attributions precompress-assets
 
 build-server:
 	cd $(SERVER_DIR) && CGO_ENABLED=0 go build \
@@ -81,6 +81,11 @@ build-web: deps-web
 attributions:
 	cd $(SERVER_DIR) && go run ./tools/attributions -web '$(CURDIR)/$(BUILD_DIR)/web' -binary '$(CURDIR)/$(BINARY)' \
 		-caddy-env '$(CURDIR)/deploy/caddy.env' -caddyfile '$(CURDIR)/deploy/Caddyfile'
+
+# .br sidecars next to the bundle's text files (F-22 H-7); Caddy serves them with `precompressed br`.
+# After build-web; the Dockerfile's Go stage calls it alone.
+precompress-assets:
+	cd $(SERVER_DIR) && go run ./tools/brotliassets '$(CURDIR)/$(BUILD_DIR)/web/assets'
 
 # Bundle budget check (ADR-002). Depends only on build-web, never on test,
 # so the size is printed even when a test fails under `make -k ci`.
