@@ -428,6 +428,18 @@ func TestStrokeColumnAndCell(t *testing.T) {
 	lap := func(stroke, trigger string) datafile.Lap {
 		return datafile.Lap{Stroke: stroke, Trigger: trigger, Totals: datafile.Totals{ElapsedTime: "60"}}
 	}
+	var all []datafile.Lap
+	for _, c := range []string{"freestyle", "backstroke", "breaststroke", "butterfly", "drill", "mixed", "im"} {
+		all = append(all, lap(c, "button"))
+	}
+	g := lapsGroup("swimming", all)
+	var words []string
+	for _, r := range g.Rows {
+		words = append(words, r[len(r)-2])
+	}
+	if !reflect.DeepEqual(words, []string{"Freestyle", "Backstroke", "Breaststroke", "Butterfly", "Drill", "Mixed", "IM"}) {
+		t.Errorf("stroke words = %q", words)
+	}
 	l := lapsGroup("swimming", []datafile.Lap{lap("im", "button"), lap("", ""), lap("bogus", ""), lap("butterfly", "")})
 	n := len(l.Columns)
 	if l.Columns[n-2] != (Column{Key: "stroke", Label: "Stroke"}) || l.Columns[n-1].Key != "trigger" {

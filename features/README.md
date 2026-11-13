@@ -61,7 +61,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-45](F-45-suggested-title.md) | Suggested title | 2 | both (backend first) | F-16, F-19, F-29, F-42 | done | checked by the user 12 Nov (suggested title) |
 | [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | done | checked by the user 12 Nov (drop-down, iPhone mini); open: pool splits on a real file, phone scrub trace (AC 41) |
 | [F-47](F-47-trim.md) | Trim start and end | 2 | both (backend first) | F-16, F-19, F-20, F-30, F-36, F-42, F-44, F-45, F-46 | done | — (checked by the user 12 Nov) |
-| [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | done | user: browser check (Lengths view, Stroke column and cell on pool-swim-mixed, trim on a swim); minors r1-1 to r1-4 |
+| [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | done | user: browser check (Lengths view, Stroke column and cell on pool-swim-mixed, trim on a swim); minors r1-3 (10,000-length measurement) and r1-4 open; r1-1, r1-2 fixed |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 15 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, detailed). Phase 3: 1 feature (F-24, deferred; design kept).

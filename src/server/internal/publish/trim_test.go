@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"workout-explorer/internal/datafile"
 	"workout-explorer/internal/lifecycle"
 	"workout-explorer/internal/places"
 	"workout-explorer/internal/workout"
@@ -406,6 +407,14 @@ func TestTrimKeepsTrimmedLengthsOut(t *testing.T) {
 	}
 	if s := out.file.Meta.Summary; s.Lengths != "9" || s.Stroke != "freestyle" {
 		t.Errorf("summary lengths %q stroke %q, want 9 and freestyle", s.Lengths, s.Stroke)
+	}
+	// The draft (draft.bin = Encode of the untrimmed workout) still lists all 15.
+	bin, err := datafile.Encode(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if df, err := datafile.Decode(bin); err != nil || len(df.Meta.Lengths) != 15 {
+		t.Errorf("draft: err %v, %d lengths, want 15", err, len(df.Meta.Lengths))
 	}
 	v, err := fx.a.TrimmedView(context.Background(), d)
 	if err != nil {
