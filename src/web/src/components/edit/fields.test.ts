@@ -20,6 +20,8 @@ const STORED: Settings = {
   trim_start_at: null,
   trim_end_at: null,
   trimmed: null,
+  zones_max_heart_rate: null,
+  zones_threshold_power: null,
 };
 
 afterEach(() => {

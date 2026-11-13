@@ -116,6 +116,13 @@ export interface Length {
   readonly strokes?: number;
 }
 
+/** F-49 kinds with zones (F-03 §5.9). */
+export type ZoneKind = 'heart_rate' | 'power';
+/** Version 6 (ADR-049): the file's zones (`from`: the lowest value of zones 2 … k) or a basis for
+ *  lib/zones' default model; exactly one of the two. */
+export type ZoneEntry = { readonly from: readonly number[]; readonly basis?: undefined } | { readonly basis: number; readonly from?: undefined };
+export type Zones = Readonly<Partial<Record<ZoneKind, ZoneEntry>>>;
+
 export interface WorkoutMeta {
   readonly sport: string;
   /** RFC 3339 UTC, whole seconds (F-03 §5.1). */
@@ -127,6 +134,8 @@ export interface WorkoutMeta {
   readonly laps: readonly Lap[];
   /** Version 5: pool lengths in recorded order, [] for most workouts. */
   readonly lengths: readonly Length[];
+  /** Version 6: a kind only with its stream present, {} for most workouts. */
+  readonly zones: Zones;
 }
 
 export type DataFileErrorCode =

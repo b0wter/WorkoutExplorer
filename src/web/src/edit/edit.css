@@ -63,6 +63,9 @@
 .edit-row .edit-field select {
   width: auto;
 }
+.edit-row .edit-field input[type='number'] {
+  width: 5em;
+}
 .edit-expiry,
 .edit-status,
 .edit-copied {

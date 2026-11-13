@@ -1,0 +1,45 @@
+/* The Zones section (F-49 ZN-8): one row per zone, a bar for its share of the time. */
+.zones h2 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+.zones h3 {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.zone {
+  display: grid;
+  grid-template-columns: 2.5em 7.5em 1fr 4.5em 3em;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 22px;
+}
+.zone-n,
+.zone-r {
+  color: var(--muted);
+}
+.zone-t,
+.zone-p {
+  text-align: right;
+}
+.zone-bar {
+  height: 10px;
+  background: var(--card);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.zone-bar > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--t);
+}
+.zone[data-k='heart_rate'] {
+  --t: var(--c-heart_rate);
+}
+.zone[data-k='power'] {
+  --t: var(--c-power);
+}

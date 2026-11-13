@@ -27,6 +27,7 @@ import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from
 import { createLook, createMapProps, type Look } from './map-props.svelte';
 import { mountStrip } from './strip';
 import type { DataFileResult, WorkoutData } from '../lib/datafile';
+import type { ZoneSource } from '../zones';
 
 type RecorderModule = typeof import('../measure/recorder');
 
@@ -99,6 +100,9 @@ export interface EditSeam {
   readonly data: DataFileResult;
   readonly hidden: readonly (readonly [number, number])[];
   onlook(look: Look): void;
+  /** F-49 ZN-7, ZN-8: the zones chunk's starter, after the charts' first paint; the edit glue
+   *  decides when (its saved values) and passes its public window. Resolves to the refresh. */
+  onzones(start: (src: ZoneSource) => Promise<(() => void) | void>): void;
 }
 
 /** Enhances the server markup, then loads and mounts. Never rejects. */
@@ -218,6 +222,10 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
       const fmt = [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit] as const;
       import('../splits').then((m) => m.startSplits(root, data, units, laps.splits, fmt, splits), () => console.warn('page: splits chunk failed'));
     }
+    // F-49 ZN-8: the zones section is a lazy chunk, here over the whole public data file (ZN-7).
+    const zones = (src?: ZoneSource) => import('../zones').then((m) => m.startZones(root, data, selection, formatElapsed, src), () => console.warn('page: zones chunk failed'));
+    if (edit) edit.onzones(zones);
+    else if (Object.keys(data.meta.zones).length) void zones();
   };
   if (map && mapSlot) {
     mount(RouteMap, { target: mapSlot, props: map.props });

@@ -23,6 +23,8 @@ const SETTINGS: Settings = {
   trim_start_at: null,
   trim_end_at: null,
   trimmed: null,
+  zones_max_heart_rate: null,
+  zones_threshold_power: null,
 };
 
 function setup(hash: string, respond: () => Response | Promise<Response> = () => Response.json(SETTINGS), path = '/edit/' + ID) {

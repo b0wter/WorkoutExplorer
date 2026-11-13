@@ -200,6 +200,7 @@ func TestPatchBody(t *testing.T) {
 		`{"lifetime_days":"7"}`, `{"visibility":3}`, `{"description":["a"]}`,
 		`{"visibility":"unlisted"}`, `{"visibility":"draft"}`, `{"visibility":"private"}`, `{"title":"x","visibility":"unlisted"}`, // read-only (O-6)
 		`{"trimmed":null}`, `{"trim_start_at":"x"}`, `{"trim_end_at":1}`, `{"trim_start_at":"2026-06-01T06:00:00.5Z"}`, // F-47
+		`{"zones_max_heart_rate":190.5}`, `{"zones_max_heart_rate":"190"}`, `{"zones_threshold_power":1e2}`, `{"zones_threshold_power":true}`, // F-49
 		`{"title":"` + strings.Repeat("a", maxPatchBytes) + `"}`,
 	}
 	for _, b := range bad {
@@ -229,6 +230,10 @@ func TestPatchBody(t *testing.T) {
 	rec = ownerDo(h, "PATCH", url, auth, `{"trim_start_at":"2026-06-01T08:00:00+02:00","trim_end_at":null}`)
 	if rec.Code != 200 || !o.patch.TrimStart.Set || !o.patch.TrimStart.At.Equal(time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)) || !o.patch.TrimEnd.Set || o.patch.TrimEnd.At != nil {
 		t.Errorf("trim: %d %s %+v", rec.Code, rec.Body, o.patch)
+	}
+	rec = ownerDo(h, "PATCH", url, auth, `{"zones_max_heart_rate":190,"zones_threshold_power":null}`)
+	if z := o.patch; rec.Code != 200 || !z.ZonesMaxHeartRate.Set || *z.ZonesMaxHeartRate.V != 190 || !z.ZonesThresholdPower.Set || z.ZonesThresholdPower.V != nil {
+		t.Errorf("zones: %d %s %+v", rec.Code, rec.Body, o.patch)
 	}
 	rec = ownerDo(h, "PATCH", url, auth, ` {} `)
 	if rec.Code != 200 || o.patch != (lifecycle.SettingsPatch{}) {

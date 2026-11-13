@@ -20,6 +20,7 @@ type Workout struct {
 	Sessions  []Session // file order
 	Laps      []Lap     // file order
 	Lengths   []Length  // F-48 PL-2: pool-swim lengths, by start
+	Zones     Zones     // F-49 ZN-3: the file's zone values; kept by Trim and hiding
 	Timer     []TimerEvent
 	Samples   Samples
 	Derived   Derived

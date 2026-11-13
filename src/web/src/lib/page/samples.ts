@@ -102,6 +102,8 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'ride-lap-triggers', golden: 'ride-lap-triggers', title: '', description: '' },
   { name: 'pool-swim-33m', golden: 'pool-swim-33m', title: '', description: '' },
   { name: 'pool-swim-mixed', golden: 'pool-swim-mixed', title: '', description: '' },
+  // F-49: zones are client-owned (ZN-8), so the view model carries none.
+  { name: 'zones-ride', golden: 'zones-wahoo-ride', title: '', description: '' },
   {
     name: 'hostile-text',
     golden: 'ride-30min',

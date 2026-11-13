@@ -14,6 +14,7 @@ import (
 
 	"workout-explorer/internal/datafile"
 	"workout-explorer/internal/page"
+	"workout-explorer/internal/workout"
 )
 
 // The owner operations of F-12 (architect/F-12-owner-api.md,
@@ -54,6 +55,15 @@ type SettingsPatch struct {
 	// TrimStart and TrimEnd are the instants of F-47 TR-3; Set with a nil At
 	// is null: that end is not trimmed.
 	TrimStart, TrimEnd OptTime
+	// ZonesMaxHeartRate and ZonesThresholdPower are F-49 ZN-4; Set with a nil
+	// V is null: use the file's values.
+	ZonesMaxHeartRate, ZonesThresholdPower OptInt
+}
+
+// OptInt is an optional integer that may be sent as null.
+type OptInt struct {
+	Set bool
+	V   *int
 }
 
 // OptTime is an optional time that may be sent as null.
@@ -100,6 +110,18 @@ func ApplyPatch(r Record, p SettingsPatch, now time.Time) (Record, error) {
 	}
 	if p.TrimEnd.Set {
 		r.TrimEndAt = p.TrimEnd.At
+	}
+	if p.ZonesMaxHeartRate.Set {
+		if v := p.ZonesMaxHeartRate.V; v != nil && (*v < workout.MinMaxHeartRate || *v > workout.MaxMaxHeartRate) {
+			return r, invalid("The max heart rate must be a whole number from 100 to 250 bpm.")
+		}
+		r.ZonesMaxHeartRate = p.ZonesMaxHeartRate.V
+	}
+	if p.ZonesThresholdPower.Set {
+		if v := p.ZonesThresholdPower.V; v != nil && (*v < workout.MinThresholdPower || *v > workout.MaxThresholdPower) {
+			return r, invalid("The threshold power must be a whole number from 50 to 1,000 W.")
+		}
+		r.ZonesThresholdPower = p.ZonesThresholdPower.V
 	}
 	if p.LifetimeDays != nil {
 		days := *p.LifetimeDays

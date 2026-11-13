@@ -161,6 +161,20 @@ func TestApplyPatch(t *testing.T) {
 		{"lifetime 0", base, SettingsPatch{LifetimeDays: ip(0)}, false, nil},
 		{"lifetime negative", base, SettingsPatch{LifetimeDays: ip(-1)}, false, nil},
 		{"lifetime 1 shortens", base, SettingsPatch{LifetimeDays: ip(1)}, true, nil},
+		{"zones in range (F-49 ZN-4)", base, SettingsPatch{ZonesMaxHeartRate: OptInt{Set: true, V: ip(100)}, ZonesThresholdPower: OptInt{Set: true, V: ip(1000)}}, true, func(t *testing.T, r Record) {
+			if *r.ZonesMaxHeartRate != 100 || *r.ZonesThresholdPower != 1000 {
+				t.Errorf("%v %v", r.ZonesMaxHeartRate, r.ZonesThresholdPower)
+			}
+		}},
+		{"zones null clears", Record{ZonesMaxHeartRate: ip(190), ZonesThresholdPower: ip(250)}, SettingsPatch{ZonesMaxHeartRate: OptInt{Set: true}}, true, func(t *testing.T, r Record) {
+			if r.ZonesMaxHeartRate != nil || r.ZonesThresholdPower == nil {
+				t.Errorf("%v %v", r.ZonesMaxHeartRate, r.ZonesThresholdPower)
+			}
+		}},
+		{"max heart rate 99", base, SettingsPatch{ZonesMaxHeartRate: OptInt{Set: true, V: ip(99)}}, false, nil},
+		{"max heart rate 251", base, SettingsPatch{ZonesMaxHeartRate: OptInt{Set: true, V: ip(251)}}, false, nil},
+		{"threshold power 49", base, SettingsPatch{ZonesThresholdPower: OptInt{Set: true, V: ip(49)}}, false, nil},
+		{"threshold power 1001", base, SettingsPatch{ZonesThresholdPower: OptInt{Set: true, V: ip(1001)}}, false, nil},
 		{"all or nothing: a bad field refuses the good one", base, SettingsPatch{Title: sp("fine"), LifetimeDays: ip(99)}, false, nil},
 	}
 	for _, tc := range tests {

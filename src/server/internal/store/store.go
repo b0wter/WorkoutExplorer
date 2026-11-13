@@ -119,11 +119,13 @@ func (d *DB) InsertWorkout(ctx context.Context, r lifecycle.Record) error {
 	_, err := d.db.ExecContext(ctx, `INSERT INTO workouts
 		(id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
 		 visibility, hide_ends, allow_download, summary_json, data_end_s, created_at, published_at, expires_at,
-		 hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at,
+		 zones_max_heart_rate, zones_threshold_power)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		append([]any{r.ID, r.PublicID, r.EditTokenHash[:], r.Title, r.Description, r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
 			string(r.Visibility), r.HideEnds, r.AllowDownload, r.SummaryJSON, intPtr(r.DataEndS),
-			unix(r.CreatedAt), unixPtr(r.PublishedAt), unix(r.ExpiresAt)}, append(rangeColumns(r.HiddenRanges), unixPtr(r.TrimStartAt), unixPtr(r.TrimEndAt))...)...)
+			unix(r.CreatedAt), unixPtr(r.PublishedAt), unix(r.ExpiresAt)}, append(rangeColumns(r.HiddenRanges), unixPtr(r.TrimStartAt), unixPtr(r.TrimEndAt),
+			intPtr(r.ZonesMaxHeartRate), intPtr(r.ZonesThresholdPower))...)...)
 	if err != nil {
 		return fmt.Errorf("store: insert workout: %w", err)
 	}
@@ -230,7 +232,8 @@ func (d *DB) DeleteWorkout(ctx context.Context, id string) (deleted bool, err er
 
 const columns = `id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
 	visibility, hide_ends, allow_download, summary_json, data_end_s, created_at, published_at, expires_at,
-	hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at`
+	hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at,
+	zones_max_heart_rate, zones_threshold_power`
 
 // rangeColumns maps up to two ranges to the four hidden* columns (ADR-030);
 // unused pairs are NULL. More than two ranges cannot come from
@@ -241,6 +244,14 @@ func rangeColumns(r [][2]int) []any {
 		out[2*i], out[2*i+1] = int64(r[i][0]), int64(r[i][1])
 	}
 	return out
+}
+
+func nullInt(n sql.NullInt64) *int {
+	if !n.Valid {
+		return nil
+	}
+	v := int(n.Int64)
+	return &v
 }
 
 type scanner interface{ Scan(dest ...any) error }
@@ -254,10 +265,11 @@ func scanRecord(sc scanner) (lifecycle.Record, error) {
 		created, expires   int64
 		h                  [4]sql.NullInt64
 		trimA, trimB       sql.NullInt64
+		zoneHR, zonePower  sql.NullInt64
 	)
 	if err := sc.Scan(&r.ID, &r.PublicID, &hash, &r.Title, &r.Description, &r.Sport, &start, &off,
 		&vis, &r.HideEnds, &r.AllowDownload, &r.SummaryJSON, &end, &created, &p, &expires,
-		&h[0], &h[1], &h[2], &h[3], &trimA, &trimB); err != nil {
+		&h[0], &h[1], &h[2], &h[3], &trimA, &trimB, &zoneHR, &zonePower); err != nil {
 		return lifecycle.Record{}, err
 	}
 	for i := 0; i < 4 && h[i].Valid && h[i+1].Valid; i += 2 {
@@ -293,6 +305,7 @@ func scanRecord(sc scanner) (lifecycle.Record, error) {
 		t := ts(trimB.Int64)
 		r.TrimEndAt = &t
 	}
+	r.ZonesMaxHeartRate, r.ZonesThresholdPower = nullInt(zoneHR), nullInt(zonePower)
 	r.CreatedAt, r.ExpiresAt = ts(created), ts(expires)
 	return r, nil
 }
@@ -331,9 +344,10 @@ func (d *DB) UpdateWorkout(ctx context.Context, id string, apply func(lifecycle.
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE workouts SET title = ?, description = ?, visibility = ?,
 		hide_ends = ?, allow_download = ?, published_at = ?, expires_at = ?,
-		trim_start_at = ?, trim_end_at = ? WHERE id = ?`,
+		trim_start_at = ?, trim_end_at = ?, zones_max_heart_rate = ?, zones_threshold_power = ? WHERE id = ?`,
 		next.Title, next.Description, string(next.Visibility), next.HideEnds, next.AllowDownload,
-		unixPtr(next.PublishedAt), unix(next.ExpiresAt), unixPtr(next.TrimStartAt), unixPtr(next.TrimEndAt), id); err != nil {
+		unixPtr(next.PublishedAt), unix(next.ExpiresAt), unixPtr(next.TrimStartAt), unixPtr(next.TrimEndAt),
+		intPtr(next.ZonesMaxHeartRate), intPtr(next.ZonesThresholdPower), id); err != nil {
 		return lifecycle.Record{}, false, fmt.Errorf("store: update workout: %w", err)
 	}
 	if err := tx.Commit(); err != nil {

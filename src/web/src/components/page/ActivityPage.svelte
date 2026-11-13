@@ -33,6 +33,7 @@
   {#if model.ChartsClass}<div id="charts-slot" class={'charts ' + model.ChartsClass}></div>{/if}
   <div id="range-slot" class="range-slot"></div>
   <LapsTable laps={model.Laps} />
+  <div id="zones-slot" class="zones-slot" hidden></div>
   <PageFooter {report} />
   </div>
 </div>

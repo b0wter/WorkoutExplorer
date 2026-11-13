@@ -61,6 +61,9 @@ type Record struct {
 	// TrimStartAt and TrimEndAt are the instants of the first and last
 	// remaining sample (F-47 TR-3); nil: that end is not trimmed.
 	TrimStartAt, TrimEndAt *time.Time
+	// ZonesMaxHeartRate and ZonesThresholdPower are the sharer's zone values
+	// (F-49 ZN-4); nil: the file's values apply. Never logged.
+	ZonesMaxHeartRate, ZonesThresholdPower *int
 }
 
 // NewDraft is the row of a fresh upload: a draft with hiding and download off

@@ -131,10 +131,10 @@ describe('load failure (AC 9, D-13, OQ-10)', () => {
     expect(console.warn).toHaveBeenCalledWith('data file: HTTP status 404');
   });
 
-  it('a different format version (bytes 4 and 5 = 6): the text ends in "Reload the page."', async () => {
+  it('a different format version (bytes 4 and 5 = 7): the text ends in "Reload the page."', async () => {
     respond = () => {
       const b = RIDE.slice(0);
-      new DataView(b).setUint16(4, 6, true);
+      new DataView(b).setUint16(4, 7, true);
       return new Response(b, { status: 200 });
     };
     await open();
@@ -253,6 +253,34 @@ describe('wiring (F-06 "Wiring")', () => {
       expect(document.querySelector('section.laps')?.classList.contains('legs')).toBe(false);
     } finally {
       vi.doUnmock('../sections');
+    }
+  });
+
+  it('F-49 ZN-8: zone values load the zones chunk after the charts\' first paint; it fills the slot after the laps', async () => {
+    const g = loadGolden().find((x) => x.name === 'zones-wahoo-ride');
+    if (!g) throw new Error('no golden zones-wahoo-ride');
+    respond = () => new Response(g.bin.slice(0), { status: 200 });
+    await open('zones-ride');
+    const zones = slot('zones-slot');
+    expect(zones?.previousElementSibling?.matches('section.laps')).toBe(true);
+    expect([zones?.hidden, zones?.childElementCount]).toEqual([true, 0]);
+    stubLog.chartStack[0].onready?.();
+    await vi.waitFor(() => expect(zones?.querySelectorAll('.zones-kind')).toHaveLength(2));
+    expect(zones?.hidden).toBe(false);
+  });
+
+  it('F-49 ZN-8: no zone values, no zones chunk', async () => {
+    vi.doMock('../zones', () => {
+      throw new Error('chunk failed');
+    });
+    try {
+      await open('ride-30min');
+      stubLog.chartStack[0].onready?.();
+      await settle();
+      expect(console.warn).not.toHaveBeenCalledWith('page: zones chunk failed');
+      expect(slot('zones-slot')?.hidden).toBe(true);
+    } finally {
+      vi.doUnmock('../zones');
     }
   });
 
@@ -498,7 +526,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
   async function openAt(path: string, seam?: boolean): Promise<void> {
     window.history.replaceState({ fs: 1 }, '', path);
     page = renderSample('ride-30min');
-    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {} } : undefined);
+    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {}, onzones() {} } : undefined);
     await settle();
     stubLog.chartStack[0].onready?.();
     flushSync();

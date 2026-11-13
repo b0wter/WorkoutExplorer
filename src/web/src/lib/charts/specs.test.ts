@@ -25,6 +25,7 @@ function workout(n: number, metrics: Partial<Record<MetricName, number[]>>): Wor
       sessions: [],
       laps: [],
       lengths: [],
+      zones: {},
     },
   };
 }

@@ -11,7 +11,7 @@ import './edit.css';
 import ActivityPage from '../components/page/ActivityPage.svelte';
 import EditPanel from '../components/edit/EditPanel.svelte';
 import PublishedView from '../components/edit/PublishedView.svelte';
-import { loadDataFile, type Summary, type WorkoutMeta } from '../lib/datafile';
+import { loadDataFile, type Summary, type WorkoutMeta, type Zones } from '../lib/datafile';
 import { summaryItems } from '../lib/page';
 import type { ChartDecorator } from '../components/charts/uplot-options';
 import type { Look } from '../page/map-props.svelte';
@@ -22,6 +22,8 @@ import { enhanceExpiry } from '../page/enhance';
 import { loadErrorText } from '../page/load-error';
 import { startPage } from '../page/start';
 import { basemapJobs } from './basemap-job';
+import { trimIndex } from '../components/edit/fields';
+import type { ZoneSource } from '../zones';
 
 const NONE: readonly (readonly [number, number])[] = [];
 
@@ -149,6 +151,26 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const strip = (s: Settings, meta: WorkoutMeta): Pick<WorkoutMeta, 'sport' | 'summary'> =>
     s.trim_start_at === null && s.trim_end_at === null ? meta : s.trimmed ? { sport: s.trimmed.sport, summary: s.trimmed.summary as Summary } : { sport: meta.sport, summary: {} };
 
+  /** F-49 ZN-7: what the public build writes, from the SAVED settings only (E-6): the sharer's
+   *  value as a basis before the draft's zone values, over the saved trim window (TR-9). */
+  const startS = data ? Date.parse(data.meta.start_time) / 1000 : 0;
+  const zoneSource: ZoneSource = {
+    zones: (): Zones => {
+      const hr = settings.zones_max_heart_rate;
+      const ftp = settings.zones_threshold_power;
+      return { ...data?.meta.zones, ...(hr !== null && { heart_rate: { basis: hr } }), ...(ftp !== null && { power: { basis: ftp } }) };
+    },
+    window: () => (data ? [trimIndex(data.time, startS, settings.trim_start_at, false), trimIndex(data.time, startS, settings.trim_end_at, true)] : [0, 0]),
+  };
+  /** The page's zones starter (startPage's seam) and, once started, the section's refresh. */
+  let startZones: ((src: ZoneSource) => Promise<(() => void) | void>) | undefined;
+  let zonesRefresh: Promise<(() => void) | void> | undefined;
+  /** ZN-8: the chunk once a kind has zone values and its stream; afterwards a refresh per save. */
+  const zones = (): void => {
+    if (zonesRefresh) void zonesRefresh.then((refresh) => refresh?.());
+    else if (startZones && data && Object.keys(zoneSource.zones()).some((k) => data.metrics[k as keyof Zones])) zonesRefresh = startZones(zoneSource);
+  };
+
   /** Any owner result: 404 the generic page, an error its message, settings the new truth.
    *  True for settings. */
   const apply = (r: OwnerResult<Settings>): r is { ok: true; value: Settings } => {
@@ -159,6 +181,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     }
     // The response is the truth (E-6): the panel refills from it, the header re-renders from it.
     settings = r.value;
+    zones();
     hide = r.value.hide_ends;
     visibility = r.value.visibility;
     const next = build(r.value);
@@ -298,6 +321,10 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
         const [a, b] = cut;
         const marks = hide ? settings.hide_ends_ranges : NONE;
         return a === 0 && b === last ? marks : [...(a > 0 ? [[0, a] as const] : []), ...(b < last ? [[b, last] as const] : []), ...marks];
+      },
+      onzones: (start) => {
+        startZones = start;
+        zones();
       },
       onlook: (l: Look) => {
         look = l;

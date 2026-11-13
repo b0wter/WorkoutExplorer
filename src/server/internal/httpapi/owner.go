@@ -81,6 +81,9 @@ type settingsBody struct {
 	// Trimmed is read-only (F-47 TR-8): the sport and summary the public
 	// metadata would have; null without a trim.
 	Trimmed *lifecycle.TrimmedView `json:"trimmed"`
+	// F-49 ZN-4: the sharer's zone values; null = the file's values.
+	ZonesMaxHeartRate   *int `json:"zones_max_heart_rate"`
+	ZonesThresholdPower *int `json:"zones_threshold_power"`
 }
 
 func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
@@ -93,6 +96,7 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 	}
 	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed,
 		TrimStartAt: at(r.TrimStartAt), TrimEndAt: at(r.TrimEndAt),
+		ZonesMaxHeartRate: r.ZonesMaxHeartRate, ZonesThresholdPower: r.ZonesThresholdPower,
 		Title: r.Title, Description: r.Description, HideEnds: r.HideEnds, AllowDownload: r.AllowDownload,
 		Visibility: string(r.Visibility), LifetimeDays: r.LifetimeDays(),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339), ExpiresAt: r.ExpiresAt.UTC().Format(time.RFC3339),
@@ -298,6 +302,7 @@ func (h *ownerHandler) file(original bool) http.HandlerFunc {
 const (
 	msgBadBody = "The request must be one JSON object with only the settings that can be changed."
 	msgBadTrim = "trim_start_at and trim_end_at must be a time in RFC 3339 form with whole seconds, or null."
+	msgBadZone = "zones_max_heart_rate and zones_threshold_power must be a whole number, or null."
 	msgBadType = "The title and description must be text, hide_ends and allow_download true or false, and lifetime_days a whole number."
 )
 
@@ -382,6 +387,21 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 			}
 			t = t.UTC()
 			o.At = &t
+			continue
+		case "zones_max_heart_rate", "zones_threshold_power":
+			// null allowed as for the trim (F-49 ZN-4); the range is lifecycle's.
+			o := &p.ZonesMaxHeartRate
+			if k == "zones_threshold_power" {
+				o = &p.ZonesThresholdPower
+			}
+			o.Set = true
+			if bytes.Equal(bytes.TrimSpace(v), []byte("null")) {
+				continue
+			}
+			o.V = new(int)
+			if json.Unmarshal(v, o.V) != nil {
+				return p, msgBadZone
+			}
 			continue
 		default:
 			return p, msgBadBody

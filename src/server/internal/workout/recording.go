@@ -15,6 +15,7 @@ type Recording struct {
 	Timer       []RawTimerEvent // arrival order
 	Records     []RawRecord     // arrival order, not yet sorted
 	Integrity   Integrity       // set by ingest (F-08); Normalise copies it
+	Zones       RawZones        // F-49 ZN-1
 
 	Sports         []RawSport // sport messages that a record followed, arrival order (D-12)
 	SequenceStarts []int      // index into Records of the first record of sequence 2, 3, ... (R-12)

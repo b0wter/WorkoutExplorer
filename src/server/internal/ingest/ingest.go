@@ -161,6 +161,7 @@ func (p *Parser) parse(ctx context.Context, data []byte, o *outcome) (workout.Wo
 
 	rec := l.rec
 	rec.Device.Model = l.model()
+	rec.Zones = l.zones.zones()
 	noData := func(why string) *Error {
 		var cause error = errors.New(why)
 		if res.lastErr != nil {

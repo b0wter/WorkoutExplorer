@@ -1,13 +1,13 @@
 {
   "fixture_version": 1,
-  "format_version": 5,
-  "byte_length": 56200,
+  "format_version": 6,
+  "byte_length": 56212,
   "sample_count": 1801,
-  "metadata_length": 2150,
+  "metadata_length": 2161,
   "streams": [
     {
       "name": "time_offset",
-      "byte_offset": 2164,
+      "byte_offset": 2176,
       "valid": 1801,
       "missing": 0,
       "first": 0,
@@ -18,7 +18,7 @@
     },
     {
       "name": "latitude",
-      "byte_offset": 9368,
+      "byte_offset": 9380,
       "valid": 1801,
       "missing": 0,
       "first": 47050000,
@@ -29,7 +29,7 @@
     },
     {
       "name": "longitude",
-      "byte_offset": 16572,
+      "byte_offset": 16584,
       "valid": 1801,
       "missing": 0,
       "first": 8300000,
@@ -40,7 +40,7 @@
     },
     {
       "name": "altitude",
-      "byte_offset": 23776,
+      "byte_offset": 23788,
       "valid": 1801,
       "missing": 0,
       "first": 4200,
@@ -51,7 +51,7 @@
     },
     {
       "name": "distance",
-      "byte_offset": 30980,
+      "byte_offset": 30992,
       "valid": 1801,
       "missing": 0,
       "first": 0,
@@ -62,7 +62,7 @@
     },
     {
       "name": "heart_rate",
-      "byte_offset": 38184,
+      "byte_offset": 38196,
       "valid": 1801,
       "missing": 0,
       "first": 136,
@@ -73,7 +73,7 @@
     },
     {
       "name": "cadence",
-      "byte_offset": 39988,
+      "byte_offset": 40000,
       "valid": 1801,
       "missing": 0,
       "first": 169,
@@ -84,7 +84,7 @@
     },
     {
       "name": "moving_time",
-      "byte_offset": 41792,
+      "byte_offset": 41804,
       "valid": 1801,
       "missing": 0,
       "first": 0,
@@ -95,7 +95,7 @@
     },
     {
       "name": "elevation_gain",
-      "byte_offset": 48996,
+      "byte_offset": 49008,
       "valid": 1801,
       "missing": 0,
       "first": 0,

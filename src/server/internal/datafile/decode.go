@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"unicode/utf8"
+
+	"workout-explorer/internal/workout"
 )
 
-// Decode reads a data file of format version 5. It is strict: it implements
+// Decode reads a data file of format version 6. It is strict: it implements
 // every check of Format §6, including rule 7, and returns an error (prefixed
 // "datafile:") instead of panicking on any malformed input.
 func Decode(b []byte) (File, error) {
@@ -149,7 +151,7 @@ func decodeMeta(js []byte) (Meta, error) {
 	}
 	for _, k := range []struct{ key, kind string }{
 		{"sport", "string"}, {"start_time", "string"}, {"time_zone", "object"}, {"summary", "object"},
-		{"device", "object"}, {"sessions", "array"}, {"laps", "array"}, {"lengths", "array"}, {"streams", "array"},
+		{"device", "object"}, {"sessions", "array"}, {"laps", "array"}, {"lengths", "array"}, {"zones", "object"}, {"streams", "array"},
 	} {
 		raw, ok := top[k.key]
 		if !ok {
@@ -158,6 +160,9 @@ func decodeMeta(js []byte) (Meta, error) {
 		if jsonKind(raw) != k.kind {
 			return Meta{}, fmt.Errorf("datafile: metadata key %s is not a JSON %s", k.key, k.kind)
 		}
+	}
+	if err := checkZones(top["zones"]); err != nil {
+		return Meta{}, err
 	}
 	var m Meta
 	d := json.NewDecoder(bytes.NewReader(js))
@@ -240,4 +245,62 @@ func checkRange(kind string, i int, start, end int32, from, to, n int) error {
 		return fmt.Errorf("datafile: %s %d index range [%d, %d) outside [0, %d]", kind, i, from, to, n)
 	}
 	return nil
+}
+
+// checkZones is Format §5.9 (rule 4, v1.9): only the kinds heart_rate and
+// power, each exactly one of from and basis, every value in range.
+func checkZones(raw json.RawMessage) error {
+	var kinds map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &kinds); err != nil {
+		return fmt.Errorf("datafile: zones: %w", err)
+	}
+	for kind, v := range kinds {
+		bound, lo, hi := zoneLimits(kind)
+		if bound == nil {
+			return fmt.Errorf("datafile: zones: unknown kind %q", kind)
+		}
+		var e map[string]json.RawMessage
+		if json.Unmarshal(v, &e) != nil || len(e) != 1 {
+			return fmt.Errorf("datafile: zones: %s needs exactly one of from and basis", kind)
+		}
+		if from, ok := e["from"]; ok {
+			var xs []int64
+			if json.Unmarshal(from, &xs) != nil || !validFrom(xs, bound.min, bound.max) {
+				return fmt.Errorf("datafile: zones: %s from out of range", kind)
+			}
+			continue
+		}
+		b, ok := e["basis"]
+		var basis int64
+		if !ok || json.Unmarshal(b, &basis) != nil || basis < int64(lo) || basis > int64(hi) {
+			return fmt.Errorf("datafile: zones: %s basis out of range", kind)
+		}
+	}
+	return nil
+}
+
+// zoneLimits returns the kind's stream spec and basis range; nil spec for an
+// unknown kind.
+func zoneLimits(kind string) (*streamSpec, int, int) {
+	lo, hi := workout.MinMaxHeartRate, workout.MaxMaxHeartRate
+	if kind == "power" {
+		lo, hi = workout.MinThresholdPower, workout.MaxThresholdPower
+	} else if kind != "heart_rate" {
+		return nil, 0, 0
+	}
+	s, _ := specByName(kind)
+	return &s, lo, hi
+}
+
+// validFrom: 1 to 9 values, strictly ascending, within [lo, hi].
+func validFrom(xs []int64, lo, hi int64) bool {
+	if len(xs) < 1 || len(xs) > 9 {
+		return false
+	}
+	for i, x := range xs {
+		if x < lo || x > hi || i > 0 && x <= xs[i-1] {
+			return false
+		}
+	}
+	return true
 }

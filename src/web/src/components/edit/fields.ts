@@ -21,7 +21,25 @@ export function formOf(s: Settings): Form {
     lifetime_days: s.lifetime_days,
     trim_start_at: s.trim_start_at,
     trim_end_at: s.trim_end_at,
+    zones_max_heart_rate: s.zones_max_heart_rate,
+    zones_threshold_power: s.zones_threshold_power,
   };
+}
+
+/** F-49 OQ-195: the zone fields, their whole-number ranges and the server's sentences (F-12). */
+export const ZONE_FIELDS = [
+  ['zones_max_heart_rate', 100, 250, 'The max heart rate must be a whole number from 100 to 250 bpm.'],
+  ['zones_threshold_power', 50, 1000, 'The threshold power must be a whole number from 50 to 1,000 W.'],
+] as const;
+
+/** The first zone field the server would refuse, as its sentence; null when both are empty or valid.
+ *  NaN (unparsable input) is refused too. */
+export function zoneError(form: Pick<Form, 'zones_max_heart_rate' | 'zones_threshold_power'>): string | null {
+  for (const [k, lo, hi, message] of ZONE_FIELDS) {
+    const v = form[k];
+    if (v !== null && !(Number.isInteger(v) && v >= lo && v <= hi)) return message;
+  }
+  return null;
 }
 
 /** At most `max` code points (F-12 O-4); `maxlength` already holds typing to UTF-16 units. */

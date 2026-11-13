@@ -153,8 +153,15 @@ func (a *Area) locked(f func() error) error {
 
 // publicTransform applies the record's settings that remove data before
 // anything public exists (I-3): start and end hiding (F-16 H-4). Nothing
-// about the cut is stored or logged; every build computes it again.
+// about the cut is stored or logged; every build computes it again. It also
+// applies the sharer's zone values, step 1 of F-49 ZN-3.
 func publicTransform(w workout.Workout, r lifecycle.Record) (workout.Workout, bool) {
+	if r.ZonesMaxHeartRate != nil {
+		w.Zones.HeartRate = workout.ZoneValues{Basis: *r.ZonesMaxHeartRate}
+	}
+	if r.ZonesThresholdPower != nil {
+		w.Zones.Power = workout.ZoneValues{Basis: *r.ZonesThresholdPower}
+	}
 	if !r.HideEnds {
 		return w, false
 	}
@@ -305,7 +312,7 @@ func HidesMore(before, after lifecycle.Record) bool {
 			continue
 		}
 		switch t.Field(i).Name {
-		case "Title", "Description", "ExpiresAt", "PublishedAt":
+		case "Title", "Description", "ExpiresAt", "PublishedAt", "ZonesMaxHeartRate", "ZonesThresholdPower": // F-49 ZN-4
 		// Derived from the original, never read by the public build (F-30
 		// RG-6); a build that starts reading one must take it off this list.
 		case "Sport", "StartTime", "TimeZoneOffsetS", "SummaryJSON", "DataEndS", "HiddenRanges":

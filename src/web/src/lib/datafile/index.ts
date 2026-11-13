@@ -21,4 +21,7 @@ export type {
   Totals,
   WorkoutData,
   WorkoutMeta,
+  ZoneEntry,
+  ZoneKind,
+  Zones,
 } from './model';

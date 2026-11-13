@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"workout-explorer/internal/workout"
@@ -18,7 +19,7 @@ type column struct {
 	valid []bool
 }
 
-// Encode writes w as a data file, format version 5. It is deterministic (the
+// Encode writes w as a data file, format version 6. It is deterministic (the
 // same workout gives identical bytes, W-9) and returns an error instead of
 // panicking when w breaks an invariant the format relies on (W-1). Errors
 // never contain coordinates (W-10).
@@ -76,6 +77,10 @@ func Encode(w workout.Workout) ([]byte, error) {
 		meta.Lengths = append(meta.Lengths, Length{StartIndex: from, EndIndex: to, Rest: l.Rest, Stroke: l.Stroke,
 			Time: total(l.Time), AvgSpeed: total(l.AvgSpeed), Strokes: int(l.Strokes)})
 	}
+	meta.Zones = zonesOf(w.Zones, cols)
+	if zs, _ := json.Marshal(meta.Zones); checkZones(zs) != nil { // W-1: never a file the readers reject
+		return nil, errors.New("datafile: zone values outside Format §5.9")
+	}
 	for i, c := range cols {
 		meta.Streams[i] = Descriptor{
 			Name: c.spec.name, Type: c.spec.typ, Encoding: c.spec.encoding,
@@ -114,6 +119,17 @@ func Encode(w workout.Workout) ([]byte, error) {
 		writeColumn(buf[meta.Streams[i].ByteOffset:], c)
 	}
 	return buf, nil
+}
+
+// zonesOf is Format §5.9: a kind only when its column is written (F-49 ZN-3).
+func zonesOf(z workout.Zones, cols []column) Zones {
+	entry := func(v workout.ZoneValues, stream string) *ZoneEntry {
+		if v.None() || !slices.ContainsFunc(cols, func(c column) bool { return c.spec.name == stream }) {
+			return nil
+		}
+		return &ZoneEntry{From: v.From, Basis: v.Basis}
+	}
+	return Zones{HeartRate: entry(z.HeartRate, "heart_rate"), Power: entry(z.Power, "power")}
 }
 
 func summaryOf(w workout.Workout) Summary {

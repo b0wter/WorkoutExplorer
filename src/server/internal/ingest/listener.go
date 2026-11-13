@@ -42,6 +42,8 @@ type listener struct {
 	garminProduct  string // product name from the FIT profile (Garmin family only): log line and F-43 model fallback
 
 	creatorName string // F-43 DI-2: the creator's device_info product name, first sequence, sanitised
+
+	zones zoneReader // F-49 ZN-1
 }
 
 func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {
@@ -54,6 +56,7 @@ func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {
 		fieldDescs: budget{name: limitFieldDescriptions, limit: lim.MaxFieldDescriptions},
 		sports:     budget{name: limitSportMessages, limit: lim.MaxSportMessages},
 		lengths:    budget{name: limitLengths, limit: lim.MaxLengths},
+		zones:      zoneReader{maxLists: lim.MaxSessions},
 	}
 }
 
@@ -154,6 +157,14 @@ func (l *listener) OnMesg(m proto.Message) {
 		l.sport(mesgdef.NewSport(&m))
 	case mesgnum.DeviceInfo:
 		l.deviceInfo(&m)
+	case mesgnum.TimeInZone:
+		l.zones.timeInZone(mesgdef.NewTimeInZone(&m))
+	case mesgnum.HrZone:
+		l.zones.hrZone(mesgdef.NewHrZone(&m))
+	case mesgnum.PowerZone:
+		l.zones.powerZone(mesgdef.NewPowerZone(&m))
+	case mesgnum.ZonesTarget:
+		l.zones.zonesTarget(mesgdef.NewZonesTarget(&m))
 	}
 }
 
@@ -200,6 +211,7 @@ func (l *listener) activity(a *mesgdef.Activity) {
 }
 
 func (l *listener) session(s *mesgdef.Session) {
+	l.zones.session(s)
 	start, end := span(s.StartTime, s.Timestamp, s.TotalElapsedTime)
 	l.rec.Sessions = append(l.rec.Sessions, workout.RawSession{
 		Sport:    enumName(s.Sport.String(), uint64(s.Sport), uint64(typedef.SportInvalid)),

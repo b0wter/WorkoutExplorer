@@ -56,6 +56,8 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   trim_start_at: null,
   trim_end_at: null,
   trimmed: null,
+  zones_max_heart_rate: null,
+  zones_threshold_power: null,
   ...over,
 });
 
@@ -1412,5 +1414,77 @@ describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
     drag('trim_b', N - 100);
     await save();
     expect(frameGets()).toBe(1);
+  });
+});
+
+describe('F-49 ZN-4, ZN-7: zone fields and the Zones section (AC 6, 7, 9)', () => {
+  const decoded = decodeDataFile(RIDE.slice(0));
+  if (!decoded.ok) throw new Error('ride-4h does not decode');
+  const T = decoded.data.time;
+  const S = Date.parse(decoded.data.meta.start_time) / 1000;
+  const at = (i: number): string => new Date((S + T[i]) * 1000).toISOString().slice(0, 19) + 'Z';
+  const zones = (): HTMLElement => $('#zones-slot')!;
+  const bounds = (kind: string): string[] => [...zones().querySelectorAll(`.zone[data-k="${kind}"] .zone-r`)].map((e) => e.textContent!);
+  const seconds = (kind: string): number =>
+    [...zones().querySelectorAll(`.zone[data-k="${kind}"] .zone-t`)].map((e) => e.textContent!.split(':').reduce((s, p) => s * 60 + Number(p), 0)).reduce((x, y) => x + y, 0);
+  const paint = async (): Promise<void> => {
+    stubLog.chartStack[0].onready?.();
+    await settle();
+  };
+
+  it('a file without zone values: no section until a value is saved; then the sharer\'s zones; cleared, none again', async () => {
+    await open();
+    await paint();
+    expect([field('zones_max_heart_rate').value, field('zones_threshold_power').value]).toEqual(['', '']);
+    expect(zones().hidden).toBe(true);
+    type('zones_threshold_power', '250');
+    await settle();
+    expect(zones().hidden).toBe(true); // unsaved input changes nothing (E-6)
+    await save();
+    expect(patches()).toEqual([{ zones_threshold_power: 250 }]);
+    await vi.waitFor(() => expect(bounds('power')).toHaveLength(7));
+    expect(bounds('power')[1]).toBe('138–187 W'); // 137.5 → 138, 187.5 → 188
+    expect(field('zones_threshold_power').value).toBe('250');
+    type('zones_threshold_power', '');
+    await save();
+    expect(patches()[1]).toEqual({ zones_threshold_power: null });
+    expect(zones().hidden).toBe(true);
+  });
+
+  it('a stored value fills its field and is the basis from the start', async () => {
+    settings = fresh({ zones_max_heart_rate: 190 });
+    await open();
+    await paint();
+    await vi.waitFor(() => expect(bounds('heart_rate')).toHaveLength(5));
+    expect(field('zones_max_heart_rate').value).toBe('190');
+    expect(bounds('heart_rate')[0]).toBe('≤ 113 bpm');
+  });
+
+  it('OQ-195: a value the server refuses is not sent; its sentence shows until the next edit', async () => {
+    await open();
+    type('zones_max_heart_rate', '99');
+    await save();
+    expect(patches()).toEqual([]);
+    expect($('.edit-status')?.textContent).toBe('The max heart rate must be a whole number from 100 to 250 bpm.');
+    type('zones_max_heart_rate', '250');
+    expect($('.edit-status')?.textContent).toBe('');
+    type('zones_threshold_power', '1000.5');
+    $<HTMLButtonElement>('[data-act="publish"]')!.click();
+    await settle();
+    expect(calls.filter((c) => c.url.endsWith('/publish'))).toEqual([]);
+    expect($('.edit-status')?.textContent).toBe('The threshold power must be a whole number from 50 to 1,000 W.');
+  });
+
+  it('TR-9, AC 9: the zones count only the saved trim window; an unsaved trim changes nothing', async () => {
+    settings = fresh({ zones_threshold_power: 250, trim_start_at: at(1000), trim_end_at: at(1600) });
+    await open();
+    await paint();
+    await vi.waitFor(() => expect(bounds('power')).toHaveLength(7));
+    const saved = seconds('power');
+    expect(saved).toBeGreaterThan(0);
+    expect(saved).toBeLessThanOrEqual(600);
+    type('trim_b', String(N - 1));
+    await settle();
+    expect(seconds('power')).toBe(saved);
   });
 });

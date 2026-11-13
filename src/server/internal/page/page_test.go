@@ -94,6 +94,7 @@ var samples = []sampleSpec{
 	{"ride-lap-triggers", "ride-lap-triggers", "", "", nil, false, ""},
 	{"pool-swim-33m", "pool-swim-33m", "", "", nil, false, ""},
 	{"pool-swim-mixed", "pool-swim-mixed", "", "", nil, false, ""}, // F-48 PL-7: mixed strokes, a lap without one
+	{"zones-ride", "zones-wahoo-ride", "", "", nil, false, ""},     // F-49: zones are client-owned (ZN-8)
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
 		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", hostileDevice, false, ""},
 }

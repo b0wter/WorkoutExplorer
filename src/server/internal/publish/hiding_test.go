@@ -9,6 +9,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -184,7 +185,7 @@ func checkHidden(t *testing.T, name string, orig []byte, parser Parser, w workou
 	}
 	mOn, mOff := on.file.Meta, off.file.Meta
 	mOn.Streams, mOff.Streams = nil, nil
-	if fmt.Sprintf("%#v", mOn) != fmt.Sprintf("%#v", mOff) {
+	if !reflect.DeepEqual(mOn, mOff) { // F-49: Zones holds pointers, so not %#v
 		t.Fatalf("%s: metadata other than the descriptors differs", name)
 	}
 	_, hadPos := stream(off.file, "latitude")

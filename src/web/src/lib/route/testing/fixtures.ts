@@ -52,6 +52,7 @@ export function positioned(
       sessions: [],
       laps,
       lengths: [],
+      zones: {},
     },
   };
 }

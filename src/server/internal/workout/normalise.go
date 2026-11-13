@@ -23,7 +23,8 @@ func Normalise(rec Recording) Workout {
 		start, end := spanOffsets(w.StartTime, l.Start, l.End)
 		w.Laps = append(w.Laps, Lap{Start: start, End: end, Trigger: l.Trigger, Stroke: l.Stroke, Totals: l.Totals})
 	}
-	scopeLengths(&w, rec.Lengths) // F-48 PL-2, PL-3
+	scopeLengths(&w, rec.Lengths)  // F-48 PL-2, PL-3
+	w.Zones = pickZones(rec.Zones) // F-49 ZN-2, ZN-3
 	w.Timer = make([]TimerEvent, 0, len(rec.Timer))
 	for _, e := range rec.Timer {
 		if e.At.IsZero() || (e.Kind != TimerStart && e.Kind != TimerStop) {

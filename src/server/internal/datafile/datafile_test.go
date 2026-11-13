@@ -24,8 +24,8 @@ func TestHeader(t *testing.T) {
 	if string(b[:4]) != "WEXD" {
 		t.Errorf("magic = %q", b[:4])
 	}
-	if v := binary.LittleEndian.Uint16(b[4:]); v != 5 {
-		t.Errorf("version = %d, want 5", v)
+	if v := binary.LittleEndian.Uint16(b[4:]); v != 6 {
+		t.Errorf("version = %d, want 6", v)
 	}
 	if n := binary.LittleEndian.Uint32(b[6:]); n != 10 {
 		t.Errorf("sample count = %d, want 10", n)
@@ -49,7 +49,7 @@ func TestHeader(t *testing.T) {
 	if got := f.Streams[0].Descriptor.ByteOffset; got != first {
 		t.Errorf("first column at %d, want align4(14 + L) = %d", got, first)
 	}
-	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 5 {
+	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 6 {
 		t.Errorf("File = version %d, N %d, L %d", f.Version, f.SampleCount, f.MetadataLength)
 	}
 }
@@ -388,7 +388,7 @@ func TestMetadata(t *testing.T) {
 		`"summary":{"elapsed_time":3600,"distance":27012.5,"ascent":0,"avg_speed":7.999,"avg_heart_rate":141,"moving_time":3580},` +
 		`"device":{"name":"","sensors":[]},"sessions":[{"sport":"cycling","sub_sport":"road","start":0,"end":3600,"start_index":0,"end_index":3601,` +
 		`"totals":{"elapsed_time":3600,"calories":612.346,"max_temperature":0}}],` +
-		`"laps":[],"lengths":[],"streams":[{"name":"time_offset","type":"int32","encoding":"delta","scale":1,"unit":"s","byte_offset":`
+		`"laps":[],"lengths":[],"zones":{},"streams":[{"name":"time_offset","type":"int32","encoding":"delta","scale":1,"unit":"s","byte_offset":`
 	if !strings.HasPrefix(js, want) {
 		t.Errorf("metadata =\n%s\nwant prefix\n%s", js, want)
 	}
@@ -400,7 +400,7 @@ func TestMetadata(t *testing.T) {
 	w = offsetsOnly(2)
 	w.TimeZone = workout.TimeZone{Known: false, OffsetSeconds: 3600}
 	js = string(metaBytes(mustEncode(t, w)))
-	want = `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":false,"offset_seconds":0},"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"lengths":[],"streams":[`
+	want = `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":false,"offset_seconds":0},"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"lengths":[],"zones":{},"streams":[`
 	if !strings.HasPrefix(js, want) {
 		t.Errorf("metadata =\n%s\nwant prefix\n%s", js, want)
 	}
@@ -638,6 +638,41 @@ func TestDecodeErrors(t *testing.T) {
 			m["laps"].([]any)[0].(map[string]any)["start_index"] = json.Number("5")
 		}), "lap 0 index range"},
 		{"lengths missing", meta(func(m map[string]any) { delete(m, "lengths") }), "lengths missing"},
+		{"zones missing", meta(func(m map[string]any) { delete(m, "zones") }), "zones missing"},
+		{"zones an array", meta(func(m map[string]any) { m["zones"] = []any{} }), "zones is not a JSON object"},
+		{"zones unknown kind", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"pace": map[string]any{"basis": json.Number("200")}}
+		}), "unknown kind"},
+		{"zones neither key", meta(func(m map[string]any) { m["zones"] = map[string]any{"heart_rate": map[string]any{}} }), "exactly one"},
+		{"zones both keys", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("190"), "from": []any{json.Number("120")}}}
+		}), "exactly one"},
+		{"zones extra key", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("190"), "bounds": []any{}}}
+		}), "exactly one"},
+		{"zones from empty", meta(func(m map[string]any) { m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{}}} }), "from out of range"},
+		{"zones from 10 values", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{json.Number("1"), json.Number("2"), json.Number("3"), json.Number("4"), json.Number("5"), json.Number("6"), json.Number("7"), json.Number("8"), json.Number("9"), json.Number("10")}}}
+		}), "from out of range"},
+		{"zones from not ascending", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{json.Number("130"), json.Number("130")}}}
+		}), "from out of range"},
+		{"zones from above the stream", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{json.Number("255")}}}
+		}), "from out of range"},
+		{"zones from a fraction", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{json.Number("130.5")}}}
+		}), "from out of range"},
+		{"zones basis 99", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("99")}}
+		}), "basis out of range"},
+		{"zones basis 251", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("251")}}
+		}), "basis out of range"},
+		{"zones power basis 1001", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"power": map[string]any{"basis": json.Number("1001")}}
+		}), "basis out of range"},
+		{"zones basis null", meta(func(m map[string]any) { m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": nil}} }), "basis out of range"},
 		{"lengths not an array", meta(func(m map[string]any) { m["lengths"] = map[string]any{} }), "lengths is not a JSON array"},
 		{"length index range beyond N", meta(func(m map[string]any) {
 			m["lengths"].([]any)[0].(map[string]any)["end_index"] = json.Number("7")
@@ -819,7 +854,7 @@ func TestFixtureWorkedExample(t *testing.T) {
 	if err := json.Unmarshal(got, &fx); err != nil {
 		t.Fatal(err)
 	}
-	if fx.FixtureVersion != 1 || fx.FormatVersion != 5 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
+	if fx.FixtureVersion != 1 || fx.FormatVersion != 6 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
 		t.Errorf("fixture header = %+v", fx)
 	}
 	want := []st{
@@ -854,7 +889,7 @@ func TestLengthsAndStrokes(t *testing.T) {
 		`"stroke":"backstroke","totals"`,
 		`"lengths":[{"start_index":1,"end_index":4,"rest":false,"stroke":"freestyle","time":21.6,"avg_speed":1.157,"strokes":14},` +
 			`{"start_index":3,"end_index":5,"rest":true,"stroke":"","time":20},` +
-			`{"start_index":4,"end_index":7,"rest":false,"stroke":"drill"}],"streams"`,
+			`{"start_index":4,"end_index":7,"rest":false,"stroke":"drill"}],"zones":{},"streams"`,
 	} {
 		if !strings.Contains(js, want) {
 			t.Errorf("metadata lacks %s:\n%s", want, js)
@@ -889,5 +924,39 @@ func TestLapTriggerAndRecordedPool(t *testing.T) {
 	}
 	if got := f.Meta.Summary.PoolLengthRecordedM; got != "32.5" {
 		t.Errorf("pool_length_recorded_m = %q", got)
+	}
+}
+
+// TestZones (Format §5.9, F-49 ZN-3): a kind is written only with its
+// column, from or basis survive an encode and decode, and the writer refuses
+// values the readers would reject.
+func TestZones(t *testing.T) {
+	w := fullWorkout(10)
+	w.Zones = workout.Zones{HeartRate: workout.ZoneValues{From: []int{114, 133, 152, 171}}, Power: workout.ZoneValues{Basis: 250}}
+	b := mustEncode(t, w)
+	if js := string(metaBytes(b)); !strings.Contains(js, `"zones":{"heart_rate":{"from":[114,133,152,171]},"power":{"basis":250}},"streams"`) {
+		t.Errorf("metadata:\n%s", js)
+	}
+	f := mustDecode(t, b)
+	if z := f.Meta.Zones; z.HeartRate == nil || len(z.HeartRate.From) != 4 || z.Power == nil || z.Power.Basis != 250 {
+		t.Errorf("decoded zones = %+v", z)
+	}
+
+	w.Samples.Power = nil // ZN-3: no power column, no power zones
+	if js := string(metaBytes(mustEncode(t, w))); !strings.Contains(js, `"zones":{"heart_rate":{"from":[114,133,152,171]}},`) {
+		t.Errorf("power zones written without power:\n%s", js)
+	}
+
+	for _, z := range []workout.Zones{
+		{HeartRate: workout.ZoneValues{Basis: 99}},
+		{Power: workout.ZoneValues{Basis: 1001}},
+		{HeartRate: workout.ZoneValues{From: []int{150, 140}}},
+		{HeartRate: workout.ZoneValues{From: []int{255}}},
+	} {
+		w := fullWorkout(10)
+		w.Zones = z
+		if _, err := Encode(w); err == nil {
+			t.Errorf("Encode accepted %+v", z)
+		}
 	}
 }

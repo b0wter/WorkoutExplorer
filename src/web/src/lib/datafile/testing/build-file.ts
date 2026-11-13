@@ -31,6 +31,7 @@ export interface MetaFields {
   sessions: unknown;
   laps: unknown;
   lengths: unknown;
+  zones: unknown;
 }
 
 export interface MetaJson extends MetaFields {
@@ -67,6 +68,7 @@ const DEFAULT_META: MetaFields = {
   sessions: [],
   laps: [],
   lengths: [],
+  zones: {},
 };
 
 const encoder = new TextEncoder();

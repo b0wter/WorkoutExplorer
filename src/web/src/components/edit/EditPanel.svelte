@@ -10,7 +10,7 @@
   import { enhanceCopyLink } from '../../page/enhance';
   import DeleteControl from './DeleteControl.svelte';
   import { formatElapsed } from '../../lib/format';
-  import { DESCRIPTION_MAX, TITLE_MAX, TRIM_MIN_S, expiryText, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex, type Form } from './fields';
+  import { DESCRIPTION_MAX, TITLE_MAX, TRIM_MIN_S, ZONE_FIELDS, expiryText, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex, zoneError, type Form } from './fields';
 
   interface Props {
     settings: Settings;
@@ -47,6 +47,8 @@
   let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, onedit, time, startTime, ontrim }: Props = $props();
 
   let share = $state(false);
+  /** A zone field the server would refuse (OQ-195): its sentence, until the next edit. */
+  let invalid = $state('');
   const draft = $derived(visibility === 'draft');
 
   // svelte-ignore state_referenced_locally
@@ -83,6 +85,7 @@
     field(f, 'description').value = s.description;
     field(f, 'hide_ends').checked = s.hide_ends;
     field(f, 'lifetime').value = String(s.lifetime_days);
+    for (const [k] of ZONE_FIELDS) field(f, k).value = s[k] === null ? '' : String(s[k]);
     lifetime = s.lifetime_days;
     if (trim) setCut(f, trimIndex(trim, startS, s.trim_start_at, false), trimIndex(trim, startS, s.trim_end_at, true));
   };
@@ -97,23 +100,39 @@
     lifetime_days: Number(field(f, 'lifetime').value) || settings.lifetime_days,
     trim_start_at: trim ? trimAt(trim, startS, Number(field(f, 'trim_a').value), false) : settings.trim_start_at,
     trim_end_at: trim ? trimAt(trim, startS, Number(field(f, 'trim_b').value), true) : settings.trim_end_at,
+    zones_max_heart_rate: zoneValue(field(f, 'zones_max_heart_rate')),
+    zones_threshold_power: zoneValue(field(f, 'zones_threshold_power')),
   });
+
+  /** Empty is null (the file's values, F-49 ZN-4); input the browser cannot parse is NaN, refused. */
+  const zoneValue = (i: Field): number | null => (i.value.trim() === '' ? (i.validity?.badInput ? NaN : null) : Number(i.value));
+
+  /** The form as a patch, or null with the refusal shown (the panel never sends what the server refuses). */
+  const patch = (f: HTMLFormElement): SettingsPatch | null => {
+    const form = read(f);
+    invalid = zoneError(form) ?? '';
+    return invalid ? null : patchOf(settings, form);
+  };
 
   /** Runs once: it reads props only inside the listeners. */
   const wire: Attachment<HTMLFormElement> = (f) => {
     f.addEventListener('submit', (e) => {
       e.preventDefault();
-      onsave(patchOf(settings, read(f)));
+      const p = patch(f);
+      if (p) onsave(p);
     });
     f.addEventListener('input', (e) => {
       onedit();
+      invalid = '';
       const t = e.target as Field;
       if (trim && t.name.startsWith('trim_')) setCut(f, ...trimClamp(trim, Number(field(f, 'trim_a').value), Number(field(f, 'trim_b').value), t.name === 'trim_b'));
     });
     f.addEventListener('click', (e) => {
       const act = (e.target as Element).closest<HTMLElement>('[data-act]')?.dataset.act;
-      if (act === 'publish') onpublish(patchOf(settings, read(f)));
-      else if (act === 'share') share = !share;
+      if (act === 'publish') {
+        const p = patch(f);
+        if (p) onpublish(p);
+      } else if (act === 'share') share = !share;
       else if (act === 'download') ondownload();
       else if (act === 'links') onlinks();
     });
@@ -125,7 +144,8 @@
   };
 </script>
 
-<form class="edit-panel" aria-label="Settings" {@attach fill} {@attach wire}>
+<!-- novalidate: the zone fields' refusal is the server's sentence (zoneError), not the browser's. -->
+<form class="edit-panel" aria-label="Settings" novalidate {@attach fill} {@attach wire}>
   {#if notice}<p class="edit-notice">{notice}</p>{/if}
   <!-- Locked while an action runs: Publish reads the form once, so a later change would be dropped (QA-20-r2-1). -->
   <fieldset disabled={busy !== ''}>
@@ -146,6 +166,15 @@
     </div>
   {/if}
   <div class="edit-row">
+    <label class="edit-field">Max heart rate
+      <span class="edit-value"><input type="number" name="zones_max_heart_rate" min="100" max="250" step="1" inputmode="numeric" /> bpm</span>
+    </label>
+    <label class="edit-field">Threshold power
+      <span class="edit-value"><input type="number" name="zones_threshold_power" min="50" max="1000" step="1" inputmode="numeric" /> W</span>
+    </label>
+  </div>
+  <p class="edit-small">For the heart-rate and power zones. Empty: the values from the file.</p>
+  <div class="edit-row">
     <span class="edit-field">Visibility <span class="edit-value">{draft ? 'Draft' : 'Unlisted'}</span></span>
     <label class="edit-field">Keep for
       <span class="edit-value"><select name="lifetime">
@@ -158,7 +187,7 @@
   <div class="edit-row">
     <button type="submit" class="edit-save" disabled={busy !== ''}>Save</button>
     {#if draft}<button type="button" class="edit-save" data-act="publish" disabled={busy !== ''}>Publish</button>{/if}
-    <span class="edit-status" role="status">{busy || status}</span>
+    <span class="edit-status" role="status">{busy || invalid || status}</span>
   </div>
   {#if draft}<p class="edit-small">Unpublished drafts are deleted 48 hours after upload.</p>{/if}
   <div class="edit-row">

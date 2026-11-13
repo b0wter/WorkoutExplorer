@@ -1,8 +1,8 @@
 // Package datafile encodes a normalised workout as the binary data file the
-// browser reads (format version 5, magic WEXD) and decodes it again.
+// browser reads (format version 6, magic WEXD) and decodes it again.
 //
 // The normative format description is architect/F-03-workout-data-file-writer.md,
-// section "Data file format, version 5"; the decisions behind it are in
+// section "Data file format, version 6"; the decisions behind it are in
 // ADR-005. The package is pure: it depends on package workout and the
 // standard library only, does no I/O and never logs (Technical Design,
 // Code structure: Dependency rules).
@@ -20,7 +20,7 @@ const Magic = "WEXD"
 
 // Version is the only format version this package writes and reads
 // (Format §9, ADR-005 item 9).
-const Version uint16 = 5
+const Version uint16 = 6
 
 // headerSize is magic, version, sample count and metadata length (Format §1).
 const headerSize = 14
@@ -73,6 +73,7 @@ type Meta struct {
 	Sessions  []Session    `json:"sessions"`
 	Laps      []Lap        `json:"laps"`
 	Lengths   []Length     `json:"lengths"` // version 5, §5.8
+	Zones     Zones        `json:"zones"`   // version 6, §5.9
 	Streams   []Descriptor `json:"streams"`
 }
 
@@ -155,6 +156,18 @@ type Length struct {
 	Time       json.Number `json:"time,omitempty"`
 	AvgSpeed   json.Number `json:"avg_speed,omitempty"`
 	Strokes    int         `json:"strokes,omitempty"`
+}
+
+// Zones are the zone values per kind (Format §5.9, version 6); nil = none.
+type Zones struct {
+	HeartRate *ZoneEntry `json:"heart_rate,omitempty"`
+	Power     *ZoneEntry `json:"power,omitempty"`
+}
+
+// ZoneEntry holds exactly one of From and Basis (Format §5.9).
+type ZoneEntry struct {
+	From  []int `json:"from,omitempty"`
+	Basis int   `json:"basis,omitempty"`
 }
 
 // Descriptor describes one column (Format §5.5).

@@ -74,14 +74,14 @@ describe('F-03 §8 worked example, written byte by byte', () => {
         .join(',');
       json =
         '{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":true,"offset_seconds":7200},' +
-        `"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"lengths":[],"streams":[${streams}]}`;
+        `"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"lengths":[],"zones":{},"streams":[${streams}]}`;
       if (enc.encode(json).length === l) break;
       l = enc.encode(json).length;
     }
     const meta = enc.encode(json);
     const length = offsets[4] + 5;
     const b = new Uint8Array(length);
-    b.set([0x57, 0x45, 0x58, 0x44, 0x05, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
+    b.set([0x57, 0x45, 0x58, 0x44, 0x06, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
     new DataView(b.buffer).setUint32(10, meta.length, true);
     b.set(meta, 14);
     const int32le = (vals: number[]) => new Uint8Array(new Int32Array(vals).buffer);
@@ -405,6 +405,7 @@ describe('metadata', () => {
       { start_index: 2, end_index: 3, rest: true, stroke: '', time: 30 },
       { start_index: 3, end_index: 5, rest: false, stroke: 'drill' },
     ],
+    zones: { heart_rate: { from: [121, 141, 161, 176] }, power: { basis: 265 } },
   };
 
   it('maps every §5 key with its wire name', () => {
@@ -443,7 +444,7 @@ describe('metadata', () => {
         patch: (m) => ({ ...m, extra: { a: 1 }, streams: m.streams.map((s) => ({ ...s, note: 'x' })) }),
       }),
     );
-    expect(Object.keys(d.meta)).toEqual(['sport', 'start_time', 'time_zone', 'summary', 'device', 'sessions', 'laps', 'lengths']);
+    expect(Object.keys(d.meta)).toEqual(['sport', 'start_time', 'time_zone', 'summary', 'device', 'sessions', 'laps', 'lengths', 'zones']);
     expect(d.meta.device).toEqual({ name: 'x', sensors: [] });
     expect(d.meta.time_zone).toEqual({ known: true, offset_seconds: 0 });
     expect(d.meta.summary).toEqual({ distance: 1 });
@@ -653,11 +654,35 @@ describe('rejects (AC 3)', () => {
     ['length time not a number', () => build({ meta: { lengths: [{ ...len, time: '1' }] } }), 'corrupt', 4],
     ['length end_index > N', () => build({ meta: { lengths: [{ ...len, end_index: 6 }] } }), 'corrupt', 7],
     ['length start_index > end_index', () => build({ meta: { lengths: [{ ...len, start_index: 3, end_index: 2 }] } }), 'corrupt', 7],
+    // Version 6 (ADR-049, §5.9)
+    ['zones missing', () => build({ patch: (m) => ({ ...m, zones: undefined }) }), 'corrupt', 4],
+    ['zones not an object', () => build({ meta: { zones: [] } }), 'corrupt', 4],
+    ['zones unknown kind', () => build({ meta: { zones: { cadence: { basis: 100 } } } }), 'corrupt', 4],
+    ['zones inherited name as kind', () => build({ meta: { zones: { constructor: { basis: 100 } } } }), 'corrupt', 4],
+    ['zones from and basis', () => build({ meta: { zones: { power: { from: [100], basis: 200 } } } }), 'corrupt', 4],
+    ['zones neither', () => build({ meta: { zones: { power: {} } } }), 'corrupt', 4],
+    ['zones from empty', () => build({ meta: { zones: { power: { from: [] } } } }), 'corrupt', 4],
+    ['zones from 10 values', () => build({ meta: { zones: { power: { from: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] } } } }), 'corrupt', 4],
+    ['zones from not ascending', () => build({ meta: { zones: { heart_rate: { from: [120, 120] } } } }), 'corrupt', 4],
+    ['zones from above uint8', () => build({ meta: { zones: { heart_rate: { from: [120, 255] } } } }), 'corrupt', 4],
+    ['zones from negative', () => build({ meta: { zones: { power: { from: [-1, 5] } } } }), 'corrupt', 4],
+    ['zones from fraction', () => build({ meta: { zones: { power: { from: [100.5] } } } }), 'corrupt', 4],
+    ['zones heart-rate basis 99', () => build({ meta: { zones: { heart_rate: { basis: 99 } } } }), 'corrupt', 4],
+    ['zones heart-rate basis 251', () => build({ meta: { zones: { heart_rate: { basis: 251 } } } }), 'corrupt', 4],
+    ['zones power basis 49', () => build({ meta: { zones: { power: { basis: 49 } } } }), 'corrupt', 4],
+    ['zones power basis 1001', () => build({ meta: { zones: { power: { basis: 1001 } } } }), 'corrupt', 4],
+    ['zones basis a string', () => build({ meta: { zones: { power: { basis: '200' } } } }), 'corrupt', 4],
     ['lap start_index 1e20', () => build({ meta: { laps: [{ ...lap, start_index: 1e20, end_index: 1e20 }] } }), 'corrupt', 7],
   ];
 
   it.each(cases)('%s', (_name, buffer, code, rule) => {
     expectReject(buffer, code, rule);
+  });
+
+  it('accepts the §5.9 limits: 9 values up to the stored maximum, both basis ends', () => {
+    const zones = { heart_rate: { from: [0, 1, 2, 3, 4, 5, 6, 7, 254] }, power: { basis: 1000 } };
+    expect(decodeOk(build({ meta: { zones } })).meta.zones).toEqual(zones);
+    expect(decodeOk(build({ meta: { zones: { heart_rate: { basis: 100 }, power: { from: [65534] } } } })).meta.zones.power).toEqual({ from: [65534] });
   });
 
   it('checks in Go order: a file with faults in rules 6 and 7 reports rule 6', () => {

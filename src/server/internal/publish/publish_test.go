@@ -353,6 +353,9 @@ func TestHidesMore(t *testing.T) {
 		{"created (unclassified)", p, with(p, func(r *lifecycle.Record) { r.CreatedAt = r.CreatedAt.Add(time.Second) }), true},
 		{"token (unclassified)", p, with(p, func(r *lifecycle.Record) { r.EditTokenHash[0] ^= 1 }), true},
 		{"title and hiding on", p, with(hidden, func(r *lifecycle.Record) { r.Title = "x" }), true},
+		// F-49 ZN-4: zone values in any direction.
+		{"zones set", p, with(p, func(r *lifecycle.Record) { v, w := 190, 250; r.ZonesMaxHeartRate, r.ZonesThresholdPower = &v, &w }), false},
+		{"zones cleared", with(p, func(r *lifecycle.Record) { v := 190; r.ZonesMaxHeartRate = &v }), p, false},
 	} {
 		if got := HidesMore(c.before, c.after); got != c.want {
 			t.Errorf("%s: %v", c.name, got)

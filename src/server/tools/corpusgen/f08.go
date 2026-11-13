@@ -83,7 +83,8 @@ func cutDerived(outputs []output) ([]output, error) {
 		{"run-30min.fit", "run-30min-cut-60.fit", 6, 10},
 		{"triathlon.fit", "triathlon-cut-90.fit", 9, 10},
 		{"chained-ride-ride.fit", "chained-ride-ride-cut-75.fit", 3, 4},
-		{"pool-swim-mixed.fit", "pool-swim-mixed-cut-80.fit", 8, 10}, // F-48: no session, lengths kept (OQ-185)
+		{"pool-swim-mixed.fit", "pool-swim-mixed-cut-80.fit", 8, 10},   // F-48: no session, lengths kept (OQ-185)
+		{"zones-wahoo-ride.fit", "zones-wahoo-ride-cut-60.fit", 6, 10}, // F-49: no session, zone messages kept (UP-3)
 	} {
 		b, err := find(c.base)
 		if err != nil {

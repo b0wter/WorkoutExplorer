@@ -5,7 +5,7 @@
 //
 // Error messages name the key or the element index, never a value from the file.
 
-import type { DataFileError, DataFileErrorCode, Device, Lap, Length, Session, Summary, SummaryKey, TimeZone, Totals, TotalKey, WorkoutMeta } from './model';
+import type { DataFileError, DataFileErrorCode, Device, Lap, Length, Session, Summary, SummaryKey, TimeZone, Totals, TotalKey, WorkoutMeta, Zones } from './model';
 
 /** A stream descriptor as written in the metadata (F-03 §5.5); consumed by the decoder. */
 export interface Descriptor {
@@ -180,6 +180,25 @@ function descriptor(v: unknown, i: number): Descriptor {
   };
 }
 
+/** §5.9 per kind: the stream's highest stored value (`from`), the basis range (F-49 ZN-4). */
+const ZONE_RANGES: Readonly<Record<string, readonly number[]>> = { heart_rate: [254, 100, 250], power: [65534, 50, 1000] };
+
+/** §5.9, §6 rule 4 (v1.9): known kinds, each exactly one of `from` (1–9 strictly ascending
+ *  integers) and `basis` (one integer), in range. Terse: sized for ADR-011's F-49 entry ceiling. */
+function zones(o: Json): Zones {
+  for (const k in o) {
+    // An unknown kind gets no range, so every comparison below fails.
+    const [top, lo, hi] = Object.hasOwn(ZONE_RANGES, k) ? ZONE_RANGES[k] : [];
+    const e = Object(o[k]) as { from?: unknown; basis?: unknown };
+    const f = e.from;
+    const b = e.basis as number;
+    // !(x <= f[i − 1]): true for the first value, whose predecessor is undefined.
+    const ok = f ? Array.isArray(f) && f.length && f.length < 10 && f.every((x, i) => Number.isInteger(x) && x >= 0 && x <= top && !(x <= f[i - 1])) : Number.isInteger(b) && b >= lo && b <= hi;
+    if (Object.keys(e).length !== 1 || !ok) throw new MetaError('zones invalid');
+  }
+  return o as Zones;
+}
+
 // fatal: invalid UTF-8 throws. ignoreBOM: a BOM stays in the string, so JSON.parse rejects it as Go does.
 const utf8 = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
 
@@ -208,6 +227,7 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
     ['sessions', 'array'],
     ['laps', 'array'],
     ['lengths', 'array'],
+    ['zones', 'object'],
     ['streams', 'array'],
   ];
   for (const [key, kind] of kinds) {
@@ -218,6 +238,8 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
   }
 
   try {
+    // Before the nested keys, as Go's checkZones.
+    const zs = zones(top.zones as Json);
     const tz = top.time_zone as Json;
     const time_zone: TimeZone = { known: typed(tz, 'known', 'time_zone.', 'boolean'), offset_seconds: int32(tz, 'offset_seconds', 'time_zone.') };
     const summary = top.summary as Json;
@@ -231,6 +253,7 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
       sessions: (top.sessions as unknown[]).map(session),
       laps: (top.laps as unknown[]).map(lap),
       lengths: (top.lengths as unknown[]).map(length),
+      zones: zs,
     };
     const streams = (top.streams as unknown[]).map(descriptor);
     return { ok: true, meta, streams };

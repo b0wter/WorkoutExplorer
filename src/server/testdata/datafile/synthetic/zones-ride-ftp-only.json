@@ -1,0 +1,141 @@
+{
+  "fixture_version": 1,
+  "format_version": 6,
+  "byte_length": 45568,
+  "sample_count": 1200,
+  "metadata_length": 3554,
+  "streams": [
+    {
+      "name": "time_offset",
+      "byte_offset": 3568,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 1199,
+      "min": 0,
+      "max": 1199,
+      "digest": "6b2fb420457ea634"
+    },
+    {
+      "name": "latitude",
+      "byte_offset": 8368,
+      "valid": 1200,
+      "missing": 0,
+      "first": 47050000,
+      "last": 47109010,
+      "min": 47050000,
+      "max": 47109010,
+      "digest": "f9dba61ac9e97a64"
+    },
+    {
+      "name": "longitude",
+      "byte_offset": 13168,
+      "valid": 1200,
+      "missing": 0,
+      "first": 8300000,
+      "last": 8368307,
+      "min": 8300000,
+      "max": 8368307,
+      "digest": "dedcf326816e6604"
+    },
+    {
+      "name": "altitude",
+      "byte_offset": 17968,
+      "valid": 1200,
+      "missing": 0,
+      "first": 4200,
+      "last": 4968,
+      "min": 4200,
+      "max": 4968,
+      "digest": "0dae891f57c743ec"
+    },
+    {
+      "name": "distance",
+      "byte_offset": 22768,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 90055,
+      "min": 0,
+      "max": 90055,
+      "digest": "ff16b5297af8aac3"
+    },
+    {
+      "name": "speed",
+      "byte_offset": 27568,
+      "valid": 1200,
+      "missing": 0,
+      "first": 7462,
+      "last": 7288,
+      "min": 7001,
+      "max": 7999,
+      "digest": "ba9eab1bb8b61731"
+    },
+    {
+      "name": "heart_rate",
+      "byte_offset": 29968,
+      "valid": 1200,
+      "missing": 0,
+      "first": 138,
+      "last": 138,
+      "min": 136,
+      "max": 159,
+      "digest": "29b817f894321a06"
+    },
+    {
+      "name": "cadence",
+      "byte_offset": 31168,
+      "valid": 1200,
+      "missing": 0,
+      "first": 91,
+      "last": 93,
+      "min": 85,
+      "max": 93,
+      "digest": "5a122fb5a278fd46"
+    },
+    {
+      "name": "power",
+      "byte_offset": 32368,
+      "valid": 1200,
+      "missing": 0,
+      "first": 205,
+      "last": 265,
+      "min": 140,
+      "max": 290,
+      "digest": "cc4b68c1822e21e8"
+    },
+    {
+      "name": "temperature",
+      "byte_offset": 34768,
+      "valid": 1200,
+      "missing": 0,
+      "first": 18,
+      "last": 19,
+      "min": 18,
+      "max": 19,
+      "digest": "4a5398ea64cf3710"
+    },
+    {
+      "name": "moving_time",
+      "byte_offset": 35968,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 1199,
+      "min": 0,
+      "max": 1199,
+      "digest": "6b2fb420457ea634"
+    },
+    {
+      "name": "elevation_gain",
+      "byte_offset": 40768,
+      "valid": 1200,
+      "missing": 0,
+      "first": 0,
+      "last": 985,
+      "min": 0,
+      "max": 985,
+      "digest": "29a86b4a4ed01f64"
+    }
+  ]
+}

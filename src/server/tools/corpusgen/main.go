@@ -148,6 +148,7 @@ type file struct {
 	pool        *poolSpec                  // pool values of every lap-swimming session; nil = 25 m, no lengths count (F-44)
 	lapStroke   map[int]typedef.SwimStroke // lap swim_stroke by lap start offset; absent = not written (F-48)
 	sessStroke  map[int]typedef.SwimStroke // session swim_stroke by session start offset; absent = not written (F-48)
+	session     func(*mesgdef.Session)     // last change to every session message; nil = none (F-49)
 }
 
 // fileDevice is the recording device in file_id (F-43). product 0 and name ""
@@ -213,6 +214,11 @@ func corpus() []file {
 		rideLapTriggers(),
 		poolSwim33(),
 		poolSwimMixed(),
+		appleRun5(),
+		appleRun6(),
+		wahooRide(),
+		ftpOnlyRide(),
+		targetRide(),
 	}
 }
 
@@ -1233,6 +1239,9 @@ func sessionMesg(f file, sp span) proto.Message {
 	}
 	if st, ok := f.sessStroke[sp.from]; ok {
 		m.SetSwimStroke(st)
+	}
+	if f.session != nil {
+		f.session(m)
 	}
 	return m.ToMesg(nil)
 }

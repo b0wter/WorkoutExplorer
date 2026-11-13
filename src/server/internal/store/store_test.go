@@ -39,8 +39,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 6 {
-		t.Errorf("user_version = %d, want 6", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 7 {
+		t.Errorf("user_version = %d, want 7", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -75,7 +75,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 6 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 7 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -112,6 +112,7 @@ func TestSchema(t *testing.T) {
 		{"hidden1_first", "INTEGER", false}, {"hidden1_last", "INTEGER", false},
 		{"hidden2_first", "INTEGER", false}, {"hidden2_last", "INTEGER", false},
 		{"trim_start_at", "INTEGER", false}, {"trim_end_at", "INTEGER", false},
+		{"zones_max_heart_rate", "INTEGER", false}, {"zones_threshold_power", "INTEGER", false},
 	}
 	rows, err := db.db.QueryContext(ctx, "PRAGMA table_info(workouts)")
 	if err != nil {
@@ -521,6 +522,41 @@ func TestUpdateWorkout(t *testing.T) {
 	}
 }
 
+// TestZoneColumns (F-49 ZN-4): the sharer's zone values round-trip, null
+// included, and the CHECKs back up the lifecycle range.
+func TestZoneColumns(t *testing.T) {
+	db, _ := openTemp(t)
+	r := record(3)
+	hr := 190
+	r.ZonesMaxHeartRate = &hr
+	if err := db.InsertWorkout(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID)
+	if back.ZonesMaxHeartRate == nil || *back.ZonesMaxHeartRate != 190 || back.ZonesThresholdPower != nil {
+		t.Errorf("inserted %v %v", back.ZonesMaxHeartRate, back.ZonesThresholdPower)
+	}
+	ftp := 260
+	if _, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) {
+		c.ZonesMaxHeartRate, c.ZonesThresholdPower = nil, &ftp
+		return c, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	back, _, _ = db.WorkoutByPublicID(ctx, r.PublicID)
+	if back.ZonesMaxHeartRate != nil || back.ZonesThresholdPower == nil || *back.ZonesThresholdPower != 260 {
+		t.Errorf("updated %v %v", back.ZonesMaxHeartRate, back.ZonesThresholdPower)
+	}
+	for _, q := range []string{
+		"UPDATE workouts SET zones_max_heart_rate = 99", "UPDATE workouts SET zones_max_heart_rate = 251",
+		"UPDATE workouts SET zones_threshold_power = 49", "UPDATE workouts SET zones_threshold_power = 1001",
+	} {
+		if _, err := db.db.ExecContext(ctx, q); err == nil {
+			t.Errorf("accepted: %s", q)
+		}
+	}
+}
+
 // TestUpdateDerived (F-30 RG-4 (b)): only the derived columns change, and
 // the row afterwards is returned; a missing row is not found.
 func TestUpdateDerived(t *testing.T) {
@@ -625,7 +661,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 6 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 7 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -697,7 +733,7 @@ func TestMigrateNoPrivate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 6 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 7 {
 		t.Errorf("user_version = %d", v)
 	}
 	if got := dump(db.db, ""); len(want) != 3 || fmt.Sprint(got) != fmt.Sprint(want) {
@@ -933,14 +969,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 7} {
+	for _, v := range []int{4, 8} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (6)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (7)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}

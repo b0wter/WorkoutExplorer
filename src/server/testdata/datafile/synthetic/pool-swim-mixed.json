@@ -1,13 +1,13 @@
 {
   "fixture_version": 1,
-  "format_version": 5,
-  "byte_length": 11328,
+  "format_version": 6,
+  "byte_length": 11340,
   "sample_count": 439,
-  "metadata_length": 4286,
+  "metadata_length": 4297,
   "streams": [
     {
       "name": "time_offset",
-      "byte_offset": 4300,
+      "byte_offset": 4312,
       "valid": 439,
       "missing": 0,
       "first": 0,
@@ -18,7 +18,7 @@
     },
     {
       "name": "distance",
-      "byte_offset": 6056,
+      "byte_offset": 6068,
       "valid": 439,
       "missing": 0,
       "first": 0,
@@ -29,7 +29,7 @@
     },
     {
       "name": "speed",
-      "byte_offset": 7812,
+      "byte_offset": 7824,
       "valid": 439,
       "missing": 0,
       "first": 1157,
@@ -40,7 +40,7 @@
     },
     {
       "name": "heart_rate",
-      "byte_offset": 8692,
+      "byte_offset": 8704,
       "valid": 439,
       "missing": 0,
       "first": 123,
@@ -51,7 +51,7 @@
     },
     {
       "name": "cadence",
-      "byte_offset": 9132,
+      "byte_offset": 9144,
       "valid": 439,
       "missing": 0,
       "first": 30,
@@ -62,7 +62,7 @@
     },
     {
       "name": "moving_time",
-      "byte_offset": 9572,
+      "byte_offset": 9584,
       "valid": 439,
       "missing": 0,
       "first": 0,
