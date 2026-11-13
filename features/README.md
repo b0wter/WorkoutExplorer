@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -61,9 +61,10 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-45](F-45-suggested-title.md) | Suggested title | 2 | both (backend first) | F-16, F-19, F-29, F-42 | done | checked by the user 12 Nov (suggested title) |
 | [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | done | checked by the user 12 Nov (drop-down, iPhone mini); open: pool splits on a real file, phone scrub trace (AC 41) |
 | [F-47](F-47-trim.md) | Trim start and end | 2 | both (backend first) | F-16, F-19, F-20, F-30, F-36, F-42, F-44, F-45, F-46 | done | — (checked by the user 12 Nov) |
+| [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | ready for architecture | — |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 14 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 15 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -89,7 +90,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-5 Time/distance axis | Must | F-17 |
 | AP-6 Linked cursor | Must | F-05, F-06 |
 | AP-7 Range selection | Must | F-17 |
-| AP-8 Laps and splits | Must | F-18; lap triggers, splits only without laps: F-46 (phase 2) |
+| AP-8 Laps and splits | Must | F-18; lap triggers, splits only without laps: F-46 (phase 2); stroke column, lengths view: F-48 (phase 2) |
 | AP-9 Route colouring | Should | F-25 |
 | AP-15 Fullscreen map (MVP part) | Should | F-26 (pins in fullscreen: phase 2) |
 | AP-17 Two columns on wide screens | Must | F-13, F-17 (splitter), F-19 |
@@ -100,6 +101,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-22 How to use, first-visit range hint | Could (phase 2) | F-39 (phase 2) |
 | AP-12 Multisport legs as sections | Could (phase 2) | F-08 (MVP: one workout, sport, transitions); F-42 (phase 2) |
 | AP-14 Device and sensor info | Could (phase 2) | F-43 (phase 2) |
+| AP-13 Pool swims: lengths and stroke type | Could (phase 2) | F-48 (phase 2) |
 | AP-16 Pool length and lengths in the summary | Could (phase 2) | F-44 (phase 2) |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
@@ -146,7 +148,6 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 
 ## Phase 2 (not broken down)
 
-- Pool swims: lengths and stroke type instead of a map — AP-13
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11
 - Privacy zones of 200 m to 1 km — SH-3
 - Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
@@ -158,6 +159,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1: detailed in [F-45](F-45-suggested-title.md).
 - Lap triggers, splits only without device laps, split presets per sport — AP-8, AP-20: detailed in [F-46](F-46-laps-and-splits.md).
 - Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5: detailed in [F-47](F-47-trim.md).
+- Pool swims: lengths and stroke type — AP-13: detailed in [F-48](F-48-pool-strokes.md).
 
 ## Questions for review
 
@@ -682,3 +684,5 @@ The original questions follow for reference.
 **Decided on 12 Nov 2026, OQ-169 to OQ-177** (user, UP-6, F-47): OQ-169: the owner trims with one slider with two handles (start and end) on the edit page, not the range selection. Non-destructive: the original stays unchanged; a trim can always be moved or removed. OQ-171: the trim cuts anywhere (across laps and legs) and creates nothing new: totals recomputed from the remaining part; calories, pool length and lengths dropped; laps wholly trimmed away disappear; a lap the trim cuts through keeps only its remaining part, values computed as for a range, trigger kept (a forgotten stop leaves the last lap unfinished; trimming it to its intended length is what the user expects); laps renumbered from 1. OQ-170, OQ-172 to OQ-177 as suggested: the edit page shows the full recording with trimmed parts shaded; the workout starts at the trim start; trim first, then hiding; legs wholly trimmed away disappear, sport, sections and title follow the remaining legs; at least 60 s remain, "No location data in this workout." when no positions remain; no extra warning on a published page, old range links may open shifted; SH-9 wording kept. Updated: spec UP-6, AP-3, SH-4, open questions; F-47.
 
 **Decided on 12 Nov 2026, OQ-178 and OQ-179** (user, UP-6, F-47 design): OQ-178: on the edit page with a trim set, only the summary shows trimmed values; header, laps, sections and time axis show the full recording, trimmed parts shaded. OQ-179 (changes OQ-171 and F-44 PS-8): a trim keeps the pool length and drops only the number of lengths; calories stay dropped; pool splits by whole lengths keep working. Updated: spec UP-6, open questions; technical design (`trim_start_at`, `trim_end_at`; `summary_json` untrimmed; public transform order); F-47.
+
+**Decided on 13 Nov 2026, pool lengths and strokes** (user, AP-13, F-48): a "Stroke" column in the laps view and a summary "Stroke" cell when the whole swim used one stroke; a third view "Lengths" next to Laps and Splits, one row per length (number, stroke, time, pace, strokes); rest (idle) lengths shown as "Rest" rows, never counted; a SWOLF column (time in whole seconds plus stroke count) when stroke counts exist; nothing extra in place of the map (pool swims show the no-location hint, AP-3); a trim drops trimmed lengths and keeps the rest, as laps do; data file format version 5, `regenerate` rebuilds old workouts, losses accepted. Open: OQ-180 to OQ-184 (F-48). Updated: spec (viewer story 19, AP-8, AP-13, open questions); F-48 (new).
