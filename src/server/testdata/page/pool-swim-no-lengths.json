@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Swim, 20 Jun 2026",
     "ViewPath": "/w/pool-swim-no-lengths",
-    "DataURL": "/w/pool-swim-no-lengths/data.964a0ffb542cf69a.bin"
+    "DataURL": "/w/pool-swim-no-lengths/data.ee6d11a89f7febd8.bin"
   },
   "Header": {
     "Title": "Swim, 20 Jun 2026",
@@ -24,21 +24,21 @@
     {
       "Key": "moving_time",
       "Label": "Moving time",
-      "Value": "20:00",
+      "Value": "20:30",
       "Unit": "",
       "Max": ""
     },
     {
       "Key": "elapsed_time",
       "Label": "Elapsed time",
-      "Value": "20:00",
+      "Value": "20:30",
       "Unit": "",
       "Max": ""
     },
     {
       "Key": "calories",
       "Label": "Calories",
-      "Value": "200",
+      "Value": "205",
       "Unit": "kcal",
       "Max": ""
     },
@@ -59,7 +59,7 @@
     {
       "Key": "speed",
       "Label": "Avg pace",
-      "Value": "2:00",
+      "Value": "2:03",
       "Unit": "/100 m",
       "Max": "2:00"
     },
@@ -164,12 +164,12 @@
       ],
       [
         "6",
-        "2:00",
-        "0.10",
-        "2:00",
+        "0:30",
+        "0.00",
+        "–",
         "132",
-        "30",
-        "Freestyle"
+        "28",
+        ""
       ],
       [
         "7",
@@ -200,6 +200,15 @@
       ],
       [
         "10",
+        "2:00",
+        "0.10",
+        "2:00",
+        "132",
+        "30",
+        "Freestyle"
+      ],
+      [
+        "11",
         "2:00",
         "0.10",
         "2:00",

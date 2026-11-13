@@ -507,6 +507,14 @@ func capFile(n int) []byte {
 			}
 			b.data(5, append(u32(nil, ts), 0, ev)...)
 		}
+		if i == n/2 {
+			// ADR-017 rev. 9 / QA-48-r1-3: 10,000 lengths in one burst, at the start of
+			// session 50, which is a lap swim, so Normalise keeps them all.
+			for k := 0; k < 10_000; k++ {
+				p := u32(u32(u32(u32(nil, ts), ts), 0), 0)
+				b.data(7, append(binary.LittleEndian.AppendUint16(p, 20), 0, 1)...)
+			}
+		}
 		rec = u32(rec[:0], ts)
 		rec = u32(rec, uint32(int32(560_000_000+i*30)))
 		rec = u32(rec, uint32(int32(99_000_000+i*20)))
@@ -522,14 +530,15 @@ func capFile(n int) []byte {
 			p := u32(u32(nil, ts), start)
 			p = u32(u32(u32(p, lapLen*1000), lapLen*1000), lapLen*700*100)
 			b.data(4, append(p, sportOf(i/sessionLen))...)
-			// ADR-017 rev. 9: one length per lap, 10,000 in all.
-			p = u32(u32(u32(u32(nil, ts), start), lapLen*1000), lapLen*1000)
-			b.data(7, append(binary.LittleEndian.AppendUint16(p, 20), 0, 1)...)
 		}
 		if i%sessionLen == sessionLen-1 {
 			start := ts - (sessionLen - 1)
 			p := u32(u32(nil, ts), start)
-			p = append(p, sportOf(i/sessionLen), 0)
+			if i/sessionLen == 50 { // swimming, lap_swimming: the session that keeps the lengths
+				p = append(p, 5, 17)
+			} else {
+				p = append(p, sportOf(i/sessionLen), 0)
+			}
 			p = u32(u32(u32(p, sessionLen*1000), sessionLen*1000), sessionLen*700*100)
 			b.data(3, append(p, 90, 110)...)
 		}
@@ -571,6 +580,9 @@ func BenchmarkParseAtCap(b *testing.B) {
 	if len(rec.Laps) != DefaultLimits.MaxLaps || len(rec.Timer) != DefaultLimits.MaxTimerEvents || len(rec.Sports) != DefaultLimits.MaxSportMessages ||
 		len(rec.Lengths) != DefaultLimits.MaxLengths {
 		b.Fatalf("laps %d, timer events %d, sport messages %d, lengths %d", len(rec.Laps), len(rec.Timer), len(rec.Sports), len(rec.Lengths))
+	}
+	if w := workout.Normalise(rec); len(w.Lengths) != DefaultLimits.MaxLengths {
+		b.Fatalf("%d lengths kept, want all %d", len(w.Lengths), DefaultLimits.MaxLengths)
 	}
 	b.Run("decode", func(b *testing.B) {
 		b.ReportAllocs()

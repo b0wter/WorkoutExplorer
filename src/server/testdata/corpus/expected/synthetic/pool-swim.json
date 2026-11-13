@@ -24,17 +24,17 @@
       "sport": "swimming",
       "sub_sport": "lap_swimming",
       "start": 0,
-      "end": 1200,
+      "end": 1230,
       "totals": {
-        "elapsed_time": 1200.000,
-        "timer_time": 1200.000,
+        "elapsed_time": 1230.000,
+        "timer_time": 1230.000,
         "distance": 1000.000,
-        "calories": 200.000,
-        "avg_speed": 0.833,
+        "calories": 205.000,
+        "avg_speed": 0.813,
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 29.977,
+        "avg_cadence": 30.016,
         "max_cadence": 32.000
       }
     }
@@ -51,7 +51,7 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 29.938,
+        "avg_cadence": 29.898,
         "max_cadence": 32.000
       }
     },
@@ -66,7 +66,7 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 29.797,
+        "avg_cadence": 30.055,
         "max_cadence": 32.000
       }
     },
@@ -81,7 +81,7 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 30.141,
+        "avg_cadence": 30.094,
         "max_cadence": 32.000
       }
     },
@@ -96,7 +96,7 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 29.859,
+        "avg_cadence": 30.062,
         "max_cadence": 32.000
       }
     },
@@ -111,13 +111,28 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 30.000,
+        "avg_cadence": 30.133,
         "max_cadence": 32.000
       }
     },
     {
       "start": 600,
-      "end": 720,
+      "end": 630,
+      "totals": {
+        "elapsed_time": 30.000,
+        "timer_time": 30.000,
+        "distance": 0.000,
+        "avg_speed": 0.000,
+        "max_speed": 0.833,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 135.000,
+        "avg_cadence": 28.000,
+        "max_cadence": 28.000
+      }
+    },
+    {
+      "start": 630,
+      "end": 750,
       "totals": {
         "elapsed_time": 120.000,
         "timer_time": 120.000,
@@ -126,13 +141,13 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 30.094,
+        "avg_cadence": 29.977,
         "max_cadence": 32.000
       }
     },
     {
-      "start": 720,
-      "end": 840,
+      "start": 750,
+      "end": 870,
       "totals": {
         "elapsed_time": 120.000,
         "timer_time": 120.000,
@@ -141,28 +156,13 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 29.969,
+        "avg_cadence": 29.844,
         "max_cadence": 32.000
       }
     },
     {
-      "start": 840,
-      "end": 960,
-      "totals": {
-        "elapsed_time": 120.000,
-        "timer_time": 120.000,
-        "distance": 100.000,
-        "avg_speed": 0.833,
-        "max_speed": 0.833,
-        "avg_heart_rate": 132.000,
-        "max_heart_rate": 136.000,
-        "avg_cadence": 30.039,
-        "max_cadence": 32.000
-      }
-    },
-    {
-      "start": 960,
-      "end": 1080,
+      "start": 870,
+      "end": 990,
       "totals": {
         "elapsed_time": 120.000,
         "timer_time": 120.000,
@@ -176,8 +176,8 @@
       }
     },
     {
-      "start": 1080,
-      "end": 1200,
+      "start": 990,
+      "end": 1110,
       "totals": {
         "elapsed_time": 120.000,
         "timer_time": 120.000,
@@ -186,7 +186,22 @@
         "max_speed": 0.833,
         "avg_heart_rate": 132.000,
         "max_heart_rate": 136.000,
-        "avg_cadence": 29.852,
+        "avg_cadence": 29.953,
+        "max_cadence": 32.000
+      }
+    },
+    {
+      "start": 1110,
+      "end": 1230,
+      "totals": {
+        "elapsed_time": 120.000,
+        "timer_time": 120.000,
+        "distance": 100.000,
+        "avg_speed": 0.833,
+        "max_speed": 0.833,
+        "avg_heart_rate": 132.000,
+        "max_heart_rate": 136.000,
+        "avg_cadence": 30.016,
         "max_cadence": 32.000
       }
     }
@@ -197,86 +212,86 @@
       "kind": "start"
     },
     {
-      "offset": 1200,
+      "offset": 1230,
       "kind": "stop"
     }
   ],
   "samples": {
-    "count": 1201,
-    "last_offset": 1200,
+    "count": 1231,
+    "last_offset": 1230,
     "filled": 0,
     "gaps": {
       "count": 0,
       "total_seconds": 0,
       "longest_seconds": 0
     },
-    "offsets_digest": "f7d739fc3a5cb44d"
+    "offsets_digest": "c42ea5b32532789d"
   },
   "streams": {
     "distance": {
-      "present": 1201,
+      "present": 1231,
       "missing": 0,
       "min": 0.00,
       "max": 1000.00,
       "first": 0.00,
       "last": 1000.00,
-      "mean": 487.93,
-      "digest": "8b29363c933a4946"
+      "mean": 488.22,
+      "digest": "1823c7b4aea8f6ab"
     },
     "speed": {
       "present": 1201,
-      "missing": 0,
+      "missing": 30,
       "min": 0.833,
       "max": 0.833,
       "first": 0.833,
       "last": 0.833,
       "mean": 0.833,
-      "digest": "a9010e5637a78a4d"
+      "digest": "880c39b66bdeea5b"
     },
     "heart_rate": {
-      "present": 1201,
+      "present": 1231,
       "missing": 0,
       "min": 128.00,
       "max": 136.00,
-      "first": 129.00,
-      "last": 129.00,
-      "mean": 132.03,
-      "digest": "43b3617a19710932"
+      "first": 132.00,
+      "last": 131.00,
+      "mean": 131.93,
+      "digest": "b1fab08cf16fff16"
     },
     "cadence": {
       "present": 1201,
-      "missing": 0,
+      "missing": 30,
       "min": 28.00,
       "max": 32.00,
-      "first": 30.00,
-      "last": 29.00,
-      "mean": 29.98,
-      "digest": "0186dc8bd515b060"
+      "first": 29.00,
+      "last": 31.00,
+      "mean": 30.01,
+      "digest": "d059b510184c464e"
     }
   },
   "derived": {
-    "elapsed_time": 1200.000,
-    "moving_time": 1200.000,
+    "elapsed_time": 1230.000,
+    "moving_time": 1230.000,
     "moving_time_source": "timer",
     "distance": 1000.000,
-    "avg_speed": 0.833,
+    "avg_speed": 0.813,
     "max_speed": 0.833,
-    "avg_heart_rate": 132.032,
+    "avg_heart_rate": 131.934,
     "max_heart_rate": 136.000,
-    "avg_cadence": 29.978,
+    "avg_cadence": 30.013,
     "max_cadence": 32.000
   },
   "summary": {
-    "elapsed_time": 1200.000,
-    "timer_time": 1200.000,
+    "elapsed_time": 1230.000,
+    "timer_time": 1230.000,
     "distance": 1000.000,
-    "calories": 200.000,
-    "avg_speed": 0.833,
+    "calories": 205.000,
+    "avg_speed": 0.813,
     "max_speed": 0.833,
     "avg_heart_rate": 132.000,
     "max_heart_rate": 136.000,
-    "avg_cadence": 29.977,
+    "avg_cadence": 30.016,
     "max_cadence": 32.000,
-    "moving_time": 1200.000
+    "moving_time": 1230.000
   }
 }

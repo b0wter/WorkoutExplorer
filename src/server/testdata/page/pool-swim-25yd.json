@@ -2,7 +2,7 @@
   "Page": {
     "Title": "Swim, 5 Jul 2026",
     "ViewPath": "/w/pool-swim-25yd",
-    "DataURL": "/w/pool-swim-25yd/data.1b9705dc2f3ee280.bin"
+    "DataURL": "/w/pool-swim-25yd/data.0dee30e8cbacecb2.bin"
   },
   "Header": {
     "Title": "Swim, 5 Jul 2026",
@@ -24,21 +24,21 @@
     {
       "Key": "moving_time",
       "Label": "Moving time",
-      "Value": "20:00",
+      "Value": "20:30",
       "Unit": "",
       "Max": ""
     },
     {
       "Key": "elapsed_time",
       "Label": "Elapsed time",
-      "Value": "20:00",
+      "Value": "20:30",
       "Unit": "",
       "Max": ""
     },
     {
       "Key": "calories",
       "Label": "Calories",
-      "Value": "200",
+      "Value": "205",
       "Unit": "kcal",
       "Max": ""
     },
@@ -66,7 +66,7 @@
     {
       "Key": "speed",
       "Label": "Avg pace",
-      "Value": "2:11",
+      "Value": "2:15",
       "Unit": "/100 m",
       "Max": "2:11"
     },
@@ -171,12 +171,12 @@
       ],
       [
         "6",
-        "2:00",
-        "0.09",
-        "2:11",
-        "132",
-        "30",
-        "Freestyle"
+        "0:30",
+        "0.00",
+        "–",
+        "131",
+        "29",
+        ""
       ],
       [
         "7",
@@ -207,6 +207,15 @@
       ],
       [
         "10",
+        "2:00",
+        "0.09",
+        "2:11",
+        "132",
+        "30",
+        "Freestyle"
+      ],
+      [
+        "11",
         "2:00",
         "0.09",
         "2:11",

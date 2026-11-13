@@ -550,7 +550,11 @@ func capFile(records int) file {
 		return typedef.SportRunning
 	}
 	for i := 0; i < sessions; i++ {
-		f.sessions = append(f.sessions, span{sportOf(i), typedef.SubSportGeneric, i * records / sessions, (i+1)*records/sessions - 1})
+		sp, sub := sportOf(i), typedef.SubSportGeneric
+		if i == sessions/2 { // a lap swim, so Normalise keeps the 10,000 lengths (QA-48-r1-3)
+			sp, sub = typedef.SportSwimming, typedef.SubSportLapSwimming
+		}
+		f.sessions = append(f.sessions, span{sp, sub, i * records / sessions, (i+1)*records/sessions - 1})
 	}
 	for i := 0; i < laps; i++ {
 		f.laps = append(f.laps, span{from: i * records / laps, to: (i+1)*records/laps - 1})
@@ -572,7 +576,7 @@ func capFile(records int) file {
 			mesg: mesgdef.NewFieldDescription(nil).SetDeveloperDataIndex(0).SetFieldDefinitionNumber(uint8(i)).
 				SetFitBaseTypeId(basetype.Uint8).SetFieldName([]string{"cap_field"}).ToMesg(nil)})
 	}
-	// ADR-017 rev. 9: 10,000 lengths in one burst (one message definition).
+	// ADR-017 rev. 9: 10,000 lengths in one burst (one message definition), at the start of session 50, the lap swim.
 	for i := 0; i < 10_000; i++ {
 		f.extra = append(f.extra, timed{t: records / 2, order: orderExtra,
 			mesg: mesgdef.NewLength(nil).SetTimestamp(at(f, records/2)).SetStartTime(at(f, records/2)).

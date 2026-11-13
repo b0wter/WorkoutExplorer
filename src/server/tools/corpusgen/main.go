@@ -730,30 +730,48 @@ func poolSwimYards() file {
 }
 
 // lapSwim is 40 active lengths of 30 s each, one lap per 4 lengths, and a
-// rest length of 0 s after the last one, in pool p.
+// 30 s rest length (its own lap, no stroke) after the 20th, in pool p. The
+// pace of these lengths comes from the pool length (PL-3); the recorded
+// avg_speed fallback is exercised end to end by pool-swim-mixed-cut-80.fit
 func lapSwim(name string, day int, seed uint64, p poolSpec) file {
-	const lengths, lengthSecs = 40, 30
+	const lengths, lengthSecs, restAt, restSecs = 40, 30, 20, 30
 	poolM := float64(p.length) / 100
-	end := lengths * lengthSecs
+	end := lengths*lengthSecs + restSecs
+	start := func(i int) int { // start offset of active length i
+		if i >= restAt {
+			return i*lengthSecs + restSecs
+		}
+		return i * lengthSecs
+	}
 	f := file{name: name, start: baseStart.Add(time.Duration(day) * 24 * time.Hour), localOffset: intp(-14400),
 		sessions: []span{{typedef.SportSwimming, typedef.SubSportLapSwimming, 0, end}},
 		timer:    []timerEvent{{0, true}, {end, false}}, pool: &p,
 		lapStroke: map[int]typedef.SwimStroke{}, sessStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeFreestyle}}
 	for i := 0; i < lengths; i += 4 { // one lap per 100 m
-		f.laps = append(f.laps, span{from: i * lengthSecs, to: (i + 4) * lengthSecs})
-		f.lapStroke[i*lengthSecs] = typedef.SwimStrokeFreestyle
+		f.laps = append(f.laps, span{from: start(i), to: start(i+3) + lengthSecs})
+		f.lapStroke[start(i)] = typedef.SwimStrokeFreestyle
+		if i+4 == restAt { // the rest lap
+			f.laps = append(f.laps, span{from: start(i+3) + lengthSecs, to: start(i+3) + lengthSecs + restSecs})
+		}
 	}
 	rng := rand.New(rand.NewPCG(seed, seed+1))
 	for t := 0; t <= end; t++ {
 		s := newSample(t)
-		s.dist = poolM * float64(t/lengthSecs)
-		s.speed = poolM / lengthSecs
+		done := 0 // active lengths finished by t
+		for done < lengths && start(done)+lengthSecs <= t {
+			done++
+		}
+		s.dist = poolM * float64(done)
+		resting := t >= restAt*lengthSecs && t < restAt*lengthSecs+restSecs
+		if !resting {
+			s.speed = poolM / lengthSecs
+			s.cad = round1(28 + rng.Float64()*4) // strokes per minute
+		}
 		s.hr = round1(128 + rng.Float64()*8)
-		s.cad = round1(28 + rng.Float64()*4) // strokes per minute
 		f.samples = append(f.samples, s)
 	}
 	for i := 0; i < lengths; i++ {
-		from := i * lengthSecs
+		from := start(i)
 		l := mesgdef.NewLength(nil).
 			SetTimestamp(f.start.Add(time.Duration(from+lengthSecs) * time.Second)).
 			SetStartTime(f.start.Add(time.Duration(from) * time.Second)).
@@ -764,9 +782,10 @@ func lapSwim(name string, day int, seed uint64, p poolSpec) file {
 			SetLengthType(typedef.LengthTypeActive)
 		f.extra = append(f.extra, timed{t: from + lengthSecs, order: orderRecord + 1, mesg: l.ToMesg(nil)})
 	}
-	rest := mesgdef.NewLength(nil).SetTimestamp(at(f, end)).SetStartTime(at(f, end)).
-		SetTotalElapsedTime(0).SetTotalTimerTime(0).SetLengthType(typedef.LengthTypeIdle)
-	f.extra = append(f.extra, timed{t: end, order: orderRecord + 1, mesg: rest.ToMesg(nil)})
+	rs := restAt * lengthSecs
+	rest := mesgdef.NewLength(nil).SetTimestamp(at(f, rs+restSecs)).SetStartTime(at(f, rs)).
+		SetTotalElapsedTime(restSecs * 1000).SetTotalTimerTime(restSecs * 1000).SetLengthType(typedef.LengthTypeIdle)
+	f.extra = append(f.extra, timed{t: rs + restSecs, order: orderRecord + 1, mesg: rest.ToMesg(nil)})
 	return f
 }
 
@@ -825,7 +844,8 @@ func poolSwimMixed() file {
 			if l.rest {
 				m.SetLengthType(typedef.LengthTypeIdle)
 			} else {
-				m.SetLengthType(typedef.LengthTypeActive).SetSwimStroke(l.stroke)
+				m.SetLengthType(typedef.LengthTypeActive).SetSwimStroke(l.stroke).
+					SetAvgSpeed(uint16(poolM / (float64(l.timerMs) / 1000) * 1000)) // recorded pace: the fallback of PL-3 (QA-48-r1-4)
 				if l.strokes > 0 {
 					m.SetTotalStrokes(l.strokes)
 				}

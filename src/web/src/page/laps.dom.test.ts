@@ -333,7 +333,7 @@ describe('lengths view (F-48 PL-8; AP-13)', () => {
   const cells = (r: HTMLTableRowElement): string[] => [...r.cells].map((c) => c.textContent ?? '');
   const heads = (p: Page): string[] => [...(p.section?.querySelectorAll('.lengths th') ?? [])].map((t) => t.textContent ?? '');
 
-  it('pool-swim: Laps, Splits and Lengths, opens on laps; 40 numbered rows and one Rest row with its time only', () => {
+  it('pool-swim: Laps, Splits and Lengths, opens on laps; 40 numbered rows and a mid-swim Rest row with its time only', () => {
     const p = open(golden('pool-swim'));
     expect([...p.section!.querySelectorAll('.laps-switch button')].map((b) => b.textContent)).toEqual(['Laps', 'Splits', 'Lengths']);
     expect(p.button('Laps')?.getAttribute('aria-pressed')).toBe('true');
@@ -344,8 +344,9 @@ describe('lengths view (F-48 PL-8; AP-13)', () => {
     expect(p.select()?.hidden).toBe(true);
     const rows = p.rows('.lengths');
     expect(rows).toHaveLength(41);
-    expect(rows.slice(0, 40).map((r) => r.cells[0].textContent)).toEqual(Array.from({ length: 40 }, (_, i) => String(i + 1)));
-    expect(cells(rows[40])).toEqual(['Rest', '', '0:00', '', '', '']);
+    expect(rows.map((r) => r.cells[0].textContent).filter((t) => t !== 'Rest')).toEqual(Array.from({ length: 40 }, (_, i) => String(i + 1)));
+    expect(cells(rows[20])).toEqual(['Rest', '', '0:30', '', '', '']);
+    expect(rows[21].cells[0].textContent).toBe('21'); // numbering continues after the rest
     expect(heads(p)).toEqual(['#', 'Stroke', 'Time', 'Pace (/100 m)', 'Strokes', 'SWOLF']);
     expect(cells(rows[0])).toEqual(['1', 'Freestyle', '0:30', '2:00', '18', '48']);
     p.button('Laps')?.click();
@@ -391,12 +392,12 @@ describe('lengths view (F-48 PL-8; AP-13)', () => {
     expect([p.selection.start(), p.selection.end()]).toEqual([44, 66]);
   });
 
-  it('a truncated pool swim (UP-3): its recorded lengths, pace "–" without a speed, no error', () => {
+  it('a truncated pool swim (UP-3): its recorded lengths, pace from the recorded avg_speed when there is no pool length, no error', () => {
     const p = open(golden('pool-swim-mixed-cut-80'));
     p.button('Lengths')?.click();
     const rows = p.rows('.lengths');
     expect(rows).toHaveLength(13);
-    expect(cells(rows[0])).toEqual(['1', 'Freestyle', '0:22', '–', '14', '36']);
+    expect(cells(rows[0])).toEqual(['1', 'Freestyle', '0:22', '1:26', '14', '36']);
   });
 
   it('no stroke counts: no Strokes and SWOLF columns', () => {

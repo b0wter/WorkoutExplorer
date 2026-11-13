@@ -1,75 +1,75 @@
 {
   "fixture_version": 1,
   "format_version": 5,
-  "byte_length": 27828,
-  "sample_count": 1201,
-  "metadata_length": 8587,
+  "byte_length": 28556,
+  "sample_count": 1231,
+  "metadata_length": 8841,
   "streams": [
     {
       "name": "time_offset",
-      "byte_offset": 8604,
-      "valid": 1201,
+      "byte_offset": 8856,
+      "valid": 1231,
       "missing": 0,
       "first": 0,
-      "last": 1200,
+      "last": 1230,
       "min": 0,
-      "max": 1200,
-      "digest": "f7d739fc3a5cb44d"
+      "max": 1230,
+      "digest": "c42ea5b32532789d"
     },
     {
       "name": "distance",
-      "byte_offset": 13408,
-      "valid": 1201,
+      "byte_offset": 13780,
+      "valid": 1231,
       "missing": 0,
       "first": 0,
       "last": 10000,
       "min": 0,
       "max": 10000,
-      "digest": "b75cb027f06bedda"
+      "digest": "6267087ee9216c55"
     },
     {
       "name": "speed",
-      "byte_offset": 18212,
+      "byte_offset": 18704,
       "valid": 1201,
-      "missing": 0,
+      "missing": 30,
       "first": 833,
       "last": 833,
       "min": 833,
       "max": 833,
-      "digest": "29ab91f4d5f24a78"
+      "digest": "7c4ba7629fad6633"
     },
     {
       "name": "heart_rate",
-      "byte_offset": 20616,
-      "valid": 1201,
+      "byte_offset": 21168,
+      "valid": 1231,
       "missing": 0,
-      "first": 129,
-      "last": 129,
+      "first": 132,
+      "last": 131,
       "min": 128,
       "max": 136,
-      "digest": "42d257f5b3aec549"
+      "digest": "8092d0904441ecf4"
     },
     {
       "name": "cadence",
-      "byte_offset": 21820,
+      "byte_offset": 22400,
       "valid": 1201,
-      "missing": 0,
-      "first": 30,
-      "last": 29,
+      "missing": 30,
+      "first": 29,
+      "last": 31,
       "min": 28,
       "max": 32,
-      "digest": "39cbd6072c0efdef"
+      "digest": "701d9442d4b7dc9c"
     },
     {
       "name": "moving_time",
-      "byte_offset": 23024,
-      "valid": 1201,
+      "byte_offset": 23632,
+      "valid": 1231,
       "missing": 0,
       "first": 0,
-      "last": 1200,
+      "last": 1230,
       "min": 0,
-      "max": 1200,
-      "digest": "f7d739fc3a5cb44d"
+      "max": 1230,
+      "digest": "c42ea5b32532789d"
     }
   ]
 }

@@ -308,7 +308,7 @@ func TestCard(t *testing.T) {
 	}{
 		{"ride", "Morning loop", load("ride-30min"), false, Card{"Morning loop", "Distance 13.46 km · Moving time 29:59 · Elevation gain 104 m · Avg speed 26.9 km/h · Avg heart rate 142 bpm", img}},
 		{"run: pace", "", load("run-30min"), false, Card{"Run, 30 Jun 2026", "Distance 5.94 km · Moving time 29:59 · Elevation gain 104 m · Avg pace 5:03 /km · Avg heart rate 142 bpm", img}},
-		{"swim: pace per 100 m", "x", load("pool-swim"), false, Card{"x", "Distance 1.00 km · Elapsed time 20:00 · Avg pace 2:00 /100 m · Avg heart rate 132 bpm", img}},
+		{"swim: pace per 100 m", "x", load("pool-swim"), false, Card{"x", "Distance 1.00 km · Elapsed time 20:30 · Avg pace 2:03 /100 m · Avg heart rate 132 bpm", img}},
 		{"max heart rate only", "x", maxOnly, false, Card{"x", "Distance 13.46 km · Moving time 29:59 · Elevation gain 104 m · Avg speed 26.9 km/h", img}},
 		{"distance 0", "x", zero, false, Card{"x", "Moving time 29:59 · Elevation gain 104 m · Avg heart rate 142 bpm", img}},
 		{"gain rounds to 0", "x", flat, false, Card{"x", "Distance 13.46 km · Moving time 29:59 · Avg speed 26.9 km/h · Avg heart rate 142 bpm", img}},
