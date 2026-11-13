@@ -1,7 +1,7 @@
 # ADR-017 Parse isolation and limits: in-process `ingest.Parser` with a decode deadline, counted budgets and parse slots
 
 - **Status:** accepted
-- **Revision:** 8 (4 Nov 2026; rev. 8: QA-30-r1-6, a deploy's `regenerate` is not added to the cap, see rev. 4 item 3). First version 15 Oct 2026. Labels "rev. N" and "rev. N item M" below are the stable IDs that code and other documents cite; each marks a decision made in that revision, stated here in its current form.
+- **Revision:** 9 (13 Nov 2026; rev. 9: F-48, budget `MaxLengths` in item 4 and lengths in the item 7 all-caps file). Rev. 8 of 4 Nov 2026: QA-30-r1-6, a deploy's `regenerate` is not added to the cap, see rev. 4 item 3. First version 15 Oct 2026. Labels "rev. N" and "rev. N item M" below are the stable IDs that code and other documents cite; each marks a decision made in that revision, stated here in its current form.
 - **History:** [architect/history/ADR-017-parse-isolation-and-limits.md](history/ADR-017-parse-isolation-and-limits.md) (revision list, findings, the revision sections as written)
 - **Features:** F-08 (introduces it), F-09 (calls it per upload), F-30 (regenerate), F-31 (machine sizing), F-32
 - **Supersedes:** the F-02 entry point `ingest.Parse(ctx, io.Reader)` (F-02 design, Public surface; TD Code structure, Bounded contexts and modules)
@@ -58,6 +58,7 @@ F-02 measured the 12-hour file (`synthetic/ride-12h.fit`, 43,200 records, 1.3 MB
    | `MaxFieldDescriptions` | 256 | Real files: a few to a few dozen (Connect IQ fields, power meters) |
    | `MaxSequences` | 64 | Chained files: 2 to 5 sequences |
    | `MaxSportMessages` (rev. 1) | 1,000 `sport` messages, limit name `sport_messages` (ADR-018 rev. 1) | Real files: one per activity; a multisport file plausibly one per leg; 1,000 is 200 × a triathlon. Counted on arrival like the others |
+   | `MaxLengths` (rev. 9) | 10,000 `length` messages, limit name `lengths` (ADR-018) | 5 km in a 25 m pool: 200; 10,000 equals `MaxLaps`. Counted on arrival like the others (F-48 PL-1) |
    | `MaxConcurrent` | 2 parse slots per `Parser` | Memory: 2 × the per-parse peak (item 7) |
 
    Every limit is a field of `Limits`, so tests can pass small values. Production uses `DefaultLimits` unchanged, except `Timeout`, which production takes from the server setting `WORKOUT_EXPLORER_PARSE_TIMEOUT` (rev. 7); `DefaultLimits.Timeout` stays 10 s and is that setting's default. A different value of any other limit needs a revision of this ADR.
@@ -66,7 +67,7 @@ F-02 measured the 12-hour file (`synthetic/ride-12h.fit`, 43,200 records, 1.3 MB
 
 6. **Panics are contained.** `Parse` recovers a panic from the decoder, the listener or `Normalise`. The panic becomes an `internal` rejection, and the log line holds the panic value and the stack as function names with `file:line` only (`runtime.Callers`, no argument words, ADR-018). No other goroutine is started, so there is nothing that can panic outside the `recover`.
 
-7. **Measured, with a stop rule.** (rev. 1) `BenchmarkParseAtCap` and the RSS run use one in-memory file with every budget at its cap: 500,000 records at 1 Hz with every stream, 100 sessions alternating `cycling` and `running`, 10,000 laps with a sport, 100,000 timer events, 1,000 `sport` messages, 256 field descriptions, within `MaxBytes` (written to `build/` by `corpusgen -cap-file`, never committed). Decode and normalise are reported separately. The engineer records ns/op, B/op and the max RSS of `parse` on the same file in `MEASUREMENTS.md`. **Budget: max RSS at the caps ≤ 400 MB, and decode + normalise ≤ 2 s on the development machine.** `Accept` has its own rule (rev. 2 item 4). Every stop rule is measured on the development machine with `DefaultLimits`, never with the time-limit setting (rev. 7 item 3), and with neither `GOGC` nor `GOMEMLIMIT` set (rev. 3 items 3 and 5). If a rule is exceeded, the engineer stops and reports. The caps are then lowered in a revision of this ADR; the code does not change.
+7. **Measured, with a stop rule.** (rev. 1) `BenchmarkParseAtCap` and the RSS run use one in-memory file with every budget at its cap: 500,000 records at 1 Hz with every stream, 100 sessions alternating `cycling` and `running`, 10,000 laps with a sport, (rev. 9) 10,000 lengths, 100,000 timer events, 1,000 `sport` messages, 256 field descriptions, within `MaxBytes` (written to `build/` by `corpusgen -cap-file`, never committed). Decode and normalise are reported separately. The engineer records ns/op, B/op and the max RSS of `parse` on the same file in `MEASUREMENTS.md`. **Budget: max RSS at the caps ≤ 400 MB, and decode + normalise ≤ 2 s on the development machine.** `Accept` has its own rule (rev. 2 item 4). Every stop rule is measured on the development machine with `DefaultLimits`, never with the time-limit setting (rev. 7 item 3), and with neither `GOGC` nor `GOMEMLIMIT` set (rev. 3 items 3 and 5). If a rule is exceeded, the engineer stops and reports. The caps are then lowered in a revision of this ADR; the code does not change.
 
 ### `Accept` (rev. 2)
 

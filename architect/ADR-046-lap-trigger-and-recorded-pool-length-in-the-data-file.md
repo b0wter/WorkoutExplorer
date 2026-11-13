@@ -5,7 +5,7 @@
 - **Features:** F-46 (laps and splits); F-19 (`draft.bin`), F-30 (regenerate)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 4 under its item 9; narrows [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md) item 4 (one pool key that is not whole and is never printed)
 - **Requirements:** AP-8, AP-20, AP-16, UP-9, I-2; NFR Privacy
-- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-4-normative) §5.2, §5.3
+- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-5-normative) §5.2, §5.3
 
 ## Context
 
@@ -38,5 +38,5 @@ Cheap: the format is rebuilt from originals on every deploy (ADR-005). A new tri
 
 ## Would choose differently if
 
-- A lengths table (AP-13) arrives: then per-session or per-length pool data replaces item 3 in that feature's bump.
+- A lengths table (AP-13) arrives: then per-session or per-length pool data replaces item 3 in that feature's bump. (13 Nov 2026, ADR-048 item 6: it arrived; item 3 stays, because splits of a pool swim without `length` messages still need it.)
 - Garmin or another writer adds a trigger AP-8 should show separately: add a code, bump.

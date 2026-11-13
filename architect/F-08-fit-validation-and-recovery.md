@@ -613,6 +613,7 @@ Mechanism, defaults and rationale: ADR-017. Summary for the engineer:
 | `MaxRecords`, `MaxLaps`, `MaxSessions`, `MaxTimerEvents`, `MaxFieldDescriptions` | 500,000 / 10,000 / 100 / 100,000 / 256 | Listener, on arrival |
 | `MaxSequences` | 64 | Sequence walk |
 | `MaxSportMessages` (v1.1) | 1,000 | Listener, on arrival; limit name `sport_messages` (ADR-018 rev. 1) |
+| `MaxLengths` (F-48, ADR-017 rev. 9) | 10,000 | Listener, on arrival; limit name `lengths` |
 | `MaxSamples` | 500,000 | `SampleCount` before `Normalise` |
 | `MaxConcurrent` | 2 | Parse slots |
 

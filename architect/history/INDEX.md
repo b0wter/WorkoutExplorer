@@ -61,6 +61,8 @@ The F-09 row's version cell listed every F-09 version from 1.0 to 1.11 in full; 
 
 | ID | Question | Resolution | Date | Resolved by |
 | --- | --- | --- | --- | --- |
+| OQ-178 | (F-47) Besides the summary, do the edit page's header, laps, sections and time axis stay the full recording? | **Yes**, trimmed parts shaded (F-47 TR-9) | 2026-11-12 | user |
+| OQ-179 | (F-47) A trimmed pool swim's pool length and lengths count | **Pool length kept, lengths count dropped**; the count changed on 13 Nov 2026 by OQ-181 (F-48 PL-6) | 2026-11-12 | user |
 | OQ-95 | Self-built image platforms (Caddy pinned for linux/amd64 only) | linux/amd64 only until a self-hoster asks (F-31 DP-16) | 2026-11-01 | user |
 | OQ-96 | A self-hoster's upgrade replaces `web/` whole; older published pages lose assets until `regenerate` (F-30) | Accepted (F-31 DP-16) | 2026-11-01 | user |
 | OQ-93 | (F-31 v0.2) A deploy that changes `caddy`'s service definition or environment recreates Caddy: a brief page outage. Accept? | **Accepted** (decision log 1 Nov 2026). F-31 v0.3 DP-10 | 2026-11-01 | user |

@@ -93,13 +93,13 @@ The parser reads the messages below and builds one normalised workout: sessions,
 | FIT message | Used for |
 | --- | --- |
 | `file_id` | File type check, device manufacturer and product (device name, F-43), creation time |
-| `session` | Sport and sub-sport, totals and averages as the device computed them; pool length and active lengths (AP-16, F-44) |
-| `lap` | Laps table (AP-8) |
+| `session` | Sport and sub-sport, totals and averages as the device computed them; pool length and active lengths (AP-16, F-44); stroke (AP-13, F-48) |
+| `lap` | Laps table (AP-8), with trigger (F-46) and stroke (AP-13, F-48) |
 | `record` | All streams: position, altitude, distance, speed, heart rate, cadence, power, temperature. Running dynamics are not parsed in the MVP |
 | `event` | Timer start and stop, used to split moving from paused time |
 | `activity` | The workout's fixed UTC offset (F-02 D-7) |
 | `sport` | Sport hints for samples no session covers (F-08 D-12) |
-| `length` | Pool swim lengths and stroke type (not read yet; F-44 uses the session's count) |
+| `length` | Pool swim lengths: rest or active, stroke, time, stroke count, average speed (AP-13, [F-48](../architect/F-48-pool-strokes.md)); dropped inside a session that is not a pool swim. The summary's Lengths cell still uses the session's count (AP-16), except after a trim |
 | `device_info` | Creator's product name and recognised sensor types (AP-14, F-43); a read allow-list, never descriptors, serial or ANT+ numbers (F-43 DI-1) |
 | `zones_target`, `time_in_zone` | Heart-rate and power zones when the device stores them |
 | Developer fields | Not parsed in the MVP; extra sensor streams come later |
@@ -111,7 +111,7 @@ The parser reads the messages below and builds one normalised workout: sessions,
 - Moving time comes from timer events; if there are none, from speed below a threshold: 1 km/h for cycling and e-biking, 0.5 km/h for every other sport (F-02 R-7).
 - Elevation gain, where the device recorded none, uses smoothing plus a 3 m hysteresis, one parameter set for barometric and GPS altitude, so altitude noise is not counted as climbing (F-02 R-8).
 - Distance is taken from the file and never decreases: where the device's distance falls, the last higher value is kept (F-08 R-14); missing samples stay missing. If the file has no distance, it is computed from GPS points with the haversine formula.
-- Session totals from the device are shown as recorded, also when positions are hidden for privacy (AP-2, SH-9). After a trim (UP-6), totals are recomputed from the remaining streams. Values for a selected range (AP-7) are computed in the browser from the streams; moving time and gain come from the server's cumulative streams (ADR-029).
+- Session totals from the device are shown as recorded, also when positions are hidden for privacy (AP-2, SH-9). After a trim (UP-6), totals are recomputed from the remaining streams; pool lengths trimmed away or cut by the trim are dropped, and the Lengths cell counts the remaining active ones (F-48 PL-6). Values for a selected range (AP-7) are computed in the browser from the streams; moving time and gain come from the server's cumulative streams (ADR-029).
 - Suggested title (UP-5, wording and rules there; F-45): the town is the GeoNames `name` field (local spelling, UTF-8), not `asciiname`; time of day uses the workout's UTC offset (time zones below). The GeoNames licence needs an attribution line on the site.
 - Irregular sampling (smart recording) is resampled to 1 s only where gaps are under 5 s; longer gaps stay gaps, so pauses draw as breaks.
 
@@ -128,12 +128,12 @@ Keep a test corpus and run every parser change against it (ADR-004). Only genera
 
 ## Workout data file
 
-Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 4"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044; version 4: ADR-046).
+Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 5"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044; version 4: ADR-046; version 5: ADR-048).
 
 **Layout** (little-endian, every column starts on a 4-byte boundary so typed-array views need no copy)
 
 1. Magic `WEXD`, format version (uint16), sample count (uint32).
-2. Length-prefixed JSON metadata: sport, start time and time zone, summary (with the pool values, F-44), device name and sensor types (F-43, never an identifier), laps, sessions, and one descriptor per stream (name, type, scale, unit, offset in the file).
+2. Length-prefixed JSON metadata: sport, start time and time zone, summary (with the pool values, F-44, and the stroke, F-48), device name and sensor types (F-43, never an identifier), sessions, laps (with trigger and stroke), pool lengths (F-48, sample ranges, no positions), and one descriptor per stream (name, type, scale, unit, offset in the file).
 3. One column per stream that the workout has; absent streams are simply not written.
 
 | Stream | Stored as | Resolution | Encoding |
@@ -494,7 +494,7 @@ The ubiquitous language: use these names in code, API fields and documents. Add 
 | Data directory | `serve -data`: `workouts.db`, `private/`, `tmp/`, `public/` (Data model, Files on disk; ADR-022). | |
 | Staging folder | `tmp/{id}/`, where a new workout's files are written before one rename makes them `private/{id}/`; emptied at startup (ADR-022). | |
 | Lifetime / expiry | Days until `expires_at`; then everything is deleted (UP-7). | |
-| Public build | Building one workout's public files in memory: read `original.fit`, parse, apply the public transform (trim, then hiding; later zones), write the artefacts (data file and `.br`; later preview, export in phase 3), then the view model and `index.html`. Artefacts see only the transform's output. Deterministic; used by publish, every later edit and regeneration (F-15 P-4, ADR-028). | Draft data file (`draft.bin`, never public) |
+| Public build | Building one workout's public files in memory: read `original.fit`, parse, apply the public transform (trim, which also drops trimmed and cut pool lengths, then hiding; later zones), write the artefacts (data file and `.br`; later preview, export in phase 3), then the view model and `index.html`. Artefacts see only the transform's output. Deterministic; used by publish, every later edit and regeneration (F-15 P-4, ADR-028). | Draft data file (`draft.bin`, never public) |
 | Hides-more change | A change to a workout record that differs in any field outside the F-15 P-7 allow-list (title, description, expiry, publish time, visibility to unlisted, hiding off, download on). Its build removes `index.html` and the folder first, then writes as a first publish; anything not on the list counts as hiding more. | An in-place rebuild (every difference on the allow-list) |
 | Generic page | The one static page served for every `/w/{public_id}` that has no published page (draft, expired, unknown): `build/web/generic.html`, status `404`, no script, no Open Graph data, byte-identical for every ID (F-15 P-12, P-13). | Not-found response (the owner API's `404` body) |
 | Regeneration | Rebuilding all files of every live workout from its original on every deploy (Workout data file, Versioning; F-30). | Publishing |
@@ -513,7 +513,9 @@ The ubiquitous language: use these names in code, API fields and documents. Add 
 | Moving time | Time with the timer running, or above a speed threshold when there are no timer events (F-02 R-7). | Timer time (device total) |
 | Device totals | Session values as the device recorded them; shown as recorded (AP-2), except that running cadence is doubled (F-02 R-5) and transition sessions and laps lose their speed, cadence and power totals (F-08 R-13). Lap values the device did not record are computed (see Session / lap). | Derived values (computed from streams) |
 | Device name / sensor type | The recording device's display name (model, manufacturer or both, at most 40 recorded characters) and the types of recognised external sensors, shown in the device line under the summary (AP-14, [F-43](../architect/F-43-device-info.md)). Never a serial number, ANT+ number or user-chosen descriptor. | Device totals; a sensor's make or model (not shown) |
-| Pool swim | A session with sub-sport lap swimming; only its pool length and active lengths feed the Pool and Lengths cells (AP-16, [F-44](../architect/F-44-pool-summary.md)). | Open-water swim (no pool cells, whatever its recorded pool length) |
+| Pool swim | A session with sub-sport lap swimming; only its pool length and active lengths feed the Pool and Lengths cells (AP-16, [F-44](../architect/F-44-pool-summary.md)), and only its laps and lengths carry a stroke (AP-13, [F-48](../architect/F-48-pool-strokes.md)). | Open-water swim (no pool cells, whatever its recorded pool length) |
+| Length / rest length | One pool length as the device recorded it (FIT `length`), with stroke, time and stroke count / an idle length, shown as "Rest", never numbered or counted (AP-13, F-48). | Lap; the pool length (a distance, AP-16) |
+| SWOLF | A length's time in whole seconds plus its stroke count; computed in the browser (F-48 PL-8). | |
 | Corpus / golden report | Test FIT files in `src/server/testdata/corpus/` and their expected JSON reports (ADR-004). | |
 | Format version | The `uint16` in the data file header. Exactly one is live, except that kept workouts stay on their previous version and bundle until rebuilt; each bundle reads exactly one version (Versioning, ADR-005). | Report version (golden report shape) |
 | Descriptor | The metadata entry for one column: name, type, encoding, scale, unit, byte offset (F-03). | |
