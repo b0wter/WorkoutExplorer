@@ -81,10 +81,10 @@ func sensorKind(source typedef.SourceType, deviceType uint8) workout.Sensors {
 // readable; else "".
 func (l *listener) model() string {
 	if s := sanitiseName(l.rec.Device.ProductName); s != "" {
-		return s
+		return appleName(s)
 	}
 	if l.creatorName != "" {
-		return l.creatorName
+		return appleName(l.creatorName)
 	}
 	return readable(l.garminProduct)
 }
