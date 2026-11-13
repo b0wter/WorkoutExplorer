@@ -42,7 +42,7 @@ Synthetic files only (ADR-004); the corpus files of the feature scope, generated
 
 | What | Check |
 | --- | --- |
-| Privacy | The Apple-style file carries marker values for resting heart rate, threshold heart rate, `session.max_heart_rate` and the device's time-in-zone totals. None appears in `draft.bin` or any file under `public/{public_id}/` (decompressed `.br` included), nor in the database row |
+| Privacy | The Apple-style file carries marker values for resting heart rate, threshold heart rate and the device's time-in-zone totals. None appears in any data file's metadata (draft and public); the other files are derived from it, so no separate `.br` or database check is needed. `session.max_heart_rate` is a shown summary total (AP-2) and must never be a zone value or basis: `TestZonePrivacy` leaves it out of the markers and pins `zones` to the file's bounds |
 | Edit equals public | For each corpus file, with and without sharer values and with a trim: `lib/zones` over the edit page's inputs (ZN-7) gives the same bounds and times as over the published data file |
 | ZN-2 | Apple-shaped `time_in_zone` with 5 values and with 6 values ending at `max_heart_rate` (both 5 zones, same bounds); Wahoo-shaped messages (tops); a percent list; % of reserve (falls to the max-heart-rate basis); a non-ascending list; 11 values; trailing invalid values; a second session with a usable list when the first has none |
 | Mutants | Each must fail a test: `session.max_heart_rate` as basis; % list not converted; `time_in_zone` values read as tops, or messages as bottoms; the cap kept as a zone; samples counted instead of moving time; selection or trim window ignored; sharer value in `draft.bin`; a kind written without its stream |

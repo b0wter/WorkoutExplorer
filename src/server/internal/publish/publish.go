@@ -312,9 +312,10 @@ func HidesMore(before, after lifecycle.Record) bool {
 			continue
 		}
 		switch t.Field(i).Name {
-		case "Title", "Description", "ExpiresAt", "PublishedAt", "ZonesMaxHeartRate", "ZonesThresholdPower": // F-49 ZN-4
-		// Derived from the original, never read by the public build (F-30
-		// RG-6); a build that starts reading one must take it off this list.
+		case "Title", "Description", "ExpiresAt", "PublishedAt", "ZonesMaxHeartRate", "ZonesThresholdPower": // F-49 ZN-4: read by the public build, stay here
+		// The fields below are derived from the original, never read by the
+		// public build (F-30 RG-6); a build that starts reading one must take
+		// it off this list.
 		case "Sport", "StartTime", "TimeZoneOffsetS", "SummaryJSON", "DataEndS", "HiddenRanges":
 		case "Visibility":
 			if before.Visibility != lifecycle.Draft || after.Visibility != lifecycle.Unlisted { // only draft → unlisted

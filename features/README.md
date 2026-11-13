@@ -62,7 +62,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | done | checked by the user 12 Nov (drop-down, iPhone mini); open: pool splits on a real file, phone scrub trace (AC 41) |
 | [F-47](F-47-trim.md) | Trim start and end | 2 | both (backend first) | F-16, F-19, F-20, F-30, F-36, F-42, F-44, F-45, F-46 | done | — (checked by the user 12 Nov) |
 | [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | done | checked by the user 13 Nov; minors r1-1 to r1-4 fixed; a length under 2 samples is not selectable (accepted by the user 13 Nov) |
-| [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done | user: browser check (Zones section on a ride with HR, edit fields, wording); entry +265 accepted by the user 13 Nov; minors r1-1 to r1-4 |
+| [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done | user: browser check (Zones section on a ride with HR, edit fields, wording); entry +265 accepted by the user 13 Nov; minors r1-1, r1-2, r1-4 fixed; r1-3 (browser range-drag on ride-12h with a max HR set) with the browser check |
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-49) | — |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 

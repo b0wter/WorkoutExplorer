@@ -3,6 +3,7 @@ package publish
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"os"
 	"slices"
 	"testing"
@@ -76,6 +77,75 @@ func TestZonesTrimmed(t *testing.T) {
 	got := fx.read(t).file
 	if got.SampleCount >= full.SampleCount || zonesJSON(t, got) != `{"heart_rate":{"basis":186},"power":{"basis":240}}` {
 		t.Errorf("trimmed: %d samples, zones %s", got.SampleCount, zonesJSON(t, got))
+	}
+}
+
+// zoneSeconds is lib/zones' time in zone without the zone split: the moving
+// time of each step in (a, b] whose sample has a value, per stream.
+func zoneSeconds(f datafile.File, name string, a, b int) float64 {
+	var mt, v []float64
+	for _, s := range f.Streams {
+		switch s.Descriptor.Name {
+		case "moving_time":
+			mt = s.Values()
+		case name:
+			v = s.Values()
+		}
+	}
+	sum := 0.0
+	for i := a + 1; i <= b; i++ {
+		if !math.IsNaN(v[i]) {
+			sum += mt[i] - mt[i-1]
+		}
+	}
+	return sum
+}
+
+// TestZonesEditEqualsPublic (F-49 verification, Edit equals public; UP-6):
+// zone times over the trimmed published data file equal the edit page's
+// window over the untrimmed draft. The browser side (window bounds the count)
+// is tested in edit.dom.test.ts; here the Go publish output supplies the
+// inputs, so the check is on what lib/zones reads (moving time deltas and
+// value validity) instead of running it in Go.
+func TestZonesEditEqualsPublic(t *testing.T) {
+	fx := newFixture(t, "zones-ride-target.fit")
+	d := draft()
+	p := published(d)
+	fx.change(t, d, p)
+	full := fx.read(t).file
+	start, err := time.Parse(time.RFC3339, full.Meta.StartTime)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, b := start.Add(300*time.Second), start.Add(900*time.Second)
+	tr := p
+	tr.TrimStartAt, tr.TrimEndAt = &a, &b
+	fx.change(t, p, tr)
+	got := fx.read(t).file
+
+	var tm []float64 // the draft's window (ZN-7): the saved trim
+	for _, s := range full.Streams {
+		if s.Descriptor.Name == "time_offset" {
+			tm = s.Values()
+		}
+	}
+	ia, ib := -1, -1
+	for i, v := range tm {
+		if v >= 300 && ia < 0 {
+			ia = i
+		}
+		if v <= 900 {
+			ib = i
+		}
+	}
+	if ia < 0 || ib-ia+1 != got.SampleCount {
+		t.Fatalf("window [%d, %d] vs %d published samples", ia, ib, got.SampleCount)
+	}
+	for _, name := range []string{"heart_rate", "power"} {
+		// The first sample of a window has no step before it: the draft counts (ia, ib], the public file (0, n-1].
+		if w, g := zoneSeconds(full, name, ia, ib), zoneSeconds(got, name, 0, got.SampleCount-1); w != g || w == 0 {
+			t.Errorf("%s: draft window %v s, published %v s", name, w, g)
+		}
 	}
 }
 
