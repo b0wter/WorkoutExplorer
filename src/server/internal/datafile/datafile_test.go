@@ -24,8 +24,8 @@ func TestHeader(t *testing.T) {
 	if string(b[:4]) != "WEXD" {
 		t.Errorf("magic = %q", b[:4])
 	}
-	if v := binary.LittleEndian.Uint16(b[4:]); v != 4 {
-		t.Errorf("version = %d, want 4", v)
+	if v := binary.LittleEndian.Uint16(b[4:]); v != 5 {
+		t.Errorf("version = %d, want 5", v)
 	}
 	if n := binary.LittleEndian.Uint32(b[6:]); n != 10 {
 		t.Errorf("sample count = %d, want 10", n)
@@ -49,7 +49,7 @@ func TestHeader(t *testing.T) {
 	if got := f.Streams[0].Descriptor.ByteOffset; got != first {
 		t.Errorf("first column at %d, want align4(14 + L) = %d", got, first)
 	}
-	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 4 {
+	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 5 {
 		t.Errorf("File = version %d, N %d, L %d", f.Version, f.SampleCount, f.MetadataLength)
 	}
 }
@@ -388,7 +388,7 @@ func TestMetadata(t *testing.T) {
 		`"summary":{"elapsed_time":3600,"distance":27012.5,"ascent":0,"avg_speed":7.999,"avg_heart_rate":141,"moving_time":3580},` +
 		`"device":{"name":"","sensors":[]},"sessions":[{"sport":"cycling","sub_sport":"road","start":0,"end":3600,"start_index":0,"end_index":3601,` +
 		`"totals":{"elapsed_time":3600,"calories":612.346,"max_temperature":0}}],` +
-		`"laps":[],"streams":[{"name":"time_offset","type":"int32","encoding":"delta","scale":1,"unit":"s","byte_offset":`
+		`"laps":[],"lengths":[],"streams":[{"name":"time_offset","type":"int32","encoding":"delta","scale":1,"unit":"s","byte_offset":`
 	if !strings.HasPrefix(js, want) {
 		t.Errorf("metadata =\n%s\nwant prefix\n%s", js, want)
 	}
@@ -400,7 +400,7 @@ func TestMetadata(t *testing.T) {
 	w = offsetsOnly(2)
 	w.TimeZone = workout.TimeZone{Known: false, OffsetSeconds: 3600}
 	js = string(metaBytes(mustEncode(t, w)))
-	want = `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":false,"offset_seconds":0},"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"streams":[`
+	want = `{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":false,"offset_seconds":0},"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"lengths":[],"streams":[`
 	if !strings.HasPrefix(js, want) {
 		t.Errorf("metadata =\n%s\nwant prefix\n%s", js, want)
 	}
@@ -538,6 +538,7 @@ func TestDecodeErrors(t *testing.T) {
 	w.Sport = strings.Repeat("s", 200) // slack for mutateMeta
 	w.Laps = []workout.Lap{{Start: 0, End: 3}}
 	w.Sessions = []workout.Session{{Sport: "cycling", Start: 0, End: 5}}
+	w.Lengths = []workout.Length{{Start: 1, End: 2}}
 	good := mustEncode(t, w)
 	mustDecode(t, good)
 
@@ -636,6 +637,17 @@ func TestDecodeErrors(t *testing.T) {
 		{"lap index range reversed", meta(func(m map[string]any) {
 			m["laps"].([]any)[0].(map[string]any)["start_index"] = json.Number("5")
 		}), "lap 0 index range"},
+		{"lengths missing", meta(func(m map[string]any) { delete(m, "lengths") }), "lengths missing"},
+		{"lengths not an array", meta(func(m map[string]any) { m["lengths"] = map[string]any{} }), "lengths is not a JSON array"},
+		{"length index range beyond N", meta(func(m map[string]any) {
+			m["lengths"].([]any)[0].(map[string]any)["end_index"] = json.Number("7")
+		}), "length 0 index range"},
+		{"length index range reversed", meta(func(m map[string]any) {
+			m["lengths"].([]any)[0].(map[string]any)["start_index"] = json.Number("4")
+		}), "length 0 index range"},
+		{"length rest a string", meta(func(m map[string]any) {
+			m["lengths"].([]any)[0].(map[string]any)["rest"] = "no"
+		}), "metadata"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -807,7 +819,7 @@ func TestFixtureWorkedExample(t *testing.T) {
 	if err := json.Unmarshal(got, &fx); err != nil {
 		t.Fatal(err)
 	}
-	if fx.FixtureVersion != 1 || fx.FormatVersion != 4 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
+	if fx.FixtureVersion != 1 || fx.FormatVersion != 5 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
 		t.Errorf("fixture header = %+v", fx)
 	}
 	want := []st{
@@ -822,6 +834,45 @@ func TestFixtureWorkedExample(t *testing.T) {
 	}
 	if !bytes.HasSuffix(got, []byte("}\n")) || !bytes.Contains(got, []byte("\n  \"streams\"")) {
 		t.Errorf("fixture is not indented with 2 spaces and a trailing newline:\n%s", got)
+	}
+}
+
+// TestLengthsAndStrokes (ADR-048, §5.8): lengths, lap and summary strokes
+// are written in format order and survive an encode and decode.
+func TestLengthsAndStrokes(t *testing.T) {
+	w := fullWorkout(10)
+	w.Laps = []workout.Lap{{Start: 0, End: 5, Stroke: "backstroke"}, {Start: 5, End: 9}}
+	w.Summary.Stroke = "freestyle"
+	w.Lengths = []workout.Length{
+		{Start: 1, End: 3, Stroke: "freestyle", Time: fp(21.6), AvgSpeed: fp(25 / 21.6), Strokes: 14},
+		{Start: 3, End: 4, Rest: true, Time: fp(20)},
+		{Start: 4, End: 6, Stroke: "drill"},
+	}
+	b := mustEncode(t, w)
+	js := string(metaBytes(b))
+	for _, want := range []string{
+		`"stroke":"backstroke","totals"`,
+		`"lengths":[{"start_index":1,"end_index":4,"rest":false,"stroke":"freestyle","time":21.6,"avg_speed":1.157,"strokes":14},` +
+			`{"start_index":3,"end_index":5,"rest":true,"stroke":"","time":20},` +
+			`{"start_index":4,"end_index":7,"rest":false,"stroke":"drill"}],"streams"`,
+	} {
+		if !strings.Contains(js, want) {
+			t.Errorf("metadata lacks %s:\n%s", want, js)
+		}
+	}
+	if !strings.Contains(js, `"stroke":"freestyle"},"device"`) {
+		t.Errorf("summary stroke not last in summary:\n%s", js)
+	}
+	f := mustDecode(t, b)
+	if f.Meta.Summary.Stroke != "freestyle" || f.Meta.Laps[1].Stroke != "" || len(f.Meta.Lengths) != 3 || f.Meta.Lengths[0].Strokes != 14 {
+		t.Errorf("decoded = %+v", f.Meta)
+	}
+	if _, err := SummaryJSON(w); err != nil {
+		t.Fatal(err)
+	}
+	w.Lengths[0].End = 0
+	if _, err := Encode(w); err == nil || !strings.Contains(err.Error(), "length 0: end before start") {
+		t.Errorf("Encode of a reversed length: %v", err)
 	}
 }
 

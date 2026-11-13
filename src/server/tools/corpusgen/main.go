@@ -146,6 +146,8 @@ type file struct {
 	device      *fileDevice                // file_id manufacturer, product and product name; nil = development, 1, "corpusgen" (F-43)
 	trigger     map[int]typedef.LapTrigger // lap_trigger by lap start offset; absent = not written (F-46)
 	pool        *poolSpec                  // pool values of every lap-swimming session; nil = 25 m, no lengths count (F-44)
+	lapStroke   map[int]typedef.SwimStroke // lap swim_stroke by lap start offset; absent = not written (F-48)
+	sessStroke  map[int]typedef.SwimStroke // session swim_stroke by session start offset; absent = not written (F-48)
 }
 
 // fileDevice is the recording device in file_id (F-43). product 0 and name ""
@@ -210,6 +212,7 @@ func corpus() []file {
 		rideNoLaps(),
 		rideLapTriggers(),
 		poolSwim33(),
+		poolSwimMixed(),
 	}
 }
 
@@ -734,9 +737,11 @@ func lapSwim(name string, day int, seed uint64, p poolSpec) file {
 	end := lengths * lengthSecs
 	f := file{name: name, start: baseStart.Add(time.Duration(day) * 24 * time.Hour), localOffset: intp(-14400),
 		sessions: []span{{typedef.SportSwimming, typedef.SubSportLapSwimming, 0, end}},
-		timer:    []timerEvent{{0, true}, {end, false}}, pool: &p}
+		timer:    []timerEvent{{0, true}, {end, false}}, pool: &p,
+		lapStroke: map[int]typedef.SwimStroke{}, sessStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeFreestyle}}
 	for i := 0; i < lengths; i += 4 { // one lap per 100 m
 		f.laps = append(f.laps, span{from: i * lengthSecs, to: (i + 4) * lengthSecs})
+		f.lapStroke[i*lengthSecs] = typedef.SwimStrokeFreestyle
 	}
 	rng := rand.New(rand.NewPCG(seed, seed+1))
 	for t := 0; t <= end; t++ {
@@ -762,6 +767,83 @@ func lapSwim(name string, day int, seed uint64, p poolSpec) file {
 	rest := mesgdef.NewLength(nil).SetTimestamp(at(f, end)).SetStartTime(at(f, end)).
 		SetTotalElapsedTime(0).SetTotalTimerTime(0).SetLengthType(typedef.LengthTypeIdle)
 	f.extra = append(f.extra, timed{t: end, order: orderRecord + 1, mesg: rest.ToMesg(nil)})
+	return f
+}
+
+// poolSwimMixed is F-48's mixed-stroke pool swim, 25 m, 14 active lengths in
+// five laps: 4 freestyle (21.6 s timer time, 14 strokes: SWOLF 36), a rest
+// lap of one 30 s rest length and no stroke, 4 backstroke, 2 drill without
+// stroke counts and a 20 s rest length, 2 breaststroke and 2 butterfly in a
+// lap recorded as mixed. The session's stroke is mixed.
+func poolSwimMixed() file {
+	type length struct {
+		secs    int
+		timerMs uint32
+		stroke  typedef.SwimStroke
+		strokes uint16 // 0 = not written
+		rest    bool
+	}
+	fr := length{22, 21600, typedef.SwimStrokeFreestyle, 14, false}
+	bk := length{25, 25000, typedef.SwimStrokeBackstroke, 16, false}
+	dr := length{40, 40000, typedef.SwimStrokeDrill, 0, false}
+	br := length{30, 30000, typedef.SwimStrokeBreaststroke, 12, false}
+	fl := length{30, 30000, typedef.SwimStrokeButterfly, 15, false}
+	rest := func(secs int) length { return length{secs, uint32(secs * 1000), typedef.SwimStrokeInvalid, 0, true} }
+	laps := []struct {
+		stroke  typedef.SwimStroke // invalid = not written
+		lengths []length
+	}{
+		{typedef.SwimStrokeFreestyle, []length{fr, fr, fr, fr}},
+		{typedef.SwimStrokeInvalid, []length{rest(30)}},
+		{typedef.SwimStrokeBackstroke, []length{bk, bk, bk, bk}},
+		{typedef.SwimStrokeDrill, []length{dr, dr, rest(20)}},
+		{typedef.SwimStrokeMixed, []length{br, br, fl, fl}},
+	}
+	const poolM = 25.0
+	f := file{name: "pool-swim-mixed.fit", start: baseStart.Add(35 * 24 * time.Hour), localOffset: intp(3600),
+		pool: &poolSpec{2500, typedef.DisplayMeasureMetric, 14}, lapStroke: map[int]typedef.SwimStroke{},
+		sessStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeMixed}}
+	rng := rand.New(rand.NewPCG(36, 37))
+	t, done := 0, 0
+	for _, lp := range laps {
+		from := t
+		for _, l := range lp.lengths {
+			for s := t; s < t+l.secs; s++ {
+				smp := newSample(s)
+				smp.dist = poolM * float64(done)
+				smp.hr = round1(120 + rng.Float64()*10)
+				if l.rest {
+					smp.speed, smp.cad = 0, 0
+				} else {
+					smp.speed = poolM / (float64(l.timerMs) / 1000)
+					smp.cad = round1(26 + rng.Float64()*4)
+				}
+				f.samples = append(f.samples, smp)
+			}
+			m := mesgdef.NewLength(nil).SetTimestamp(at(f, t+l.secs)).SetStartTime(at(f, t)).
+				SetTotalElapsedTime(uint32(l.secs * 1000)).SetTotalTimerTime(l.timerMs)
+			if l.rest {
+				m.SetLengthType(typedef.LengthTypeIdle)
+			} else {
+				m.SetLengthType(typedef.LengthTypeActive).SetSwimStroke(l.stroke)
+				if l.strokes > 0 {
+					m.SetTotalStrokes(l.strokes)
+				}
+				done++
+			}
+			t += l.secs
+			f.extra = append(f.extra, timed{t: t, order: orderRecord + 1, mesg: m.ToMesg(nil)})
+		}
+		f.laps = append(f.laps, span{from: from, to: t})
+		if lp.stroke != typedef.SwimStrokeInvalid {
+			f.lapStroke[from] = lp.stroke
+		}
+	}
+	last := newSample(t)
+	last.dist, last.speed, last.cad, last.hr = poolM*float64(done), 0, 0, 125
+	f.samples = append(f.samples, last)
+	f.sessions = []span{{typedef.SportSwimming, typedef.SubSportLapSwimming, 0, t}}
+	f.timer = []timerEvent{{0, true}, {t, false}}
 	return f
 }
 
@@ -1129,6 +1211,9 @@ func sessionMesg(f file, sp span) proto.Message {
 			m.SetNumActiveLengths(p.lengths).SetNumLengths(p.lengths + 1) // one rest length
 		}
 	}
+	if st, ok := f.sessStroke[sp.from]; ok {
+		m.SetSwimStroke(st)
+	}
 	return m.ToMesg(nil)
 }
 
@@ -1153,6 +1238,9 @@ func lapMesg(f file, sp span) proto.Message {
 		SetEventType(typedef.EventTypeStop)
 	if t, ok := f.trigger[sp.from]; ok {
 		m.SetLapTrigger(t)
+	}
+	if st, ok := f.lapStroke[sp.from]; ok {
+		m.SetSwimStroke(st)
 	}
 	if f.bareLaps {
 		return m.ToMesg(nil)

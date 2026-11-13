@@ -24,6 +24,7 @@ function workout(n: number, metrics: Partial<Record<MetricName, number[]>>): Wor
       device: { name: '', sensors: [] },
       sessions: [],
       laps: [],
+      lengths: [],
     },
   };
 }

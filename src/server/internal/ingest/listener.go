@@ -28,8 +28,8 @@ type listener struct {
 	cancel context.CancelCauseFunc // cancels the decode with a cause; nil = no budgets
 	hook   func()                  // test hook, nil in production
 
-	records, laps, sessions, timers, fieldDescs, sports budget
-	stopped                                             bool // a budget or the type gate cancelled the decode
+	records, laps, sessions, timers, fieldDescs, sports, lengths budget
+	stopped                                                      bool // a budget or the type gate cancelled the decode
 
 	// Per sequence.
 	seqNo        int      // number of the current sequence, from 1
@@ -53,6 +53,7 @@ func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {
 		timers:     budget{name: limitTimerEvents, limit: lim.MaxTimerEvents},
 		fieldDescs: budget{name: limitFieldDescriptions, limit: lim.MaxFieldDescriptions},
 		sports:     budget{name: limitSportMessages, limit: lim.MaxSportMessages},
+		lengths:    budget{name: limitLengths, limit: lim.MaxLengths},
 	}
 }
 
@@ -113,6 +114,10 @@ func (l *listener) OnMesg(m proto.Message) {
 		if l.over(&l.sessions) {
 			return
 		}
+	case mesgnum.Length:
+		if l.over(&l.lengths) {
+			return
+		}
 	case mesgnum.Event:
 		ev := mesgdef.NewEvent(&m)
 		if ev.Event == typedef.EventTimer && l.over(&l.timers) {
@@ -141,6 +146,8 @@ func (l *listener) OnMesg(m proto.Message) {
 		l.session(mesgdef.NewSession(&m))
 	case mesgnum.Lap:
 		l.lap(mesgdef.NewLap(&m))
+	case mesgnum.Length:
+		l.length(mesgdef.NewLength(&m))
 	case mesgnum.Record:
 		l.record(mesgdef.NewRecord(&m))
 	case mesgnum.Sport:
@@ -210,7 +217,8 @@ func (l *listener) session(s *mesgdef.Session) {
 			avgPower: s.AvgPower, maxPower: s.MaxPower,
 			avgTemp: s.AvgTemperature, maxTemp: s.MaxTemperature,
 		}),
-		Pool: pool(s.PoolLength, s.PoolLengthUnit, s.NumActiveLengths),
+		Pool:   pool(s.PoolLength, s.PoolLengthUnit, s.NumActiveLengths),
+		Stroke: swimStroke(s.SwimStroke),
 	})
 }
 
@@ -221,6 +229,7 @@ func (l *listener) lap(s *mesgdef.Lap) {
 		Start:   start,
 		End:     end,
 		Trigger: lapTrigger(s.LapTrigger),
+		Stroke:  swimStroke(s.SwimStroke),
 		Totals: totals(rawTotals{
 			elapsed: s.TotalElapsedTime, timer: s.TotalTimerTime, distance: s.TotalDistance,
 			ascent: s.TotalAscent, descent: s.TotalDescent, calories: s.TotalCalories,
@@ -233,6 +242,45 @@ func (l *listener) lap(s *mesgdef.Lap) {
 			avgTemp: s.AvgTemperature, maxTemp: s.MaxTemperature,
 		}),
 	})
+}
+
+// length converts a FIT length (F-48 PL-1). A stroke count of 0 or invalid
+// is not recorded.
+func (l *listener) length(m *mesgdef.Length) {
+	start, end := span(m.StartTime, m.Timestamp, m.TotalElapsedTime)
+	r := workout.RawLength{
+		Start: start, End: end,
+		Rest:     m.LengthType == typedef.LengthTypeIdle,
+		Stroke:   swimStroke(m.SwimStroke),
+		Time:     scaledUint32(m.TotalTimerTime, 1000),
+		AvgSpeed: speed(m.AvgSpeed, basetype.Uint32Invalid),
+	}
+	if m.TotalStrokes != basetype.Uint16Invalid {
+		r.Strokes = m.TotalStrokes
+	}
+	l.rec.Lengths = append(l.rec.Lengths, r)
+}
+
+// swimStroke maps FIT swim_stroke to the stroke code of ADR-048 item 2; the
+// three IM variants merge, anything else is "".
+func swimStroke(s typedef.SwimStroke) string {
+	switch s {
+	case typedef.SwimStrokeFreestyle:
+		return "freestyle"
+	case typedef.SwimStrokeBackstroke:
+		return "backstroke"
+	case typedef.SwimStrokeBreaststroke:
+		return "breaststroke"
+	case typedef.SwimStrokeButterfly:
+		return "butterfly"
+	case typedef.SwimStrokeDrill:
+		return "drill"
+	case typedef.SwimStrokeMixed:
+		return "mixed"
+	case typedef.SwimStrokeIm, typedef.SwimStrokeImByRound, typedef.SwimStrokeRimo:
+		return "im"
+	}
+	return ""
 }
 
 // lapTrigger maps FIT lap_trigger to the F-46 LS-1 code (AP-8 merges the

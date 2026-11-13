@@ -13,7 +13,8 @@ import { loadGolden } from '../../test-support/golden.mjs';
 import { enhanceLaps } from './laps';
 import { enhanceUnits } from './enhance';
 import { startSplits } from '../splits';
-import { distanceAdvances, lapsGroup } from '../lib/page';
+import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
+import { formatElapsed, formatSpeedOrPace, speedOrPaceUnit } from '../lib/format';
 import { sectionRanges, sections } from '../lib/sections';
 import { legWithoutLaps } from '../lib/page/samples';
 
@@ -71,7 +72,8 @@ function open(data: WorkoutData, units: 'metric' | 'imperial' = 'metric', withUn
   if (withUnits) enhanceUnits(target, data.meta, store);
   const laps = enhanceLaps(target, enhanceWith, selection);
   laps.taps();
-  if (distanceAdvances(enhanceWith)) startSplits(target, enhanceWith, store, laps.splits, lapsGroup);
+  const splits = distanceAdvances(enhanceWith);
+  if (splits || enhanceWith.meta.lengths.length) startSplits(target, enhanceWith, store, laps.splits, [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit], splits);
   cleanup = () => {
     unmount(app);
     target.remove();
@@ -324,6 +326,103 @@ describe('pool splits (LS-6; AC 36)', () => {
     expect(p.select()?.selectedOptions[0].text).toBe('100 yd');
     expect(p.section?.querySelectorAll('.splits th')[2].textContent).toBe('Distance (yd)');
     expect(dist(p.rows('.splits')).slice(0, -1).every((t) => t === '100')).toBe(true);
+  });
+});
+
+describe('lengths view (F-48 PL-8; AP-13)', () => {
+  const cells = (r: HTMLTableRowElement): string[] => [...r.cells].map((c) => c.textContent ?? '');
+  const heads = (p: Page): string[] => [...(p.section?.querySelectorAll('.lengths th') ?? [])].map((t) => t.textContent ?? '');
+
+  it('pool-swim: Laps, Splits and Lengths, opens on laps; 40 numbered rows and one Rest row with its time only', () => {
+    const p = open(golden('pool-swim'));
+    expect([...p.section!.querySelectorAll('.laps-switch button')].map((b) => b.textContent)).toEqual(['Laps', 'Splits', 'Lengths']);
+    expect(p.button('Laps')?.getAttribute('aria-pressed')).toBe('true');
+    expect(p.section?.querySelector('.lengths')).toBeNull(); // never built at load
+    p.button('Lengths')?.click();
+    expect(p.button('Lengths')?.getAttribute('aria-pressed')).toBe('true');
+    expect(p.section?.querySelector<HTMLElement>('.laps-scroll:not(.splits)')?.hidden).toBe(true);
+    expect(p.select()?.hidden).toBe(true);
+    const rows = p.rows('.lengths');
+    expect(rows).toHaveLength(41);
+    expect(rows.slice(0, 40).map((r) => r.cells[0].textContent)).toEqual(Array.from({ length: 40 }, (_, i) => String(i + 1)));
+    expect(cells(rows[40])).toEqual(['Rest', '', '0:00', '', '', '']);
+    expect(heads(p)).toEqual(['#', 'Stroke', 'Time', 'Pace (/100 m)', 'Strokes', 'SWOLF']);
+    expect(cells(rows[0])).toEqual(['1', 'Freestyle', '0:30', '2:00', '18', '48']);
+    p.button('Laps')?.click();
+    expect(p.section?.querySelector<HTMLElement>('.lengths')?.hidden).toBe(true);
+    expect(p.section?.querySelector<HTMLElement>('.laps-scroll:not(.splits)')?.hidden).toBe(false);
+  });
+
+  it('mixed strokes: SWOLF 36 for 0:21.6 and 14 strokes; drill without counts shows "–"; numbering continues after rests; imperial pace per 100 yd', () => {
+    const p = open(golden('pool-swim-mixed'));
+    p.button('Lengths')?.click();
+    const rows = p.rows('.lengths');
+    expect(rows).toHaveLength(16);
+    expect(cells(rows[0])).toEqual(['1', 'Freestyle', '0:22', '1:26', '14', '36']);
+    expect(cells(rows[4])).toEqual(['Rest', '', '0:30', '', '', '']);
+    expect(rows[5].cells[0].textContent).toBe('5');
+    expect(cells(rows[9]).slice(1)).toEqual(['Drill', '0:40', '2:40', '–', '–']);
+    expect(rows.map((r) => r.cells[0].textContent).filter((t) => t !== 'Rest')).toHaveLength(14);
+    p.units.set('imperial');
+    expect(heads(p)[3]).toBe('Pace (/100 yd)');
+    expect(p.rows('.lengths')[0].cells[3].textContent).toBe('1:19');
+    expect(p.rows('.lengths')[0].cells[2].textContent).toBe('0:22');
+  });
+
+  it('a row tap selects the length (start_index … end_index − 1), rest rows too; switching views keeps the range', () => {
+    const d = golden('pool-swim-mixed');
+    const p = open(d);
+    p.button('Lengths')?.click();
+    p.rows('.lengths')[4].click();
+    p.frame();
+    expect([p.selection.start(), p.selection.end()]).toEqual([d.meta.lengths[4].start_index, d.meta.lengths[4].end_index - 1]);
+    expect(p.rows('.lengths')[4].classList.contains('on')).toBe(true);
+    p.rows('.lengths')[1].click();
+    p.frame();
+    expect([p.selection.start(), p.selection.end()]).toEqual([22, 44]);
+    p.button('Splits')?.click();
+    p.frame();
+    expect([p.selection.start(), p.selection.end()]).toEqual([22, 44]);
+    p.rows('.splits:not(.lengths)')[0].click();
+    p.frame();
+    expect(p.selection.start()).toBe(0);
+    p.button('Lengths')?.click();
+    p.rows('.lengths')[2].click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([44, 66]);
+  });
+
+  it('a truncated pool swim (UP-3): its recorded lengths, pace "–" without a speed, no error', () => {
+    const p = open(golden('pool-swim-mixed-cut-80'));
+    p.button('Lengths')?.click();
+    const rows = p.rows('.lengths');
+    expect(rows).toHaveLength(13);
+    expect(cells(rows[0])).toEqual(['1', 'Freestyle', '0:22', '–', '14', '36']);
+  });
+
+  it('no stroke counts: no Strokes and SWOLF columns', () => {
+    const d = golden('pool-swim-mixed');
+    const lengths = d.meta.lengths.map(({ strokes: _, ...l }) => l);
+    const p = open({ ...d, meta: { ...d.meta, lengths } });
+    p.button('Lengths')?.click();
+    expect(heads(p)).toEqual(['#', 'Stroke', 'Time', 'Pace (/100 m)']);
+  });
+
+  it('lengths without device laps or distance: the module is revealed on Lengths, no switch, no drop-down', () => {
+    const d = golden('pool-swim-mixed');
+    const metrics = { ...d.metrics };
+    delete metrics.distance;
+    const p = open({ ...d, metrics, meta: { ...d.meta, laps: [] } });
+    expect(p.section?.hidden).toBe(false);
+    expect(p.section?.querySelector('h2')?.textContent).toBe('Lengths');
+    expect(p.section?.querySelector('.laps-switch')).toBeNull();
+    expect(p.select()).toBeNull();
+    expect(p.rows('.lengths')).toHaveLength(16);
+  });
+
+  it('rides and open-water swims get no Lengths view', () => {
+    expect(open(golden('ride-30min')).button('Lengths')).toBeUndefined();
+    cleanup?.();
+    expect(open(golden('triathlon')).button('Lengths')).toBeUndefined();
   });
 });
 

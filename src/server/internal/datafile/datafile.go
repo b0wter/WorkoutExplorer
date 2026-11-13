@@ -1,8 +1,8 @@
 // Package datafile encodes a normalised workout as the binary data file the
-// browser reads (format version 4, magic WEXD) and decodes it again.
+// browser reads (format version 5, magic WEXD) and decodes it again.
 //
 // The normative format description is architect/F-03-workout-data-file-writer.md,
-// section "Data file format, version 4"; the decisions behind it are in
+// section "Data file format, version 5"; the decisions behind it are in
 // ADR-005. The package is pure: it depends on package workout and the
 // standard library only, does no I/O and never logs (Technical Design,
 // Code structure: Dependency rules).
@@ -20,7 +20,7 @@ const Magic = "WEXD"
 
 // Version is the only format version this package writes and reads
 // (Format §9, ADR-005 item 9).
-const Version uint16 = 4
+const Version uint16 = 5
 
 // headerSize is magic, version, sample count and metadata length (Format §1).
 const headerSize = 14
@@ -72,6 +72,7 @@ type Meta struct {
 	Device    Device       `json:"device"` // version 3, §5.7
 	Sessions  []Session    `json:"sessions"`
 	Laps      []Lap        `json:"laps"`
+	Lengths   []Length     `json:"lengths"` // version 5, §5.8
 	Streams   []Descriptor `json:"streams"`
 }
 
@@ -112,6 +113,8 @@ type Summary struct {
 	Lengths      json.Number `json:"lengths,omitempty"`
 	// Version 4 (ADR-046 item 3): used only to find whole lengths in the distance stream.
 	PoolLengthRecordedM json.Number `json:"pool_length_recorded_m,omitempty"`
+	// Version 5 (ADR-048 item 4): the one stroke code of the whole swim; the summary's only string.
+	Stroke string `json:"stroke,omitempty"`
 }
 
 // Device is the device line's data (Format §5.7): the display name ("" =
@@ -139,7 +142,19 @@ type Lap struct {
 	StartIndex int    `json:"start_index"`
 	EndIndex   int    `json:"end_index"`
 	Trigger    string `json:"trigger"` // version 4, §5.3
+	Stroke     string `json:"stroke"`  // version 5, §5.3
 	Totals     Totals `json:"totals"`
+}
+
+// Length is a pool length (Format §5.8, version 5).
+type Length struct {
+	StartIndex int         `json:"start_index"`
+	EndIndex   int         `json:"end_index"`
+	Rest       bool        `json:"rest"`
+	Stroke     string      `json:"stroke"`
+	Time       json.Number `json:"time,omitempty"`
+	AvgSpeed   json.Number `json:"avg_speed,omitempty"`
+	Strokes    int         `json:"strokes,omitempty"`
 }
 
 // Descriptor describes one column (Format §5.5).

@@ -211,6 +211,7 @@ func TestLimits(t *testing.T) {
 		{"timer event flood", floodTimerEvents(100_001), limitTimerEvents},
 		{"field description flood", fd.bytes(), limitFieldDescriptions},
 		{"sport message flood", floodMesgs(mesgnum.Sport, 1_001), limitSportMessages},
+		{"length flood", floodMesgs(mesgnum.Length, 10_001), limitLengths},
 		{"sequence flood", floodSequences(65), limitSequences},
 		{"sample flood", floodRecordsEvery(150_000, 4), limitSamples},
 		{"too large", make([]byte, DefaultLimits.MaxBytes+1), limitBytes},
@@ -248,7 +249,7 @@ func TestLimits(t *testing.T) {
 // parser has is covered except the time limit (TestTimeLimit).
 func TestLimitsAtTheCap(t *testing.T) {
 	lim := Limits{MaxRecords: 100, MaxSamples: 101, MaxLaps: 5, MaxSessions: 2, MaxTimerEvents: 5,
-		MaxFieldDescriptions: 5, MaxSequences: 3, MaxSportMessages: 5}
+		MaxFieldDescriptions: 5, MaxSequences: 3, MaxSportMessages: 5, MaxLengths: 5}
 	fieldDescs := func(n int) []byte {
 		b := &fitBuilder{}
 		b.def(1, mesgnum.Record, []fieldDef{{253, 4, basetype.Uint32}})
@@ -269,6 +270,7 @@ func TestLimitsAtTheCap(t *testing.T) {
 		{"field descriptions", fieldDescs(5), fieldDescs(6), limitFieldDescriptions},
 		{"sequences", floodSequences(3), floodSequences(4), limitSequences},
 		{"sport messages", floodMesgs(mesgnum.Sport, 5), floodMesgs(mesgnum.Sport, 6), limitSportMessages},
+		{"lengths", floodMesgs(mesgnum.Length, 5), floodMesgs(mesgnum.Length, 6), limitLengths},
 	}
 	p := newTestParser(lim)
 	for _, tt := range tests {
@@ -475,6 +477,11 @@ func capFile(n int) []byte {
 	})
 	b.def(5, mesgnum.Event, []fieldDef{{253, 4, basetype.Uint32}, {0, 1, basetype.Enum}, {1, 1, basetype.Enum}})
 	b.def(6, mesgnum.Sport, []fieldDef{{0, 1, basetype.Enum}, {1, 1, basetype.Enum}})
+	// timestamp, start_time, total_elapsed_time, total_timer_time, total_strokes, swim_stroke, length_type
+	b.def(7, mesgnum.Length, []fieldDef{
+		{253, 4, basetype.Uint32}, {2, 4, basetype.Uint32}, {3, 4, basetype.Uint32}, {4, 4, basetype.Uint32},
+		{5, 2, basetype.Uint16}, {7, 1, basetype.Enum}, {12, 1, basetype.Enum},
+	})
 	sportOf := func(session int) byte { // FIT sport: running 1, cycling 2
 		if session%2 == 0 {
 			return 2
@@ -515,6 +522,9 @@ func capFile(n int) []byte {
 			p := u32(u32(nil, ts), start)
 			p = u32(u32(u32(p, lapLen*1000), lapLen*1000), lapLen*700*100)
 			b.data(4, append(p, sportOf(i/sessionLen))...)
+			// ADR-017 rev. 9: one length per lap, 10,000 in all.
+			p = u32(u32(u32(u32(nil, ts), start), lapLen*1000), lapLen*1000)
+			b.data(7, append(binary.LittleEndian.AppendUint16(p, 20), 0, 1)...)
 		}
 		if i%sessionLen == sessionLen-1 {
 			start := ts - (sessionLen - 1)
@@ -558,8 +568,9 @@ func BenchmarkParseAtCap(b *testing.B) {
 	}
 	rec := l.rec
 	rec.Integrity = res.integ
-	if len(rec.Laps) != DefaultLimits.MaxLaps || len(rec.Timer) != DefaultLimits.MaxTimerEvents || len(rec.Sports) != DefaultLimits.MaxSportMessages {
-		b.Fatalf("laps %d, timer events %d, sport messages %d", len(rec.Laps), len(rec.Timer), len(rec.Sports))
+	if len(rec.Laps) != DefaultLimits.MaxLaps || len(rec.Timer) != DefaultLimits.MaxTimerEvents || len(rec.Sports) != DefaultLimits.MaxSportMessages ||
+		len(rec.Lengths) != DefaultLimits.MaxLengths {
+		b.Fatalf("laps %d, timer events %d, sport messages %d, lengths %d", len(rec.Laps), len(rec.Timer), len(rec.Sports), len(rec.Lengths))
 	}
 	b.Run("decode", func(b *testing.B) {
 		b.ReportAllocs()

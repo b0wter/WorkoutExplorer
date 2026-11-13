@@ -19,6 +19,7 @@ type Limits struct {
 	MaxFieldDescriptions int
 	MaxSequences         int // FIT sequences of a chained file
 	MaxSportMessages     int // sport messages (ADR-017 rev. 1)
+	MaxLengths           int // length messages (ADR-017 rev. 9)
 	MaxConcurrent        int // parse slots per Parser
 }
 
@@ -35,6 +36,7 @@ var DefaultLimits = Limits{
 	MaxFieldDescriptions: 256,
 	MaxSequences:         64,
 	MaxSportMessages:     1_000,
+	MaxLengths:           10_000,
 	MaxConcurrent:        2,
 }
 
@@ -56,6 +58,7 @@ const (
 	limitFieldDescriptions = "field_descriptions"
 	limitSequences         = "sequences"
 	limitSportMessages     = "sport_messages"
+	limitLengths           = "lengths"
 )
 
 func (l Limits) withDefaults() Limits {
@@ -89,6 +92,9 @@ func (l Limits) withDefaults() Limits {
 	}
 	if l.MaxSportMessages > 0 {
 		d.MaxSportMessages = l.MaxSportMessages
+	}
+	if l.MaxLengths > 0 {
+		d.MaxLengths = l.MaxLengths
 	}
 	if l.MaxConcurrent > 0 {
 		d.MaxConcurrent = l.MaxConcurrent

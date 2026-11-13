@@ -1,0 +1,75 @@
+{
+  "fixture_version": 1,
+  "format_version": 5,
+  "byte_length": 11328,
+  "sample_count": 439,
+  "metadata_length": 4286,
+  "streams": [
+    {
+      "name": "time_offset",
+      "byte_offset": 4300,
+      "valid": 439,
+      "missing": 0,
+      "first": 0,
+      "last": 438,
+      "min": 0,
+      "max": 438,
+      "digest": "fd1aa9a4f39f1c5e"
+    },
+    {
+      "name": "distance",
+      "byte_offset": 6056,
+      "valid": 439,
+      "missing": 0,
+      "first": 0,
+      "last": 3500,
+      "min": 0,
+      "max": 3500,
+      "digest": "583b39b0c93ac369"
+    },
+    {
+      "name": "speed",
+      "byte_offset": 7812,
+      "valid": 439,
+      "missing": 0,
+      "first": 1157,
+      "last": 0,
+      "min": 0,
+      "max": 1157,
+      "digest": "9ebf1a7eb4455eb0"
+    },
+    {
+      "name": "heart_rate",
+      "byte_offset": 8692,
+      "valid": 439,
+      "missing": 0,
+      "first": 123,
+      "last": 125,
+      "min": 120,
+      "max": 130,
+      "digest": "6188d725107a536c"
+    },
+    {
+      "name": "cadence",
+      "byte_offset": 9132,
+      "valid": 439,
+      "missing": 0,
+      "first": 30,
+      "last": 0,
+      "min": 0,
+      "max": 30,
+      "digest": "d28413b280c033f7"
+    },
+    {
+      "name": "moving_time",
+      "byte_offset": 9572,
+      "valid": 439,
+      "missing": 0,
+      "first": 0,
+      "last": 438,
+      "min": 0,
+      "max": 438,
+      "digest": "fd1aa9a4f39f1c5e"
+    }
+  ]
+}

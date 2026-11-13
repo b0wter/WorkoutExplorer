@@ -11,7 +11,7 @@ import { sections, lapSections } from '../sections';
 import { distanceAdvances, lapsGroup, summaryItems } from './build';
 import type { PageLaps, PageSettings, PageViewModel } from './model';
 
-/** The hidden splits-only module of a file without laps but with an advancing distance (F-46 LS-3). */
+/** The hidden module of a file without laps but with an advancing distance (F-46 LS-3) or lengths (F-48 PL-7). */
 const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Sections: [] };
 
 /** The default title of an untitled workout (UP-4): "Ride, 9 Oct 2026". */
@@ -84,6 +84,6 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
     ChartsClass: chartsClass(data),
     Laps: laps
       ? { ...laps, Sections: lapSections(sections(meta), meta.laps, laps.Rows, laps.Columns.length) }
-      : distanceAdvances(data) ? NO_LAPS : null,
+      : distanceAdvances(data) || meta.lengths.length > 0 ? NO_LAPS : null,
   };
 }

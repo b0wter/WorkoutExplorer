@@ -275,3 +275,18 @@ func TestLapTrigger(t *testing.T) {
 		}
 	}
 }
+
+// F-48 PL-1, ADR-048 item 2: each FIT stroke maps to its code.
+func TestSwimStroke(t *testing.T) {
+	for in, want := range map[typedef.SwimStroke]string{
+		typedef.SwimStrokeFreestyle: "freestyle", typedef.SwimStrokeBackstroke: "backstroke",
+		typedef.SwimStrokeBreaststroke: "breaststroke", typedef.SwimStrokeButterfly: "butterfly",
+		typedef.SwimStrokeDrill: "drill", typedef.SwimStrokeMixed: "mixed",
+		typedef.SwimStrokeIm: "im", typedef.SwimStrokeImByRound: "im", typedef.SwimStrokeRimo: "im",
+		typedef.SwimStrokeInvalid: "", typedef.SwimStroke(9): "",
+	} {
+		if got := swimStroke(in); got != want {
+			t.Errorf("swimStroke(%d) = %q, want %q", in, got, want)
+		}
+	}
+}

@@ -180,6 +180,29 @@ describe('modules (AP-3, D-5, D-10)', () => {
     expect(buildPageViewModel({ ...r.data, metrics: noDistance }, settings).Laps).toBeNull();
     const flat = { ...r.data.metrics, distance: new Float64Array(r.data.sampleCount).fill(5) };
     expect(buildPageViewModel({ ...r.data, metrics: flat }, settings).Laps).toBeNull();
+    // F-48 PL-7: lengths without device laps or distance still render the hidden module.
+    const length = { start_index: 0, end_index: 2, rest: false, stroke: '' };
+    expect(buildPageViewModel({ ...r.data, metrics: flat, meta: { ...r.data.meta, lengths: [length] } }, settings).Laps?.None).toBe('yes');
+  });
+
+  it('PL-7: the stroke column comes before the trigger, when a lap has a known stroke; words as AP-13', () => {
+    const lap = (stroke: string, trigger = '') => ({ stroke, trigger, totals: { elapsed_time: 60 } });
+    const codes = ['freestyle', 'backstroke', 'breaststroke', 'butterfly', 'drill', 'mixed', 'im', 'bogus', '', 'toString'];
+    const g = lapsGroup('swimming', codes.map((c) => lap(c, 'distance')))!;
+    expect(g.Columns.slice(-2).map((c) => c.Label)).toEqual(['Stroke', 'Trigger']);
+    expect(g.Rows.map((r) => r[r.length - 2])).toEqual(['Freestyle', 'Backstroke', 'Breaststroke', 'Butterfly', 'Drill', 'Mixed', 'IM', '', '', '']);
+    expect(lapsGroup('swimming', [lap(''), lap('bogus')])!.Columns.map((c) => c.Key)).not.toContain('stroke');
+  });
+
+  it('PL-7: the summary stroke cell right after lengths, the word without a unit; none for an unknown code', () => {
+    const items = summaryItems('swimming', { pool_length_m: 25, lengths: 40, avg_speed: 1, stroke: 'butterfly' });
+    expect(items.map((i) => i.Key)).toEqual(['pool', 'lengths', 'stroke', 'speed']);
+    expect(items[2]).toEqual({ Key: 'stroke', Label: 'Stroke', Value: 'Butterfly', Unit: '', Max: '' });
+    expect(summaryItems('swimming', { lengths: 40, stroke: 'bogus' }).map((i) => i.Key)).toEqual(['lengths']);
+    expect(byName('pool-swim').Summary.map((i) => i.Key)).toContain('stroke');
+    expect(byName('pool-swim-mixed').Summary.map((i) => i.Key)).not.toContain('stroke');
+    expect(byName('pool-swim-mixed').Laps!.Rows.map((r) => r[r.length - 1])).toEqual(['Freestyle', '', 'Backstroke', 'Drill', 'Mixed']);
+    expect(byName('triathlon').Laps!.Columns.map((c) => c.Key)).not.toContain('stroke');
   });
 });
 

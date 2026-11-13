@@ -94,6 +94,17 @@ func totalsOf(v any) totals {
 	return t
 }
 
+// numbersOf is the summary without its only string, stroke (ADR-048 item 4).
+func numbersOf(s datafile.Summary) datafile.Summary {
+	s.Stroke = ""
+	return s
+}
+
+// strokeWords are the AP-13 words of the stroke codes (ADR-048 item 2); an
+// unlisted code has none.
+var strokeWords = map[string]string{"freestyle": "Freestyle", "backstroke": "Backstroke", "breaststroke": "Breaststroke",
+	"butterfly": "Butterfly", "drill": "Drill", "mixed": "Mixed", "im": "IM"}
+
 func (t totals) get(k string) (float64, bool) { v, ok := t[k]; return v, ok }
 
 func intText(v float64) string { return formatFixed(v, 0) }
@@ -137,7 +148,7 @@ func Build(f datafile.File, s Settings) ViewModel {
 			ExpiresAt:   expires,
 			ExpiresText: "Expires around " + formatDate(expires, offset),
 		},
-		Summary:     summaryItems(m.Sport, totalsOf(m.Summary)),
+		Summary:     summaryItems(m.Sport, totalsOf(numbersOf(m.Summary)), m.Summary.Stroke),
 		Device:      deviceLine(m.Device),
 		Route:       route,
 		ChartsClass: chartsClass(f),
@@ -220,12 +231,13 @@ func CardItems(f datafile.File, vm ViewModel) []SummaryItem {
 var cardSpeedSports = map[string]bool{"cycling": true, "running": true, "walking": true, "hiking": true, "swimming": true}
 
 // lapsOrNone is F-46 LS-3: the laps group, or the hidden "Splits" module when
-// the file has no laps but its distance advances, or nil.
+// the file has no laps but its distance advances or (F-48 PL-7) it has
+// lengths, or nil.
 func lapsOrNone(f datafile.File) *Laps {
 	if l := lapsGroup(f.Meta.Sport, f.Meta.Laps); l != nil {
 		return l
 	}
-	if distanceAdvances(f) {
+	if distanceAdvances(f) || len(f.Meta.Lengths) > 0 {
 		return &Laps{Columns: []Column{}, Rows: [][]string{}, None: "yes", Sections: []LapsSection{}}
 	}
 	return nil
@@ -267,7 +279,8 @@ func pair(key, label, unit string, t totals, avgKey, maxKey string, fmt func(flo
 }
 
 // summaryItems: the AP-2 metrics the summary has, in AP-2 order.
-func summaryItems(sport string, t totals) []SummaryItem {
+// F-48 PL-7: "Stroke" right after "Lengths", the word as value.
+func summaryItems(sport string, t totals, stroke string) []SummaryItem {
 	items := []SummaryItem{}
 	one := func(key, label, tk, unit string, fmt func(float64) string) {
 		if v, ok := t.get(tk); ok {
@@ -286,6 +299,9 @@ func summaryItems(sport string, t totals) []SummaryItem {
 	one("pool", "Pool", "pool_length_m", "m", intText)
 	one("pool", "Pool", "pool_length_yd", "yd", intText)
 	one("lengths", "Lengths", "lengths", "", intText)
+	if w := strokeWords[stroke]; w != "" {
+		items = append(items, SummaryItem{Key: "stroke", Label: "Stroke", Value: w})
+	}
 	speedLabel := "speed"
 	if isPaceSport(sport) {
 		speedLabel = "pace"
@@ -378,13 +394,17 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 	// F-46 LS-2: the last column, when at least one lap has a known trigger.
 	words := map[string]string{"button": "Button", "time": "Time", "distance": "Distance",
 		"position": "Position", "stop": "Stop", "equipment": "Equipment"}
-	showTrigger := false
+	showTrigger, showStroke := false, false
 	for _, l := range laps {
 		showTrigger = showTrigger || words[l.Trigger] != ""
+		showStroke = showStroke || strokeWords[l.Stroke] != "" // F-48 PL-7
 	}
 	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps)), Sections: []LapsSection{}}
 	for _, c := range shown {
 		out.Columns = append(out.Columns, Column{Key: c.key, Label: c.label})
+	}
+	if showStroke {
+		out.Columns = append(out.Columns, Column{Key: "stroke", Label: "Stroke"})
 	}
 	if showTrigger {
 		out.Columns = append(out.Columns, Column{Key: "trigger", Label: "Trigger"})
@@ -393,6 +413,9 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 		row := []string{strconv.Itoa(i + 1)}
 		for _, c := range shown {
 			row = append(row, cell(t, c))
+		}
+		if showStroke {
+			row = append(row, strokeWords[laps[i].Stroke])
 		}
 		if showTrigger {
 			row = append(row, words[laps[i].Trigger])

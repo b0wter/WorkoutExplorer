@@ -30,6 +30,7 @@ export interface MetaFields {
   device: unknown;
   sessions: unknown;
   laps: unknown;
+  lengths: unknown;
 }
 
 export interface MetaJson extends MetaFields {
@@ -65,6 +66,7 @@ const DEFAULT_META: MetaFields = {
   device: { name: '', sensors: [] },
   sessions: [],
   laps: [],
+  lengths: [],
 };
 
 const encoder = new TextEncoder();

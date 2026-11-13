@@ -231,16 +231,17 @@ function decodeRaw(buffer: ArrayBuffer, offset: number, n: number, spec: StreamS
   return out;
 }
 
-/** Rule 7 for sessions, then laps: end ≥ start and 0 ≤ start_index ≤ end_index ≤ N. */
+/** Rule 7 for sessions, laps, then lengths (v1.8, no offsets): end ≥ start and 0 ≤ start_index ≤ end_index ≤ N. */
 function checkRanges(meta: WorkoutMeta, n: number): Failure | undefined {
-  const groups: readonly [string, readonly { start: number; end: number; start_index: number; end_index: number }[]][] = [
+  const groups: readonly [string, readonly { start?: number; end?: number; start_index: number; end_index: number }[]][] = [
     ['session', meta.sessions],
     ['lap', meta.laps],
+    ['length', meta.lengths],
   ];
   for (const [kind, items] of groups) {
     for (let i = 0; i < items.length; i++) {
       const r = items[i];
-      if (r.end < r.start) return failure('corrupt', 7, `data file: ${kind} ${i}: end before start`);
+      if ((r.end ?? 0) < (r.start ?? 0)) return failure('corrupt', 7, `data file: ${kind} ${i}: end before start`);
       if (r.start_index < 0 || r.start_index > r.end_index || r.end_index > n) {
         return failure('corrupt', 7, `data file: ${kind} ${i}: index range outside the samples`);
       }

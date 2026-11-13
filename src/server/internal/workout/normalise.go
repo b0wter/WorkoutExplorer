@@ -15,14 +15,15 @@ func Normalise(rec Recording) Workout {
 	for _, s := range rec.Sessions {
 		start, end := spanOffsets(w.StartTime, s.Start, s.End)
 		w.Sessions = append(w.Sessions, Session{
-			Sport: s.Sport, SubSport: s.SubSport, Start: start, End: end, Totals: s.Totals, Pool: s.Pool,
+			Sport: s.Sport, SubSport: s.SubSport, Start: start, End: end, Totals: s.Totals, Pool: s.Pool, Stroke: s.Stroke,
 		})
 	}
 	w.Laps = make([]Lap, 0, len(rec.Laps))
 	for _, l := range rec.Laps {
 		start, end := spanOffsets(w.StartTime, l.Start, l.End)
-		w.Laps = append(w.Laps, Lap{Start: start, End: end, Trigger: l.Trigger, Totals: l.Totals})
+		w.Laps = append(w.Laps, Lap{Start: start, End: end, Trigger: l.Trigger, Stroke: l.Stroke, Totals: l.Totals})
 	}
+	scopeLengths(&w, rec.Lengths) // F-48 PL-2, PL-3
 	w.Timer = make([]TimerEvent, 0, len(rec.Timer))
 	for _, e := range rec.Timer {
 		if e.At.IsZero() || (e.Kind != TimerStart && e.Kind != TimerStop) {
@@ -103,4 +104,5 @@ func setPool(w *Workout) {
 			}
 		}
 	}
+	w.Summary.Stroke = summaryStroke(w) // F-48 PL-4
 }

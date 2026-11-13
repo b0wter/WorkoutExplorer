@@ -20,7 +20,8 @@ import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
 import { parseRangeLink, rangeFragment } from '../lib/rangelink';
 import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceHowto, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
-import { distanceAdvances, lapsGroup } from '../lib/page';
+import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
+import { formatElapsed, formatSpeedOrPace, speedOrPaceUnit } from '../lib/format';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
@@ -210,8 +211,13 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     // F-42 MS-1, MS-9: section lines, names and separator ranges are a lazy chunk, for a workout
     // whose sessions hold two or more sports only; failing, the page stays as it is.
     if (new Set(data.meta.sessions.map((s) => s.sport)).size > 1) import('../sections').then((m) => m.startSections(data, look, laps.legs), () => console.warn('page: sections chunk failed'));
-    // F-46 LS-4: the switch, the splits and their drop-down are a lazy chunk; failing, laps only.
-    if (distanceAdvances(data)) import('../splits').then((m) => m.startSplits(root, data, units, laps.splits, lapsGroup), () => console.warn('page: splits chunk failed'));
+    // F-46 LS-4, F-48 PL-8: the switch, the splits with their drop-down and the lengths are a lazy
+    // chunk; failing, laps only.
+    const splits = distanceAdvances(data);
+    if (splits || data.meta.lengths.length) {
+      const fmt = [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit] as const;
+      import('../splits').then((m) => m.startSplits(root, data, units, laps.splits, fmt, splits), () => console.warn('page: splits chunk failed'));
+    }
   };
   if (map && mapSlot) {
     mount(RouteMap, { target: mapSlot, props: map.props });

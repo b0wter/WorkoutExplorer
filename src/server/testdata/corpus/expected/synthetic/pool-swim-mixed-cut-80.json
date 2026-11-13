@@ -1,0 +1,167 @@
+{
+  "report_version": 2,
+  "file_type": "activity",
+  "device": {
+    "manufacturer": "development",
+    "product_id": 1,
+    "product_name": "corpusgen"
+  },
+  "start_time": "2026-07-11T05:00:00Z",
+  "time_zone": {
+    "known": false,
+    "offset_seconds": 0
+  },
+  "integrity": {
+    "truncated": true,
+    "data_end": 358,
+    "crc_failed": false,
+    "sequences": 1,
+    "skipped_sequences": 0,
+    "ignored_bytes": 0
+  },
+  "sessions": [],
+  "laps": [
+    {
+      "start": 0,
+      "end": 88,
+      "totals": {
+        "elapsed_time": 88.000,
+        "timer_time": 88.000,
+        "distance": 100.000,
+        "avg_speed": 1.136,
+        "max_speed": 1.157,
+        "avg_heart_rate": 125.000,
+        "max_heart_rate": 130.000,
+        "avg_cadence": 27.672,
+        "max_cadence": 30.000
+      }
+    },
+    {
+      "start": 88,
+      "end": 118,
+      "totals": {
+        "elapsed_time": 30.000,
+        "timer_time": 30.000,
+        "distance": 0.000,
+        "avg_speed": 0.000,
+        "max_speed": 1.000,
+        "avg_heart_rate": 126.000,
+        "max_heart_rate": 130.000,
+        "avg_cadence": 0.836,
+        "max_cadence": 26.000
+      }
+    },
+    {
+      "start": 118,
+      "end": 218,
+      "totals": {
+        "elapsed_time": 100.000,
+        "timer_time": 100.000,
+        "distance": 100.000,
+        "avg_speed": 1.000,
+        "max_speed": 1.000,
+        "avg_heart_rate": 125.000,
+        "max_heart_rate": 130.000,
+        "avg_cadence": 27.828,
+        "max_cadence": 30.000
+      }
+    },
+    {
+      "start": 218,
+      "end": 318,
+      "totals": {
+        "elapsed_time": 100.000,
+        "timer_time": 100.000,
+        "distance": 50.000,
+        "avg_speed": 0.500,
+        "max_speed": 0.833,
+        "avg_heart_rate": 126.000,
+        "max_heart_rate": 130.000,
+        "avg_cadence": 22.219,
+        "max_cadence": 30.000
+      }
+    }
+  ],
+  "timer_events": [
+    {
+      "offset": 0,
+      "kind": "start"
+    }
+  ],
+  "samples": {
+    "count": 359,
+    "last_offset": 358,
+    "filled": 0,
+    "gaps": {
+      "count": 0,
+      "total_seconds": 0,
+      "longest_seconds": 0
+    },
+    "offsets_digest": "f9cb707a32671383"
+  },
+  "streams": {
+    "distance": {
+      "present": 359,
+      "missing": 0,
+      "min": 0.00,
+      "max": 275.00,
+      "first": 0.00,
+      "last": 275.00,
+      "mean": 146.45,
+      "digest": "686a6982a733d48d"
+    },
+    "speed": {
+      "present": 359,
+      "missing": 0,
+      "min": 0.000,
+      "max": 1.157,
+      "first": 1.157,
+      "last": 0.833,
+      "mean": 0.797,
+      "digest": "42dea1e9dee0aa23"
+    },
+    "heart_rate": {
+      "present": 359,
+      "missing": 0,
+      "min": 120.00,
+      "max": 130.00,
+      "first": 123.00,
+      "last": 130.00,
+      "mean": 125.17,
+      "digest": "e246a91bca224b45"
+    },
+    "cadence": {
+      "present": 359,
+      "missing": 0,
+      "min": 0.00,
+      "max": 30.00,
+      "first": 30.00,
+      "last": 30.00,
+      "mean": 24.02,
+      "digest": "df268373bc4c86fc"
+    }
+  },
+  "derived": {
+    "elapsed_time": 358.000,
+    "moving_time": 358.000,
+    "moving_time_source": "timer",
+    "distance": 275.000,
+    "avg_speed": 0.768,
+    "max_speed": 1.157,
+    "avg_heart_rate": 125.167,
+    "max_heart_rate": 130.000,
+    "avg_cadence": 27.906,
+    "max_cadence": 30.000
+  },
+  "summary": {
+    "elapsed_time": 358.000,
+    "distance": 275.000,
+    "avg_speed": 0.768,
+    "max_speed": 1.157,
+    "avg_heart_rate": 125.167,
+    "max_heart_rate": 130.000,
+    "avg_cadence": 27.906,
+    "max_cadence": 30.000,
+    "moving_time": 358.000
+  }
+}

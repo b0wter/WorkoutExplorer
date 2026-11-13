@@ -5,7 +5,7 @@
 //
 // Error messages name the key or the element index, never a value from the file.
 
-import type { DataFileError, DataFileErrorCode, Device, Lap, Session, Summary, SummaryKey, TimeZone, Totals, TotalKey, WorkoutMeta } from './model';
+import type { DataFileError, DataFileErrorCode, Device, Lap, Length, Session, Summary, SummaryKey, TimeZone, Totals, TotalKey, WorkoutMeta } from './model';
 
 /** A stream descriptor as written in the metadata (F-03 §5.5); consumed by the decoder. */
 export interface Descriptor {
@@ -67,11 +67,14 @@ function field(o: Json, key: string, where: string): unknown {
   return o[key];
 }
 
-function str(o: Json, key: string, where: string): string {
+/** A key of one JSON kind other than number or object. */
+function typed<T>(o: Json, key: string, where: string, type: 'string' | 'boolean'): T {
   const v = field(o, key, where);
-  if (typeof v !== 'string') throw new MetaError(`${where}${key} is not a string`);
-  return v;
+  if (typeof v !== type) throw new MetaError(`${where}${key} is not a ${type}`);
+  return v as T;
 }
+
+const str = (o: Json, key: string, where: string): string => typed(o, key, where, 'string');
 
 function int(o: Json, key: string, where: string): number {
   const v = field(o, key, where);
@@ -136,7 +139,22 @@ function lap(v: unknown, i: number): Lap {
     start_index: int(o, 'start_index', w),
     end_index: int(o, 'end_index', w),
     trigger: str(o, 'trigger', w),
+    stroke: str(o, 'stroke', w),
     totals: totals(obj(o, 'totals', w), TOTAL_KEYS, `${w}totals.`) as Totals,
+  };
+}
+
+/** §5.8: four required keys, then time, avg_speed and strokes, each kept only when present. */
+function length(v: unknown, i: number): Length {
+  const w = `length ${i}: `;
+  const o = element(v, `length ${i}`);
+  return {
+    start_index: int(o, 'start_index', w),
+    end_index: int(o, 'end_index', w),
+    rest: typed(o, 'rest', w, 'boolean'),
+    stroke: str(o, 'stroke', w),
+    ...totals(o, ['time', 'avg_speed'], w),
+    ...(Object.hasOwn(o, 'strokes') ? { strokes: int(o, 'strokes', w) } : {}),
   };
 }
 
@@ -189,6 +207,7 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
     ['device', 'object'],
     ['sessions', 'array'],
     ['laps', 'array'],
+    ['lengths', 'array'],
     ['streams', 'array'],
   ];
   for (const [key, kind] of kinds) {
@@ -200,17 +219,18 @@ export function parseMeta(bytes: Uint8Array): MetaResult {
 
   try {
     const tz = top.time_zone as Json;
-    const known = field(tz, 'known', 'time_zone.');
-    if (typeof known !== 'boolean') throw new MetaError('time_zone.known is not a boolean');
-    const time_zone: TimeZone = { known, offset_seconds: int32(tz, 'offset_seconds', 'time_zone.') };
+    const time_zone: TimeZone = { known: typed(tz, 'known', 'time_zone.', 'boolean'), offset_seconds: int32(tz, 'offset_seconds', 'time_zone.') };
+    const summary = top.summary as Json;
     const meta: WorkoutMeta = {
       sport: top.sport as string,
       start_time: top.start_time as string,
       time_zone,
-      summary: totals(top.summary as Json, SUMMARY_KEYS, 'summary.') as Summary,
+      // The summary's only string (ADR-048 item 4), typed apart from the numbers.
+      summary: { ...totals(summary, SUMMARY_KEYS, 'summary.'), ...(Object.hasOwn(summary, 'stroke') ? { stroke: str(summary, 'stroke', 'summary.') } : {}) } as Summary,
       device: device(top.device as Json),
       sessions: (top.sessions as unknown[]).map(session),
       laps: (top.laps as unknown[]).map(lap),
+      lengths: (top.lengths as unknown[]).map(length),
     };
     const streams = (top.streams as unknown[]).map(descriptor);
     return { ok: true, meta, streams };

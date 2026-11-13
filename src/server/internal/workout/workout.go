@@ -19,6 +19,7 @@ type Workout struct {
 	TimeZone  TimeZone  // R-9
 	Sessions  []Session // file order
 	Laps      []Lap     // file order
+	Lengths   []Length  // F-48 PL-2: pool-swim lengths, by start
 	Timer     []TimerEvent
 	Samples   Samples
 	Derived   Derived
@@ -60,6 +61,11 @@ type Session struct {
 	End      int32
 	Totals   Totals
 	Pool     Pool
+	Stroke   string // F-48: stroke code, "" = none
+
+	// hasLengths: the session held a length message (F-48 PL-4, PL-6);
+	// kept by Trim, so a trimmed pool swim still counts as having them.
+	hasLengths bool
 }
 
 // Pool holds a session's pool values as recorded (F-44 PS-2); zero = not
@@ -77,7 +83,19 @@ type Lap struct {
 	Start   int32
 	End     int32
 	Trigger string // F-46 LS-1, as RawLap.Trigger
+	Stroke  string // F-48: stroke code, "" outside pool swims
 	Totals  Totals
+}
+
+// Length is a pool length (F-48 PL-3); Start and End are time offsets in
+// seconds. A rest length carries only Time.
+type Length struct {
+	Start, End int32
+	Rest       bool
+	Stroke     string   // stroke code, "" = none
+	Time       *float64 // recorded timer time, s
+	AvgSpeed   *float64 // pool length ÷ Time, else the recorded average speed, m/s
+	Strokes    uint16   // stroke count; 0 = not recorded
 }
 
 // TimerKind is the kind of a timer event.
@@ -170,4 +188,6 @@ type Summary struct {
 	// ADR-046 item 3: the first pool swim's recorded length in metres; set
 	// exactly when PoolLengthM or PoolLengthYd is.
 	PoolRecordedM *float64
+	// F-48 PL-4: the one stroke code of the whole swim, "" = none.
+	Stroke string
 }

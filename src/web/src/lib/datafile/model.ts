@@ -65,7 +65,8 @@ export type TotalKey =
 export type Totals = Readonly<Partial<Record<TotalKey, number>>>;
 /** Summary keys beyond the totals: moving time, (version 3, F-44) the pool values in whole units and (version 4, ADR-046) the recorded pool length in metres, never printed. */
 export type SummaryKey = TotalKey | 'moving_time' | 'pool_length_m' | 'pool_length_yd' | 'lengths' | 'pool_length_recorded_m';
-export type Summary = Readonly<Partial<Record<SummaryKey, number>>>;
+/** Version 5 (ADR-048 item 4): `stroke`, the one stroke code of the whole swim, is the summary's only string. */
+export type Summary = Readonly<Partial<Record<SummaryKey, number>>> & { readonly stroke?: string };
 
 /** The device line's data (F-03 §5.7, F-43): display name ('' = none) and sensor codes in their fixed order. */
 export interface Device {
@@ -95,7 +96,24 @@ export interface Lap {
   readonly end_index: number;
   /** Version 4 (ADR-046): button, time, distance, position, stop, equipment; '' or any other string = unknown. */
   readonly trigger: string;
+  /** Version 5 (ADR-048 item 2): freestyle, backstroke, breaststroke, butterfly, drill, mixed, im; '' or any other string = unknown. */
+  readonly stroke: string;
   readonly totals: Totals;
+}
+
+/** A pool length (F-03 §5.8, version 5). The optional values are absent when not recorded or derivable. */
+export interface Length {
+  readonly start_index: number;
+  readonly end_index: number;
+  readonly rest: boolean;
+  /** As the lap's stroke; '' on every rest length. */
+  readonly stroke: string;
+  /** Recorded timer time, s. */
+  readonly time?: number;
+  /** m/s, server-derived (F-48 PL-3); never on a rest length. */
+  readonly avg_speed?: number;
+  /** Stroke count, at least 1; never on a rest length. */
+  readonly strokes?: number;
 }
 
 export interface WorkoutMeta {
@@ -107,6 +125,8 @@ export interface WorkoutMeta {
   readonly device: Device;
   readonly sessions: readonly Session[];
   readonly laps: readonly Lap[];
+  /** Version 5: pool lengths in recorded order, [] for most workouts. */
+  readonly lengths: readonly Length[];
 }
 
 export type DataFileErrorCode =

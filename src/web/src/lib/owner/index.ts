@@ -26,8 +26,8 @@ export interface Settings {
   /** F-47 TR-3: RFC 3339 UTC instants of the first and last remaining sample; null = that end not trimmed. */
   readonly trim_start_at: string | null;
   readonly trim_end_at: string | null;
-  /** Read-only, F-47 TR-8: the trimmed workout's sport and summary (draft.bin's summary shape); null without a trim. */
-  readonly trimmed: { readonly sport: string; readonly summary: Readonly<Record<string, number>> } | null;
+  /** Read-only, F-47 TR-8: the trimmed workout's sport and summary (draft.bin's summary shape, `stroke` its only string); null without a trim. */
+  readonly trimmed: { readonly sport: string; readonly summary: Readonly<Record<string, number | string>> } | null;
 }
 
 /** F-36 MC-2, MC-4: the server's preview frame for the public route, its key and whether a stored

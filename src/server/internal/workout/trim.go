@@ -91,7 +91,7 @@ func Trim(w Workout, a, b int) Workout {
 			continue
 		}
 		x.Start, x.End = shift(x.Start, x.End)
-		x.Pool.Lengths = 0 // OQ-179: the pool length stays, the number of lengths goes
+		x.Pool.Lengths = 0 // OQ-179: the pool length stays, the device count goes; trimmedLengths recounts (OQ-181)
 		if cut {
 			x.Totals = Totals{}
 		}
@@ -109,6 +109,15 @@ func Trim(w Workout, a, b int) Workout {
 			x.Totals = Totals{}
 		}
 		out.Laps = append(out.Laps, x)
+	}
+
+	// F-48 PL-6 (OQ-180): only whole lengths inside the window stay.
+	out.Lengths = nil
+	for _, x := range w.Lengths {
+		if inside(x.Start, x.End) {
+			x.Start, x.End = x.Start-oa, x.End-oa
+			out.Lengths = append(out.Lengths, x)
+		}
 	}
 
 	// Timer events: the state at the cut becomes a first event at 0.
@@ -176,6 +185,7 @@ func Trim(w Workout, a, b int) Workout {
 	out.Summary = summarise(legs, sports, out.Derived, false)
 	out.Summary.PoolRecordedM = nil
 	setPool(&out)
+	out.Summary.Lengths = trimmedLengths(&out) // OQ-181
 	for i := range out.Sessions {
 		if !cutSessions[i] {
 			continue

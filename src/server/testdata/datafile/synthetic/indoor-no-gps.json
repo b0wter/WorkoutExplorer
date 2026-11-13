@@ -1,13 +1,13 @@
 {
   "fixture_version": 1,
-  "format_version": 4,
-  "byte_length": 71424,
+  "format_version": 5,
+  "byte_length": 71484,
   "sample_count": 3601,
-  "metadata_length": 2976,
+  "metadata_length": 3037,
   "streams": [
     {
       "name": "time_offset",
-      "byte_offset": 2992,
+      "byte_offset": 3052,
       "valid": 3601,
       "missing": 0,
       "first": 0,
@@ -18,7 +18,7 @@
     },
     {
       "name": "distance",
-      "byte_offset": 17396,
+      "byte_offset": 17456,
       "valid": 3601,
       "missing": 0,
       "first": 0,
@@ -29,7 +29,7 @@
     },
     {
       "name": "speed",
-      "byte_offset": 31800,
+      "byte_offset": 31860,
       "valid": 3601,
       "missing": 0,
       "first": 8140,
@@ -40,7 +40,7 @@
     },
     {
       "name": "heart_rate",
-      "byte_offset": 39004,
+      "byte_offset": 39064,
       "valid": 3601,
       "missing": 0,
       "first": 144,
@@ -51,7 +51,7 @@
     },
     {
       "name": "cadence",
-      "byte_offset": 42608,
+      "byte_offset": 42668,
       "valid": 3601,
       "missing": 0,
       "first": 92,
@@ -62,7 +62,7 @@
     },
     {
       "name": "power",
-      "byte_offset": 46212,
+      "byte_offset": 46272,
       "valid": 3601,
       "missing": 0,
       "first": 236,
@@ -73,7 +73,7 @@
     },
     {
       "name": "temperature",
-      "byte_offset": 53416,
+      "byte_offset": 53476,
       "valid": 3601,
       "missing": 0,
       "first": 21,
@@ -84,7 +84,7 @@
     },
     {
       "name": "moving_time",
-      "byte_offset": 57020,
+      "byte_offset": 57080,
       "valid": 3601,
       "missing": 0,
       "first": 0,

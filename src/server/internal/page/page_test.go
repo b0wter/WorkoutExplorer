@@ -1,9 +1,11 @@
 package page
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -91,6 +93,7 @@ var samples = []sampleSpec{
 	{"ride-no-laps", "ride-no-laps", "", "", nil, false, ""},
 	{"ride-lap-triggers", "ride-lap-triggers", "", "", nil, false, ""},
 	{"pool-swim-33m", "pool-swim-33m", "", "", nil, false, ""},
+	{"pool-swim-mixed", "pool-swim-mixed", "", "", nil, false, ""}, // F-48 PL-7: mixed strokes, a lap without one
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
 		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", hostileDevice, false, ""},
 }
@@ -102,9 +105,15 @@ const (
 
 var expiresAt = time.Date(2026, 10, 30, 9, 15, 0, 0, time.UTC)
 
+// updateSamples rewrites the samples from Build, in the committed form of
+// samples.ts (2-space JSON, trailing newline, the card placeholder). For a
+// backend-first data file change; UPDATE_SAMPLES=1 npm test must then give
+// the same values.
+var updateSamples = flag.Bool("update", false, "rewrite testdata/page from the Go builder")
+
 func TestSamples(t *testing.T) {
 	files, _ := filepath.Glob(filepath.Join(samplesDir, "*.json"))
-	if len(files) != len(samples) {
+	if len(files) != len(samples) && !*updateSamples {
 		t.Fatalf("%d committed samples, %d specs: keep the list in step with samples.ts", len(files), len(samples))
 	}
 	for _, sp := range samples {
@@ -128,6 +137,19 @@ func TestSamples(t *testing.T) {
 			got, err := json.Marshal(vm)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if *updateSamples {
+				vm.Card = Card{Title: "Sample", Description: "Sample", Image: "http://127.0.0.1:8088/preview.png"}
+				var buf bytes.Buffer
+				enc := json.NewEncoder(&buf)
+				enc.SetEscapeHTML(false)
+				enc.SetIndent("", "  ")
+				if err := enc.Encode(vm); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(samplesDir, sp.name+".json"), buf.Bytes(), 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
 			want, err := os.ReadFile(filepath.Join(samplesDir, sp.name+".json"))
 			if err != nil {
@@ -396,5 +418,56 @@ func TestTriggerColumn(t *testing.T) {
 		if c.Key == "trigger" {
 			t.Error("trigger column without a known trigger")
 		}
+	}
+}
+
+// TestStrokeColumnAndCell (F-48 PL-7): the Stroke column comes before
+// Trigger, shows when a lap has a known code, leaves unknown cells empty;
+// the summary cell follows "Lengths" and only for a known code.
+func TestStrokeColumnAndCell(t *testing.T) {
+	lap := func(stroke, trigger string) datafile.Lap {
+		return datafile.Lap{Stroke: stroke, Trigger: trigger, Totals: datafile.Totals{ElapsedTime: "60"}}
+	}
+	l := lapsGroup("swimming", []datafile.Lap{lap("im", "button"), lap("", ""), lap("bogus", ""), lap("butterfly", "")})
+	n := len(l.Columns)
+	if l.Columns[n-2] != (Column{Key: "stroke", Label: "Stroke"}) || l.Columns[n-1].Key != "trigger" {
+		t.Fatalf("columns = %+v", l.Columns)
+	}
+	var got []string
+	for _, r := range l.Rows {
+		got = append(got, r[len(r)-2])
+	}
+	if !reflect.DeepEqual(got, []string{"IM", "", "", "Butterfly"}) {
+		t.Errorf("cells = %q", got)
+	}
+	for _, c := range lapsGroup("swimming", []datafile.Lap{lap("", ""), lap("bogus", "")}).Columns {
+		if c.Key == "stroke" {
+			t.Error("stroke column without a known stroke")
+		}
+	}
+
+	for code, word := range strokeWords {
+		items := summaryItems("swimming", totals{"lengths": 4, "avg_speed": 1}, code)
+		if items[1] != (SummaryItem{Key: "stroke", Label: "Stroke", Value: word}) || items[0].Key != "lengths" {
+			t.Errorf("%s: summary = %+v", code, items)
+		}
+	}
+	for _, i := range summaryItems("swimming", totals{"lengths": 4}, "bogus") {
+		if i.Key == "stroke" {
+			t.Error("stroke cell for an unknown code")
+		}
+	}
+}
+
+// TestLengthsWithoutLaps (F-48 PL-7, LS-3): a workout with lengths and no
+// device laps gets the hidden module even when its distance does not advance.
+func TestLengthsWithoutLaps(t *testing.T) {
+	f := datafile.File{Meta: datafile.Meta{Lengths: []datafile.Length{{}}}}
+	if l := lapsOrNone(f); l == nil || l.None != "yes" {
+		t.Errorf("lapsOrNone = %+v", l)
+	}
+	f.Meta.Lengths = nil
+	if lapsOrNone(f) != nil {
+		t.Error("module without laps, splits or lengths")
 	}
 }

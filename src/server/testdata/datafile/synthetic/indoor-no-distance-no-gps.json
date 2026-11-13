@@ -1,13 +1,13 @@
 {
   "fixture_version": 1,
-  "format_version": 4,
-  "byte_length": 17204,
+  "format_version": 5,
+  "byte_length": 17232,
   "sample_count": 1801,
-  "metadata_length": 978,
+  "metadata_length": 1004,
   "streams": [
     {
       "name": "time_offset",
-      "byte_offset": 992,
+      "byte_offset": 1020,
       "valid": 1801,
       "missing": 0,
       "first": 0,
@@ -18,7 +18,7 @@
     },
     {
       "name": "heart_rate",
-      "byte_offset": 8196,
+      "byte_offset": 8224,
       "valid": 1801,
       "missing": 0,
       "first": 120,
@@ -29,7 +29,7 @@
     },
     {
       "name": "moving_time",
-      "byte_offset": 10000,
+      "byte_offset": 10028,
       "valid": 1801,
       "missing": 0,
       "first": 0,

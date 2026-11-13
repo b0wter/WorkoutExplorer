@@ -10,6 +10,7 @@ export type {
   DataFileResult,
   Device,
   Lap,
+  Length,
   MetricName,
   Position,
   Session,

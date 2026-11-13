@@ -358,3 +358,61 @@ func TestTrimMemoryStopRule(t *testing.T) {
 		t.Errorf("trimmed peak %d MB above untrimmed %d MB (TR-10 stop rule)", cut>>20, plain>>20)
 	}
 }
+
+// TestTrimKeepsTrimmedLengthsOut (F-48 PL-6, OQ-180, OQ-181; F-47 marker
+// check extended): a pool swim trimmed at both ends. The lengths before the
+// window and the one each end cuts through carry marker stroke counts, times
+// and strokes; no public file holds one. Owner summary equals the public one,
+// stroke and lengths included.
+func TestTrimKeepsTrimmedLengthsOut(t *testing.T) {
+	t0 := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
+	at := func(i int) time.Time { return t0.Add(time.Duration(i) * time.Second) }
+	recs := make([]workout.RawRecord, 600)
+	for i := range recs {
+		recs[i] = workout.RawRecord{At: at(i), Lat: math.NaN(), Lon: math.NaN(), Altitude: math.NaN(), Power: math.NaN(),
+			Temperature: math.NaN(), Cadence: 28, HeartRate: 130, Speed: 0.6, Distance: float64(i/40) * 25}
+	}
+	var lengths []workout.RawLength
+	for from := 0; from < 600; from += 40 {
+		l := workout.RawLength{Start: at(from), End: at(from + 40), Stroke: "freestyle", Time: 39.5, AvgSpeed: math.NaN(), Strokes: 20}
+		if from < 120 || from >= 480 { // before the window, cut by it, or after it
+			l.Stroke, l.Time, l.Strokes = "butterfly", 55.555, 4321
+			if from == 80 || from == 480 {
+				l.Stroke, l.Strokes = "backstroke", 4322
+			}
+		}
+		lengths = append(lengths, l)
+	}
+	w := workout.Normalise(workout.Recording{FileType: "activity", Records: recs, Lengths: lengths,
+		Sessions: []workout.RawSession{{Sport: "swimming", SubSport: "lap_swimming", Start: at(0), End: at(599),
+			Pool: workout.Pool{Length: 25, Lengths: 15}, Stroke: "mixed"}}})
+	d := draft()
+	d.TrimStartAt, d.TrimEndAt = instant(w, 100), instant(w, 500)
+	fx := newFixtureWith(t, []byte("pool"), fakeParser{"pool": w})
+	fx.change(t, d, published(d))
+	out := fx.read(t)
+
+	entries, _ := os.ReadDir(fx.folder())
+	for _, e := range entries {
+		b, _ := os.ReadFile(filepath.Join(fx.folder(), e.Name()))
+		for _, m := range []string{"4321", "4322", "55.555", "butterfly", "Butterfly", "backstroke", "Backstroke"} {
+			if bytes.Contains(b, []byte(m)) {
+				t.Errorf("%s holds the trimmed part's %s", e.Name(), m)
+			}
+		}
+	}
+	if n := len(out.file.Meta.Lengths); n != 9 {
+		t.Errorf("%d lengths, want the 9 whole ones inside the window", n)
+	}
+	if s := out.file.Meta.Summary; s.Lengths != "9" || s.Stroke != "freestyle" {
+		t.Errorf("summary lengths %q stroke %q, want 9 and freestyle", s.Lengths, s.Stroke)
+	}
+	v, err := fx.a.TrimmedView(context.Background(), d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, _ := json.Marshal(out.file.Meta.Summary)
+	if !bytes.Equal(v.Trimmed.Summary, pub) {
+		t.Errorf("owner summary %s\npublic %s", v.Trimmed.Summary, pub)
+	}
+}

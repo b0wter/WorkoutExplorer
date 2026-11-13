@@ -74,14 +74,14 @@ describe('F-03 §8 worked example, written byte by byte', () => {
         .join(',');
       json =
         '{"sport":"cycling","start_time":"2026-06-06T05:00:00Z","time_zone":{"known":true,"offset_seconds":7200},' +
-        `"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"streams":[${streams}]}`;
+        `"summary":{},"device":{"name":"","sensors":[]},"sessions":[],"laps":[],"lengths":[],"streams":[${streams}]}`;
       if (enc.encode(json).length === l) break;
       l = enc.encode(json).length;
     }
     const meta = enc.encode(json);
     const length = offsets[4] + 5;
     const b = new Uint8Array(length);
-    b.set([0x57, 0x45, 0x58, 0x44, 0x04, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
+    b.set([0x57, 0x45, 0x58, 0x44, 0x05, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
     new DataView(b.buffer).setUint32(10, meta.length, true);
     b.set(meta, 14);
     const int32le = (vals: number[]) => new Uint8Array(new Int32Array(vals).buffer);
@@ -389,7 +389,7 @@ describe('metadata', () => {
     summary: {
       elapsed_time: 11, timer_time: 10, distance: 27012.5, ascent: 112, descent: 100, calories: 500, avg_speed: 7.999,
       max_speed: 12, avg_heart_rate: 141, max_heart_rate: 180, avg_cadence: 85, max_cadence: 110, avg_power: 200,
-      max_power: 600, avg_temperature: -2, max_temperature: 3, moving_time: 9, pool_length_yd: 25, lengths: 64, pool_length_recorded_m: 22.86,
+      max_power: 600, avg_temperature: -2, max_temperature: 3, moving_time: 9, pool_length_yd: 25, lengths: 64, pool_length_recorded_m: 22.86, stroke: 'freestyle',
     },
     device: { name: 'Wahoo Fitness ELEMNT BOLT', sensors: ['heart_rate_monitor', 'power_meter'] },
     sessions: [
@@ -397,8 +397,13 @@ describe('metadata', () => {
       { sport: 'cycling', sub_sport: 'road', start: 10, end: 11, start_index: 3, end_index: 5, totals: {} },
     ],
     laps: [
-      { start: 0, end: 2, start_index: 0, end_index: 3, trigger: 'distance', totals: { elapsed_time: 2 } },
-      { start: 3, end: 9, start_index: 3, end_index: 3, trigger: '', totals: {} },
+      { start: 0, end: 2, start_index: 0, end_index: 3, trigger: 'distance', stroke: '', totals: { elapsed_time: 2 } },
+      { start: 3, end: 9, start_index: 3, end_index: 3, trigger: '', stroke: 'im', totals: {} },
+    ],
+    lengths: [
+      { start_index: 0, end_index: 2, rest: false, stroke: 'freestyle', time: 21.6, avg_speed: 1.157, strokes: 14 },
+      { start_index: 2, end_index: 3, rest: true, stroke: '', time: 30 },
+      { start_index: 3, end_index: 5, rest: false, stroke: 'drill' },
     ],
   };
 
@@ -407,7 +412,7 @@ describe('metadata', () => {
   });
 
   it('absent totals stay absent, never 0', () => {
-    const d = decodeOk(build({ meta: { summary: { distance: 5 }, laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', totals: {} }] } }));
+    const d = decodeOk(build({ meta: { summary: { distance: 5 }, laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', stroke: '', totals: {} }] } }));
     expect(d.meta.summary).toEqual({ distance: 5 });
     expect('elapsed_time' in d.meta.summary).toBe(false);
     expect(d.meta.laps[0].totals).toEqual({});
@@ -433,17 +438,17 @@ describe('metadata', () => {
           summary: { distance: 1, bogus: 'x' },
           device: { name: 'x', sensors: [], serial: 1 },
           sessions: [{ sport: 's', sub_sport: '', start: 0, end: 1, start_index: 0, end_index: 2, totals: { moving_time: 1, x: 1 }, extra: 1 }],
-          laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: 'bogus', totals: { avg_power: 1, y: 'z' }, sport: 'x' }],
+          laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: 'bogus', stroke: '', totals: { avg_power: 1, y: 'z' }, sport: 'x' }],
         },
         patch: (m) => ({ ...m, extra: { a: 1 }, streams: m.streams.map((s) => ({ ...s, note: 'x' })) }),
       }),
     );
-    expect(Object.keys(d.meta)).toEqual(['sport', 'start_time', 'time_zone', 'summary', 'device', 'sessions', 'laps']);
+    expect(Object.keys(d.meta)).toEqual(['sport', 'start_time', 'time_zone', 'summary', 'device', 'sessions', 'laps', 'lengths']);
     expect(d.meta.device).toEqual({ name: 'x', sensors: [] });
     expect(d.meta.time_zone).toEqual({ known: true, offset_seconds: 0 });
     expect(d.meta.summary).toEqual({ distance: 1 });
     expect(d.meta.sessions[0]).toEqual({ sport: 's', sub_sport: '', start: 0, end: 1, start_index: 0, end_index: 2, totals: {} });
-    expect(d.meta.laps[0]).toEqual({ start: 0, end: 1, start_index: 0, end_index: 2, trigger: 'bogus', totals: { avg_power: 1 } });
+    expect(d.meta.laps[0]).toEqual({ start: 0, end: 1, start_index: 0, end_index: 2, trigger: 'bogus', stroke: '', totals: { avg_power: 1 } });
   });
 
   it('does not expose the stream descriptors', () => {
@@ -452,7 +457,7 @@ describe('metadata', () => {
 
   it('accepts an integer written as 4.0 (the one documented case where F-04 accepts what Go rejects)', () => {
     // Two characters shorter in the sport, two longer in the lap end: same L, so the offsets stay valid.
-    const meta = { sport: 'cycling--', laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', totals: {} }] };
+    const meta = { sport: 'cycling--', laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', stroke: '', totals: {} }] };
     const b = build({ meta });
     const l = new DataView(b).getUint32(10, true);
     const json = new TextDecoder()
@@ -468,8 +473,9 @@ describe('metadata', () => {
 // ---------------------------------------------------------------------------
 
 describe('rejects (AC 3)', () => {
-  const lap = { start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', totals: {} };
+  const lap = { start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', stroke: '', totals: {} };
   const ses = { sport: 'cycling', sub_sport: '', ...lap };
+  const len = { start_index: 0, end_index: 2, rest: false, stroke: 'freestyle' };
   const without = (o: Record<string, unknown>, key: string) => {
     const c = { ...o };
     delete c[key];
@@ -495,7 +501,7 @@ describe('rejects (AC 3)', () => {
     // Rule 2
     ['version 0', () => build({ version: 0 }), 'unsupported-version', 2],
     ['version 1', () => build({ version: 1 }), 'unsupported-version', 2],
-    ['version 3 (ADR-046: current version only)', () => build({ version: 3 }), 'unsupported-version', 2],
+    ['version 4 (ADR-048: current version only)', () => build({ version: 4 }), 'unsupported-version', 2],
     // Rule 3
     ['N = 0', () => build({ sampleCount: 0 }), 'corrupt', 3],
     [
@@ -636,6 +642,17 @@ describe('rejects (AC 3)', () => {
     ['lap start_index < 0', () => build({ meta: { laps: [{ ...lap, start_index: -1 }] } }), 'corrupt', 7],
     ['lap trigger missing', () => build({ meta: { laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, totals: {} }] } }), 'corrupt', 4],
     ['lap trigger not a string', () => build({ meta: { laps: [{ ...lap, trigger: 1 }] } }), 'corrupt', 4],
+    // Version 5 (ADR-048)
+    ['lengths missing', () => build({ patch: (m) => ({ ...m, lengths: undefined }) }), 'corrupt', 4],
+    ['lengths not an array', () => build({ meta: { lengths: {} } }), 'corrupt', 4],
+    ['lap stroke missing', () => build({ meta: { laps: [{ start: 0, end: 1, start_index: 0, end_index: 2, trigger: '', totals: {} }] } }), 'corrupt', 4],
+    ['summary stroke not a string', () => build({ meta: { summary: { stroke: 1 } } }), 'corrupt', 4],
+    ['length rest not a boolean', () => build({ meta: { lengths: [{ ...len, rest: 0 }] } }), 'corrupt', 4],
+    ['length stroke missing', () => build({ meta: { lengths: [{ start_index: 0, end_index: 2, rest: false }] } }), 'corrupt', 4],
+    ['length strokes not an integer', () => build({ meta: { lengths: [{ ...len, strokes: 1.5 }] } }), 'corrupt', 4],
+    ['length time not a number', () => build({ meta: { lengths: [{ ...len, time: '1' }] } }), 'corrupt', 4],
+    ['length end_index > N', () => build({ meta: { lengths: [{ ...len, end_index: 6 }] } }), 'corrupt', 7],
+    ['length start_index > end_index', () => build({ meta: { lengths: [{ ...len, start_index: 3, end_index: 2 }] } }), 'corrupt', 7],
     ['lap start_index 1e20', () => build({ meta: { laps: [{ ...lap, start_index: 1e20, end_index: 1e20 }] } }), 'corrupt', 7],
   ];
 

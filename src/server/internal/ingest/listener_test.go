@@ -346,3 +346,51 @@ func TestSystemTimeActivityUnknownZone(t *testing.T) {
 		})
 	}
 }
+
+// F-48 PL-1 to PL-3: lengths and strokes are read in a pool swim; a stroke
+// count of 0 is not recorded; avg_speed comes from the pool length; a rest
+// length keeps only its time. In a ride the length is dropped and the lap
+// stroke cleared (PL-2).
+func TestListenerLengthsAndStrokes(t *testing.T) {
+	length := func(from, to int, timerMs uint32, strokes uint16, st typedef.SwimStroke, lt typedef.LengthType) proto.Message {
+		return mesgdef.NewLength(nil).SetStartTime(at(from)).SetTimestamp(at(to)).
+			SetTotalElapsedTime(uint32((to - from) * 1000)).SetTotalTimerTime(timerMs).
+			SetTotalStrokes(strokes).SetAvgSpeed(1234).SetSwimStroke(st).SetLengthType(lt).ToMesg(nil)
+	}
+	swim := encodeFIT(t, fileID(), record(0, 100).ToMesg(nil),
+		length(0, 22, 21600, 14, typedef.SwimStrokeBackstroke, typedef.LengthTypeActive),
+		length(22, 40, 18000, 0, typedef.SwimStrokeRimo, typedef.LengthTypeActive),
+		length(40, 60, 20000, 5, typedef.SwimStrokeFreestyle, typedef.LengthTypeIdle),
+		record(60, 100).ToMesg(nil),
+		mesgdef.NewLap(nil).SetStartTime(at(0)).SetTimestamp(at(60)).SetSwimStroke(typedef.SwimStrokeImByRound).ToMesg(nil),
+		mesgdef.NewSession(nil).SetStartTime(at(0)).SetTimestamp(at(60)).SetSport(typedef.SportSwimming).
+			SetSubSport(typedef.SubSportLapSwimming).SetPoolLength(2500).SetSwimStroke(typedef.SwimStrokeMixed).ToMesg(nil))
+	w := parseBytes(t, swim)
+	if len(w.Lengths) != 3 {
+		t.Fatalf("%d lengths, want 3", len(w.Lengths))
+	}
+	l0, l1, rest := w.Lengths[0], w.Lengths[1], w.Lengths[2]
+	if l0.Start != 0 || l0.End != 22 || l0.Rest || l0.Stroke != "backstroke" || l0.Strokes != 14 ||
+		l0.Time == nil || *l0.Time != 21.6 || l0.AvgSpeed == nil || *l0.AvgSpeed != 25/21.6 {
+		t.Errorf("length 0 = %+v", l0)
+	}
+	if l1.Stroke != "im" || l1.Strokes != 0 {
+		t.Errorf("length 1 = %+v, want im without stroke count", l1)
+	}
+	if !rest.Rest || rest.Stroke != "" || rest.Strokes != 0 || rest.AvgSpeed != nil || rest.Time == nil || *rest.Time != 20 {
+		t.Errorf("rest = %+v", rest)
+	}
+	if w.Laps[0].Stroke != "im" || w.Sessions[0].Stroke != "mixed" {
+		t.Errorf("lap stroke %q, session stroke %q", w.Laps[0].Stroke, w.Sessions[0].Stroke)
+	}
+
+	ride := encodeFIT(t, fileID(), record(0, 100).ToMesg(nil),
+		length(0, 22, 21600, 14, typedef.SwimStrokeBackstroke, typedef.LengthTypeActive),
+		record(60, 100).ToMesg(nil),
+		mesgdef.NewLap(nil).SetStartTime(at(0)).SetTimestamp(at(60)).SetSwimStroke(typedef.SwimStrokeFreestyle).ToMesg(nil),
+		mesgdef.NewSession(nil).SetStartTime(at(0)).SetTimestamp(at(60)).SetSport(typedef.SportCycling).ToMesg(nil))
+	w = parseBytes(t, ride)
+	if len(w.Lengths) != 0 || w.Laps[0].Stroke != "" || w.Summary.Stroke != "" {
+		t.Errorf("ride: %d lengths, lap stroke %q, summary stroke %q", len(w.Lengths), w.Laps[0].Stroke, w.Summary.Stroke)
+	}
+}

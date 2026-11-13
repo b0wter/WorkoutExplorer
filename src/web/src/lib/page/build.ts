@@ -2,7 +2,7 @@
 // the whole model is view.ts. Pure. Renderers select and format; they never compute: every number is the data file's
 // metadata as written. The Go builder (F-15) must reproduce the committed samples exactly.
 
-import type { Lap, SummaryKey, TotalKey, WorkoutData } from '../datafile';
+import type { Lap, Summary, SummaryKey, TotalKey, WorkoutData } from '../datafile';
 import {
   MISSING_TEXT,
   cadenceUnit,
@@ -46,9 +46,9 @@ function pair(
 }
 
 /** AP-2 summary: the metrics the summary has, in AP-2 order; none as 0 or a dash. */
-export function summaryItems(sport: string, s: Totals, units: Units = 'metric'): SummaryItem[] {
+export function summaryItems(sport: string, s: Summary, units: Units = 'metric'): SummaryItem[] {
   const items: (SummaryItem | null)[] = [];
-  const one = (key: string, label: string, v: number | undefined, unit: string, fmt: (v: number) => string): void => {
+  const one = <T>(key: string, label: string, v: T | undefined, unit: string, fmt: (v: T) => string): void => {
     if (v !== undefined) items.push({ Key: key, Label: label, Value: fmt(v), Unit: unit, Max: '' });
   };
   const int = (v: number): string => formatFixed(v, 0);
@@ -60,6 +60,8 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   one('pool', 'Pool', has(s, 'pool_length_m'), 'm', int);
   one('pool', 'Pool', has(s, 'pool_length_yd'), 'yd', int);
   one('lengths', 'Lengths', has(s, 'lengths'), '', int);
+  // F-48 PL-7: the one stroke of the whole swim, untinted.
+  one('stroke', 'Stroke', codeWord('stroke', s.stroke) || undefined, '', (w) => w);
   const speed = (v: number): string => formatSpeedOrPace(sport, v, units);
   const temp = (v: number): string => int(toTemperature(v, units));
   // A pace from a speed <= 0 is '' and so hidden (D-4). For a pace the best (fastest) value is the max.
@@ -72,15 +74,20 @@ export function summaryItems(sport: string, s: Totals, units: Units = 'metric'):
   return items.filter((i): i is SummaryItem => i !== null);
 }
 
-/** AP-8 trigger words (F-46 LS-2); any other code is an empty cell. */
-const TRIGGERS: Readonly<Record<string, string>> = { button: 'Button', time: 'Time', distance: 'Distance', position: 'Position', stop: 'Stop', equipment: 'Equipment' };
-const triggerWord = (code = ''): string => (Object.hasOwn(TRIGGERS, code) ? TRIGGERS[code] : '');
+/** The known codes of the laps table's word columns: AP-8 triggers (F-46 LS-2), AP-13 strokes (ADR-048 item 2). */
+const CODES = {
+  trigger: ['button', 'time', 'distance', 'position', 'stop', 'equipment'],
+  stroke: ['freestyle', 'backstroke', 'breaststroke', 'butterfly', 'drill', 'mixed', 'im'],
+};
+/** A known code's word, the code capitalised ('IM' for im); any other code is an empty cell. */
+export const codeWord = (kind: keyof typeof CODES, code = ''): string => (!CODES[kind].includes(code) ? '' : code === 'im' ? 'IM' : code[0].toUpperCase() + code.slice(1));
 
 /** AP-8 laps from the lap totals as written: the device's values, completed by the server where the
  *  device recorded none (D-5, F-18 L-1). Columns provisional (OQ-28). Null without laps. The
  *  browser's splits go through it too (F-18 L-5), as range values mapped to lap totals, without a
- *  trigger and so without the trigger column (LS-2: last, when any lap has a known trigger). */
-export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & { readonly trigger?: string })[], units: Units = 'metric'): LapsGroup | null {
+ *  trigger or stroke and so without those columns (LS-2: trigger last, when any lap has a known
+ *  trigger; F-48 PL-7: stroke before it, when any lap has a known stroke). */
+export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & { readonly trigger?: string; readonly stroke?: string })[], units: Units = 'metric'): LapsGroup | null {
   if (laps.length === 0) return null;
   const speedLabel = (isPaceSport(sport) ? 'Pace' : 'Speed') + ' (' + speedOrPaceUnit(sport, units) + ')';
   const cols: { key: string; label: string; cell: (t: Totals) => string }[] = [
@@ -94,10 +101,11 @@ export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & {
   ];
   // A column appears when at least one lap has its value; a cell without one shows '–'.
   const shown = cols.filter((c) => laps.some((l) => c.cell(l.totals) !== MISSING_TEXT));
-  const trigger = laps.some((l) => triggerWord(l.trigger) !== '');
+  // Word columns after the numbers, headed by their capitalised key, when at least one lap has a known word.
+  const words = (['stroke', 'trigger'] as const).filter((k) => laps.some((l) => codeWord(k, l[k]) !== ''));
   return {
-    Columns: [{ Key: 'number', Label: '#' }, ...shown.map((c) => ({ Key: c.key, Label: c.label })), ...(trigger ? [{ Key: 'trigger', Label: 'Trigger' }] : [])],
-    Rows: laps.map((l, i) => [String(i + 1), ...shown.map((c) => c.cell(l.totals)), ...(trigger ? [triggerWord(l.trigger)] : [])]),
+    Columns: [{ Key: 'number', Label: '#' }, ...shown.map((c) => ({ Key: c.key, Label: c.label })), ...words.map((k) => ({ Key: k, Label: k[0].toUpperCase() + k.slice(1) }))],
+    Rows: laps.map((l, i) => [String(i + 1), ...shown.map((c) => c.cell(l.totals)), ...words.map((k) => codeWord(k, l[k]))]),
     None: '',
   };
 }

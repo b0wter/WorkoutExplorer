@@ -83,6 +83,7 @@ func cutDerived(outputs []output) ([]output, error) {
 		{"run-30min.fit", "run-30min-cut-60.fit", 6, 10},
 		{"triathlon.fit", "triathlon-cut-90.fit", 9, 10},
 		{"chained-ride-ride.fit", "chained-ride-ride-cut-75.fit", 3, 4},
+		{"pool-swim-mixed.fit", "pool-swim-mixed-cut-80.fit", 8, 10}, // F-48: no session, lengths kept (OQ-185)
 	} {
 		b, err := find(c.base)
 		if err != nil {
@@ -383,7 +384,9 @@ func triathlon() file {
 			{typedef.SportTransition, typedef.SubSportGeneric, bikeEnd + 1, t2End},
 			{typedef.SportRunning, typedef.SubSportRoad, t2End + 1, runEnd},
 		},
-		timer: []timerEvent{{0, true}, {runEnd, false}}}
+		timer: []timerEvent{{0, true}, {runEnd, false}},
+		// F-48 PL-2: an open-water swim's stroke is recorded but never shown.
+		lapStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeFreestyle}, sessStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeFreestyle}}
 	for _, s := range f.sessions {
 		f.laps = append(f.laps, span{from: s.from, to: s.to})
 	}
@@ -568,6 +571,13 @@ func capFile(records int) file {
 		f.extra = append(f.extra, timed{t: 0, order: -1,
 			mesg: mesgdef.NewFieldDescription(nil).SetDeveloperDataIndex(0).SetFieldDefinitionNumber(uint8(i)).
 				SetFitBaseTypeId(basetype.Uint8).SetFieldName([]string{"cap_field"}).ToMesg(nil)})
+	}
+	// ADR-017 rev. 9: 10,000 lengths in one burst (one message definition).
+	for i := 0; i < 10_000; i++ {
+		f.extra = append(f.extra, timed{t: records / 2, order: orderExtra,
+			mesg: mesgdef.NewLength(nil).SetTimestamp(at(f, records/2)).SetStartTime(at(f, records/2)).
+				SetTotalElapsedTime(0).SetTotalTimerTime(0).SetSwimStroke(typedef.SwimStrokeFreestyle).
+				SetLengthType(typedef.LengthTypeActive).ToMesg(nil)})
 	}
 	rng := rand.New(rand.NewPCG(49, 50))
 	f.samples = outdoorRide(49, end, func(t int) float64 { return 7 + rng.Float64() - 0.5 }, hills)

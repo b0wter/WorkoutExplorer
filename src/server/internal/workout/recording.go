@@ -11,6 +11,7 @@ type Recording struct {
 	LocalOffset *int64          // activity.local_timestamp - activity.timestamp in seconds; validated in R-9
 	Sessions    []RawSession    // arrival order
 	Laps        []RawLap        // arrival order
+	Lengths     []RawLength     // arrival order (F-48 PL-1)
 	Timer       []RawTimerEvent // arrival order
 	Records     []RawRecord     // arrival order, not yet sorted
 	Integrity   Integrity       // set by ingest (F-08); Normalise copies it
@@ -32,14 +33,26 @@ type RawSession struct {
 	Start, End      time.Time
 	Totals          Totals
 	Pool            Pool
+	Stroke          string // F-48: a stroke code of ADR-048 item 2, "" = none
 }
 
 // RawLap is a FIT lap as recorded.
 type RawLap struct {
 	Sport      string // lap.sport; "" if not recorded
 	Trigger    string // F-46 LS-1: button, time, distance, position, stop, equipment or ""
+	Stroke     string // F-48: a stroke code of ADR-048 item 2, "" = none
 	Start, End time.Time
 	Totals     Totals
+}
+
+// RawLength is a FIT length as recorded (F-48 PL-1).
+type RawLength struct {
+	Start, End time.Time
+	Rest       bool    // length_type idle
+	Stroke     string  // stroke code, "" = none
+	Time       float64 // total_timer_time in s; NaN = not recorded
+	AvgSpeed   float64 // m/s; NaN = not recorded
+	Strokes    uint16  // total_strokes; 0 = not recorded
 }
 
 // RawTimerEvent is a FIT timer event mapped to start or stop.

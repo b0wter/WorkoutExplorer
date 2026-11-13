@@ -27,7 +27,7 @@ describe('format constants', () => {
 
   it('header constants match F-03 §1', () => {
     expect(MAGIC).toBe('WEXD');
-    expect(VERSION).toBe(4);
+    expect(VERSION).toBe(5);
     expect(HEADER_SIZE).toBe(14);
   });
 
