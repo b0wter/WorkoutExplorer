@@ -5,7 +5,7 @@
 - **Features:** F-46 (laps and splits); F-19 (`draft.bin`), F-30 (regenerate)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 4 under its item 9; narrows [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md) item 4 (one pool key that is not whole and is never printed)
 - **Requirements:** AP-8, AP-20, AP-16, UP-9, I-2; NFR Privacy
-- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-5-normative) §5.2, §5.3
+- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-6-normative) §5.2, §5.3
 
 ## Context
 

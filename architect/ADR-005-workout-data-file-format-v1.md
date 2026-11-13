@@ -1,12 +1,12 @@
 # ADR-005 Workout data file format, version 1 (`WEXD`)
 
 - **Status:** accepted
-- **Date:** 10 Oct 2026; revision 1 of 22 Oct 2026 (item 9, kept workouts); note of 26 Oct 2026 (item 9, version 2 by ADR-029); note of 11 Nov 2026 (items 7 and 9, version 3 by ADR-044); note of 12 Nov 2026 (item 9, version 4 by ADR-046); note of 13 Nov 2026 (item 9, version 5 by ADR-048)
+- **Date:** 10 Oct 2026; revision 1 of 22 Oct 2026 (item 9, kept workouts); note of 26 Oct 2026 (item 9, version 2 by ADR-029); note of 11 Nov 2026 (items 7 and 9, version 3 by ADR-044); note of 12 Nov 2026 (item 9, version 4 by ADR-046); note of 13 Nov 2026 (item 9, version 5 by ADR-048); note of 13 Nov 2026 (item 9, version 6 by ADR-049)
 - **History:** [architect/history/ADR-005-workout-data-file-format-v1.md](history/ADR-005-workout-data-file-format-v1.md)
 - **Features:** F-03 (writer, introduces it), F-04 (browser reader), F-09 (`draft.bin`), F-15 (public data file), F-16 (hiding changes columns only), F-17 (version 2, ADR-029), F-30 (regenerate)
 - **Supersedes:** none
 - **Requirements:** AP-4, NFR Performance (data file under 500 KB compressed for a 4-hour ride; 60 fps on 12 hours), SH-4 (via F-16); TD Workout data file (Layout, stream table, Size, Versioning), TD Principles ("Fast for viewers")
-- **Normative specification:** [F-03 design, section "Data file format, version 5"](F-03-workout-data-file-writer.md#data-file-format-version-5-normative). This ADR records the decisions and why they were made. The byte-level rules are in that section.
+- **Normative specification:** [F-03 design, section "Data file format, version 6"](F-03-workout-data-file-writer.md#data-file-format-version-6-normative). This ADR records the decisions and why they were made. The byte-level rules are in that section.
 
 ## Context
 

@@ -42,6 +42,7 @@ Every endpoint takes `Authorization: Bearer <token>` and no query string. On any
 | `suggested_title` | string | no | UP-5 suggestion for the stored settings, `""` = none; computed per request, never stored ([F-45](F-45-suggested-title.md) ST-6) |
 | `trim_start_at`, `trim_end_at` | RFC 3339 UTC, whole seconds, or `null` | yes, `null` allowed | Trim (UP-6): [F-47](F-47-trim.md) TR-3, TR-4 |
 | `trimmed` | object or `null` | no | The trimmed `sport` and `summary`, with `hide_ends_ranges` and `suggested_title` then also trimmed: [F-47](F-47-trim.md) TR-8 |
+| `zones_max_heart_rate`, `zones_threshold_power` | integer or `null` | yes, `null` allowed | The sharer's zone values (AP-10): 100–250 bpm, 50–1,000 W; `null` = the file's values ([F-49](F-49-zones.md) ZN-4) |
 
 A `PATCH` body with an unknown field, a read-only field, a `null`, a wrong type, or anything that is not one JSON object gets `400`. An empty object `{}` is valid and changes nothing.
 
