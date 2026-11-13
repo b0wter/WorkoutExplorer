@@ -62,8 +62,8 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | done | checked by the user 12 Nov (drop-down, iPhone mini); open: pool splits on a real file, phone scrub trace (AC 41) |
 | [F-47](F-47-trim.md) | Trim start and end | 2 | both (backend first) | F-16, F-19, F-20, F-30, F-36, F-42, F-44, F-45, F-46 | done | — (checked by the user 12 Nov) |
 | [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | done | checked by the user 13 Nov; minors r1-1 to r1-4 fixed; a length under 2 samples is not selectable (accepted by the user 13 Nov) |
-| [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | draft — open questions | user: OQ-186 to OQ-194 |
-| [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | draft — open questions | user: OQ-186 to OQ-194 |
+| [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | ready for architecture | — |
+| [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-49) | — |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 17 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, detailed; F-49, F-50 in draft). Phase 3: 1 feature (F-24, deferred; design kept).
@@ -105,8 +105,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-14 Device and sensor info | Could (phase 2) | F-43 (phase 2) |
 | AP-13 Pool swims: lengths and stroke type | Could (phase 2) | F-48 (phase 2) |
 | AP-16 Pool length and lengths in the summary | Could (phase 2) | F-44 (phase 2) |
-| AP-10 Heart-rate and power zones | Could (phase 2) | F-49 (phase 2, draft) |
-| AP-11 Power curve and best efforts | Could (phase 2) | F-50 (phase 2, draft) |
+| AP-10 Heart-rate and power zones | Could (phase 2) | F-49 (phase 2) |
+| AP-11 Power curve and best efforts | Could (phase 2) | F-50 (phase 2) |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -152,7 +152,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 
 ## Phase 2 (not broken down)
 
-- Heart-rate and power zones; power curve and best efforts — AP-10, AP-11: drafted in [F-49](F-49-zones.md) and [F-50](F-50-power-curve-and-best-efforts.md) (open questions OQ-186 to OQ-194).
+- Heart-rate and power zones; power curve and best efforts — AP-10, AP-11: detailed in [F-49](F-49-zones.md) and [F-50](F-50-power-curve-and-best-efforts.md).
 - Privacy zones of 200 m to 1 km — SH-3
 - Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
 - Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
@@ -692,3 +692,5 @@ The original questions follow for reference.
 **Decided on 13 Nov 2026, pool lengths and strokes** (user, AP-13, F-48): a "Stroke" column in the laps view and a summary "Stroke" cell when the whole swim used one stroke; a third view "Lengths" next to Laps and Splits, one row per length (number, stroke, time, pace, strokes); rest (idle) lengths shown as "Rest" rows, never counted; a SWOLF column (time in whole seconds plus stroke count) when stroke counts exist; nothing extra in place of the map (pool swims show the no-location hint, AP-3); a trim drops trimmed lengths and keeps the rest, as laps do; data file format version 5, `regenerate` rebuilds old workouts, losses accepted. Open: OQ-180 to OQ-184 (F-48). Updated: spec (viewer story 19, AP-8, AP-13, open questions); F-48 (new).
 
 **Decided on 13 Nov 2026, F-48 open questions** (user, OQ-180 to OQ-184, as suggested): a length the trim cuts through is dropped; after a trim the summary "Lengths" counts the remaining whole active lengths, dropped only without `length` messages (replaces OQ-179's dropped count); strokes for lap-swimming sessions only; Lengths view details as in F-48; swim distance in yards moves to Later. Updated: spec (UP-6, AP-13, AP-16, DS-2, scope table, open questions, roadmap); F-48; F-47 (AC note).
+
+**Decided on 13 Nov 2026, zones, power curve and best efforts** (user, AP-10, AP-11, F-49, F-50, OQ-186 to OQ-194): split into F-49 (zones) then F-50 (power curve and best efforts); all suggestions accepted. OQ-186 refined after a check of real files (Apple: `time_in_zone` in % of a configured max; Wahoo: `hr_zone`, `power_zone`, `session.threshold_power`; Garmin Edge: none; no `zones_target`): zone sources in order sharer's values, the file's zone boundaries (`time_in_zone` of the first session that has them, then `hr_zone`/`power_zone`), thresholds (`time_in_zone.max_heart_rate`, `zones_target`, `session.threshold_power`) with the default model, none; `session.max_heart_rate` is never a basis; resting heart rate not used and not copied (it stays in the stored file only, OQ-50); time in zone from samples. Updated: spec AP-10, AP-11, open questions; F-49; F-50.

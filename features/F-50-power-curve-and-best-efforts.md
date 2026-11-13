@@ -3,7 +3,7 @@
 - **Phase:** 2
 - **Owner:** frontend (computed in the browser from the streams already in the data file; no server change assumed)
 - **Lane:** normal (short architect note on the computation's cost on long workouts and the lazy section; one QA pass)
-- **Status:** draft — open questions OQ-189 to OQ-194 (OQ-189 to OQ-191 in [F-49](F-49-zones.md))
+- **Status:** ready for architecture (after F-49) — OQ-186 to OQ-194 resolved 13 Nov 2026 (decision log in [README](README.md))
 - **Requirements:** AP-11 (Could, phase 2; picked 13 Nov 2026); AP-5, AP-7, AP-8, AP-12, AP-19, UP-3, UP-6, SH-4, DS-1, DS-2, DS-4; NFR Performance (budgets unchanged), NFR Reliability
 - **Depends on:** F-17, F-18, F-40, F-42, F-47, F-49 (shared section layout)
 
@@ -38,8 +38,7 @@ A viewer sees the workout's best efforts (fastest distances, best power over set
 - [ ] The section's code is not in the entry bundle; LCP and 60 fps scrubbing on `ride-12h` unchanged within noise; the curve for `ride-12h` is ready within 1 s on the reference phone after the section is shown.
 
 ## Open questions
-Numbered list shared with [F-49](F-49-zones.md), which holds OQ-186 to OQ-191 (OQ-189 to OQ-191 apply here too).
-
-7. **OQ-192 Which sports and values.** Assumed: distance efforts 1 km, 1 mi, 5 km, 10 km, half marathon, marathon for run, walk and hike; power 5 s, 1 min, 5 min, 20 min, 60 min and the power curve for any sport with power; nothing for swims or rides without power. Affects: what is computed and listed.
-8. **OQ-193 Effort definition.** Assumed: moving time (pauses add nothing, AP-7), missing power counted as 0 W, within one leg; the distance window's ends interpolated between samples. Affects: values; tests.
-9. **OQ-194 Select an effort.** Assumed: tapping a row selects it as a range, like laps (AP-8); tapping the curve does nothing. Affects: interaction.
+All resolved by the user on 13 Nov 2026 as suggested (decision log in [README](README.md)); OQ-189 to OQ-191 in [F-49](F-49-zones.md) apply here too:
+- **OQ-192:** sports and values as in Scope.
+- **OQ-193:** moving time, missing power as 0 W, within one leg; distance window ends interpolated between samples.
+- **OQ-194:** tapping a row selects the effort as a range, like laps (AP-8); tapping the curve does nothing.
