@@ -21,6 +21,12 @@ const KINDS: readonly (readonly [ZoneKind, string, string])[] = [
   ['power', 'Power', 'W'],
 ];
 
+const POWER = ['grey', 'blue', 'green', 'yellow', 'orange', 'red', 'purple'];
+const RAMP = ['blue', 'green', 'yellow', 'orange', 'red'];
+
+/** Zone colour by position: the 7-colour power ramp for 7 zones, else the 5-colour ramp spread over n. */
+const zoneColour = (z: number, n: number): string => (n === 7 ? POWER[z] : RAMP[n < 2 ? 0 : Math.round((z * 4) / (n - 1))]);
+
 /** One kind's block: built once per zone values, updated in place. */
 interface Block {
   readonly box: HTMLElement;
@@ -59,15 +65,18 @@ export function startZones(root: ParentNode, data: WorkoutData, selection: Selec
       const starts = zoneStarts(kind, entry);
       const box = el(section, 'div', 'zones-kind');
       el(box, 'h3', '', label);
+      // ZN-7: the caption says what the zones rest on; a basis means the default model.
+      el(box, 'p', 'zones-src', entry.from ? 'Zones as recorded by the device' : `Estimated from ${kind === 'power' ? 'threshold power' : 'max heart rate'} ${entry.basis} ${unit}`);
       const block: Block = { box, starts, values, out: new Float64Array(starts.length + 1), bars: [], times: [], shares: [] };
-      for (let z = 0; z <= starts.length; z++) {
+      for (let z = starts.length; z >= 0; z--) { // highest zone on top
         const row = el(box, 'div', 'zone');
         row.dataset.k = kind;
+        row.style.setProperty('--t', `var(--zone-${zoneColour(z, starts.length + 1)})`);
         el(row, 'span', 'zone-n', 'Z' + (z + 1));
         el(row, 'span', 'zone-r', boundText(starts, z, unit));
-        block.bars.push(el(el(row, 'span', 'zone-bar'), 'span'));
-        block.times.push(el(row, 'span', 'zone-t'));
-        block.shares.push(el(row, 'span', 'zone-p'));
+        block.bars[z] = el(el(row, 'span', 'zone-bar'), 'span');
+        block.times[z] = el(row, 'span', 'zone-t');
+        block.shares[z] = el(row, 'span', 'zone-p');
       }
       blocks.push(block);
     }

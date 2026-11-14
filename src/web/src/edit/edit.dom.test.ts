@@ -1443,7 +1443,8 @@ describe('F-49 ZN-4, ZN-7: zone fields and the Zones section (AC 6, 7, 9)', () =
     await save();
     expect(patches()).toEqual([{ zones_threshold_power: 250 }]);
     await vi.waitFor(() => expect(bounds('power')).toHaveLength(7));
-    expect(bounds('power')[1]).toBe('138–187 W'); // 137.5 → 138, 187.5 → 188
+    expect(bounds('power')[5]).toBe('138–187 W'); // 137.5 → 138, 187.5 → 188; Z2, highest on top
+    expect([...zones().querySelectorAll('.zones-src')].map((e) => e.textContent)).toEqual(['Estimated from threshold power 250 W']);
     expect(field('zones_threshold_power').value).toBe('250');
     type('zones_threshold_power', '');
     await save();
@@ -1457,7 +1458,8 @@ describe('F-49 ZN-4, ZN-7: zone fields and the Zones section (AC 6, 7, 9)', () =
     await paint();
     await vi.waitFor(() => expect(bounds('heart_rate')).toHaveLength(5));
     expect(field('zones_max_heart_rate').value).toBe('190');
-    expect(bounds('heart_rate')[0]).toBe('≤ 113 bpm');
+    expect(bounds('heart_rate')[4]).toBe('≤ 113 bpm'); // highest zone on top
+    expect([...zones().querySelectorAll('.zones-src')].map((e) => e.textContent)).toEqual(['Estimated from max heart rate 190 bpm']);
   });
 
   it('OQ-195: a value the server refuses is not sent; its sentence shows until the next edit', async () => {

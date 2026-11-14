@@ -1,7 +1,7 @@
 # ADR-049 Zone values in the data file (format version 6): file bounds or a basis; the default model in the browser
 
 - **Status:** accepted
-- **Date:** 13 Nov 2026
+- **Date:** 13 Nov 2026; amended 14 Nov 2026 (item 1: `basis` next to `from`, version 6 amended in place because it was never released; v0.7.0 is at version 4)
 - **Features:** F-49 (zones); F-12 (settings object), F-15 (public build, P-7), F-19 (edit page), F-30 (regenerate)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 6 under its item 9
 - **Requirements:** AP-10, AP-7, UP-6, UP-9, I-2; NFR Privacy; decision log 13 Nov 2026 (OQ-186 to OQ-191)
@@ -20,9 +20,9 @@ Rejected:
 
 ## Decision
 
-1. **Format version 6** adds one top-level key, `zones`, with at most `heart_rate` and `power`. Each holds exactly one of:
+1. **Format version 6** adds one top-level key, `zones`, with at most `heart_rate` and `power`. Each holds `from`, `basis` or both:
    - `from`: the file's zones, as the lowest whole bpm or W of zones 2 … k (strictly ascending, 1 to 9 values, so 2 to 10 zones);
-   - `basis`: max heart rate (bpm) or threshold power (W); the zones follow the default model.
+   - `basis`: max heart rate (bpm) or threshold power (W). Alone, the zones follow the default model. Next to `from`, it is the file's own value, written so the page can say which max heart rate or threshold power the device's zones belong to; the model is never applied when `from` is present. A sharer's value is always written alone.
    A kind is written only when its stream is present in that file. Nothing else about zones (resting or threshold heart rate, calc types, device totals) is written.
 2. **The meaning depends on the source.** `time_in_zone` values are the **bottoms** of zones 1 … k; a last heart-rate value equal to the same message's `max_heart_rate` is a cap and is dropped; `from` = values 2 … k. `hr_zone` and `power_zone` messages are the **tops** of zones 1 … n; `from` = the first n − 1 values + 1. In both, time below zone 1 counts in zone 1 (as the model's "below 50 % counts as zone 1") and the last zone has no upper bound. Both Apple files give 5 zones; Wahoo gives 5 and 7.
 3. **Heart-rate unit:** bpm (all checked files). A list under a percent `hr_calc_type` whose values are all ≤ 100 is taken as percent and converted with the same message's `max_heart_rate` before the cap check; percent of reserve or of threshold is unusable (resting and threshold heart rate are not used, OQ-186). Power boundaries are always W.
@@ -31,9 +31,10 @@ Rejected:
 
 ## Consequences
 
-- One model, one source-order rule. The edit page shows exactly the public zones after a save, with no owner-API change and no draft rebuild.
+- One model, one source-order rule. The edit page shows exactly the public zones after a save, with no owner-API change and no draft rebuild. `draft.bin` carries the file's values, so the edit fields show them as placeholders without an owner-API change either (F-49 ZN-10).
+- The amendment of 14 Nov 2026 only widens what readers accept (a v6 file written before it stays valid), so it needs no bump; it would have needed one had version 6 been released.
 - The model is a reader rule: the format description names it (F-03 §5.9) instead of carrying bounds. A model change is a browser change, not a format bump.
-- The public data file carries the sharer's max heart rate or threshold power, or the file's. The page shows them as bounds anyway.
+- The public data file carries the sharer's max heart rate or threshold power, or the file's, also next to the file's bounds. The page shows them anyway (bounds, caption).
 - Golden data files, fixtures and page samples are regenerated; the deploy runs `regenerate`. Metadata grows by at most about 80 bytes.
 
 ## Reversibility

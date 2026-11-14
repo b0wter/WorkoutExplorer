@@ -35,6 +35,7 @@ const select = (a: number, b: number): void => {
 };
 const kinds = (): string[] => [...slot.querySelectorAll<HTMLElement>('.zones-kind:not([hidden]) h3')].map((h) => h.textContent!);
 const column = (kind: string, cls: string): string[] => [...slot.querySelectorAll(`.zone[data-k="${kind}"] .${cls}`)].map((e) => e.textContent!);
+const captions = (): string[] => [...slot.querySelectorAll('.zones-src')].map((e) => e.textContent!);
 const seconds = (text: string): number => text.split(':').reduce((s, p) => s * 60 + Number(p), 0);
 
 describe('Zones section', () => {
@@ -44,9 +45,14 @@ describe('Zones section', () => {
     expect(slot.hidden).toBe(false);
     expect(slot.querySelector('h2')?.textContent).toBe('Zones');
     expect(kinds()).toEqual(['Heart rate', 'Power']);
-    expect(column('heart_rate', 'zone-r')).toEqual(['≤ 120 bpm', '121–140 bpm', '141–160 bpm', '161–175 bpm', '≥ 176 bpm']);
-    expect(column('power', 'zone-n')).toEqual(['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7']);
-    expect(column('power', 'zone-r')[0]).toBe('≤ 138 W');
+    expect(column('heart_rate', 'zone-r')).toEqual(['≥ 176 bpm', '161–175 bpm', '141–160 bpm', '121–140 bpm', '≤ 120 bpm']);
+    expect(column('heart_rate', 'zone-n')).toEqual(['Z5', 'Z4', 'Z3', 'Z2', 'Z1']); // highest on top
+    expect(column('power', 'zone-n')).toEqual(['Z7', 'Z6', 'Z5', 'Z4', 'Z3', 'Z2', 'Z1']);
+    expect(column('power', 'zone-r')[6]).toBe('≤ 138 W');
+    const tok = (k: string): string[] => [...slot.querySelectorAll<HTMLElement>(`.zone[data-k="${k}"]`)].map((e) => e.style.getPropertyValue('--t'));
+    expect(tok('heart_rate').map((v) => v.slice(11, -1))).toEqual(['red', 'orange', 'yellow', 'green', 'blue']);
+    expect(tok('power').map((v) => v.slice(11, -1))).toEqual(['purple', 'red', 'orange', 'yellow', 'green', 'blue', 'grey']);
+    expect(captions()).toEqual(['Zones as recorded by the device', 'Zones as recorded by the device']);
     const pct = column('power', 'zone-p').map((p) => parseInt(p, 10));
     expect(Math.abs(pct.reduce((x, y) => x + y) - 100)).toBeLessThanOrEqual(3);
     const whole = d.movingTime![d.sampleCount - 1];
@@ -69,7 +75,8 @@ describe('Zones section', () => {
   it('AC 3, 5: only kinds with values and a stream; nothing at all hides the slot', () => {
     start(golden('zones-ride-ftp-only'));
     expect(kinds()).toEqual(['Power']);
-    expect(column('power', 'zone-r')[1]).toBe('146–198 W'); // the model from 265 W
+    expect(column('power', 'zone-r')[5]).toBe('146–198 W'); // the model from 265 W
+    expect(captions()).toEqual(['Estimated from threshold power 265 W']);
     document.body.innerHTML = '<div id="zones-slot" hidden></div>';
     slot = document.getElementById('zones-slot')!;
     start(golden('ride-30min'));
@@ -101,6 +108,7 @@ describe('Zones section', () => {
     window = [0, d.sampleCount - 1];
     refresh();
     expect(kinds()).toEqual(['Heart rate']);
-    expect(column('heart_rate', 'zone-r')[0]).toBe('≤ 119 bpm');
+    expect(column('heart_rate', 'zone-r')[4]).toBe('≤ 119 bpm');
+    expect(captions()).toEqual(['Estimated from max heart rate 200 bpm']);
   });
 });

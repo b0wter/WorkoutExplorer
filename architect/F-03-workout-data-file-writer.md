@@ -1,8 +1,8 @@
 # F-03 Workout data file writer: architecture
 
-- **Version:** 1.9
+- **Version:** 1.10
 - **Status:** accepted
-- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044); v1.7 of 12 Nov 2026 (format version 4, F-46, ADR-046); v1.8 of 13 Nov 2026 (format version 5, F-48, ADR-048); v1.9 of 13 Nov 2026 (format version 6, F-49, ADR-049)
+- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044); v1.7 of 12 Nov 2026 (format version 4, F-46, ADR-046); v1.8 of 13 Nov 2026 (format version 5, F-48, ADR-048); v1.9 of 13 Nov 2026 (format version 6, F-49, ADR-049); v1.10 of 14 Nov 2026 (version 6 amended in place before its release: `basis` may sit next to `from`, §5.9)
 - **History:** [architect/history/F-03-workout-data-file-writer.md](history/F-03-workout-data-file-writer.md) (change log, closed questions)
 - **Feature:** [`features/F-03-workout-data-file-writer.md`](../features/F-03-workout-data-file-writer.md)
 - **Depends on:** TD (system-wide picture), [F-02 design](F-02-fit-parsing-and-normalisation.md) v1.6, [ADR-001](ADR-001-repository-layout-and-build-entry-point.md), [ADR-002](ADR-002-bundle-size-budget-measurement.md) (decimal KB), [ADR-004](ADR-004-parser-corpus-and-golden-reports.md) rev. 3, [ADR-005](ADR-005-workout-data-file-format-v1.md), [ADR-006](ADR-006-brotli-pre-compression.md)
@@ -220,7 +220,7 @@ One JSON object with exactly these keys, in this order. Readers use a standard J
     {"start": 1800, "end": 3600, "start_index": 1800, "end_index": 3601, "trigger": "", "stroke": "", "totals": {"elapsed_time": 1800}}
   ],
   "lengths": [],
-  "zones": {"heart_rate": {"from": [115, 134, 153, 172]}, "power": {"basis": 250}},
+  "zones": {"heart_rate": {"from": [115, 134, 153, 172], "basis": 191}, "power": {"basis": 250}},
   "streams": [
     {"name": "time_offset", "type": "int32", "encoding": "delta", "scale": 1, "unit": "s", "byte_offset": 1104},
     {"name": "heart_rate", "type": "uint8", "encoding": "raw", "scale": 1, "unit": "bpm", "byte_offset": 15508}
@@ -312,12 +312,12 @@ Keys in this order. The first four are always present; the last three are absent
 
 #### 5.9 Zones (v1.9)
 
-Keys `heart_rate`, then `power`, each absent when the workout has no zone values of that kind or its stream is absent ([F-49](F-49-zones.md) ZN-3, ADR-049). Each value is an object with exactly one key:
+Keys `heart_rate`, then `power`, each absent when the workout has no zone values of that kind or its stream is absent ([F-49](F-49-zones.md) ZN-3, ADR-049). Each value is an object with `from`, `basis` or both, in that key order (v1.10):
 
 | Key | Type | Meaning |
 | --- | --- | --- |
 | `from` | array of integers | The file's zones: the lowest value of zones 2 … k, strictly ascending, 1 to 9 values, within the stream's valid stored range (§2). Zone 1 has no lower bound, zone k no upper bound |
-| `basis` | integer | Max heart rate in bpm (100–250) or threshold power in W (50–1,000). Zones by the default model of F-49 ZN-5, applied by the reader |
+| `basis` | integer | Max heart rate in bpm (100–250) or threshold power in W (50–1,000). **Alone:** zones by the default model of F-49 ZN-5, applied by the reader. **Next to `from`:** the file's own value, shown only; the reader never applies the model when `from` is present |
 
 ### 6. Reader validation (both the Go `Decode` and the F-04 decoder)
 
@@ -326,7 +326,7 @@ A reader rejects the file, with an error and never a crash, when any of these ho
 1. Fewer than 14 bytes, or magic ≠ `WEXD`.
 2. Version ≠ the reader's version (exactly `6`; there are no readers for other versions, TD Versioning).
 3. *N* = 0, or `14 + L` > file length.
-4. The metadata is not valid UTF-8 JSON, or a key from §5.1 is missing or has the wrong type. **Nested keys (v1.3):** a nested value of the wrong type (for example a lap `start` that is a string) is rejected by every reader. A **missing or `null`** nested key (a key of `time_zone`, §5.3, §5.5, §5.7 or the four always-present keys of §5.8, or a `null` array element) is not covered by the writer's output, since the writer always emits every key; Go `Decode` zero-fills it, F-04 rejects it. Both are allowed by this format; neither affects a file the writer produced. (v1.9) A `zones` entry with an unknown kind, neither or both of `from` and `basis`, or a value outside §5.9 is rejected by both readers.
+4. The metadata is not valid UTF-8 JSON, or a key from §5.1 is missing or has the wrong type. **Nested keys (v1.3):** a nested value of the wrong type (for example a lap `start` that is a string) is rejected by every reader. A **missing or `null`** nested key (a key of `time_zone`, §5.3, §5.5, §5.7 or the four always-present keys of §5.8, or a `null` array element) is not covered by the writer's output, since the writer always emits every key; Go `Decode` zero-fills it, F-04 rejects it. Both are allowed by this format; neither affects a file the writer produced. (v1.9) A `zones` entry with an unknown kind, neither `from` nor `basis`, or a value outside §5.9 is rejected by both readers (v1.10: both keys together are valid).
 5. `streams` is empty, its first entry is not `time_offset`, a name is unknown or repeated, the names are not in §2 order (v1.2), exactly one of `latitude` and `longitude` is present (v1.2), or a descriptor differs from its §2 row.
 6. A `byte_offset` is not a multiple of 4, is greater than the file length (v1.2), is below `align4(14 + L)`, is below the end of the previous column, or `N × size` > file length − `byte_offset`; or the file is longer than the end of the last column (trailing bytes, v1.1). Evaluate the bounds in a form that cannot overflow: in Go, check `byte_offset ≤ len` first, then `N ≤ (len − byte_offset) / size`. In JS, numbers up to 2⁵³ are exact (v1.2). This rule applies to F-04 as well.
 7. (Go `Decode`; optional in this format, implemented by F-04 too, v1.3.) `time_offset` has a missing sample or is not strictly increasing; a session, lap or (v1.8) length index range is not `0 ≤ start_index ≤ end_index ≤ N`; a session or lap has `end < start`; latitude and longitude are not missing at the same indices (v1.2); `moving_time` or `elevation_gain` has a missing sample (v1.5).
