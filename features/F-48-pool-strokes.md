@@ -25,7 +25,7 @@ A viewer of a pool swim sees which stroke each lap was and every length with its
   - Rest (idle) length: a "Rest" row with its time only; never numbered or counted (decision 3).
   - Time: the length's recorded time (`m:ss`). Pace per 100 m or 100 yd as DS-2 and the units setting (DS-1), from the pool length and the length's time; without a pool length, from the length's recorded average speed; neither: "–" (OQ-183).
   - "Strokes" and "SWOLF" columns only when at least one active length has a stroke count; SWOLF = the length's time rounded to the nearest whole second plus its stroke count; a length without a stroke count shows "–" in both (decision 4, rounding OQ-183).
-  - The page still opens on Laps (or Splits without device laps, AP-8); the choice is not remembered. Tapping a row selects that length as a range (AP-7), as for laps (OQ-183).
+  - The page still opens on Laps (or Splits without device laps, AP-8); the choice is not remembered. Tapping a row selects that length as a range (AP-7), as for laps (OQ-183); tapping the selected row again clears it (14 Nov 2026, F-18).
   - Loaded with the laps table, not in the entry bundle; needs JavaScript, so no Lengths view with JavaScript off (OQ-183).
   - Untrimmed, the "Lengths" summary cell stays the device's count (AP-16), even where it differs from the table's numbering.
 - **Map.** Nothing new (decision 5): pool swims without positions show the no-location hint (AP-3).

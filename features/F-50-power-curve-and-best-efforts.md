@@ -17,7 +17,7 @@ A viewer sees the workout's best efforts (fastest distances, best power over set
 - **Which sports** (OQ-192): distance efforts for run, walk and hike (the pace sports, DS-2); power efforts and the power curve for any sport with power. Swims, and rides without power, get nothing.
 - **Values** (OQ-192): distances 1 km, 1 mi, 5 km, 10 km, half marathon, marathon; power durations 5 s, 1 min, 5 min, 20 min, 60 min. Only those the leg is long enough for.
 - **Definition** (OQ-193): fastest distance = shortest moving time over that distance; best power = highest average power over that much moving time, missing samples counted as 0 W (AP-7). Pauses add no time; an effort never crosses a leg (OQ-191).
-- **Best efforts table** (OQ-189): effort, time and pace (distance, DS-2 and units DS-1) or average watts (power), and where it starts (elapsed time). Tapping a row selects the effort as a range (AP-7), which the range link can share (AP-19) (OQ-194).
+- **Best efforts table** (OQ-189): effort, time and pace (distance, DS-2 and units DS-1) or average watts (power), and where it starts (elapsed time). Tapping a row selects the effort as a range (AP-7), which the range link can share (AP-19) (OQ-194); tapping the selected effort's row again clears the selection (14 Nov 2026).
 - **Power curve** (OQ-189): best average power for every duration from 1 s to the longest leg with power, logarithmic time axis.
 - **Which data** (OQ-190): the public data after the trim; hiding (SH-4) has no effect; whole workout only, not the selected range.
 - **Lazy and cheap:** section code and computation load after the page is interactive and must not block scrubbing; a 12-hour ride stays within the budgets.
@@ -31,7 +31,7 @@ A viewer sees the workout's best efforts (fastest distances, best power over set
 - [ ] A synthetic run of 12 km shows 1 km, 1 mi, 5 km and 10 km efforts, not half marathon or marathon; times and paces match hand-computed values on the synthetic data (AP-11, DS-2).
 - [ ] A ride with power shows 5 s to 60 min power (those the ride covers) and a power curve; a ride without power shows no Best efforts section; a swim shows none.
 - [ ] An effort spanning a pause excludes the pause time; an effort never crosses legs or transitions in `triathlon.fit` (AP-12).
-- [ ] Tapping a row selects that effort as a range in charts, map and panel (AP-7).
+- [ ] Tapping a row selects that effort as a range in charts, map and panel (AP-7); tapping the same row again clears the selection.
 - [ ] A trimmed workout's efforts come only from the remaining part (UP-6); hiding the start and end changes nothing.
 - [ ] Imperial pages show paces per mile; distances keep their names (DS-1).
 - [ ] A truncated file (UP-3) shows efforts without error.

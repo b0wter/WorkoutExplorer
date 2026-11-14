@@ -77,7 +77,7 @@ describe('Best efforts section', () => {
     expect(slot.hidden).toBe(true);
   });
 
-  it('AC 4: a tap selects the covering range and marks the row; the same range again does nothing; another range unmarks', () => {
+  it('AC 4: a tap selects the covering range and marks the row; the same row again clears; another range unmarks', () => {
     const d = golden('ride-30min');
     start(d);
     const row = rows()[1];
@@ -87,9 +87,11 @@ describe('Best efforts section', () => {
     expect(b - a).toBeGreaterThanOrEqual(60);
     expect(d.movingTime![b] - d.movingTime![a]).toBeGreaterThanOrEqual(60);
     expect(row.classList.contains('on')).toBe(true);
-    flush = null;
     row.click();
-    expect(flush).toBeNull(); // no write
+    tick();
+    expect([selection.start(), row.classList.contains('on')]).toEqual([-1, false]);
+    row.click();
+    tick();
     selection.set(0, 5);
     tick();
     expect(rows().some((r) => r.classList.contains('on'))).toBe(false);

@@ -126,7 +126,7 @@ describe('row taps (L-2, L-3; AC 7)', () => {
     expect(p.section?.querySelector('tr.on')).toBeNull(); // only taps mark (O(1) per flush)
   });
 
-  it('a tap on the row already selected changes nothing; rows never clear', () => {
+  it('a tap on the row already selected clears the range and its mark', () => {
     const p = open(ride());
     p.rows()[1].click();
     p.frame();
@@ -134,8 +134,10 @@ describe('row taps (L-2, L-3; AC 7)', () => {
     const clear = vi.spyOn(p.selection, 'clear');
     p.rows()[1].click();
     expect(set).not.toHaveBeenCalled();
-    expect(clear).not.toHaveBeenCalled();
-    expect(p.rows()[1].classList.contains('on')).toBe(true);
+    expect(clear).toHaveBeenCalledOnce();
+    p.frame();
+    expect(p.selection.start()).toBe(-1);
+    expect(p.section?.querySelector('tr.on')).toBeNull();
   });
 
   it('a lap of fewer than 2 samples is shown but writes nothing; the header row writes nothing', () => {
@@ -474,11 +476,15 @@ describe('separator rows (F-42 MS-6; AC 2, AC 3)', () => {
     expect([p.selection.start(), p.selection.end()]).toEqual([secs[2].start, secs[3].start]);
     p.frame();
     expect(sep[2].classList.contains('on')).toBe(true);
+    sep[2].click(); // the selected leg again clears
+    p.frame();
+    expect([p.selection.start(), sep[2].classList.contains('on')]).toEqual([-1, false]);
     sep[4].click();
     expect([p.selection.start(), p.selection.end()]).toEqual([secs[4].start, p.data.sampleCount - 1]);
     // A lap row still maps to its lap by DOM order past the separators.
     const laps = p.data.meta.laps;
     const last = p.rows()[p.rows().length - 1];
+    p.selection.clear(); // the last lap may equal the last leg, whose second tap would clear
     last.click();
     expect([p.selection.start(), p.selection.end()]).toEqual([laps[laps.length - 1].start_index, laps[laps.length - 1].end_index - 1]);
   });
@@ -546,6 +552,12 @@ describe('comparison chart (F-51; AP-23)', () => {
     p.rows()[4].click();
     p.frame();
     expect(bars(p).map((r) => r.classList.contains('sel'))).toEqual(laps.map((_, i) => i === 4));
+    tap(p, 4, laps.length); // the selected bar again clears
+    p.frame();
+    expect([p.selection.start(), bars(p).some((r) => r.classList.contains('sel'))]).toEqual([-1, false]);
+    expect(p.section?.querySelector('tr.on')).toBeNull();
+    p.rows()[4].click();
+    p.frame();
     p.selection.set(10, 20);
     p.frame();
     expect(bars(p).some((r) => r.classList.contains('sel'))).toBe(false);

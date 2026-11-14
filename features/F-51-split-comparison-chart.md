@@ -21,7 +21,7 @@ A viewer sees at a glance which laps, splits or lengths were faster or slower th
 - **Bars** (OQ-197 to OQ-199): each bar starts at the reference (median speed of the rows) and its height is the row's difference from it; faster up, slower down, also for pace sports. Header line: "Median 24.1 km/h · Best 29.9 km/h" (pace sports: "Median 5:12 /km · Best 4:48 /km"). Rows within ±3 % of the median are "on pace", drawn neutral, with the band shaded behind the bars. Legend: Faster, On pace, Slower. Caption under the axis: the view ("Laps", "1 km splits", "Lengths").
 - **Partial rows** (OQ-200): the last partial split is drawn like the others (equal bar width) but left out of median and Best.
 - **Overlay** (OQ-201): a drop-down "Overlay": None, Heart rate, Power, Cadence, Elevation (added 14 Nov 2026), listing only those the rows have; Elevation is each row's net elevation change (elevation at its end minus at its start, can be negative), in m or ft by the units setting (DS-1), offered only when the rows have elevation and never for pool lengths (AP-13); default None; per visit, not remembered, not in the range link. A line with dots at each bar, on its own scale at the right edge, in that metric's chart line colour.
-- **Interaction** (OQ-202): tapping or clicking a bar does what a row tap does (AP-7, AP-8); the bar of the selected row is highlighted. Hover highlights the bar and its table row; no tooltip.
+- **Interaction** (OQ-202): tapping or clicking a bar does what a row tap does (AP-7, AP-8), including the toggle: tapping the selected row's bar again clears the selection (14 Nov 2026); the bar of the selected row is highlighted. Hover highlights the bar and its table row; no tooltip.
 - **Rows without speed** (OQ-203): no bar, the slot stays empty; with fewer than 2 bars there is no chart.
 - **Multisport** (OQ-204): no chart for "Multisport" workouts (AP-12).
 - **Units** (OQ-205): speed or pace as DS-2, units as DS-1; a units switch redraws.
@@ -41,7 +41,7 @@ A viewer sees at a glance which laps, splits or lengths were faster or slower th
 - [ ] A 10.4 km run on 1 km splits shows 11 bars under the table, the 0.4 km bar drawn but not counted in "Median" or "Best"; median and best match hand-computed values (AP-23).
 - [ ] Bars faster than the median by more than 3 % point up in blue (`--zone-blue`), slower ones down in red (`--zone-red`), those within ±3 % grey (`--zone-grey`); on a run (pace) faster bars also point up and the header shows pace (DS-2).
 - [ ] Switching Laps / Splits / Lengths or the split distance redraws the chart for the rows shown; a pool swim's Lengths view has one bar per active length and none for Rest rows (AP-13, AP-20).
-- [ ] Tapping a bar selects the same range as tapping its row, in charts, map and panel, and highlights the bar (AP-7).
+- [ ] Tapping a bar selects the same range as tapping its row, in charts, map and panel, and highlights the bar (AP-7); tapping it again clears the selection and the highlight.
 - [ ] The overlay offers only metrics the rows have, starts on None on every load, and draws one dot per bar at the row's value.
 - [ ] With Elevation chosen, each dot is the row's end elevation minus its start elevation (negative for a net descent), in m or ft by the units setting; Elevation is not offered without elevation data or in the Lengths view.
 - [ ] A lap without speed has an empty slot; a workout with fewer than 2 bars, a "Multisport" workout and a view with more than 200 rows show no chart.

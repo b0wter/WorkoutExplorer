@@ -92,9 +92,13 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
 }
 
 /** A row tap's selection (L-3, L-7; F-50 EF-8 too): false when [a, b] is not selectable (fewer than
- *  2 samples, or a markup that does not match) or already the range; never clears. */
+ *  2 samples, or a markup that does not match) or already the range, which it then clears. */
 export function selectRow(row: Element, a: number, b: number, selection: SelectionStore, win: Window): boolean {
-  if (!(b > a) || (a === selection.start() && b === selection.end())) return false;
+  if (!(b > a)) return false;
+  if (a === selection.start() && b === selection.end()) {
+    selection.clear();
+    return false;
+  }
   if (selection.start() < 0) {
     // L-7: the panel appears above the rows. Compare the row's top before the write with its top
     // in the flush, after the glue's slot listener (subscribed earlier), and scroll the difference.
