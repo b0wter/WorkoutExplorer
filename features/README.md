@@ -68,9 +68,9 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | ready for architecture (after F-50) | — |
 | [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 | [F-54](F-54-translated-interface.md) | Translated interface: German, Spanish, French | — | both (backend first) | all features with text; F-53 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
-| [F-57](F-57-gpx-route-download.md) | GPX route download | — | frontend | F-16, F-47, F-54 | draft | open question OQ-245 elevation (user) |
-| [F-55](F-55-privacy-zones.md) | Privacy zones | — | both (backend first) | F-16, F-19, F-36, F-47 | draft | open questions OQ-229 to OQ-233 (user) |
-| [F-56](F-56-map-pins.md) | Map pins | — | both (backend first) | F-16, F-19, F-26, F-47; F-55 for PIN-7 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
+| [F-57](F-57-gpx-route-download.md) | GPX route download | — | frontend | F-16, F-47, F-54 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
+| [F-55](F-55-start-end-hiding-radius.md) | Selectable radius for start and end hiding | — | both (backend first) | F-16, F-19, F-36, F-47, F-54 | draft | open questions OQ-246 to OQ-250 (user) |
+| [F-56](F-56-map-pins.md) | Map pins | — | both (backend first) | F-16, F-19, F-26, F-47 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-57.
 
@@ -98,6 +98,7 @@ Requirement IDs stay. Priority (Must/Should/Could) and phase stay on existing en
 ### Discarded ideas
 
 - F-24 viewer download of the published data (SH-8 viewer part): discarded 14 Nov 2026, minimal use, not worth the risks and effort. Feature file kept, marked discarded; the parked branch `wip/f-24-export` can be deleted.
+- Privacy zones around chosen places (SH-3): discarded 14 Nov 2026; start and end hiding with a selectable radius covers the need (F-55).
 - Photos on pins (PIN-3): discarded 14 Nov 2026; stores people's images, against "store as little as possible".
 - Share target / PWA (share a FIT file from another app): discarded 14 Nov 2026; browser storage differs between Safari and a home-screen app, which would confuse users. The iOS Shortcut (INF-5) and zip upload stay.
 - Keyboard control of charts: discarded 14 Nov 2026; accessibility is not a goal.
@@ -168,7 +169,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | DS-4 Light and dark theme | Should | F-14, F-15, F-29; F-38 (Impressum page, phase 2) |
 | DS-5 Summary tints | Could (phase 2) | F-41 (phase 2) |
 | DS-6 Translated interface (German, Spanish, French) | — (planned) | F-54 |
-| SH-3 Privacy zones | Could (phase 2) | F-55 |
+| SH-3 Privacy zones | Removed (14 Nov 2026) | — (selectable radius for SH-4 instead: F-55) |
+| SH-4 Selectable radius (extension) | — (planned) | F-55 |
 | PIN-1 to PIN-8 Map pins | within pins | F-56 |
 | PIN-9 GPX export with pins | Removed (14 Nov 2026) | — (route download instead: SH-13) |
 | SH-13 GPX route download | — (planned) | F-57 |
@@ -199,8 +201,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 ## Phase 2 (not broken down)
 
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11: detailed in [F-49](F-49-zones.md) and [F-50](F-50-power-curve-and-best-efforts.md).
-- Privacy zones of 200 m to 1 km — SH-3: planned as [F-55](F-55-privacy-zones.md).
-- Map pins (types, sections, list, legend, privacy-zone check, owner edits), including pins in the fullscreen map — PIN-1 to PIN-8, AP-15, AC-5: planned as [F-56](F-56-map-pins.md). PIN-9 (GPX export with pins) removed 14 Nov 2026; the route download is SH-13, [F-57](F-57-gpx-route-download.md).
+- Privacy zones of 200 m to 1 km — SH-3: discarded 14 Nov 2026; a selectable radius for start and end hiding is planned as [F-55](F-55-start-end-hiding-radius.md).
+- Map pins (types, sections, list, legend, hidden-section check, owner edits), including pins in the fullscreen map — PIN-1 to PIN-8, AP-15, AC-5: planned as [F-56](F-56-map-pins.md). PIN-9 (GPX export with pins) removed 14 Nov 2026; the route download is SH-13, [F-57](F-57-gpx-route-download.md).
 - Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
 - Summary colours — DS-5: detailed in [F-41](F-41-summary-tints.md).
 - Multisport legs and transitions as sections — AP-12: detailed in [F-42](F-42-multisport-sections.md).
@@ -759,3 +761,5 @@ The original questions follow for reference.
 **Decided on 14 Nov 2026, backlog classified** (user): Planned, with draft feature files: AC-7 my workouts on this device (F-53), DS-3 widened to a translated interface in German, Spanish and French (new DS-6, F-54), SH-3 privacy zones (F-55), PIN-1 to PIN-8 map pins (F-56), PIN-9 GPX export with pins (F-57), built after F-52 in that order. Ideas: extra sensor streams, compare two workouts, time-based splits, splits per multisport leg, swim yards, no split jump on load, report notifications through other services. Discarded: photos on pins, share target / PWA (browser storage differs between Safari and a home-screen app, which would confuse users), keyboard chart control, GPS dropouts as gaps, GPX/TCX upload, browser fullscreen API (OQ-100), the "revisit if seen" risks. Closed as built: confirm before publishing (no confirmation); the provisional OQ-23, OQ-25, OQ-28 are final. Fixes done: spec questions DS-5 and SH-12 ticked; OQ-4, OQ-167, OQ-168, OQ-185, OQ-195 accepted as built; open user checks moved from `CONTINUE.md` into Waiting on (F-01, F-11, F-13, F-17, F-32); F-22 and F-32 Waiting on reworded. Updated: spec (scope table, SH-3, PIN-3, AC-3, new AC-7, DS-3, new DS-6, open questions); F-53 to F-57 (new); `architect/INDEX.md`, F-02, F-46, F-48, F-49 architecture docs; F-09, F-12 (`allow_download` removed); `CONTINUE.md`; this file (table, Ideas, Discarded ideas, coverage, Phase 2 list).
 
 **Decided on 14 Nov 2026, F-53, F-54, F-56, F-57 questions** (user, OQ-218 to OQ-244; F-55's OQ-229 to OQ-233 still open): build order stays F-53, F-54 before the rest. F-53: every uploaded workout is listed, drafts included (changes OQ-219); a dedicated My workouts page with a table (workout, sport, date, status, expires, links, forget), linked from the upload page (changes OQ-220); OQ-218, OQ-221, OQ-222 as suggested. F-54: OQ-223 to OQ-228 as suggested; the language choice is remembered in browser storage like the units and listed in the About page's "In your browser" paragraph. F-56: OQ-234 to OQ-240 as suggested; their privacy-zone parts apply only with F-55, hidden start and end and the trim apply in any case. F-57 reworked into a GPX download of the visible route only (positions from the public, privacy-applied data; no times, pins, heart rate or other data), for any published workout with a route, no owner setting, none for multisport workouts; it no longer depends on F-56 and moves right after F-54 (it is small); OQ-241 to OQ-244 replaced; OQ-245 elevation open (suggested: include it). The F-24 discard reason still holds for a FIT export; the route GPX uses only data the page already shows. Updated: spec (scope table, SH-8, new SH-13, PIN-9 removed, AC-7, INF-1); F-53, F-54, F-56; F-57 (renamed `F-57-gpx-route-download.md`); this file (table and order, coverage, Phase 2 list).
+
+**Decided on 14 Nov 2026, privacy zones replaced by a selectable hiding radius** (user, SH-3, SH-4, F-55, F-56, F-57): F-55 becomes "Selectable radius for start and end hiding": the sharer picks the radius of the existing start and end hiding on the edit page, 200 m, 300 m (default, today's value), 500 m or 1 km, one value for both ends; critical lane; build order unchanged. Privacy zones around chosen places (SH-3) are discarded: start and end hiding with a selectable radius covers the need. OQ-229 to OQ-233 superseded; new OQ-246 to OQ-250 open (F-55). F-56: the privacy-zone parts now mean the hidden start and end at the chosen radius; PIN-7 no longer depends on F-55. F-57: OQ-245 decided, elevation is included in the GPX. Updated: spec (sharer story 3, scope table, AP-2, AP-3, AP-19, SH-3 removed, SH-4, SH-12, SH-13, PIN-7, open question on pins, roadmap phase 2); F-55 (renamed `F-55-start-end-hiding-radius.md`), F-56, F-57; this file (table, coverage, Phase 2 list, Discarded ideas).
