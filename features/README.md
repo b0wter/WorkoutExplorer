@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -62,11 +62,12 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-46](F-46-laps-and-splits.md) | Laps and splits: lap triggers and split presets | 2 | both (backend first) | F-18, F-40, F-42, F-44 | done | checked by the user 12 Nov (drop-down, iPhone mini); open: pool splits on a real file, phone scrub trace (AC 41) |
 | [F-47](F-47-trim.md) | Trim start and end | 2 | both (backend first) | F-16, F-19, F-20, F-30, F-36, F-42, F-44, F-45, F-46 | done | — (checked by the user 12 Nov) |
 | [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | done | checked by the user 13 Nov; minors r1-1 to r1-4 fixed; a length under 2 samples is not selectable (accepted by the user 13 Nov) |
-| [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done | user: browser check (Zones section on a ride with HR, edit fields, wording); entry +265 accepted by the user 13 Nov; minors r1-1, r1-2, r1-4 fixed; r1-3 (browser range-drag on ride-12h with a max HR set) with the browser check |
+| [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done, checked by the user 14 Nov | — |
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-49) | — |
+| [F-51](F-51-split-comparison-chart.md) | Lap and split comparison chart | 2 | frontend | F-18, F-42, F-46, F-47, F-48, F-49 | ready for architecture (after F-50) | — |
 | [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 17 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, detailed; F-49, F-50 in draft). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
 
 ## Requirement coverage
 
@@ -107,6 +108,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-16 Pool length and lengths in the summary | Could (phase 2) | F-44 (phase 2) |
 | AP-10 Heart-rate and power zones | Could (phase 2) | F-49 (phase 2) |
 | AP-11 Power curve and best efforts | Could (phase 2) | F-50 (phase 2) |
+| AP-23 Lap and split comparison chart | Could (phase 2) | F-51 (phase 2) |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -164,6 +166,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Lap triggers, splits only without device laps, split presets per sport — AP-8, AP-20: detailed in [F-46](F-46-laps-and-splits.md).
 - Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5: detailed in [F-47](F-47-trim.md).
 - Pool swims: lengths and stroke type — AP-13: detailed in [F-48](F-48-pool-strokes.md).
+- Lap and split comparison chart — AP-23: detailed in [F-51](F-51-split-comparison-chart.md).
 
 ## Questions for review
 
@@ -696,3 +699,5 @@ The original questions follow for reference.
 **Decided on 13 Nov 2026, zones, power curve and best efforts** (user, AP-10, AP-11, F-49, F-50, OQ-186 to OQ-194): split into F-49 (zones) then F-50 (power curve and best efforts); all suggestions accepted. OQ-186 refined after a check of real files (Apple: `time_in_zone` in % of a configured max; Wahoo: `hr_zone`, `power_zone`, `session.threshold_power`; Garmin Edge: none; no `zones_target`): zone sources in order sharer's values, the file's zone boundaries (`time_in_zone` of the first session that has them, then `hr_zone`/`power_zone`), thresholds (`time_in_zone.max_heart_rate`, `zones_target`, `session.threshold_power`) with the default model, none; `session.max_heart_rate` is never a basis; resting heart rate not used and not copied (it stays in the stored file only, OQ-50); time in zone from samples. Updated: spec AP-10, AP-11, open questions; F-49; F-50.
 
 **Decided on 14 Nov 2026, zones after the browser check** (user, AP-10, AP-22, F-49, F-39): zones listed highest first; a source line under each table ("Estimated from max heart rate 180 bpm" / "Estimated from threshold power 240 W", or "Zones as recorded by the device (max heart rate 171 bpm)", number omitted when the file has none); the edit fields show the file's value as a grey placeholder, empty keeps the device's zones, a typed value is the sharer's even when equal; one Zones line in the how-to dialog and a reworded note next to the edit fields; the public data file states the device's configured max heart rate and threshold power (accepted). Updated: spec AP-10, AP-22; F-49; F-39.
+
+**Decided on 14 Nov 2026, lap and split comparison chart** (user, AP-23, F-51, OQ-196 to OQ-209): all suggestions accepted, except OQ-206 colours: as the zones' intensity scale, faster bars red (zone-5 colour), slower bars blue (zone-1 colour), on pace grey; overlay line in its chart line colour. Updated: F-51 (ready for architecture after F-50), spec AP-23 and open questions.
