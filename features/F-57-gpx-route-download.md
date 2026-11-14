@@ -4,7 +4,7 @@
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
 - **Lane:** critical (a viewer download of location data)
-- **Requirements:** SH-13 (new), SH-4 (radius from F-55 once built), UP-6, SH-8 (FIT export stays dropped), AP-3, AP-12
+- **Requirements:** SH-13 (new), SH-4 (radius per end from F-55 once built), UP-6, SH-8 (FIT export stays dropped), AP-3, AP-12
 - **Depends on:** F-16, F-47, F-54 (texts); not on F-56
 
 ## Goal
