@@ -10,6 +10,7 @@ import type { Length, Totals, WorkoutData } from '../lib/datafile';
 import type { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit, Units } from '../lib/format';
 import type { codeWord, lapsGroup } from '../lib/page';
 import { hasStrokeCounts, lengthRows } from '../lib/lengths';
+import { netElevation } from '../lib/compare';
 import { createRangeStats, emptyValues, type RangeStats } from '../lib/range';
 import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset } from '../lib/splits';
 import type { UnitsStore } from '../lib/units';
@@ -123,10 +124,13 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   // F-51 SC-4: no chart for a multisport workout (AP-12). Slots per view, from the rows its table is built from (SC-3).
   const chart = data.meta.sport === 'multisport' ? null : createChart(section, data.meta.sport, [fmt[3], fmt[4], fmt[5]], seams.marked);
   const slots: Partial<Record<View, Slot[]>> = {};
+  // F-51 SC-6: net elevation per lap or split row (samples a … b inclusive), when the workout has altitude.
+  const alt = data.metrics.altitude;
+  const net = (a: number, b: number): { elevation?: number } => (alt ? { elevation: netElevation(alt, a, b) } : {});
   if (server) {
     const rows = [...server.querySelectorAll('tbody tr:not(.laps-section)')];
     const laps = data.meta.laps;
-    slots.Laps = rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1) })) : [];
+    slots.Laps = rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1), ...net(laps[i].start_index, laps[i].end_index - 1) })) : [];
   }
   const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? preset!.label + ' splits' : current, units.get(), current.slice(0, -1));
   // LS-9, PL-8: built only on arrival, a change, a switch to it or a units change; the selection is untouched (LS-7).
@@ -141,7 +145,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
       pairs.Splits = bounds.slice(1).flatMap((b, i) => [bounds[i], b]);
       const partial = partialLast(d!, bounds, preset!, choice!.pool);
       const rows = wrap.querySelectorAll('tbody tr');
-      slots.Splits = totals.map((t, i) => ({ row: rows[i], totals: t.totals, label: String(i + 1), partial: partial && i === totals.length - 1 }));
+      slots.Splits = totals.map((t, i) => ({ row: rows[i], totals: t.totals, label: String(i + 1), partial: partial && i === totals.length - 1, ...net(bounds[i], bounds[i + 1]) }));
     } else {
       wrap.appendChild(lengthsTable(fmt, doc, lengths, units.get()));
       // L-2: a length selects start_index … end_index − 1, rest lengths too.

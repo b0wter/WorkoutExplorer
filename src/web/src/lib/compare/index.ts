@@ -9,10 +9,12 @@ import type { Totals } from '../datafile';
 export interface CompareRow {
   readonly totals: Totals;
   readonly partial?: boolean;
+  /** Net elevation change over the row, m (see netElevation); absent for lengths. */
+  readonly elevation?: number;
 }
 
-export type OverlayKey = 'avg_heart_rate' | 'avg_power' | 'avg_cadence';
-export const OVERLAYS: readonly OverlayKey[] = ['avg_heart_rate', 'avg_power', 'avg_cadence'];
+export type OverlayKey = 'avg_heart_rate' | 'avg_power' | 'avg_cadence' | 'elevation';
+export const OVERLAYS: readonly OverlayKey[] = ['avg_heart_rate', 'avg_power', 'avg_cadence', 'elevation'];
 
 export type BarClass = 'faster' | 'pace' | 'slower';
 
@@ -51,8 +53,8 @@ const speedOf = (t: Totals): number => {
   return v !== undefined && Number.isFinite(v) && v > 0 ? v : NaN;
 };
 
-const valueOf = (t: Totals, k: OverlayKey): number => {
-  const v = t[k];
+const valueOf = (r: CompareRow, k: OverlayKey): number => {
+  const v = k === 'elevation' ? r.elevation : r.totals[k];
   return v !== undefined && Number.isFinite(v) ? v : NaN;
 };
 
@@ -88,7 +90,7 @@ export function compare(rows: readonly CompareRow[], pace: boolean): Comparison 
     band: [0.5 - hi / (2 * h), 0.5 + lo / (2 * h)],
     top: fromQ(qr + h),
     bottom: fromQ(qr - h),
-    overlays: OVERLAYS.filter((k) => rows.some((r, i) => speeds[i] === speeds[i] && valueOf(r.totals, k) === valueOf(r.totals, k))),
+    overlays: OVERLAYS.filter((k) => rows.some((r, i) => speeds[i] === speeds[i] && valueOf(r, k) === valueOf(r, k))),
   };
 }
 
@@ -107,11 +109,13 @@ export interface Overlay {
   /** The values at the plot's top and bottom edge. */
   readonly max: number;
   readonly min: number;
+  /** The zero line's position as a fraction, when the values cross zero; else NaN. */
+  readonly zero: number;
 }
 
 /** The overlay's own linear scale (SC-6): the barred rows' values span the plot height. */
 export function overlay(rows: readonly CompareRow[], c: Comparison, k: OverlayKey): Overlay {
-  const vs = rows.map((r, i) => (c.bars[i] ? valueOf(r.totals, k) : NaN));
+  const vs = rows.map((r, i) => (c.bars[i] ? valueOf(r, k) : NaN));
   const known = vs.filter((v) => v === v);
   let max = Math.max(...known);
   let min = Math.min(...known);
@@ -119,5 +123,13 @@ export function overlay(rows: readonly CompareRow[], c: Comparison, k: OverlayKe
     max += 1;
     min -= 1;
   }
-  return { ys: vs.map((v) => (max - v) / (max - min)), max, min };
+  return { ys: vs.map((v) => (max - v) / (max - min)), max, min, zero: min < 0 && max > 0 ? max / (max - min) : NaN };
+}
+
+/** Net elevation change over samples a … b inclusive (m): the last valid altitude minus the first,
+ *  both inside the range; NaN when it has fewer than one valid sample. */
+export function netElevation(alt: Float64Array, a: number, b: number): number {
+  while (a <= b && alt[a] !== alt[a]) a++;
+  while (b > a && alt[b] !== alt[b]) b--;
+  return a <= b ? alt[b] - alt[a] : NaN;
 }

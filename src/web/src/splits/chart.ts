@@ -20,12 +20,13 @@ export interface Chart {
 /** The entry's formatters (see ../splits Fmt). */
 export type Fmt = readonly [typeof formatSpeedOrPace, typeof speedOrPaceUnit, typeof isPaceSport];
 
-const PLOT = 110; // px, plus the row numbers below: about 160 px with header and legend
+const PLOT = 110; // px, plus the row numbers below: about 190 px with header, gaps and legend
 const PAD = 4;
 const NAMES: Readonly<Record<OverlayKey, readonly [label: string, colour: string]>> = {
   avg_heart_rate: ['Heart rate', 'heart_rate'],
   avg_power: ['Power', 'power'],
   avg_cadence: ['Cadence', 'cadence'],
+  elevation: ['Elevation', 'altitude'],
 };
 
 const yp = (f: number): number => PAD + f * (PLOT - 2 * PAD);
@@ -50,7 +51,8 @@ export function createChart(
   box.hidden = true;
   // The header persists across draws, so the focused overlay drop-down keeps its focus (QA-51-r1-2).
   const head = el(doc, 'div', 'compare-head');
-  const headText = el(doc, 'span', '');
+  // Median and best as two stat blocks (label over value) that never wrap into the plot.
+  const headText = el(doc, 'span', 'compare-stats');
   const label = el(doc, 'label', 'compare-overlay', 'Overlay ');
   const select = el(doc, 'select', 'split-select');
   const body = el(doc, 'div', '');
@@ -93,7 +95,15 @@ export function createChart(
     const text = (v: number): string => speedText(sport, v, units);
 
     // Header: reference and best, and the overlay drop-down when there is a metric to offer.
-    headText.textContent = 'Median ' + text(c.reference) + unit + ' · Best ' + text(c.best) + unit;
+    const stats: [string, string][] = [['Median', text(c.reference) + unit], ['Best', text(c.best) + unit]];
+    headText.replaceChildren(
+      ...stats.map(([k, v]) => {
+        const s = el(doc, 'span', 'compare-stat', ' ' + v);
+        s.prepend(el(doc, 'small', '', k));
+        return s;
+      }),
+    );
+    const headLabel = stats.map((kv) => kv.join(' ')).join(' · ');
     label.hidden = !c.overlays.length;
     if (offered !== (offered = c.overlays.join())) {
       select.replaceChildren();
@@ -120,7 +130,7 @@ export function createChart(
           svg += `<line class="cut" x1="${r2(mid - bw / 2 - 0.3)}%" x2="${r2(mid + bw / 2 + 0.3)}%" y1="${r2(e + 4)}" y2="${r2(e)}"/>`;
         }
       }
-      if ((i + 1) % step === 0 || i === 0) svg += `<text x="${r2(mid)}%" y="${PLOT + 11}">${slots[i].label}</text>`;
+      if ((i + 1) % step === 0 || i === 0) svg += `<text x="${r2(mid)}%" y="${PLOT + 15}">${slots[i].label}</text>`;
     });
     const ov = choice ? overlay(slots, c, choice) : null;
     if (ov) {
@@ -131,13 +141,14 @@ export function createChart(
         if (next === next && i + 1 < n) g += `<line x1="${r2((i + 0.5) * w)}%" x2="${r2((i + 1.5) * w)}%" y1="${r2(yp(y))}" y2="${r2(yp(next))}"/>`;
         g += `<circle cx="${r2((i + 0.5) * w)}%" cy="${r2(yp(y))}" r="2.5"/>`;
       });
+      if (ov.zero === ov.zero) g = `<line class="zero" x1="0" x2="100%" y1="${r2(yp(ov.zero))}" y2="${r2(yp(ov.zero))}"/>` + g;
       svg += `<g class="ov ov-${NAMES[choice as OverlayKey][1]}">${g}</g>`;
     }
     const plot = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    plot.setAttribute('height', String(PLOT + 14));
+    plot.setAttribute('height', String(PLOT + 18));
     plot.setAttribute('role', 'img');
     const beyond = slots.flatMap((s, i) => (c.bars[i]?.clipped ? [noun + ' ' + s.label + ' beyond the scale'] : []));
-    plot.setAttribute('aria-label', [headText.textContent + ', ' + caption, ...beyond].join('. '));
+    plot.setAttribute('aria-label', [headLabel + ', ' + caption, ...beyond].join('. '));
     plot.innerHTML = svg;
     plot.querySelectorAll<SVGElement>('rect[data-i]').forEach((r) => barOf.set(slots[+r.dataset.i!].row, r));
 
@@ -158,13 +169,16 @@ export function createChart(
     plot.addEventListener('pointermove', (e) => e.pointerType === 'mouse' && setHover(slotAt(e)));
     plot.addEventListener('pointerleave', () => setHover(undefined));
 
+    // Elevation in m or ft with its unit, signed (inlined, not lib/format: that would grow the entry).
+    const ovText = (v: number): string =>
+      choice === 'elevation' ? (v > 0 ? '+' : '') + Math.round(units === 'metric' ? v : v / 0.3048) + (units === 'metric' ? ' m' : ' ft') : String(Math.round(v));
     const axis = (cls: string, texts: readonly string[]): HTMLElement => {
       const a = el(doc, 'div', cls);
       a.append(...texts.map((t) => el(doc, 'span', '', t)));
       return a;
     };
     const values = el(doc, 'div', 'compare-plot');
-    values.append(axis('compare-axis', [text(c.top), text(c.reference), text(c.bottom)]), plot, axis('compare-axis right', ov ? [String(Math.round(ov.max)), '', String(Math.round(ov.min))] : []));
+    values.append(axis('compare-axis', [text(c.top), text(c.reference), text(c.bottom)]), plot, axis('compare-axis right', ov ? [ovText(ov.max), '', ovText(ov.min)] : []));
 
     const foot = el(doc, 'div', 'compare-foot', caption);
     const legend = el(doc, 'span', 'compare-legend');

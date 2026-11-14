@@ -487,7 +487,7 @@ describe('separator rows (F-42 MS-6; AC 2, AC 3)', () => {
 describe('comparison chart (F-51; AP-23)', () => {
   const chart = (p: Page) => p.section?.querySelector<HTMLElement>('.compare') ?? null;
   const bars = (p: Page) => [...(chart(p)?.querySelectorAll<SVGRectElement>('rect.bar') ?? [])];
-  const head = (p: Page) => chart(p)?.querySelector('.compare-head')?.firstChild?.textContent;
+  const head = (p: Page) => [...(chart(p)?.querySelectorAll('.compare-stat') ?? [])].map((s) => s.textContent).join(' · ');
   const overlay = (p: Page) => chart(p)?.querySelector<HTMLSelectElement>('.compare-overlay:not([hidden]) select') ?? null;
   /** A click at slot i of n, with a 600 px wide plot (jsdom has no layout). */
   const tap = (p: Page, i: number, n: number) => {
@@ -569,17 +569,42 @@ describe('comparison chart (F-51; AP-23)', () => {
     const p = open(ride());
     const sel = overlay(p)!;
     expect(sel.value).toBe('');
-    expect([...sel.options].map((o) => o.text)).toEqual(['None', 'Heart rate', 'Power', 'Cadence']);
+    expect([...sel.options].map((o) => o.text)).toEqual(['None', 'Heart rate', 'Power', 'Cadence', 'Elevation']);
     expect(chart(p)?.querySelector('circle')).toBeNull();
     sel.value = 'avg_heart_rate';
     sel.dispatchEvent(new Event('change'));
     expect(chart(p)?.querySelectorAll('.ov-heart_rate circle')).toHaveLength(p.data.meta.laps.filter((l) => l.totals.avg_heart_rate !== undefined).length);
     p.button('Splits')?.click();
     expect(overlay(p)?.value).toBe('avg_heart_rate');
-    const noHr = withLaps(ride(), ride().meta.laps.map((l) => ({ ...l, totals: { avg_speed: l.totals.avg_speed } })));
+    const bare = ride();
+    const noHr = withLaps({ ...bare, metrics: { ...bare.metrics, altitude: undefined } }, bare.meta.laps.map((l) => ({ ...l, totals: { avg_speed: l.totals.avg_speed } })));
     cleanup?.();
     const q = open(noHr, 'metric', false);
     expect(overlay(q)).toBeNull(); // only None left: no drop-down (SC-6)
+  });
+
+  it('elevation overlay: net change per lap (end minus start), signed axis in m or ft, zero line when it crosses', () => {
+    const run = golden('run-30min');
+    const n = run.sampleCount;
+    // Altitude 100 m, NaN at sample 0 (nearest valid inside the lap is used), climbing in lap 1, falling in lap 2.
+    const altitude = new Float64Array(n).fill(100);
+    for (let i = 10; i < 20; i++) altitude[i] = 100 + (i - 10) * 2; // lap 2 ends at 118
+    for (let i = 20; i < 30; i++) altitude[i] = 118 - (i - 20) * 3; // lap 3 ends at 91
+    altitude[0] = NaN;
+    altitude[29] = NaN; // lap 3's last valid sample is 28: 118 - 24 = 94
+    const v = [4.5, 4.4, 4.6];
+    const laps = v.map((speed, i) => ({ ...run.meta.laps[0], totals: { avg_speed: speed }, start_index: i * 10, end_index: i * 10 + 10 }));
+    const p = open(withLaps({ ...run, metrics: { ...run.metrics, altitude } }, laps), 'metric', false);
+    const sel = overlay(p)!;
+    sel.value = 'elevation';
+    sel.dispatchEvent(new Event('change'));
+    // Nets: 0, +18, −24 m.
+    expect([...chart(p)!.querySelectorAll('.compare-axis.right span')].map((s) => s.textContent)).toEqual(['+18 m', '', '-24 m']);
+    expect(chart(p)?.querySelectorAll('.ov-altitude circle')).toHaveLength(3);
+    const zero = chart(p)!.querySelector('.ov-altitude line.zero')!;
+    expect(+zero.getAttribute('y1')!).toBeCloseTo(4 + (18 / 42) * 102, 1);
+    p.units.set('imperial');
+    expect(chart(p)!.querySelector('.compare-axis.right span')?.textContent).toBe('+59 ft');
   });
 
   it('QA-51-r1-2: an overlay change keeps the drop-down and its focus', () => {

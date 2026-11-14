@@ -28,26 +28,47 @@
 /* The comparison chart under the table (F-51 SC-8, SC-9): colours by class, so a theme switch needs
    no redraw; geometry in the SVG's attributes (no style attributes, ADR-032). */
 .compare {
-  margin-top: 8px;
+  margin-top: 16px;
   font-size: 12px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 .compare-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
-  height: 26px;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin-bottom: 12px;
   color: var(--fg);
   font-size: 13px;
 }
-.compare-overlay {
+/* Two stat blocks, label over value; each stays on one line, so the header never runs into the plot. */
+.compare-stats {
+  display: flex;
+  gap: 16px;
+}
+.compare-stat {
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.compare-stat small {
+  display: block;
   color: var(--muted);
+  font-size: 11px;
+}
+.compare-overlay {
+  margin-left: auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.compare-overlay .split-select {
+  margin-left: 4px;
 }
 .compare-plot {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 4px;
+  gap: 6px;
 }
 .compare-plot svg {
   width: 100%;
@@ -75,12 +96,12 @@
   stroke-width: 1;
 }
 .compare .faster {
-  fill: var(--zone-red);
-  background: var(--zone-red);
-}
-.compare .slower {
   fill: var(--zone-blue);
   background: var(--zone-blue);
+}
+.compare .slower {
+  fill: var(--zone-red);
+  background: var(--zone-red);
 }
 .compare .pace {
   fill: var(--zone-grey);
@@ -115,17 +136,32 @@
   stroke: var(--c-power);
   fill: var(--c-power);
 }
+.compare .ov .zero {
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+.compare .ov-altitude {
+  stroke: var(--c-altitude);
+  fill: var(--c-altitude);
+}
 .compare .ov-cadence {
   stroke: var(--c-cadence);
   fill: var(--c-cadence);
 }
 .compare-foot {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  margin-top: 2px;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.compare-legend {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
 }
 .compare-legend > span {
-  margin-left: 10px;
+  white-space: nowrap;
 }
 .compare-legend i {
   display: inline-block;
