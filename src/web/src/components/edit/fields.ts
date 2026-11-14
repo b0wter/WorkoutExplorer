@@ -17,7 +17,6 @@ export function formOf(s: Settings): Form {
     title: s.title,
     description: s.description,
     hide_ends: s.hide_ends,
-    allow_download: s.allow_download,
     lifetime_days: s.lifetime_days,
     trim_start_at: s.trim_start_at,
     trim_end_at: s.trim_end_at,

@@ -222,7 +222,7 @@ func TestUploadEndToEnd(t *testing.T) {
 		t.Fatalf("%d rows", len(rows))
 	}
 	r := rows[0]
-	if r["visibility"] != "draft" || r["published_at"] != nil || r["hide_ends"] != int64(0) || r["allow_download"] != int64(0) || r["data_end_s"] != nil {
+	if r["visibility"] != "draft" || r["published_at"] != nil || r["hide_ends"] != int64(0) || r["data_end_s"] != nil {
 		t.Errorf("row = %v", r)
 	}
 	if r["public_id"] != pub || r["title"] != "" || r["description"] != "" || r["sport"] != "cycling" {

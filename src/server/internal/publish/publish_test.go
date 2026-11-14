@@ -326,7 +326,6 @@ func TestHidesMore(t *testing.T) {
 	p := published(d)
 	with := func(r lifecycle.Record, edit func(*lifecycle.Record)) lifecycle.Record { edit(&r); return r }
 	hidden := with(p, func(r *lifecycle.Record) { r.HideEnds = true })
-	download := with(p, func(r *lifecycle.Record) { r.AllowDownload = true })
 	for _, c := range []struct {
 		name          string
 		before, after lifecycle.Record
@@ -338,9 +337,7 @@ func TestHidesMore(t *testing.T) {
 		{"lifetime", p, with(p, func(r *lifecycle.Record) { r.ExpiresAt = r.ExpiresAt.Add(time.Hour) }), false},
 		{"publish", d, p, false},
 		{"hiding off", hidden, p, false},
-		{"download on", p, download, false},
 		{"hiding on", p, hidden, true},
-		{"download off", download, p, true},
 		{"back to draft", p, with(p, func(r *lifecycle.Record) { r.Visibility = lifecycle.Draft }), true},
 		// F-30 RG-6: derived from the original, never read by the public build.
 		{"sport", p, with(p, func(r *lifecycle.Record) { r.Sport = "running" }), false},

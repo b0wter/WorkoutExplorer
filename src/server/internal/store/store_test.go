@@ -39,8 +39,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 7 {
-		t.Errorf("user_version = %d, want 7", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 8 {
+		t.Errorf("user_version = %d, want 8", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -75,7 +75,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 7 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 8 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -106,7 +106,7 @@ func TestSchema(t *testing.T) {
 		{"id", "TEXT", true}, {"public_id", "TEXT", true}, {"edit_token_hash", "BLOB", true},
 		{"title", "TEXT", true}, {"description", "TEXT", true}, {"sport", "TEXT", true},
 		{"start_time", "INTEGER", false}, {"time_zone_offset_s", "INTEGER", false},
-		{"visibility", "TEXT", true}, {"hide_ends", "INTEGER", true}, {"allow_download", "INTEGER", true},
+		{"visibility", "TEXT", true}, {"hide_ends", "INTEGER", true},
 		{"summary_json", "TEXT", true}, {"data_end_s", "INTEGER", false}, {"created_at", "INTEGER", true},
 		{"published_at", "INTEGER", false}, {"expires_at", "INTEGER", true},
 		{"hidden1_first", "INTEGER", false}, {"hidden1_last", "INTEGER", false},
@@ -266,18 +266,18 @@ func TestInsertWorkout(t *testing.T) {
 		id, pub, title, desc, sport, vis, sum string
 		hash                                  []byte
 		st, tz, de, pa                        sql.NullInt64
-		he, ad, ca, ea                        int64
+		he, ca, ea                            int64
 	)
 	err := db.db.QueryRowContext(ctx, `SELECT id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
-		visibility, hide_ends, allow_download, summary_json, data_end_s, created_at, published_at, expires_at FROM workouts`).
-		Scan(&id, &pub, &hash, &title, &desc, &sport, &st, &tz, &vis, &he, &ad, &sum, &de, &ca, &pa, &ea)
+		visibility, hide_ends, summary_json, data_end_s, created_at, published_at, expires_at FROM workouts`).
+		Scan(&id, &pub, &hash, &title, &desc, &sport, &st, &tz, &vis, &he, &sum, &de, &ca, &pa, &ea)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if id != full.ID || pub != full.PublicID || !bytes.Equal(hash, full.EditTokenHash[:]) || title != "Title" || desc != "Desc" ||
-		sport != "cycling" || st.Int64 != start.Unix() || tz.Int64 != -3600 || vis != "draft" || he != 0 || ad != 0 ||
+		sport != "cycling" || st.Int64 != start.Unix() || tz.Int64 != -3600 || vis != "draft" || he != 0 ||
 		sum != `{"distance":1}` || de.Int64 != 321 || ca != full.CreatedAt.Unix() || pa.Valid || ea != ca+604800 {
-		t.Errorf("row = %v %v %x %v %v %v %v %v %v %v %v %v %v %v %v %v", id, pub, hash, title, desc, sport, st, tz, vis, he, ad, sum, de, ca, pa, ea)
+		t.Errorf("row = %v %v %x %v %v %v %v %v %v %v %v %v %v %v %v", id, pub, hash, title, desc, sport, st, tz, vis, he, sum, de, ca, pa, ea)
 	}
 	// NULLs.
 	if err := db.InsertWorkout(ctx, record(2)); err != nil {
@@ -562,7 +562,7 @@ func TestZoneColumns(t *testing.T) {
 func TestUpdateDerived(t *testing.T) {
 	db, _ := openTemp(t)
 	r := published(3)
-	r.Title, r.HideEnds, r.AllowDownload = "kept", true, true
+	r.Title, r.HideEnds = "kept", true
 	ts, te := r.CreatedAt.Add(-50*time.Minute).Truncate(time.Second), r.CreatedAt.Add(-20*time.Minute).Truncate(time.Second)
 	r.TrimStartAt, r.TrimEndAt = &ts, &te // F-47: UpdateDerived never writes them
 	if err := db.InsertWorkout(ctx, r); err != nil {
@@ -661,7 +661,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 7 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 8 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -712,7 +712,7 @@ func TestMigrateNoPrivate(t *testing.T) {
 		}
 	}
 	dump := func(db *sql.DB, where string) []string {
-		rs, err := db.Query("SELECT quote(id) || '|' || quote(public_id) || '|' || quote(edit_token_hash) || '|' || quote(title) || '|' || quote(description) || '|' || quote(sport) || '|' || quote(start_time) || '|' || quote(time_zone_offset_s) || '|' || quote(visibility) || '|' || quote(hide_ends) || '|' || quote(allow_download) || '|' || quote(summary_json) || '|' || quote(data_end_s) || '|' || quote(created_at) || '|' || quote(published_at) || '|' || quote(expires_at) || '|' || quote(hidden1_first) || '|' || quote(hidden1_last) || '|' || quote(hidden2_first) || '|' || quote(hidden2_last) FROM workouts " + where + " ORDER BY id")
+		rs, err := db.Query("SELECT quote(id) || '|' || quote(public_id) || '|' || quote(edit_token_hash) || '|' || quote(title) || '|' || quote(description) || '|' || quote(sport) || '|' || quote(start_time) || '|' || quote(time_zone_offset_s) || '|' || quote(visibility) || '|' || quote(hide_ends) || '|' || quote(summary_json) || '|' || quote(data_end_s) || '|' || quote(created_at) || '|' || quote(published_at) || '|' || quote(expires_at) || '|' || quote(hidden1_first) || '|' || quote(hidden1_last) || '|' || quote(hidden2_first) || '|' || quote(hidden2_last) FROM workouts " + where + " ORDER BY id")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -733,7 +733,7 @@ func TestMigrateNoPrivate(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 7 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 8 {
 		t.Errorf("user_version = %d", v)
 	}
 	if got := dump(db.db, ""); len(want) != 3 || fmt.Sprint(got) != fmt.Sprint(want) {
@@ -969,14 +969,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 8} {
+	for _, v := range []int{4, 9} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (7)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (8)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}

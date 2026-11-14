@@ -97,8 +97,6 @@
     title: field(f, 'title').value,
     description: field(f, 'description').value,
     hide_ends: field(f, 'hide_ends').checked,
-    // Hidden until F-24 (phase 3): the stored value goes back unchanged, so a save never flips it.
-    allow_download: settings.allow_download,
     // '' when the stored lifetime is not offered (a browser clock ahead of the server's): keep it.
     lifetime_days: Number(field(f, 'lifetime').value) || settings.lifetime_days,
     trim_start_at: trim ? trimAt(trim, startS, Number(field(f, 'trim_a').value), false) : settings.trim_start_at,

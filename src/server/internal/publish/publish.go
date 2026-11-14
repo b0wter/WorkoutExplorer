@@ -325,10 +325,6 @@ func HidesMore(before, after lifecycle.Record) bool {
 			if after.HideEnds { // off → on hides more
 				return true
 			}
-		case "AllowDownload":
-			if !after.AllowDownload { // on → off hides more
-				return true
-			}
 		default:
 			return true
 		}

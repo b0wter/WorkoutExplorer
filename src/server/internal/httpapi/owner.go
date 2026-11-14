@@ -61,16 +61,15 @@ func writeNotFound(w http.ResponseWriter) {
 
 // settingsBody is the settings object (F-12 design, Settings object).
 type settingsBody struct {
-	Title         string `json:"title"`
-	Description   string `json:"description"`
-	HideEnds      bool   `json:"hide_ends"`
-	AllowDownload bool   `json:"allow_download"`
-	Visibility    string `json:"visibility"`
-	LifetimeDays  int    `json:"lifetime_days"`
-	CreatedAt     string `json:"created_at"`
-	ExpiresAt     string `json:"expires_at"`
-	DataEndS      *int   `json:"data_end_s"`
-	ViewURL       string `json:"view_url"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	HideEnds     bool   `json:"hide_ends"`
+	Visibility   string `json:"visibility"`
+	LifetimeDays int    `json:"lifetime_days"`
+	CreatedAt    string `json:"created_at"`
+	ExpiresAt    string `json:"expires_at"`
+	DataEndS     *int   `json:"data_end_s"`
+	ViewURL      string `json:"view_url"`
 	// HideEndsRanges is read-only (ADR-030): never nil, so it encodes as [].
 	HideEndsRanges [][2]int `json:"hide_ends_ranges"`
 	// SuggestedTitle is read-only (F-45 ST-6): the UP-5 suggestion whatever the title, "" = none.
@@ -97,7 +96,7 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed,
 		TrimStartAt: at(r.TrimStartAt), TrimEndAt: at(r.TrimEndAt),
 		ZonesMaxHeartRate: r.ZonesMaxHeartRate, ZonesThresholdPower: r.ZonesThresholdPower,
-		Title: r.Title, Description: r.Description, HideEnds: r.HideEnds, AllowDownload: r.AllowDownload,
+		Title: r.Title, Description: r.Description, HideEnds: r.HideEnds,
 		Visibility: string(r.Visibility), LifetimeDays: r.LifetimeDays(),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339), ExpiresAt: r.ExpiresAt.UTC().Format(time.RFC3339),
 		DataEndS: r.DataEndS, ViewURL: lifecycle.ViewPath(r.PublicID),
@@ -303,7 +302,7 @@ const (
 	msgBadBody = "The request must be one JSON object with only the settings that can be changed."
 	msgBadTrim = "trim_start_at and trim_end_at must be a time in RFC 3339 form with whole seconds, or null."
 	msgBadZone = "zones_max_heart_rate and zones_threshold_power must be a whole number, or null."
-	msgBadType = "The title and description must be text, hide_ends and allow_download true or false, and lifetime_days a whole number."
+	msgBadType = "The title and description must be text, hide_ends true or false, and lifetime_days a whole number."
 )
 
 func (h *ownerHandler) patch(w http.ResponseWriter, r *http.Request) {
@@ -361,9 +360,6 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 		case "hide_ends":
 			p.HideEnds = new(bool)
 			dst = p.HideEnds
-		case "allow_download":
-			p.AllowDownload = new(bool)
-			dst = p.AllowDownload
 		case "lifetime_days":
 			p.LifetimeDays = new(int)
 			dst = p.LifetimeDays

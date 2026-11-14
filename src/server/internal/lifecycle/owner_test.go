@@ -147,8 +147,8 @@ func TestApplyPatch(t *testing.T) {
 		}},
 		{"description with CR", base, SettingsPatch{Description: sp("a\r\nb")}, false, nil},
 		{"description with tab", base, SettingsPatch{Description: sp("a\tb")}, false, nil},
-		{"flags", base, SettingsPatch{HideEnds: bp(true), AllowDownload: bp(true)}, true, func(t *testing.T, r Record) {
-			if !r.HideEnds || !r.AllowDownload {
+		{"flags", base, SettingsPatch{HideEnds: bp(true)}, true, func(t *testing.T, r Record) {
+			if !r.HideEnds {
 				t.Errorf("%+v", r)
 			}
 		}},

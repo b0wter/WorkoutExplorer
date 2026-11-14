@@ -118,12 +118,12 @@ func intPtr(p *int) any {
 func (d *DB) InsertWorkout(ctx context.Context, r lifecycle.Record) error {
 	_, err := d.db.ExecContext(ctx, `INSERT INTO workouts
 		(id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
-		 visibility, hide_ends, allow_download, summary_json, data_end_s, created_at, published_at, expires_at,
+		 visibility, hide_ends, summary_json, data_end_s, created_at, published_at, expires_at,
 		 hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at,
 		 zones_max_heart_rate, zones_threshold_power)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		append([]any{r.ID, r.PublicID, r.EditTokenHash[:], r.Title, r.Description, r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
-			string(r.Visibility), r.HideEnds, r.AllowDownload, r.SummaryJSON, intPtr(r.DataEndS),
+			string(r.Visibility), r.HideEnds, r.SummaryJSON, intPtr(r.DataEndS),
 			unix(r.CreatedAt), unixPtr(r.PublishedAt), unix(r.ExpiresAt)}, append(rangeColumns(r.HiddenRanges), unixPtr(r.TrimStartAt), unixPtr(r.TrimEndAt),
 			intPtr(r.ZonesMaxHeartRate), intPtr(r.ZonesThresholdPower))...)...)
 	if err != nil {
@@ -231,7 +231,7 @@ func (d *DB) DeleteWorkout(ctx context.Context, id string) (deleted bool, err er
 }
 
 const columns = `id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
-	visibility, hide_ends, allow_download, summary_json, data_end_s, created_at, published_at, expires_at,
+	visibility, hide_ends, summary_json, data_end_s, created_at, published_at, expires_at,
 	hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at,
 	zones_max_heart_rate, zones_threshold_power`
 
@@ -268,7 +268,7 @@ func scanRecord(sc scanner) (lifecycle.Record, error) {
 		zoneHR, zonePower  sql.NullInt64
 	)
 	if err := sc.Scan(&r.ID, &r.PublicID, &hash, &r.Title, &r.Description, &r.Sport, &start, &off,
-		&vis, &r.HideEnds, &r.AllowDownload, &r.SummaryJSON, &end, &created, &p, &expires,
+		&vis, &r.HideEnds, &r.SummaryJSON, &end, &created, &p, &expires,
 		&h[0], &h[1], &h[2], &h[3], &trimA, &trimB, &zoneHR, &zonePower); err != nil {
 		return lifecycle.Record{}, err
 	}
@@ -343,9 +343,9 @@ func (d *DB) UpdateWorkout(ctx context.Context, id string, apply func(lifecycle.
 		return lifecycle.Record{}, false, err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE workouts SET title = ?, description = ?, visibility = ?,
-		hide_ends = ?, allow_download = ?, published_at = ?, expires_at = ?,
+		hide_ends = ?, published_at = ?, expires_at = ?,
 		trim_start_at = ?, trim_end_at = ?, zones_max_heart_rate = ?, zones_threshold_power = ? WHERE id = ?`,
-		next.Title, next.Description, string(next.Visibility), next.HideEnds, next.AllowDownload,
+		next.Title, next.Description, string(next.Visibility), next.HideEnds,
 		unixPtr(next.PublishedAt), unix(next.ExpiresAt), unixPtr(next.TrimStartAt), unixPtr(next.TrimEndAt),
 		intPtr(next.ZonesMaxHeartRate), intPtr(next.ZonesThresholdPower), id); err != nil {
 		return lifecycle.Record{}, false, fmt.Errorf("store: update workout: %w", err)

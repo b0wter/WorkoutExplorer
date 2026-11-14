@@ -196,7 +196,7 @@ func TestPatchBody(t *testing.T) {
 		``, `[]`, `"x"`, `null`, `{`, `{} {}`, `{}x`,
 		`{"unknown":1}`, `{"created_at":"2026-01-01T00:00:00Z"}`, `{"expires_at":"x"}`, `{"view_url":"/x"}`, `{"data_end_s":1}`,
 		`{"hide_ends_ranges":[]}`, `{"suggested_title":"x"}`, `{"hide_ends_ranges":[[0,1]]}`, `{"title":"x","hide_ends_ranges":null}`,
-		`{"title":null}`, `{"title":null,"title":"x"}`, `{"title":"a","title":"b"}`, `{"title":1}`, `{"hide_ends":"yes"}`, `{"allow_download":1}`, `{"lifetime_days":7.5}`,
+		`{"title":null}`, `{"title":null,"title":"x"}`, `{"title":"a","title":"b"}`, `{"title":1}`, `{"hide_ends":"yes"}`, `{"allow_download":false}`, `{"title":"x","allow_download":true}`, `{"lifetime_days":7.5}`,
 		`{"lifetime_days":"7"}`, `{"visibility":3}`, `{"description":["a"]}`,
 		`{"visibility":"unlisted"}`, `{"visibility":"draft"}`, `{"visibility":"private"}`, `{"title":"x","visibility":"unlisted"}`, // read-only (O-6)
 		`{"trimmed":null}`, `{"trim_start_at":"x"}`, `{"trim_end_at":1}`, `{"trim_start_at":"2026-06-01T06:00:00.5Z"}`, // F-47
@@ -222,9 +222,9 @@ func TestPatchBody(t *testing.T) {
 	}
 
 	o.calls = nil
-	rec := ownerDo(h, "PATCH", url, auth, `{"title":"T","description":"D","hide_ends":true,"allow_download":false,"lifetime_days":30}`)
+	rec := ownerDo(h, "PATCH", url, auth, `{"title":"T","description":"D","hide_ends":true,"lifetime_days":30}`)
 	p := o.patch
-	if rec.Code != 200 || *p.Title != "T" || *p.Description != "D" || !*p.HideEnds || *p.AllowDownload || *p.LifetimeDays != 30 {
+	if rec.Code != 200 || *p.Title != "T" || *p.Description != "D" || !*p.HideEnds || *p.LifetimeDays != 30 {
 		t.Errorf("full: %d %s", rec.Code, rec.Body)
 	}
 	rec = ownerDo(h, "PATCH", url, auth, `{"trim_start_at":"2026-06-01T08:00:00+02:00","trim_end_at":null}`)

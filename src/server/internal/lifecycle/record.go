@@ -49,7 +49,6 @@ type Record struct {
 	TimeZoneOffsetS *int
 	Visibility      Visibility
 	HideEnds        bool
-	AllowDownload   bool
 	SummaryJSON     string
 	DataEndS        *int
 	CreatedAt       time.Time

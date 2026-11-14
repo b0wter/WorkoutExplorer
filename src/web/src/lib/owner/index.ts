@@ -9,7 +9,6 @@ export interface Settings {
   readonly title: string;
   readonly description: string;
   readonly hide_ends: boolean;
-  readonly allow_download: boolean;
   /** Read-only (SH-2, F-20 C-11): publishing is the only change. */
   readonly visibility: 'draft' | 'unlisted';
   readonly lifetime_days: number;
@@ -40,7 +39,7 @@ export type PreviewFrame =
   | { readonly frame: { readonly lon: number; readonly lat: number; readonly zoom: number }; readonly key: string; readonly current: boolean };
 
 /** The fields a PATCH may carry (F-12). */
-export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_ends' | 'allow_download' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power'>>;
+export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_ends' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power'>>;
 
 /** 'not-found' is ADR-025's single answer (the generic page, E-4); 'error' carries the server's
  *  message or UP-10's sentence. */

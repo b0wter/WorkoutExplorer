@@ -85,7 +85,7 @@ func TestPublishEndToEnd(t *testing.T) {
 	}
 	rec := a.owner("POST", "/api/workouts/"+pub+"/publish", token, "")
 	var s map[string]any
-	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 17 {
+	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 16 {
 		t.Fatalf("publish: %d %s", rec.Code, rec.Body)
 	}
 	row := a.rows()[0]
@@ -322,12 +322,12 @@ func TestMigrationDropsPrivate(t *testing.T) {
 		}
 		v2 = append(v2, string(b))
 	}
-	v2cols := []string{"id", "public_id", "edit_token_hash", "title", "description", "sport", "start_time", "time_zone_offset_s", "visibility", "hide_ends", "allow_download", "summary_json", "data_end_s", "created_at", "published_at", "expires_at", "hidden1_first", "hidden1_last", "hidden2_first", "hidden2_last"}
+	v2cols := []string{"id", "public_id", "edit_token_hash", "title", "description", "sport", "start_time", "time_zone_offset_s", "visibility", "hide_ends", "summary_json", "data_end_s", "created_at", "published_at", "expires_at", "hidden1_first", "hidden1_last", "hidden2_first", "hidden2_last"}
 	a.sql("DROP TABLE reports") // schema v4 (F-27)
 	a.sql("DROP INDEX workouts_expires_at")
 	a.sql("ALTER TABLE workouts RENAME TO v3")
 	a.sql(strings.Join(v2, "\n"))
-	a.sql("INSERT INTO workouts SELECT " + strings.Join(v2cols, ", ") + " FROM v3") // v3 also has the F-47 trim columns
+	a.sql("INSERT INTO workouts (" + strings.Join(v2cols, ", ") + ") SELECT " + strings.Join(v2cols, ", ") + " FROM v3") // v3 also has the F-47 trim columns; allow_download takes its default
 	a.sql("DROP TABLE v3")
 	a.sql("UPDATE workouts SET visibility = 'private', published_at = created_at WHERE public_id = ?", priv)
 	a.sql("PRAGMA user_version = 2")

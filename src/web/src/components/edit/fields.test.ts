@@ -8,7 +8,6 @@ const STORED: Settings = {
   title: 'Morning loop',
   description: 'Easy.\nSecond line.',
   hide_ends: false,
-  allow_download: false,
   visibility: 'draft',
   lifetime_days: 30,
   created_at: '2026-10-01T10:00:00Z',

@@ -365,7 +365,7 @@ func TestNewDraft(t *testing.T) {
 	id := Identity{ID: strings.Repeat("a", 32), PublicID: strings.Repeat("P", 22), TokenHash: [32]byte{1}}
 	w := smallWorkout()
 	r := NewDraft(w, []byte(`{"a":1}`), id, t0)
-	if r.Visibility != Draft || r.PublishedAt != nil || r.HideEnds || r.AllowDownload || r.Title != "" || r.Description != "" {
+	if r.Visibility != Draft || r.PublishedAt != nil || r.HideEnds || r.Title != "" || r.Description != "" {
 		t.Errorf("defaults: %+v", r)
 	}
 	if got := r.ExpiresAt.Sub(r.CreatedAt); got != 604_800*time.Second {

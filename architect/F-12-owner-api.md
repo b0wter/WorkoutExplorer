@@ -32,7 +32,6 @@ Every endpoint takes `Authorization: Bearer <token>` and no query string. On any
 | `title` | string | yes | Leading and trailing white space is trimmed. At most 100 code points after trimming. No control characters (Unicode Cc) |
 | `description` | string | yes | At most 1,000 code points. No control characters except line feed |
 | `hide_ends` | bool | yes | Stored. Takes effect at publish or regeneration (F-16) |
-| `allow_download` | bool | yes | The viewer export only (F-24). It never affects the owner's original |
 | `visibility` | `draft` \| `unlisted` | no | O-6 |
 | `lifetime_days` | integer | yes, 1 to 30 | O-5. In `GET`: (`expires_at` − `created_at`) / 86,400, always whole |
 | `created_at`, `expires_at` | RFC 3339 UTC, whole seconds | no | The edit page shows the resulting date for a chosen lifetime (F-19 AC 3) |

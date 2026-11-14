@@ -190,17 +190,17 @@ func TestOwnerSettings(t *testing.T) {
 	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil {
 		t.Fatal(rec.Code, rec.Body)
 	}
-	if s["visibility"] != "draft" || s["lifetime_days"] != float64(7) || s["hide_ends"] != false || s["allow_download"] != false ||
-		s["view_url"] != "/w/"+pub || s["title"] != "" || len(s) != 17 || s["hide_ends_ranges"] == nil || s["suggested_title"] != "Morning ride near Luzern" {
+	if s["visibility"] != "draft" || s["lifetime_days"] != float64(7) || s["hide_ends"] != false ||
+		s["view_url"] != "/w/"+pub || s["title"] != "" || len(s) != 16 || s["hide_ends_ranges"] == nil || s["suggested_title"] != "Morning ride near Luzern" {
 		t.Errorf("%v", s)
 	}
 	if _, err := time.Parse(time.RFC3339, s["expires_at"].(string)); err != nil {
 		t.Error(err)
 	}
-	if rec := a.owner("PATCH", url, token, `{"hide_ends":true,"allow_download":true}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", url, token, `{"hide_ends":true}`); rec.Code != 200 {
 		t.Fatal(rec.Body)
 	}
-	if row := a.rows()[0]; row["hide_ends"] != int64(1) || row["allow_download"] != int64(1) {
+	if row := a.rows()[0]; row["hide_ends"] != int64(1) {
 		t.Errorf("%v", row)
 	}
 	// Visibility is read-only (O-6): only publish changes it.

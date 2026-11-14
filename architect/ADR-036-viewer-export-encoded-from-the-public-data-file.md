@@ -1,6 +1,6 @@
 # ADR-036 Viewer export encoded from the public data file, with the pinned library's stream encoder in `internal/fitexport`
 
-- **Status:** accepted (2 Nov 2026), with the F-24 design v0.1
+- **Status:** superseded (14 Nov 2026): F-24 discarded by the user, never built; `allow_download` removed (migration 0008). Was accepted 2 Nov 2026 with the F-24 design v0.1
 - **Date:** 2 Nov 2026
 - **Features:** F-24 (introduces it), F-30 (reuses the build), F-31 (memory measure)
 - **Supersedes:** none. Narrows [ADR-003](ADR-003-fit-decoding-library.md) item 2 ("only `ingest` imports the library") by one production package

@@ -8,6 +8,7 @@
 - **Requirements:** UP-3, UP-4, UP-7, AC-1, AC-5, SH-2, SH-4, SH-8, AP-17, AP-18, DS-4; TD Publish and view flow (Publish 4, 6), TD Security and privacy (IDs and tokens)
 - **Builds on:** [ADR-020](ADR-020-workout-identifiers-edit-token-and-links.md) items 7, 9 and rev. 2, [ADR-025](ADR-025-owner-api-access-and-not-found-response.md), [F-12](F-12-owner-api.md) (endpoints, settings object, O-3 to O-6, hand-off to F-19), [F-13](F-13-activity-page-layout.md) D-6, D-7, D-9, D-14, D-15, D-17 to D-20, [ADR-026](ADR-026-activity-page-template-adopted-not-hydrated.md) item 4, [F-16](F-16-start-and-end-hiding.md) H-8 and its hand-off, [ADR-011](ADR-011-activity-page-bundle-allocation.md), [ADR-012](ADR-012-component-smoke-tests-in-jsdom.md); new: [ADR-030](ADR-030-to-be-hidden-ranges-computed-at-upload.md)
 - **Owner:** both: backend step B-1 first (ADR-030), then frontend
+- **Note (14 Nov 2026):** F-24 discarded (SH-8): the `allow_download` setting is removed end to end (API, panel, column dropped by migration 0008); the owner's "Download original" stays.
 
 ## Decisions
 

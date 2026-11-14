@@ -47,11 +47,10 @@ type ChangeHook interface {
 
 // SettingsPatch holds the fields a PATCH sent; nil means not sent.
 type SettingsPatch struct {
-	Title         *string
-	Description   *string
-	HideEnds      *bool
-	AllowDownload *bool
-	LifetimeDays  *int
+	Title        *string
+	Description  *string
+	HideEnds     *bool
+	LifetimeDays *int
 	// TrimStart and TrimEnd are the instants of F-47 TR-3; Set with a nil At
 	// is null: that end is not trimmed.
 	TrimStart, TrimEnd OptTime
@@ -101,9 +100,6 @@ func ApplyPatch(r Record, p SettingsPatch, now time.Time) (Record, error) {
 	}
 	if p.HideEnds != nil {
 		r.HideEnds = *p.HideEnds
-	}
-	if p.AllowDownload != nil {
-		r.AllowDownload = *p.AllowDownload
 	}
 	if p.TrimStart.Set {
 		r.TrimStartAt = p.TrimStart.At

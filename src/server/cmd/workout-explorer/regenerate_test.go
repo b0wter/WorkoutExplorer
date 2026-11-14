@@ -102,7 +102,7 @@ func TestRegenerateFormatBump(t *testing.T) {
 	dir := t.TempDir()
 	a := openStorageApp(t, dir, 0)
 	hidden, token := a.published("ride-30min.fit")
-	if rec := a.owner("PATCH", "/api/workouts/"+hidden, token, `{"hide_ends":true,"allow_download":true,"title":"T","lifetime_days":12}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", "/api/workouts/"+hidden, token, `{"hide_ends":true,"title":"T","lifetime_days":12}`); rec.Code != 200 {
 		t.Fatalf("patch %d", rec.Code)
 	}
 	plain, _ := a.published("run-30min.fit")

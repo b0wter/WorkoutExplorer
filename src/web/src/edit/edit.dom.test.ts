@@ -44,7 +44,6 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   title: '',
   description: '',
   hide_ends: false,
-  allow_download: false,
   visibility: 'draft',
   lifetime_days: 30,
   created_at: '2026-10-29T11:00:00Z',
@@ -281,7 +280,7 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expect(link().hidden).toBe(true);
   });
 
-  it('AC 4: hiding is off on a new upload; download hidden until F-24; visibility is "Draft" with no control', async () => {
+  it('AC 4: hiding is off on a new upload; no download toggle (F-24 discarded); visibility is "Draft" with no control', async () => {
     await open();
     expect(field('hide_ends').checked).toBe(false);
     expect(field('allow_download')).toBeNull();
@@ -401,14 +400,6 @@ describe('AC 2, E-6: saving', () => {
     expect(patches()).toEqual([{ title: 'x' }]);
   });
 
-  it('F-24 (phase 3): the download toggle is hidden and a save keeps the stored value', async () => {
-    settings = fresh({ allow_download: true });
-    await open();
-    expect(field('allow_download')).toBeNull();
-    type('title', 'x');
-    await save();
-    expect(patches()).toEqual([{ title: 'x' }]);
-  });
 });
 
 describe('AC 3: lifetime', () => {
