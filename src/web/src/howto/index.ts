@@ -29,6 +29,11 @@ const LINES: [string, string, string][] = [
     'Change units and theme at the top of the page; this device remembers your choice.',
   ],
   [
+    'Zones',
+    'Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
+    'Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
+  ], // F-49
+  [
     'Share a range',
     'Select a range, then tap "Copy link to this selection" to share it.',
     'Select a range, then click "Copy link to this selection" to share it.',

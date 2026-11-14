@@ -299,6 +299,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       time: data?.time ?? null,
       startTime: data?.meta.start_time ?? '',
       ontrim: (a: number, b: number) => (cut = [a, b]),
+      zones: data?.meta.zones ?? {},
     },
   });
   // C-2: a back-forward cache restore (also an app resume on mobile WebKit) never reloads, which

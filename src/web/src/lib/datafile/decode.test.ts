@@ -659,7 +659,12 @@ describe('rejects (AC 3)', () => {
     ['zones not an object', () => build({ meta: { zones: [] } }), 'corrupt', 4],
     ['zones unknown kind', () => build({ meta: { zones: { cadence: { basis: 100 } } } }), 'corrupt', 4],
     ['zones inherited name as kind', () => build({ meta: { zones: { constructor: { basis: 100 } } } }), 'corrupt', 4],
-    ['zones from and basis', () => build({ meta: { zones: { power: { from: [100], basis: 200 } } } }), 'corrupt', 4],
+    ['zones both, basis out of range', () => build({ meta: { zones: { heart_rate: { from: [120], basis: 99 } } } }), 'corrupt', 4],
+    ['zones both, from out of range', () => build({ meta: { zones: { heart_rate: { from: [255], basis: 190 } } } }), 'corrupt', 4],
+    ['zones extra key', () => build({ meta: { zones: { heart_rate: { basis: 190, bounds: [] } } } }), 'corrupt', 4],
+    ['zones from and basis plus an extra key', () => build({ meta: { zones: { power: { from: [100], basis: 200, x: 1 } } } }), 'corrupt', 4],
+    ['zones basis null', () => build({ meta: { zones: { heart_rate: { basis: null } } } }), 'corrupt', 4],
+    ['zones entry not an object', () => build({ meta: { zones: { power: 200 } } }), 'corrupt', 4],
     ['zones neither', () => build({ meta: { zones: { power: {} } } }), 'corrupt', 4],
     ['zones from empty', () => build({ meta: { zones: { power: { from: [] } } } }), 'corrupt', 4],
     ['zones from 10 values', () => build({ meta: { zones: { power: { from: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] } } } }), 'corrupt', 4],
@@ -683,6 +688,11 @@ describe('rejects (AC 3)', () => {
     const zones = { heart_rate: { from: [0, 1, 2, 3, 4, 5, 6, 7, 254] }, power: { basis: 1000 } };
     expect(decodeOk(build({ meta: { zones } })).meta.zones).toEqual(zones);
     expect(decodeOk(build({ meta: { zones: { heart_rate: { basis: 100 }, power: { from: [65534] } } } })).meta.zones.power).toEqual({ from: [65534] });
+  });
+
+  it('accepts from and basis together (§5.9 v1.10: the file\'s own value next to its bounds)', () => {
+    const zones = { heart_rate: { from: [114, 133, 152, 171], basis: 190 }, power: { from: [139, 189], basis: 250 } };
+    expect(decodeOk(build({ meta: { zones } })).meta.zones).toEqual(zones);
   });
 
   it('checks in Go order: a file with faults in rules 6 and 7 reports rule 6', () => {

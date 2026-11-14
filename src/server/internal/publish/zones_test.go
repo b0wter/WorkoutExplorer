@@ -29,7 +29,7 @@ func TestSharerZones(t *testing.T) {
 	d := draft()
 	p := published(d)
 	fx.change(t, d, p)
-	const file = `{"heart_rate":{"from":[121,141,161,176]},"power":{"from":[139,189,226,264,301,376]}}`
+	const file = `{"heart_rate":{"from":[121,141,161,176]},"power":{"from":[139,189,226,264,301,376],"basis":250}}`
 	if got := zonesJSON(t, fx.read(t).file); got != file {
 		t.Errorf("file zones %s", got)
 	}
@@ -158,7 +158,7 @@ func TestZonePrivacy(t *testing.T) {
 	d := draft()
 	fx.change(t, d, published(d))
 	o := fx.read(t)
-	if got := zonesJSON(t, o.file); got != `{"heart_rate":{"from":[114,133,152,171]}}` {
+	if got := zonesJSON(t, o.file); got != `{"heart_rate":{"from":[114,133,152,171],"basis":190}}` {
 		t.Errorf("zones %s", got)
 	}
 	noMarkers(t, o.bin)

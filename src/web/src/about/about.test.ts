@@ -65,6 +65,10 @@ describe('About page', () => {
       'Raw ANT radio messages',
       'gets a preview image that shows the route on an OpenFreeMap map', // F-36 MC-10, SH-12
       'This server never contacts OpenFreeMap.',
+      'trimmed start and end, the max heart rate and threshold power for the zones if the holder of the edit link enters them', // F-47, F-49
+      'Zone messages recorded with the workout are kept in the stored FIT file. They can hold the max heart rate, resting heart rate and threshold power set on the device. The resting heart rate is never read or shown.',
+      'A trimmed start or end of the workout is removed from the public data, not just hidden on screen.',
+      'A workout page with zones shows the zone limits and the max heart rate or threshold power they are based on',
     ]) {
       expect(text, fact).toContain(fact);
     }

@@ -22,7 +22,7 @@
       <ul>
         <li>The FIT file as it was uploaded, without the data listed in the next section.</li>
         <li>The workout data built from it: a data file, the workout page and a preview image.</li>
-        <li>The settings: title, description, hidden start and end, lifetime, whether it is published, and timestamps. The edit link is stored only as a hash.</li>
+        <li>The settings: title, description, hidden start and end, trimmed start and end, the max heart rate and threshold power for the zones if the holder of the edit link enters them, lifetime, whether it is published, and timestamps. The edit link is stored only as a hash.</li>
         <li>Reports from viewers: the reason, an optional message of up to 1,000 characters, and the time. No contact details and no IP address.</li>
       </ul>
 
@@ -34,6 +34,7 @@
         <li>Segment leaderboard entries, the segment leaders' activity IDs and segment account keys</li>
         <li>Raw ANT radio messages</li>
       </ul>
+      <p>Zone messages recorded with the workout are kept in the stored FIT file. They can hold the max heart rate, resting heart rate and threshold power set on the device. The resting heart rate is never read or shown.</p>
 
       <h2>What is not stored</h2>
       <ul>
@@ -50,6 +51,8 @@
         <li>A draft is visible only to whoever has its edit link.</li>
         <li>A published workout is visible to anyone with its viewing link. It is not listed anywhere, and search engines are asked not to index it.</li>
         <li>A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>
+        <li>A trimmed start or end of the workout is removed from the public data, not just hidden on screen.</li>
+        <li>A workout page with zones shows the zone limits and the max heart rate or threshold power they are based on, from the FIT file or entered by the holder of the edit link.</li>
         <li>A workout page shows the recording device's model or manufacturer and the types of sensors used, never their serial numbers or IDs.</li>
       </ul>
 

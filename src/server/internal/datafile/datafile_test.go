@@ -643,13 +643,16 @@ func TestDecodeErrors(t *testing.T) {
 		{"zones unknown kind", meta(func(m map[string]any) {
 			m["zones"] = map[string]any{"pace": map[string]any{"basis": json.Number("200")}}
 		}), "unknown kind"},
-		{"zones neither key", meta(func(m map[string]any) { m["zones"] = map[string]any{"heart_rate": map[string]any{}} }), "exactly one"},
-		{"zones both keys", meta(func(m map[string]any) {
-			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("190"), "from": []any{json.Number("120")}}}
-		}), "exactly one"},
+		{"zones neither key", meta(func(m map[string]any) { m["zones"] = map[string]any{"heart_rate": map[string]any{}} }), "from, basis or both"},
+		{"zones both keys, basis out of range", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("99"), "from": []any{json.Number("120")}}}
+		}), "basis out of range"},
+		{"zones both keys, from out of range", meta(func(m map[string]any) {
+			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("190"), "from": []any{json.Number("255")}}}
+		}), "from out of range"},
 		{"zones extra key", meta(func(m map[string]any) {
 			m["zones"] = map[string]any{"heart_rate": map[string]any{"basis": json.Number("190"), "bounds": []any{}}}
-		}), "exactly one"},
+		}), "from, basis or both"},
 		{"zones from empty", meta(func(m map[string]any) { m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{}}} }), "from out of range"},
 		{"zones from 10 values", meta(func(m map[string]any) {
 			m["zones"] = map[string]any{"heart_rate": map[string]any{"from": []any{json.Number("1"), json.Number("2"), json.Number("3"), json.Number("4"), json.Number("5"), json.Number("6"), json.Number("7"), json.Number("8"), json.Number("9"), json.Number("10")}}}

@@ -52,11 +52,17 @@ describe('Zones section', () => {
     const tok = (k: string): string[] => [...slot.querySelectorAll<HTMLElement>(`.zone[data-k="${k}"]`)].map((e) => e.style.getPropertyValue('--t'));
     expect(tok('heart_rate').map((v) => v.slice(11, -1))).toEqual(['red', 'orange', 'yellow', 'green', 'blue']);
     expect(tok('power').map((v) => v.slice(11, -1))).toEqual(['purple', 'red', 'orange', 'yellow', 'green', 'blue', 'grey']);
-    expect(captions()).toEqual(['Zones as recorded by the device', 'Zones as recorded by the device']);
+    expect(captions()).toEqual(['Zones as recorded by the device', 'Zones as recorded by the device (threshold power 250 W)']);
     const pct = column('power', 'zone-p').map((p) => parseInt(p, 10));
     expect(Math.abs(pct.reduce((x, y) => x + y) - 100)).toBeLessThanOrEqual(3);
     const whole = d.movingTime![d.sampleCount - 1];
     expect(column('power', 'zone-t').map(seconds).reduce((x, y) => x + y)).toBeLessThanOrEqual(whole);
+  });
+
+  it('ZN-7: a basis next to the device list is named in the caption, never turned into zones', () => {
+    start(golden('zones-apple-run-5'));
+    expect(column('heart_rate', 'zone-r')).toEqual(['≥ 171 bpm', '152–170 bpm', '133–151 bpm', '114–132 bpm', '≤ 113 bpm']);
+    expect(captions()).toEqual(['Zones as recorded by the device (max heart rate 190 bpm)']);
   });
 
   it('AC 8: a range shows its zones, Clear the whole workout again; a cursor move changes nothing', () => {

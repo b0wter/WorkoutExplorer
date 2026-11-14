@@ -24,9 +24,10 @@ type Zones struct {
 	HeartRate, Power ZoneValues
 }
 
-// ZoneValues are a kind's zone values: either From (the lowest whole bpm or W
-// of zones 2 … k) or Basis (max heart rate or threshold power for the default
-// model). Both zero: no zones of that kind.
+// ZoneValues are a kind's zone values: From (the lowest whole bpm or W of
+// zones 2 … k), Basis (max heart rate or threshold power) or both. Basis
+// alone drives the default model; next to From it is the file's own value,
+// display only. Both zero: no zones of that kind.
 type ZoneValues struct {
 	From  []int
 	Basis int
@@ -70,15 +71,25 @@ func pickZones(r RawZones) Zones {
 func pickKind(lists []ZoneList, bases []float64, top float64, lo, hi int) ZoneValues {
 	for _, l := range lists {
 		if from, ok := zoneFrom(l, top); ok {
-			return ZoneValues{From: from}
+			// The file's own basis rides along, display only (ZN-3): a
+			// time_in_zone list's own max first, else the first valid one.
+			if ValidBasis(l.Cap, lo, hi) {
+				return ZoneValues{From: from, Basis: int(l.Cap)}
+			}
+			return ZoneValues{From: from, Basis: firstBasis(bases, lo, hi)}
 		}
 	}
+	return ZoneValues{Basis: firstBasis(bases, lo, hi)}
+}
+
+// firstBasis is the first valid file basis, 0 if none.
+func firstBasis(bases []float64, lo, hi int) int {
 	for _, b := range bases {
 		if ValidBasis(b, lo, hi) {
-			return ZoneValues{Basis: int(b)}
+			return int(b)
 		}
 	}
-	return ZoneValues{}
+	return 0
 }
 
 // ValidBasis reports whether b is a whole number in [lo, hi].

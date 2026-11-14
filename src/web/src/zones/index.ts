@@ -65,8 +65,10 @@ export function startZones(root: ParentNode, data: WorkoutData, selection: Selec
       const starts = zoneStarts(kind, entry);
       const box = el(section, 'div', 'zones-kind');
       el(box, 'h3', '', label);
-      // ZN-7: the caption says what the zones rest on; a basis means the default model.
-      el(box, 'p', 'zones-src', entry.from ? 'Zones as recorded by the device' : `Estimated from ${kind === 'power' ? 'threshold power' : 'max heart rate'} ${entry.basis} ${unit}`);
+      // ZN-7: the caption says what the zones rest on; a basis alone means the default model, a
+      // basis next to `from` only names the device's own value.
+      const basis = `${kind === 'power' ? 'threshold power' : 'max heart rate'} ${entry.basis} ${unit}`;
+      el(box, 'p', 'zones-src', entry.from ? 'Zones as recorded by the device' + (entry.basis ? ` (${basis})` : '') : 'Estimated from ' + basis);
       const block: Block = { box, starts, values, out: new Float64Array(starts.length + 1), bars: [], times: [], shares: [] };
       for (let z = starts.length; z >= 0; z--) { // highest zone on top
         const row = el(box, 'div', 'zone');

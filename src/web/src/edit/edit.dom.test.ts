@@ -1462,6 +1462,33 @@ describe('F-49 ZN-4, ZN-7: zone fields and the Zones section (AC 6, 7, 9)', () =
     expect([...zones().querySelectorAll('.zones-src')].map((e) => e.textContent)).toEqual(['Estimated from max heart rate 190 bpm']);
   });
 
+  it('ZN-7, ZN-10, AC 2b: the file basis is the placeholder; empty keeps the device zones, a typed value (even the same) is the sharer\'s', async () => {
+    draft = () => new Response(golden('zones-wahoo-ride').slice(0), { status: 200 });
+    const captions = (): string[] => [...zones().querySelectorAll('.zones-src')].map((e) => e.textContent!);
+    await open();
+    await paint();
+    // Power has a basis next to its list; heart rate only a list: no placeholder.
+    expect([field('zones_max_heart_rate').placeholder, field('zones_threshold_power').placeholder]).toEqual(['', '250']);
+    expect([field('zones_max_heart_rate').value, field('zones_threshold_power').value]).toEqual(['', '']);
+    expect($('.edit-small')?.textContent).toBe("For the heart-rate and power zones. Empty: the device's zones and values from the FIT file are used.");
+    await vi.waitFor(() => expect(bounds('power')).toHaveLength(7));
+    expect(captions()).toEqual(['Zones as recorded by the device', 'Zones as recorded by the device (threshold power 250 W)']);
+    expect(bounds('power')[5]).toBe('139–188 W'); // the device's list
+    type('title', 'x');
+    await save();
+    expect(patches()).toEqual([{ title: 'x' }]); // empty fields send nothing new: null stays null
+    type('zones_threshold_power', '250');
+    await save();
+    expect(patches()[1]).toEqual({ zones_threshold_power: 250 });
+    await vi.waitFor(() => expect(captions()[1]).toBe('Estimated from threshold power 250 W'));
+    expect(bounds('power')[5]).toBe('138–187 W'); // the model replaced the whole kind
+    type('zones_threshold_power', '');
+    await save();
+    expect(patches()[2]).toEqual({ zones_threshold_power: null });
+    await vi.waitFor(() => expect(captions()[1]).toBe('Zones as recorded by the device (threshold power 250 W)'));
+    expect(field('zones_threshold_power').placeholder).toBe('250');
+  });
+
   it('OQ-195: a value the server refuses is not sent; its sentence shows until the next edit', async () => {
     await open();
     type('zones_max_heart_rate', '99');

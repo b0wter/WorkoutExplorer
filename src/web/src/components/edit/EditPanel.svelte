@@ -6,6 +6,7 @@
   // bind:, value=, checked= or on*= directives: their runtime would land in the activity entry,
   // which this chunk shares (F-19 bundle share).
   import type { Attachment } from 'svelte/attachments';
+  import type { Zones } from '../../lib/datafile';
   import type { Settings, SettingsPatch } from '../../lib/owner';
   import { enhanceCopyLink } from '../../page/enhance';
   import DeleteControl from './DeleteControl.svelte';
@@ -43,8 +44,10 @@
     startTime: string;
     /** The trim handles as sample indices [a, b], on every move and fill, saved or not. */
     ontrim: (a: number, b: number) => void;
+    /** F-49 ZN-10: draft.bin's zone values; each kind's file basis is its field's placeholder. */
+    zones: Zones;
   }
-  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, onedit, time, startTime, ontrim }: Props = $props();
+  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, onedit, time, startTime, ontrim, zones }: Props = $props();
 
   let share = $state(false);
   /** A zone field the server would refuse (OQ-195): its sentence, until the next edit. */
@@ -167,13 +170,13 @@
   {/if}
   <div class="edit-row">
     <label class="edit-field">Max heart rate
-      <span class="edit-value"><input type="number" name="zones_max_heart_rate" min="100" max="250" step="1" inputmode="numeric" /> bpm</span>
+      <span class="edit-value"><input type="number" name="zones_max_heart_rate" min="100" max="250" step="1" inputmode="numeric" placeholder={zones.heart_rate?.basis?.toString()} /> bpm</span>
     </label>
     <label class="edit-field">Threshold power
-      <span class="edit-value"><input type="number" name="zones_threshold_power" min="50" max="1000" step="1" inputmode="numeric" /> W</span>
+      <span class="edit-value"><input type="number" name="zones_threshold_power" min="50" max="1000" step="1" inputmode="numeric" placeholder={zones.power?.basis?.toString()} /> W</span>
     </label>
   </div>
-  <p class="edit-small">For the heart-rate and power zones. Empty: the values from the file.</p>
+  <p class="edit-small">For the heart-rate and power zones. Empty: the device's zones and values from the FIT file are used.</p>
   <div class="edit-row">
     <span class="edit-field">Visibility <span class="edit-value">{draft ? 'Draft' : 'Unlisted'}</span></span>
     <label class="edit-field">Keep for

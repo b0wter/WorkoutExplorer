@@ -183,8 +183,8 @@ function descriptor(v: unknown, i: number): Descriptor {
 /** §5.9 per kind: the stream's highest stored value (`from`), the basis range (F-49 ZN-4). */
 const ZONE_RANGES: Readonly<Record<string, readonly number[]>> = { heart_rate: [254, 100, 250], power: [65534, 50, 1000] };
 
-/** §5.9, §6 rule 4 (v1.9): known kinds, each exactly one of `from` (1–9 strictly ascending
- *  integers) and `basis` (one integer), in range. Terse: sized for ADR-011's F-49 entry ceiling. */
+/** §5.9, §6 rule 4 (v1.10): known kinds, each `from` (1–9 strictly ascending integers), `basis`
+ *  (one integer) or both, in range. Terse: sized for ADR-011's F-49 entry ceiling. */
 function zones(o: Json): Zones {
   for (const k in o) {
     // An unknown kind gets no range, so every comparison below fails.
@@ -193,8 +193,11 @@ function zones(o: Json): Zones {
     const f = e.from;
     const b = e.basis as number;
     // !(x <= f[i − 1]): true for the first value, whose predecessor is undefined.
-    const ok = f ? Array.isArray(f) && f.length && f.length < 10 && f.every((x, i) => Number.isInteger(x) && x >= 0 && x <= top && !(x <= f[i - 1])) : Number.isInteger(b) && b >= lo && b <= hi;
-    if (Object.keys(e).length !== 1 || !ok) throw new MetaError('zones invalid');
+    const okF = f === undefined || (Array.isArray(f) && f.length && f.length < 10 && f.every((x, i) => Number.isInteger(x) && x >= 0 && x <= top && !(x <= f[i - 1])));
+    const okB = b === undefined || (Number.isInteger(b) && b >= lo && b <= hi);
+    // Only these two keys, at least one of them.
+    const n = +(f !== undefined) + +(b !== undefined);
+    if (!n || Object.keys(e).length !== n || !okF || !okB) throw new MetaError('zones invalid');
   }
   return o as Zones;
 }

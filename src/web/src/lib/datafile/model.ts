@@ -118,9 +118,9 @@ export interface Length {
 
 /** F-49 kinds with zones (F-03 §5.9). */
 export type ZoneKind = 'heart_rate' | 'power';
-/** Version 6 (ADR-049): the file's zones (`from`: the lowest value of zones 2 … k) or a basis for
- *  lib/zones' default model; exactly one of the two. */
-export type ZoneEntry = { readonly from: readonly number[]; readonly basis?: undefined } | { readonly basis: number; readonly from?: undefined };
+/** Version 6 (ADR-049): the file's zones (`from`: the lowest value of zones 2 … k), a basis for
+ *  lib/zones' default model, or both: a basis next to `from` is the file's own value, display only. */
+export type ZoneEntry = { readonly from: readonly number[]; readonly basis?: number } | { readonly basis: number; readonly from?: undefined };
 export type Zones = Readonly<Partial<Record<ZoneKind, ZoneEntry>>>;
 
 export interface WorkoutMeta {

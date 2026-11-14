@@ -80,8 +80,9 @@ describe('corpus (AP-10 acceptance criteria)', () => {
   it('AC 1: Apple-style, 5 and 6 boundaries: the same 5 zones from the configured max; times add up to the time with heart rate', () => {
     for (const name of ['zones-apple-run-5', 'zones-apple-run-6']) {
       const d = golden(name);
-      expect(d.meta.zones, name).toEqual({ heart_rate: { from: [114, 133, 152, 171] } });
+      expect(d.meta.zones, name).toEqual({ heart_rate: { from: [114, 133, 152, 171], basis: 190 } });
       const starts = zoneStarts('heart_rate', d.meta.zones.heart_rate!);
+      expect(starts, 'the basis next to from is display only').toEqual([114, 133, 152, 171]);
       // Not from the session's own maximum, which is above the configured one.
       expect(starts).not.toEqual(zoneStarts('heart_rate', { basis: d.meta.summary.max_heart_rate! }));
       const hr = d.metrics.heart_rate!;
@@ -94,7 +95,8 @@ describe('corpus (AP-10 acceptance criteria)', () => {
   });
 
   it("AC 2: Wahoo-style ride: the messages' heart-rate and power bounds", () => {
-    expect(golden('zones-wahoo-ride').meta.zones).toEqual({ heart_rate: { from: [121, 141, 161, 176] }, power: { from: [139, 189, 226, 264, 301, 376] } });
+    expect(golden('zones-wahoo-ride').meta.zones).toEqual({ heart_rate: { from: [121, 141, 161, 176] }, power: { from: [139, 189, 226, 264, 301, 376], basis: 250 } });
+    expect(zoneStarts('power', { from: [139, 189, 226, 264, 301, 376], basis: 250 })).toEqual([139, 189, 226, 264, 301, 376]);
   });
 
   it('AC 3, 4: threshold power only gives power zones by the model; zones_target both kinds by the model', () => {

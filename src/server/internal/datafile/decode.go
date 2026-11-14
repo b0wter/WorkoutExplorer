@@ -248,7 +248,7 @@ func checkRange(kind string, i int, start, end int32, from, to, n int) error {
 }
 
 // checkZones is Format §5.9 (rule 4, v1.9): only the kinds heart_rate and
-// power, each exactly one of from and basis, every value in range.
+// power, each from, basis or both (v1.10), every value in range.
 func checkZones(raw json.RawMessage) error {
 	var kinds map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &kinds); err != nil {
@@ -260,19 +260,20 @@ func checkZones(raw json.RawMessage) error {
 			return fmt.Errorf("datafile: zones: unknown kind %q", kind)
 		}
 		var e map[string]json.RawMessage
-		if json.Unmarshal(v, &e) != nil || len(e) != 1 {
-			return fmt.Errorf("datafile: zones: %s needs exactly one of from and basis", kind)
+		if json.Unmarshal(v, &e) != nil {
+			return fmt.Errorf("datafile: zones: %s needs from, basis or both", kind)
 		}
-		if from, ok := e["from"]; ok {
-			var xs []int64
-			if json.Unmarshal(from, &xs) != nil || !validFrom(xs, bound.min, bound.max) {
-				return fmt.Errorf("datafile: zones: %s from out of range", kind)
-			}
-			continue
+		from, hasFrom := e["from"]
+		b, hasBasis := e["basis"]
+		if len(e) == 0 || len(e) != btoi(hasFrom)+btoi(hasBasis) {
+			return fmt.Errorf("datafile: zones: %s needs from, basis or both", kind)
 		}
-		b, ok := e["basis"]
+		var xs []int64
+		if hasFrom && (json.Unmarshal(from, &xs) != nil || !validFrom(xs, bound.min, bound.max)) {
+			return fmt.Errorf("datafile: zones: %s from out of range", kind)
+		}
 		var basis int64
-		if !ok || json.Unmarshal(b, &basis) != nil || basis < int64(lo) || basis > int64(hi) {
+		if hasBasis && (json.Unmarshal(b, &basis) != nil || basis < int64(lo) || basis > int64(hi)) {
 			return fmt.Errorf("datafile: zones: %s basis out of range", kind)
 		}
 	}
@@ -303,4 +304,11 @@ func validFrom(xs []int64, lo, hi int64) bool {
 		}
 	}
 	return true
+}
+
+func btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
