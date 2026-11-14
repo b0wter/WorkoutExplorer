@@ -19,7 +19,7 @@
 - Malformed or crafted input (acceptance rule, 21 Oct 2026): the upload may refuse a file that F-08 accepts, with "This file could not be read.", when the file cannot be stored with UP-9 applied and its workout data unchanged (for example an empty sequence in a chained file, or a compressed timestamp that depends on a removed message, OQ-54). UP-9 is never relaxed to accept a file.
 - `public_id` and edit token: 128-bit values from `crypto/rand`, `public_id` in base62; edit token stored as SHA-256 hash only.
 - Visibility values (30 Oct 2026, SH-2): only `draft` and `unlisted`; the built schema still allows `private`, to be removed (removal of built behaviour; architect hand-off).
-- New workouts: visibility `draft`, `hide_ends` off, `allow_download` off, `expires_at` = upload time + 7 days. Choosing lifetime and download "at upload" (UP-7, SH-8) happens on the draft edit page that opens right after upload (F-19), not in the upload request.
+- New workouts: visibility `draft`, `hide_ends` off, `allow_download` off (setting removed 14 Nov 2026, F-24 discarded; migration 0008), `expires_at` = upload time + 7 days. Choosing lifetime and download "at upload" (UP-7, SH-8) happens on the draft edit page that opens right after upload (F-19), not in the upload request.
 - Response: the viewing link `/w/{public_id}` and the edit link carrying the token in the URL fragment (exact edit-link path defined and documented here).
 - Messages for refusals that are not about the file's content (UP-10; file-content messages come from F-08):
 

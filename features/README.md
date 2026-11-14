@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026; then F-53, F-54, F-55, F-56, F-57, 14 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -15,7 +15,7 @@ The product specification and technical design (`../spec/`), cut into features t
 
 | ID | Title | Phase | Owner | Depends on | Status | Waiting on |
 | --- | --- | --- | --- | --- | --- | --- |
-| [F-01](F-01-project-skeleton-and-ci.md) | Project skeleton and CI | 0 | both | — | done | checked by the user 12 Nov |
+| [F-01](F-01-project-skeleton-and-ci.md) | Project skeleton and CI | 0 | both | — | done | checked by the user 12 Nov; user: GitHub Actions run on a `v*` tag |
 | [F-02](F-02-fit-parsing-and-normalisation.md) | FIT parsing and normalisation | 0 | backend | F-01 | done | |
 | [F-03](F-03-workout-data-file-writer.md) | Workout data file writer | 0 | backend | F-02 | done | |
 | [F-04](F-04-workout-data-file-reader.md) | Workout data file reader | 0 | frontend | F-03 | done | (phone cold median 31 ms, iPhone 13 mini, recorded with F-05) |
@@ -25,18 +25,18 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-08](F-08-fit-validation-and-recovery.md) | FIT validation, truncated-file recovery and parse limits | 1 | backend | F-02 | done | |
 | [F-09](F-09-upload-api-and-storage.md) | Upload API and workout storage | 1 | backend | F-03, F-08 | done | — |
 | [F-10](F-10-storage-limit-and-status.md) | Storage limit and status endpoint | 1 | backend | F-09 | done | — |
-| [F-11](F-11-upload-page.md) | Upload page | 1 | frontend | F-09, F-10 | done | — |
+| [F-11](F-11-upload-page.md) | Upload page | 1 | frontend | F-09, F-10 | done | user: greyed-out drop zone during an upload, by hand |
 | [F-12](F-12-owner-api.md) | Owner API: draft data, settings, delete, original download | 1 | backend | F-09 | done | user: tab in description? limits in UP-4? |
-| [F-13](F-13-activity-page-layout.md) | Activity page layout and template | 1 | frontend | F-07 | done | user: Lighthouse (AC 7) on Chromium machine |
+| [F-13](F-13-activity-page-layout.md) | Activity page layout and template | 1 | frontend | F-07 | done | user: Lighthouse (AC 7) on a machine with Chromium |
 | [F-14](F-14-units-and-theme.md) | Units, pace or speed, and theme | 1 | frontend | F-13 | done | |
 | [F-15](F-15-publish-pipeline-and-static-page.md) | Publish pipeline and static page | 1 | backend | F-12, F-13, F-14 | done | QA-15-r2-1 → F-21/F-30 design; r1-3 → F-22 |
 | [F-16](F-16-start-and-end-hiding.md) | Start and end hiding | 1 | both | F-15 | done | |
-| [F-17](F-17-range-selection-and-axis-toggle.md) | Range selection and x-axis toggle | 1 | both (backend first) | F-13 | done | |
+| [F-17](F-17-range-selection-and-axis-toggle.md) | Range selection and x-axis toggle | 1 | both (backend first) | F-13 | done | user: on the phone, does a cached reload with a stored split still jump (accepted only for an uncached first load, F-13 D-10) |
 | [F-18](F-18-laps-and-splits-table.md) | Laps and splits table | 1 | both (backend first) | F-17 | done | |
 | [F-19](F-19-edit-page-and-settings.md) | Edit page: draft view and settings panel | 1 | both (backend first) | F-12, F-13 | done | |
 | [F-20](F-20-publish-share-delete-controls.md) | Publish, Share and delete controls | 1 | both (backend first) | F-15, F-19 | done | network log check (user) |
 | [F-21](F-21-lifetime-and-expiry.md) | Lifetime and automatic expiry | 1 | backend | F-12, F-15 | done | |
-| [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | browser hand check via Caddy |
+| [F-22](F-22-caching-and-security-headers.md) | Caching, fast removal and security headers | 1 | backend | F-16, F-21 | waiting on user | user: browser check through the pinned Caddy 2.11.7 (`build/tools/caddy-2.11.7/caddy`): no CSP errors, map tiles, Copy link and owner download, a published page with Go stopped makes no /api request |
 | [F-23](F-23-preview-card-and-indexing.md) | Preview card, Open Graph and indexing | 1 | both (backend first) | F-16 | done | checked by the user 12 Nov |
 | [F-31](F-31-server-deploy-and-monitoring.md) | Server, deploy and monitoring | 1 | backend | F-22 | done | checked by the user 12 Nov |
 | [F-25](F-25-route-colouring.md) | Route colouring by metric | 1 | frontend | F-06, F-14 | done (rework 8 Nov 2026) | user: AC 5 scrub record on ride-12h (qa r2) fixed |
@@ -46,7 +46,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-29](F-29-about-page-and-attributions.md) | About page and attribution list | 1 | both | F-13 | done | checked by the user 11 Nov |
 | [F-30](F-30-regenerate-command.md) | Regenerate command | 1 | backend | F-21, F-23, F-31 | done | r1-6 memory overlap accepted by the user 4 Nov; user: time AC 10 (100 workouts) on the VPS at the first F-30 deploy |
 | [F-33](F-33-fullscreen-cursor-readout.md) | Cursor readout in the fullscreen map | 1 | frontend | F-26 | done | device check and fullscreen scrub (responsive) confirmed by the user 5 Nov |
-| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: tag and push v0.3.0, deploy, U-1 to U-10 (qa r1; U-7c dropped) |
+| [F-32](F-32-mvp-launch-checks.md) | MVP launch checks | 1 | both | F-08 to F-33 (except F-24) | QA r1 ready (local checks) | user: U-1 to U-10 on the deployed current release (qa r1; U-7c dropped); `parse -original` on one real file per brand |
 | [F-35](F-35-zip-upload.md) | Zip upload | 2 | frontend | F-11 | done | zip uploads checked by the user 11 Nov |
 | [F-36](F-36-preview-image-with-map-context.md) | Preview image with map context | 2 | both | F-23, F-20, F-30 | done | user: browser, messenger and card look checks (qa r1 list), VPS memory.peak |
 | [F-34](F-34-ios-shortcut-upload-link.md) | iOS Shortcut upload link | 2 | both (backend first) | F-29, F-31 | done | user: iPhone Shortcut check (AC 5, qa r1 q1), About look |
@@ -66,8 +66,13 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-51](F-51-split-comparison-chart.md) | Lap and split comparison chart | 2 | frontend | F-18, F-42, F-46, F-47, F-48, F-49 | done (QA r2: r2-1 accepted by the user, r2-2 fixed) | user: browser check (chart, break mark, both themes, wording); theme strip check on iPhone (659c6be); AC 10 timing not measured |
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-51) | — |
 | [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | ready for architecture (after F-50) | — |
+| [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | draft | open questions OQ-218 to OQ-222 (user) |
+| [F-54](F-54-translated-interface.md) | Translated interface: German, Spanish, French | — | both (backend first) | all features with text; F-53 | draft | open questions OQ-223 to OQ-228 (user) |
+| [F-55](F-55-privacy-zones.md) | Privacy zones | — | both (backend first) | F-16, F-19, F-36, F-47 | draft | open questions OQ-229 to OQ-233 (user) |
+| [F-56](F-56-map-pins.md) | Map pins | — | both (backend first) | F-19, F-26, F-55 | draft | open questions OQ-234 to OQ-240 (user) |
+| [F-57](F-57-gpx-export-with-pins.md) | GPX export with pins | — | frontend | F-56 | draft | open questions OQ-241 to OQ-244 (user) |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52.
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-57.
 
 ## Backlog
 
@@ -82,10 +87,24 @@ Requirement IDs stay. Priority (Must/Should/Could) and phase stay on existing en
 ### Ideas
 
 - F-51 chart: non-symmetric pace axis (median not centred; space above sized to the fastest bar, below to the slowest), so recovery laps are drawn instead of clipped (AP-23; user 14 Nov 2026)
+- Extra sensor streams: running dynamics, app-specific fields such as Stryd (needs a data file change; revisit UP-9's kept developer fields and user-chosen names then)
+- Compare two workouts on charts and map, aligned by distance or time (notes: decision log, 6 Nov 2026; conflicts with the 30-day lifetime)
+- Time-based splits: 1, 5, 10, 15, 30 and 60 min (AP-8, AP-20)
+- Splits per multisport leg (AP-8, AP-12)
+- Swim distance in yards (DS-2)
+- No layout jump on load with a remembered map/content split: inline head script allowed by a CSP hash (AP-17, OQ-88)
+- Report notifications through other services than Pushover, e.g. an HTTP callback or ntfy (INF-4)
 
 ### Discarded ideas
 
 - F-24 viewer download of the published data (SH-8 viewer part): discarded 14 Nov 2026, minimal use, not worth the risks and effort. Feature file kept, marked discarded; the parked branch `wip/f-24-export` can be deleted.
+- Photos on pins (PIN-3): discarded 14 Nov 2026; stores people's images, against "store as little as possible".
+- Share target / PWA (share a FIT file from another app): discarded 14 Nov 2026; browser storage differs between Safari and a home-screen app, which would confuse users. The iOS Shortcut (INF-5) and zip upload stay.
+- Keyboard control of charts: discarded 14 Nov 2026; accessibility is not a goal.
+- GPS dropouts drawn as gaps on the map: discarded 14 Nov 2026; dashed segments (14 Oct 2026) already show them.
+- GPX and TCX upload: discarded 14 Nov 2026; FIT files are the only way in (non-goals).
+- Browser fullscreen API for the fullscreen map (OQ-100): discarded 14 Nov 2026; the CSS overlay stays.
+- "Revisit if a real file shows it" risks (bad first or last GPS fix, SH-4; truncated file inside a transition, OQ-39): discarded 14 Nov 2026; accepted as they are.
 
 ## Requirement coverage
 
@@ -142,11 +161,16 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AC-4 Delete removes everything | Must | F-12, F-20, F-21 |
 | AC-5 Owner changes everything (MVP fields) | Must | F-12, F-19; trim: F-47 (phase 2); pins: phase 2 |
 | AC-6 Published page with both links | Must | F-20, F-22 |
+| AC-7 My workouts on this device | — (planned) | F-53 |
 | DS-1 Units, drop-down | Must | F-14, F-18; F-46 (phase 2) |
 | DS-2 Sport-specific pace/speed | Must | F-14, F-25 |
 | DS-3 English | Must | F-11, F-13, F-14, F-28 |
 | DS-4 Light and dark theme | Should | F-14, F-15, F-29; F-38 (Impressum page, phase 2) |
 | DS-5 Summary tints | Could (phase 2) | F-41 (phase 2) |
+| DS-6 Translated interface (German, Spanish, French) | — (planned) | F-54 |
+| SH-3 Privacy zones | Could (phase 2) | F-55 |
+| PIN-1 to PIN-8 Map pins | within pins | F-56 |
+| PIN-9 GPX export with pins | Could (within pins) | F-57 |
 | INF-1 About page | Must | F-29 |
 | INF-2 Report form, stored reports | Must | F-27, F-28 |
 | INF-3 Operator delete | Must | F-27 |
@@ -174,8 +198,8 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 ## Phase 2 (not broken down)
 
 - Heart-rate and power zones; power curve and best efforts — AP-10, AP-11: detailed in [F-49](F-49-zones.md) and [F-50](F-50-power-curve-and-best-efforts.md).
-- Privacy zones of 200 m to 1 km — SH-3
-- Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5
+- Privacy zones of 200 m to 1 km — SH-3: planned as [F-55](F-55-privacy-zones.md).
+- Map pins (types, sections, list, legend, privacy-zone check, owner edits, GPX export), including pins in the fullscreen map — PIN-1 to PIN-9, AP-15, AC-5: planned as [F-56](F-56-map-pins.md) and [F-57](F-57-gpx-export-with-pins.md).
 - Shareable range — AP-19: detailed in [F-40](F-40-shareable-range.md).
 - Summary colours — DS-5: detailed in [F-41](F-41-summary-tints.md).
 - Multisport legs and transitions as sections — AP-12: detailed in [F-42](F-42-multisport-sections.md).
@@ -730,3 +754,5 @@ The original questions follow for reference.
 **Decided on 14 Nov 2026, automatic updates for hosters** (user, new INF-8, F-52; critical lane, owner backend; built after F-50): opt-in, off by default, installed by the hoster; signed releases verified on the server against a key kept outside GitHub (the release's SHA256SUMS alone is not authenticity); (same-minor rule changed the same day, entry below); a failed update (deploy exit 1, 3 or 4) alerts through Pushover when set up and stops further automatic updates until a manual deploy; no more privilege than `deploy.sh` needs; no inbound endpoint. Open: OQ-210 to OQ-217 (F-52). Updated: spec (non-goals, scope table, INF-8, NFR Privacy); F-52 (new); this file (table, coverage).
 
 **Decided on 14 Nov 2026, F-52 open questions** (user, INF-8, OQ-210 to OQ-217): accepted as suggested (minisign key held offline, hoster pins the public key; one signed manifest with the tag; the operator signs locally; daily check at night; release layout only; About-page line when on; key loss handled by hand), and the release host as a second opt-in external service and the docker-group risk accepted, **except OQ-214**: the updater always installs the latest signed release, any version; no same-minor rule, no notify-only case. F-52 ready for architecture (after F-50). Updated: spec INF-8, scope table; F-52 (status, goal, scope, out of scope, AC, decisions).
+
+**Decided on 14 Nov 2026, backlog classified** (user): Planned, with draft feature files: AC-7 my workouts on this device (F-53), DS-3 widened to a translated interface in German, Spanish and French (new DS-6, F-54), SH-3 privacy zones (F-55), PIN-1 to PIN-8 map pins (F-56), PIN-9 GPX export with pins (F-57), built after F-52 in that order. Ideas: extra sensor streams, compare two workouts, time-based splits, splits per multisport leg, swim yards, no split jump on load, report notifications through other services. Discarded: photos on pins, share target / PWA (browser storage differs between Safari and a home-screen app, which would confuse users), keyboard chart control, GPS dropouts as gaps, GPX/TCX upload, browser fullscreen API (OQ-100), the "revisit if seen" risks. Closed as built: confirm before publishing (no confirmation); the provisional OQ-23, OQ-25, OQ-28 are final. Fixes done: spec questions DS-5 and SH-12 ticked; OQ-4, OQ-167, OQ-168, OQ-185, OQ-195 accepted as built; open user checks moved from `CONTINUE.md` into Waiting on (F-01, F-11, F-13, F-17, F-32); F-22 and F-32 Waiting on reworded. Updated: spec (scope table, SH-3, PIN-3, AC-3, new AC-7, DS-3, new DS-6, open questions); F-53 to F-57 (new); `architect/INDEX.md`, F-02, F-46, F-48, F-49 architecture docs; F-09, F-12 (`allow_download` removed); `CONTINUE.md`; this file (table, Ideas, Discarded ideas, coverage, Phase 2 list).

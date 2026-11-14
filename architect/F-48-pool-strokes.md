@@ -1,7 +1,7 @@
 # F-48 Pool swims: lengths and stroke type: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (13 Nov 2026). Normal lane. OQ-180 to OQ-184 decided by the user on 13 Nov 2026 as suggested and built in here; OQ-185 open, not blocking (suggestion built unless the user objects)
+- **Status:** accepted (13 Nov 2026). Normal lane. OQ-180 to OQ-184 decided by the user on 13 Nov 2026 as suggested and built in here; OQ-185 accepted as built (user, 14 Nov 2026)
 - **Feature:** [`features/F-48-pool-strokes.md`](../features/F-48-pool-strokes.md)
 - **Requirements:** AP-13, AP-16, AP-8, AP-7, AP-2, AP-3, AP-20, UP-3, UP-6, DS-1, DS-2, DS-5; NFR Performance, NFR Reliability; decision log 13 Nov 2026
 - **Builds on:** new [ADR-048](ADR-048-lengths-and-strokes-in-the-data-file.md) (format version 5); [F-44](F-44-pool-summary.md) PS-1, PS-3 (PS-8 changed here); [F-46](F-46-laps-and-splits.md) LS-2 to LS-4, LS-7 to LS-9 (LS-3, LS-4 changed here); [F-47](F-47-trim.md) TR-5 (changed here), ADR-047; ADR-017 rev. 9 (`MaxLengths`), ADR-018; ADR-011, ADR-026, ADR-027
@@ -51,4 +51,4 @@ Synthetic files only (ADR-004). Beyond the feature's ACs:
 
 | ID | Question | Suggestion | Blocks |
 | --- | --- | --- | --- |
-| OQ-185 | A truncated pool swim usually loses its `session` (written last), so no lap-swimming session holds its lengths, yet the feature's AC wants them shown. | Keep lengths and lap strokes that no session covers; drop them only inside a session that is not a pool swim (PL-2). Summary cells stay hidden (AP-16) | Nothing (suggestion built unless the user objects) |
+| OQ-185 | **Accepted as built (user, 14 Nov 2026).** A truncated pool swim usually loses its `session` (written last), so no lap-swimming session holds its lengths, yet the feature's AC wants them shown. | Keep lengths and lap strokes that no session covers; drop them only inside a session that is not a pool swim (PL-2). Summary cells stay hidden (AP-16) | Nothing (suggestion built unless the user objects) |

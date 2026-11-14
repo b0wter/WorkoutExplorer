@@ -43,15 +43,11 @@ Sample pages on protoserve (`/w/<name>`) come from `src/server/testdata/page/*.j
 
 ## Open items for the user
 
-- F-17: on the phone, check whether a cached reload with a stored split still jumps (accepted only for an uncached first load, F-13 D-10).
-
-- F-13 AC 7, Lighthouse: needs a machine with Chromium.
-- F-11: the greyed-out drop zone has not been checked by hand.
-- The F-32 check (`parse -original` on one real file per brand) and F-01 (GitHub Actions).
+Open user checks are in the Waiting on column of `features/README.md` (moved there 14 Nov 2026).
 
 ## Reminders
 
-- F-24 (viewer download) deferred to phase 3 on 2 Nov 2026. Its design (architect/F-24-viewer-download.md, ADR-036) is done; unfinished B-1 work (internal/fitexport, publish/page/template/Caddyfile changes, no QA, `make ci` not run) is parked on the local, unpushed branch `wip/f-24-export` (332e041). Rebase it onto main when phase 3 starts, or drop it.
+- F-24 (viewer download) discarded on 14 Nov 2026 (was deferred to phase 3 on 2 Nov 2026). Its design (architect/F-24-viewer-download.md, ADR-036) is done; unfinished B-1 work (internal/fitexport, publish/page/template/Caddyfile changes, no QA, `make ci` not run) is parked on the local, unpushed branch `wip/f-24-export` (332e041). Rebase it onto main when phase 3 starts, or drop it.
 
 - F-31: take the Caddy version from `deploy/caddy.env` (pinned 2.11.7; 2.10.2 answers `.br` with 206).
 

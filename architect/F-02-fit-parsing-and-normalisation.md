@@ -421,5 +421,5 @@ Dependency check for QA: `cd src/server && go list -deps -f '{{if not .Standard}
 
 | ID | Question | Blocks | Owner |
 | --- | --- | --- | --- |
-| OQ-4 | Moving-time speed threshold for sports other than cycling and running (TD names only those two). Applied default: `cycling`, `e_biking` 1 km/h, everything else 0.5 km/h. | Nothing (default applies); changes R-7 constants only | user / requirements |
+| OQ-4 | **Accepted as built (user, 14 Nov 2026).** Moving-time speed threshold for sports other than cycling and running (TD names only those two). Applied default: `cycling`, `e_biking` 1 km/h, everything else 0.5 km/h. | Nothing (default applies); changes R-7 constants only | user / requirements |
 | OQ-5 | FIT Protocol License (ADR-003, Open). | Nothing in F-02; must be settled before launch | user |

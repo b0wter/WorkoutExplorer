@@ -1,7 +1,7 @@
 # F-49 Heart-rate and power zones: architecture
 
 - **Version:** 0.2
-- **Status:** accepted (13 Nov 2026). Normal lane. OQ-186 to OQ-191 decided by the user on 13 Nov 2026 and built in here; ZN-2 revised the same day after a check of real files; OQ-195 open, not blocking (suggestion built unless the user objects). Revised 14 Nov 2026 after the user's browser check: the file's basis next to its bounds (ZN-3, ZN-7, ADR-049 amended), file values as field placeholders (ZN-10)
+- **Status:** accepted (13 Nov 2026). Normal lane. OQ-186 to OQ-191 decided by the user on 13 Nov 2026 and built in here; ZN-2 revised the same day after a check of real files; OQ-195 accepted as built (user, 14 Nov 2026). Revised 14 Nov 2026 after the user's browser check: the file's basis next to its bounds (ZN-3, ZN-7, ADR-049 amended), file values as field placeholders (ZN-10)
 - **Feature:** [`features/F-49-zones.md`](../features/F-49-zones.md)
 - **Requirements:** AP-10, AP-7, AP-2, AP-4, AP-12, UP-3, UP-4, UP-6, UP-7, UP-9, AC-4, AC-5, SH-4; NFR Privacy, NFR Performance
 - **Builds on:** new [ADR-049](ADR-049-zone-values-in-the-data-file.md) (format version 6); [F-12](F-12-owner-api.md) settings object, [F-15](F-15-publish-pipeline-and-static-page.md) P-7 (both noted in place); [F-17](F-17-range-selection-and-axis-toggle.md) selection store; [F-19](F-19-edit-page-and-settings.md) E-5 to E-7; [F-42](F-42-multisport-sections.md) MS-9 (import trigger); [F-47](F-47-trim.md) TR-9; ADR-011, ADR-019, ADR-023, ADR-026, ADR-029
@@ -59,4 +59,4 @@ Synthetic files only (ADR-004); the corpus files of the feature scope, generated
 
 | ID | Question | Suggestion | Blocks |
 | --- | --- | --- | --- |
-| OQ-195 | Input ranges for the two edit-page fields (spec silent) | Max heart rate 100–250 bpm, threshold power 50–1,000 W, whole numbers; the same ranges make a file's values valid | Nothing (suggestion built unless the user objects) |
+| OQ-195 | **Accepted as built (user, 14 Nov 2026).** Input ranges for the two edit-page fields (spec silent) | Max heart rate 100–250 bpm, threshold power 50–1,000 W, whole numbers; the same ranges make a file's values valid | Nothing (suggestion built unless the user objects) |

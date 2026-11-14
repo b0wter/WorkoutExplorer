@@ -1,7 +1,7 @@
 # F-46 Laps and splits: lap triggers and split presets: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (12 Nov 2026). Normal lane. OQ-167, OQ-168 open, not blocking (suggestions built unless the user objects)
+- **Status:** accepted (12 Nov 2026). Normal lane. OQ-167, OQ-168 accepted as built (user, 14 Nov 2026)
 - **Feature:** [`features/F-46-laps-and-splits.md`](../features/F-46-laps-and-splits.md)
 - **Requirements:** AP-8, AP-20, AP-7, AP-16, AP-19, DS-1, DS-2; NFR Performance; decision log 11–12 Nov 2026, OQ-164 to OQ-166
 - **Builds on:** [ADR-046](ADR-046-lap-trigger-and-recorded-pool-length-in-the-data-file.md) (format version 4); [F-18](F-18-laps-and-splits-table.md) L-2 to L-7 (L-4, L-6, L-8 changed here); [F-40](F-40-shareable-range.md) SR-1; [F-42](F-42-multisport-sections.md) MS-6, MS-9; [F-44](F-44-pool-summary.md) PS-1, PS-3; ADR-011, ADR-026, ADR-027
@@ -49,5 +49,5 @@
 
 | ID | Question | Suggestion |
 | --- | --- | --- |
-| OQ-167 | AP-20 lists by sport; `e_biking` is its own FIT sport | Cycling list for `e_biking` too; every other sport by AP-20's "every other sport" |
-| OQ-168 | Heading of the module on a workout without device laps (spec silent) | "Splits" |
+| OQ-167 | **Accepted as built (user, 14 Nov 2026).** AP-20 lists by sport; `e_biking` is its own FIT sport | Cycling list for `e_biking` too; every other sport by AP-20's "every other sport" |
+| OQ-168 | **Accepted as built (user, 14 Nov 2026).** Heading of the module on a workout without device laps (spec silent) | "Splits" |
