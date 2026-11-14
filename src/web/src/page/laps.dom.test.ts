@@ -488,7 +488,7 @@ describe('comparison chart (F-51; AP-23)', () => {
   const chart = (p: Page) => p.section?.querySelector<HTMLElement>('.compare') ?? null;
   const bars = (p: Page) => [...(chart(p)?.querySelectorAll<SVGRectElement>('rect.bar') ?? [])];
   const head = (p: Page) => chart(p)?.querySelector('.compare-head')?.firstChild?.textContent;
-  const overlay = (p: Page) => chart(p)?.querySelector<HTMLSelectElement>('.compare-overlay select') ?? null;
+  const overlay = (p: Page) => chart(p)?.querySelector<HTMLSelectElement>('.compare-overlay:not([hidden]) select') ?? null;
   /** A click at slot i of n, with a 600 px wide plot (jsdom has no layout). */
   const tap = (p: Page, i: number, n: number) => {
     const svg = chart(p)!.querySelector('svg')!;
@@ -580,6 +580,45 @@ describe('comparison chart (F-51; AP-23)', () => {
     cleanup?.();
     const q = open(noHr, 'metric', false);
     expect(overlay(q)).toBeNull(); // only None left: no drop-down (SC-6)
+  });
+
+  it('QA-51-r1-2: an overlay change keeps the drop-down and its focus', () => {
+    const p = open(ride());
+    const sel = overlay(p)!;
+    sel.focus();
+    sel.value = 'avg_power';
+    sel.dispatchEvent(new Event('change'));
+    expect(overlay(p)).toBe(sel);
+    expect(document.activeElement).toBe(sel);
+    expect(chart(p)?.querySelectorAll('.ov-power circle').length).toBeGreaterThan(0);
+  });
+
+  it('SC-11: a standing rest lap is clipped with a break mark and named in the label; every axis label is a value', () => {
+    const run = golden('run-30min');
+    const v = [4.5, 2.5, 4.5, 2.5, 4.5, 0.3];
+    // The run's samples with six laps of the given speeds (only the totals matter here).
+    const laps = v.map((speed, i) => ({ ...run.meta.laps[0], totals: { avg_speed: speed }, start_index: i * 10, end_index: i * 10 + 10 }));
+    const p = open(withLaps(run, laps));
+    expect(chart(p)?.querySelectorAll('line.cut')).toHaveLength(1);
+    expect(chart(p)?.querySelector('svg')?.getAttribute('aria-label')).toMatch(/, Laps\. Lap 6 beyond the scale$/);
+    expect([...chart(p)!.querySelectorAll('.compare-axis:not(.right) span')].every((s) => /^\d+:\d\d$/.test(s.textContent ?? ''))).toBe(true);
+  });
+
+  it('AC 8: a trimmed file shows its remaining rows only, as its table', () => {
+    const p = open(withLaps(ride(), ride().meta.laps.slice(1, 5)));
+    expect(bars(p)).toHaveLength(4);
+    expect([...chart(p)!.querySelectorAll('text')].map((t) => t.textContent)).toEqual(p.rows().map((r) => r.cells[0].textContent));
+  });
+
+  it('AC 9: a truncated file (UP-3) draws its chart without error', () => {
+    const err = vi.spyOn(console, 'error');
+    const warn = vi.spyOn(console, 'warn');
+    const p = open(golden('ride-30min-cut-60'));
+    p.button('Splits')?.click();
+    expect(chart(p)?.hidden).toBe(false);
+    expect(bars(p).length).toBeGreaterThan(1);
+    expect(err).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('run: pace in the header, faster bars point up', () => {

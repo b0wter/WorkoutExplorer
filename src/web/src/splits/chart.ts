@@ -13,7 +13,8 @@ export interface Slot extends CompareRow {
 }
 
 export interface Chart {
-  draw(slots: readonly Slot[], caption: string, units: Units): void;
+  /** `noun`: a row's name in the accessible label ("Lap", "Split", "Length"). */
+  draw(slots: readonly Slot[], caption: string, units: Units, noun: string): void;
 }
 
 /** The entry's formatters (see ../splits Fmt). */
@@ -47,7 +48,17 @@ export function createChart(
   const doc = section.ownerDocument;
   const box = el(doc, 'div', 'compare');
   box.hidden = true;
+  // The header persists across draws, so the focused overlay drop-down keeps its focus (QA-51-r1-2).
+  const head = el(doc, 'div', 'compare-head');
+  const headText = el(doc, 'span', '');
+  const label = el(doc, 'label', 'compare-overlay', 'Overlay ');
+  const select = el(doc, 'select', 'split-select');
+  const body = el(doc, 'div', '');
+  label.appendChild(select);
+  head.append(headText, label);
+  box.append(head, body);
   section.appendChild(box);
+  let offered = '';
   const pace = paceSport(sport);
   let choice: OverlayKey | '' = ''; // SC-6: per visit, in memory only
   let markedRow: Element | null = null;
@@ -65,31 +76,30 @@ export function createChart(
     highlight();
   });
 
-  const draw = (slots: readonly Slot[], caption: string, units: Units): void => {
-    last = [slots, caption, units];
+  select.addEventListener('change', () => {
+    choice = select.value as OverlayKey | '';
+    if (last) draw(...last);
+  });
+
+  const draw = (slots: readonly Slot[], caption: string, units: Units, noun: string): void => {
+    last = [slots, caption, units, noun];
     const c = compare(slots, pace);
     box.hidden = !c;
     barOf = new Map();
     selBar = undefined;
-    if (!c) return void box.replaceChildren();
+    if (!c) return void body.replaceChildren();
     if (choice && !c.overlays.includes(choice)) choice = '';
     const unit = ' ' + unitText(sport, units);
     const text = (v: number): string => speedText(sport, v, units);
 
     // Header: reference and best, and the overlay drop-down when there is a metric to offer.
-    const head = el(doc, 'div', 'compare-head', 'Median ' + text(c.reference) + unit + ' · Best ' + text(c.best) + unit);
-    if (c.overlays.length) {
-      const label = el(doc, 'label', 'compare-overlay', 'Overlay ');
-      const select = el(doc, 'select', 'split-select');
+    headText.textContent = 'Median ' + text(c.reference) + unit + ' · Best ' + text(c.best) + unit;
+    label.hidden = !c.overlays.length;
+    if (offered !== (offered = c.overlays.join())) {
+      select.replaceChildren();
       for (const [v, t] of [['', 'None'], ...c.overlays.map((k) => [k, NAMES[k][0]])]) select.add(new Option(t, v));
-      select.value = choice;
-      select.addEventListener('change', () => {
-        choice = select.value as OverlayKey | '';
-        if (last) draw(...last);
-      });
-      label.appendChild(select);
-      head.appendChild(label);
     }
+    select.value = choice;
 
     // The plot: the band, the reference line, one bar per slot with a speed, the row numbers, the overlay.
     const n = slots.length;
@@ -104,6 +114,11 @@ export function createChart(
         let bot = yp(b.y1);
         if (bot - top < 2) (b.y0 < 0.5 ? (top = bot - 2) : (bot = top + 2));
         svg += `<rect class="bar ${b.cls}" data-i="${i}" x="${r2(mid - bw / 2)}%" width="${r2(bw)}%" y="${r2(top)}" height="${r2(bot - top)}"/>`;
+        // SC-11: a clipped bar ends at the plot edge with a slanted break near its end (a shape, not a colour).
+        if (b.clipped) {
+          const e = b.y0 < 0.5 ? top + 8 : bot - 12;
+          svg += `<line class="cut" x1="${r2(mid - bw / 2 - 0.3)}%" x2="${r2(mid + bw / 2 + 0.3)}%" y1="${r2(e + 4)}" y2="${r2(e)}"/>`;
+        }
       }
       if ((i + 1) % step === 0 || i === 0) svg += `<text x="${r2(mid)}%" y="${PLOT + 11}">${slots[i].label}</text>`;
     });
@@ -121,7 +136,8 @@ export function createChart(
     const plot = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
     plot.setAttribute('height', String(PLOT + 14));
     plot.setAttribute('role', 'img');
-    plot.setAttribute('aria-label', head.firstChild!.textContent + ', ' + caption);
+    const beyond = slots.flatMap((s, i) => (c.bars[i]?.clipped ? [noun + ' ' + s.label + ' beyond the scale'] : []));
+    plot.setAttribute('aria-label', [headText.textContent + ', ' + caption, ...beyond].join('. '));
     plot.innerHTML = svg;
     plot.querySelectorAll<SVGElement>('rect[data-i]').forEach((r) => barOf.set(slots[+r.dataset.i!].row, r));
 
@@ -158,7 +174,7 @@ export function createChart(
       legend.appendChild(k);
     }
     foot.appendChild(legend);
-    box.replaceChildren(head, values, foot);
+    body.replaceChildren(values, foot);
     // The old rows lose a hover they had; the marked row's bar is highlighted again.
     section.querySelectorAll('tr.hover').forEach((r) => r.classList.remove('hover'));
     highlight();

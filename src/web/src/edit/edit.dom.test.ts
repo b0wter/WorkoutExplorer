@@ -1310,6 +1310,16 @@ describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
     expect(T[b - 1] - T[a]).toBeLessThan(60);
   });
 
+  it('F-51 AC 8: with a stored trim the comparison chart shows the same full rows as the edit page table', async () => {
+    settings = fresh({ trim_start_at: at(50), trim_end_at: at(N - 300), trimmed: { sport: 'cycling', summary: { distance: 12_345, elapsed_time: 600 } } });
+    await open();
+    stubLog.chartStack[0].onready?.(); // the charts' first paint starts the lazy chunks
+    await vi.waitFor(() => expect($('section.laps .compare rect.bar')).not.toBeNull());
+    const rows = [...host.querySelectorAll('section.laps .laps-scroll:not(.splits) tbody tr')];
+    expect(rows.length).toBeGreaterThan(1);
+    expect(host.querySelectorAll('section.laps .compare rect.bar')).toHaveLength(rows.length);
+  });
+
   it('a stored trim: handles from it, only the summary trimmed, in the chosen units; header and laps stay full', async () => {
     const full = fresh();
     settings = full;

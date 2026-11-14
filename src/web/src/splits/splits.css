@@ -89,6 +89,11 @@
 .compare .bar.hover {
   opacity: 0.7;
 }
+/* The break of a clipped bar (SC-11): a gap in the page background. */
+.compare .cut {
+  stroke: var(--bg);
+  stroke-width: 2.5;
+}
 /* The selected bar: an outline, so it shows without colour (SC-8). */
 .compare .bar.sel {
   stroke: var(--fg);

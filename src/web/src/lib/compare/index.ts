@@ -21,6 +21,8 @@ export interface Bar {
   readonly y0: number;
   readonly y1: number;
   readonly cls: BarClass;
+  /** Beyond the half-range: drawn to the plot edge and marked (SC-11). */
+  readonly clipped: boolean;
 }
 
 export interface Comparison {
@@ -31,7 +33,7 @@ export interface Comparison {
   readonly best: number;
   /** The on-pace band, fractions. */
   readonly band: readonly [top: number, bottom: number];
-  /** Speeds at the plot's top and bottom edge, m/s; for pace the top can be ≤ 0 (no label). */
+  /** Speeds at the plot's top and bottom edge, m/s (SC-11: always real values). */
   readonly top: number;
   readonly bottom: number;
   /** Overlay metrics at least one barred row has, in OVERLAYS order. */
@@ -69,9 +71,8 @@ export function compare(rows: readonly CompareRow[], pace: boolean): Comparison 
   const qr = q(reference);
   const hi = q(reference * (1 + ON_PACE)) - qr;
   const lo = qr - q(reference * (1 - ON_PACE));
-  let h = Math.max(hi, lo);
-  for (const v of barred) h = Math.max(h, Math.abs(q(v) - qr));
-  const y = (v: number): number => 0.5 - (q(v) - qr) / (2 * h);
+  const h = halfRange(barred.map((v) => Math.abs(q(v) - qr)), Math.max(hi, lo), pace ? -qr / 2 : qr);
+  const y = (v: number): number => Math.min(1, Math.max(0, 0.5 - (q(v) - qr) / (2 * h)));
   const fromQ = (x: number): number => (pace ? -1 / x : x);
   return {
     bars: speeds.map((v) => {
@@ -79,7 +80,8 @@ export function compare(rows: readonly CompareRow[], pace: boolean): Comparison 
       const d = (v - reference) / reference;
       const e = ON_PACE + 1e-9; // inclusive despite float error (10.3 vs 10)
       const yv = y(v);
-      return { y0: Math.min(yv, 0.5), y1: Math.max(yv, 0.5), cls: d > e ? 'faster' : d < -e ? 'slower' : 'pace' };
+      const clipped = Math.abs(q(v) - qr) > h * (1 + 1e-9);
+      return { y0: Math.min(yv, 0.5), y1: Math.max(yv, 0.5), cls: d > e ? 'faster' : d < -e ? 'slower' : 'pace', clipped };
     }),
     reference,
     best,
@@ -88,6 +90,15 @@ export function compare(rows: readonly CompareRow[], pace: boolean): Comparison 
     bottom: fromQ(qr - h),
     overlays: OVERLAYS.filter((k) => rows.some((r, i) => speeds[i] === speeds[i] && valueOf(r.totals, k) === valueOf(r.totals, k))),
   };
+}
+
+/** SC-11, in the shown quantity (any positive multiple of q: the rule only compares ratios). The cap
+ *  is 3× the 75th-percentile deviation (nearest rank, the ⌈0.75·n⌉-th smallest), at least 3× the band
+ *  edge. The half-range is the furthest bar, at most the cap and the edge limit, at least the band edge. */
+export function halfRange(deviations: readonly number[], band: number, limit: number): number {
+  const d = [...deviations].sort((a, b) => a - b);
+  const cap = 3 * Math.max(d[Math.ceil(0.75 * d.length) - 1] ?? 0, band);
+  return Math.max(band, Math.min(d[d.length - 1] ?? 0, cap, limit));
 }
 
 export interface Overlay {

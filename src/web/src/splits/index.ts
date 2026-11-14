@@ -128,7 +128,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     const laps = data.meta.laps;
     slots.Laps = rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1) })) : [];
   }
-  const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? preset!.label + ' splits' : current, units.get());
+  const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? preset!.label + ' splits' : current, units.get(), current.slice(0, -1));
   // LS-9, PL-8: built only on arrival, a change, a switch to it or a units change; the selection is untouched (LS-7).
   const build = (view: View): void => {
     const wrap = doc.createElement('div');
