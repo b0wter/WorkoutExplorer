@@ -1518,3 +1518,28 @@ describe('F-49 ZN-4, ZN-7: zone fields and the Zones section (AC 6, 7, 9)', () =
     expect(seconds('power')).toBe(saved);
   });
 });
+
+describe('F-50 EF-1: the Best efforts section over the saved trim window (AC 5)', () => {
+  const decoded = decodeDataFile(RIDE.slice(0));
+  if (!decoded.ok) throw new Error('ride-4h does not decode');
+  const T = decoded.data.time;
+  const S = Date.parse(decoded.data.meta.start_time) / 1000;
+  const at = (i: number): string => new Date((S + T[i]) * 1000).toISOString().slice(0, 19) + 'Z';
+  const names = (): string[] => [...document.querySelectorAll('#efforts-slot tbody td:first-child')].map((e) => e.textContent!);
+
+  it('only the saved window counts; an unsaved trim changes nothing; a save that changes it recomputes', async () => {
+    settings = fresh({ trim_start_at: at(1000), trim_end_at: at(1600) });
+    await open();
+    stubLog.chartStack[0].onready?.();
+    await vi.waitFor(() => expect(names()).toEqual(['5 s', '1 min', '5 min']));
+    const table = $('#efforts-slot table');
+    type('title', 'x');
+    await save();
+    expect($('#efforts-slot table')).toBe(table); // same window: no recompute
+    type('trim_b', String(N - 1));
+    await settle();
+    expect($('#efforts-slot table')).toBe(table);
+    await save();
+    await vi.waitFor(() => expect(names()).toEqual(['5 s', '1 min', '5 min', '20 min', '60 min']));
+  });
+});

@@ -165,6 +165,8 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   /** The page's zones starter (startPage's seam) and, once started, the section's refresh. */
   let startZones: ((src: ZoneSource) => Promise<(() => void) | void>) | undefined;
   let zonesRefresh: Promise<(() => void) | void> | undefined;
+  /** F-50 EF-1: the efforts section's refresh, per save; it recomputes when the saved window changed. */
+  let effortsRefresh: Promise<(() => void) | void> | undefined;
   /** ZN-8: the chunk once a kind has zone values and its stream; afterwards a refresh per save. */
   const zones = (): void => {
     if (zonesRefresh) void zonesRefresh.then((refresh) => refresh?.());
@@ -182,6 +184,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     // The response is the truth (E-6): the panel refills from it, the header re-renders from it.
     settings = r.value;
     zones();
+    void effortsRefresh?.then((refresh) => refresh?.());
     hide = r.value.hide_ends;
     visibility = r.value.visibility;
     const next = build(r.value);
@@ -327,6 +330,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
         startZones = start;
         zones();
       },
+      onefforts: (start) => (effortsRefresh = start(zoneSource.window)),
       onlook: (l: Look) => {
         look = l;
         // The sections chunk sets its leg decorator later; the charts get both (MS-7 has one seam).

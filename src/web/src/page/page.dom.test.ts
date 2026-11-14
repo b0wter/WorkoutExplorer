@@ -284,6 +284,34 @@ describe('wiring (F-06 "Wiring")', () => {
     }
   });
 
+  it('F-50 EF-7: a ride with power loads the efforts chunk after the charts\' first paint; it fills the slot after the zones slot', async () => {
+    await open();
+    const efforts = slot('efforts-slot');
+    expect(efforts?.previousElementSibling?.id).toBe('zones-slot');
+    expect([efforts?.hidden, efforts?.childElementCount]).toEqual([true, 0]);
+    stubLog.chartStack[0].onready?.();
+    await vi.waitFor(() => expect(efforts?.querySelector('h2')?.textContent).toBe('Best efforts'));
+    expect(efforts?.hidden).toBe(false);
+  });
+
+  it('F-50 EF-7: no power and no pace-sport distance, no efforts chunk', async () => {
+    const g = loadGolden().find((x) => x.name === 'indoor-no-distance-no-gps');
+    if (!g) throw new Error('no golden indoor-no-distance-no-gps');
+    respond = () => new Response(g.bin.slice(0), { status: 200 });
+    vi.doMock('../efforts', () => {
+      throw new Error('chunk failed');
+    });
+    try {
+      await open('indoor-unknown-zone');
+      stubLog.chartStack[0].onready?.();
+      await settle();
+      expect(console.warn).not.toHaveBeenCalledWith('page: efforts chunk failed');
+      expect(slot('efforts-slot')?.hidden).toBe(true);
+    } finally {
+      vi.doUnmock('../efforts');
+    }
+  });
+
   it('F-42 MS-1: a single-sport workout never gets a decorator', async () => {
     const two = loadGolden().find((x) => x.name === 'chained-ride-ride'); // two sessions, one sport
     if (!two) throw new Error('no golden chained-ride-ride');
@@ -526,7 +554,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
   async function openAt(path: string, seam?: boolean): Promise<void> {
     window.history.replaceState({ fs: 1 }, '', path);
     page = renderSample('ride-30min');
-    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {}, onzones() {} } : undefined);
+    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {}, onzones() {}, onefforts() {} } : undefined);
     await settle();
     stubLog.chartStack[0].onready?.();
     flushSync();

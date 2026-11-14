@@ -28,6 +28,7 @@ import { createLook, createMapProps, type Look } from './map-props.svelte';
 import { mountStrip } from './strip';
 import type { DataFileResult, WorkoutData } from '../lib/datafile';
 import type { ZoneSource } from '../zones';
+import type { EffortWindow } from '../efforts';
 
 type RecorderModule = typeof import('../measure/recorder');
 
@@ -103,6 +104,8 @@ export interface EditSeam {
   /** F-49 ZN-7, ZN-8: the zones chunk's starter, after the charts' first paint; the edit glue
    *  decides when (its saved values) and passes its public window. Resolves to the refresh. */
   onzones(start: (src: ZoneSource) => Promise<(() => void) | void>): void;
+  /** F-50 EF-1, EF-7: the efforts chunk's starter, likewise with the window; resolves to the refresh. */
+  onefforts(start: (src: EffortWindow) => Promise<(() => void) | void>): void;
 }
 
 /** Enhances the server markup, then loads and mounts. Never rejects. */
@@ -232,6 +235,13 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     const zones = (src?: ZoneSource) => import('../zones').then((m) => m.startZones(root, data, selection, formatElapsed, src), () => console.warn('page: zones chunk failed'));
     if (edit) edit.onzones(zones);
     else if (Object.keys(data.meta.zones).length) void zones();
+    // F-50 EF-7: best efforts with the same trigger, when power or a pace sport's advancing distance may
+    // give rows; the chunk applies the exact rules (moving time, EF-2), a false positive costs a download.
+    if (data.metrics.power || (splits && [data.meta, ...data.meta.sessions].some((s) => isPaceSport(s.sport)))) {
+      const efforts = (src?: EffortWindow) => import('../efforts').then((e) => e.startEfforts(root, data, selection, units, win, src), () => console.warn('page: efforts chunk failed'));
+      if (edit) edit.onefforts(efforts);
+      else void efforts();
+    }
   };
   if (map && mapSlot) {
     mount(RouteMap, { target: mapSlot, props: map.props });

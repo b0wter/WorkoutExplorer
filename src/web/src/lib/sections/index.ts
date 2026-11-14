@@ -4,10 +4,11 @@
 import type { Lap, WorkoutMeta } from '../datafile';
 import { sportName } from '../format/dates';
 
-/** One section: its name and first sample. */
+/** One section: its name, first sample and session sport. */
 export interface Section {
   readonly name: string;
   readonly start: number;
+  readonly sport: string;
 }
 
 /** A separator row of the laps table and the lap rows under it (MS-3, MS-6): name and column span
@@ -29,6 +30,7 @@ export function sections(meta: Pick<WorkoutMeta, 'sessions'>): Section[] | null 
     .map((s, i) => ({
       name: s.sport === 'transition' ? 'T' + ++t : sportName(s.sport),
       start: i === 0 ? 0 : s.start_index,
+      sport: s.sport,
     }));
 }
 

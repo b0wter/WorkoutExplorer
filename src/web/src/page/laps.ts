@@ -76,24 +76,7 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
       const i = 2 * (row.rowIndex - 1); // one thead row; a multisport table has one tbody per leg
       const a = ranges[i];
       const b = ranges[i + 1];
-      // Not selectable (fewer than 2 samples, or a markup that does not match); the same range again.
-      if (!(b > a) || (a === selection.start() && b === selection.end())) return;
-      if (selection.start() < 0) {
-        // L-7: the panel appears above the laps. Compare the row's top before the write with its top
-        // in the flush, after the glue's slot listener (subscribed earlier), and scroll the difference.
-        const top = row.getBoundingClientRect().top;
-        let first = true;
-        const off = selection.subscribe(() => {
-          if (first) {
-            first = false;
-            return;
-          }
-          off();
-          win.scrollBy(0, row.getBoundingClientRect().top - top);
-        });
-      }
-      mark(row, a, b);
-      selection.set(a, b);
+      if (selectRow(row, a, b, selection, win)) mark(row, a, b);
     });
   };
   const splits = (container: Element, pairs: Ranges): void => {
@@ -106,4 +89,26 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
     f(marked);
   };
   return { taps, legs, splits, marked: onMark };
+}
+
+/** A row tap's selection (L-3, L-7; F-50 EF-8 too): false when [a, b] is not selectable (fewer than
+ *  2 samples, or a markup that does not match) or already the range; never clears. */
+export function selectRow(row: Element, a: number, b: number, selection: SelectionStore, win: Window): boolean {
+  if (!(b > a) || (a === selection.start() && b === selection.end())) return false;
+  if (selection.start() < 0) {
+    // L-7: the panel appears above the rows. Compare the row's top before the write with its top
+    // in the flush, after the glue's slot listener (subscribed earlier), and scroll the difference.
+    const top = row.getBoundingClientRect().top;
+    let first = true;
+    const off = selection.subscribe(() => {
+      if (first) {
+        first = false;
+        return;
+      }
+      off();
+      win.scrollBy(0, row.getBoundingClientRect().top - top);
+    });
+  }
+  selection.set(a, b);
+  return true;
 }

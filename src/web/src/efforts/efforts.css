@@ -1,0 +1,48 @@
+/* The Best efforts section (F-50 EF-8, EF-9): the page's table look, rows select their range. */
+.efforts h2 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+.efforts h3 {
+  margin: 12px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.efforts table + table {
+  margin-top: 8px;
+}
+.efforts tbody tr {
+  cursor: pointer;
+}
+.efforts tbody tr.on,
+.efforts tbody tr.on:nth-child(even of :not(.laps-section)) {
+  background: var(--range-shade);
+}
+.efforts .curve {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.curve .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.curve text {
+  fill: var(--muted);
+  font-size: 11px;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+.curve text[x='0'] {
+  text-anchor: start;
+}
+.curve text.end {
+  text-anchor: end;
+}
+.curve polyline {
+  fill: none;
+  stroke: var(--c-power);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}

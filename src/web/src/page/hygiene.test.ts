@@ -55,6 +55,12 @@ describe('template', () => {
     expect(sources['../components/page/ActivityPage.svelte']).toMatch(new RegExp('<LapsTable laps=\\{model.Laps\\} />\\s*' + slot));
   });
 
+  it('F-50 EF-8: one empty, hidden efforts slot right after the zones slot, like ActivityPage.svelte', () => {
+    const slot = '<div id="zones-slot" class="zones-slot" hidden></div>\\s*<div id="efforts-slot" class="efforts-slot" hidden></div>';
+    expect(template).toMatch(new RegExp(slot));
+    expect(sources['../components/page/ActivityPage.svelte']).toMatch(new RegExp(slot));
+  });
+
   it('carries the head of D-11', () => {
     expect(template).toContain('<html lang="en">');
     expect(template).toContain('<meta name="referrer" content="no-referrer"');

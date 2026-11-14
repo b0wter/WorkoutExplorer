@@ -34,6 +34,7 @@
   <div id="range-slot" class="range-slot"></div>
   <LapsTable laps={model.Laps} />
   <div id="zones-slot" class="zones-slot" hidden></div>
+  <div id="efforts-slot" class="efforts-slot" hidden></div>
   <PageFooter {report} />
   </div>
 </div>
