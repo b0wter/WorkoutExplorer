@@ -20,6 +20,7 @@ A first-time viewer finds out how to explore the page (cursor, ranges, laps, ful
   | Laps and splits | Tap a lap or split to select it as a range. | Click a lap or split to select it as a range. |
   | Fullscreen map | On workouts with GPS, tap the fullscreen button on the map to enlarge it; tap it again or go back to leave. | On workouts with GPS, click the fullscreen button on the map to enlarge it; click it again or press Esc to leave. |
   | Units and theme | Change units and theme at the top of the page; this device remembers your choice. | (same) |
+  | Zones (added by F-49) | Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page. | (same) |
   | Share a range (added by F-40) | Select a range, then tap "Copy link to this selection" to share it. | Select a range, then click "Copy link to this selection" to share it. |
 
   Gestures as built: chart cursor and long press (400 ms) in `lib/charts/gesture.ts`, route cursor in `lib/route/gesture.ts`, Clear in `RangePanel.svelte`, fullscreen through MapLibre's button (Esc, back gesture: AP-15).
