@@ -65,7 +65,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done, checked by the user 14 Nov | — |
 | [F-51](F-51-split-comparison-chart.md) | Lap and split comparison chart | 2 | frontend | F-18, F-42, F-46, F-47, F-48, F-49 | done (QA r2: r2-1 accepted by the user, r2-2 fixed) | user: browser check (chart, break mark, both themes, wording); theme strip check on iPhone (659c6be); AC 10 timing not measured |
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-51) | — |
-| [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | not started | open questions OQ-210 to OQ-217 and docker-group risk (user) |
+| [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | ready for architecture (after F-50) | — |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52.
 
@@ -154,7 +154,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | INF-5 iOS Shortcut upload link (opt-in) | Could | F-34 (phase 2) |
 | INF-6 Single-use delete link in the notification | Should (phase 2, assumed) | F-37 (phase 2) |
 | INF-7 Impressum page (opt-in, text loaded by JavaScript, noindex) | Should (phase 2) | F-38 (phase 2) |
-| INF-8 Automatic updates for hosters (opt-in, signed, same minor only) | — (planned) | F-52 |
+| INF-8 Automatic updates for hosters (opt-in, signed, latest release) | — (planned) | F-52 |
 | NFR Performance: LCP under 2.5 s | — | F-13, F-32 |
 | NFR Performance: 60 fps on 12-hour workout | — | F-05, F-06, F-07, F-25, F-32 |
 | NFR Performance: data file under 500 KB | — | F-03, F-07, F-32 |
@@ -727,4 +727,6 @@ The original questions follow for reference.
 
 **Decided on 14 Nov 2026, viewer download discarded** (user, SH-8, F-24): the viewer download is dropped entirely ("minimal use not worth the risks and effort"). F-24 leaves the feature table and goes to [Discarded ideas](#discarded-ideas); its file stays, marked discarded. SH-8 keeps only the owner's download of the original. Fix (frontend and backend, small lane): the edit page's hidden download toggle and the `allow_download` setting have no purpose now and are to be removed. Updated: spec (goals, sharer story 7, scope table, UP-4, SH-8, AC-5, roadmap phase 3); F-24; this file (table, counts, coverage SH-8, SH-10, NFR Security, Phase 2 list). Technical design still to update (engineering): Publish 4 and 5, public files (`export.{hash}.fit`), `workouts` table, hides-more glossary; ADR-036 to mark superseded.
 
-**Decided on 14 Nov 2026, automatic updates for hosters** (user, new INF-8, F-52; critical lane, owner backend; built after F-50): opt-in, off by default, installed by the hoster; signed releases verified on the server against a key kept outside GitHub (the release's SHA256SUMS alone is not authenticity); applied automatically only within the same minor version, newer minor or major versions reported only; a failed update (deploy exit 1, 3 or 4) alerts through Pushover when set up and stops further automatic updates until a manual deploy; no more privilege than `deploy.sh` needs; no inbound endpoint. Open: OQ-210 to OQ-217 (F-52). Updated: spec (non-goals, scope table, INF-8, NFR Privacy); F-52 (new); this file (table, coverage).
+**Decided on 14 Nov 2026, automatic updates for hosters** (user, new INF-8, F-52; critical lane, owner backend; built after F-50): opt-in, off by default, installed by the hoster; signed releases verified on the server against a key kept outside GitHub (the release's SHA256SUMS alone is not authenticity); (same-minor rule changed the same day, entry below); a failed update (deploy exit 1, 3 or 4) alerts through Pushover when set up and stops further automatic updates until a manual deploy; no more privilege than `deploy.sh` needs; no inbound endpoint. Open: OQ-210 to OQ-217 (F-52). Updated: spec (non-goals, scope table, INF-8, NFR Privacy); F-52 (new); this file (table, coverage).
+
+**Decided on 14 Nov 2026, F-52 open questions** (user, INF-8, OQ-210 to OQ-217): accepted as suggested (minisign key held offline, hoster pins the public key; one signed manifest with the tag; the operator signs locally; daily check at night; release layout only; About-page line when on; key loss handled by hand), and the release host as a second opt-in external service and the docker-group risk accepted, **except OQ-214**: the updater always installs the latest signed release, any version; no same-minor rule, no notify-only case. F-52 ready for architecture (after F-50). Updated: spec INF-8, scope table; F-52 (status, goal, scope, out of scope, AC, decisions).
