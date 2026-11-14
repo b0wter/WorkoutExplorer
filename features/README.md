@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026; then F-53, F-54, F-57, F-55, F-56, 14 Nov 2026; F-57 moved after F-54 when it became a route download). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026; then F-53, F-58, F-54, F-57, F-55, F-56, 14 Nov 2026 (F-58 before F-54, proposed, so its texts are translated once); F-57 moved after F-54 when it became a route download). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -67,12 +67,13 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | in implementation | — |
 | [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | ready for architecture (after F-50) | — |
 | [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
+| [F-58](F-58-summary-explained.md) | How the summary is computed | — | frontend | F-13, F-39 | draft | open questions OQ-251 to OQ-260 (user) |
 | [F-54](F-54-translated-interface.md) | Translated interface: German, Spanish, French | — | both (backend first) | all features with text; F-53 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 | [F-57](F-57-gpx-route-download.md) | GPX route download | — | frontend | F-16, F-47, F-54 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
-| [F-55](F-55-start-end-hiding-radius.md) | Selectable radius for start and end hiding | — | both (backend first) | F-16, F-19, F-36, F-47, F-54 | draft | open questions OQ-246, OQ-248, OQ-249 (user) |
+| [F-55](F-55-start-end-hiding-radius.md) | Selectable radius for start and end hiding | — | both (backend first) | F-16, F-19, F-36, F-47, F-54 | decided | — |
 | [F-56](F-56-map-pins.md) | Map pins | — | both (backend first) | F-16, F-19, F-26, F-47 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-57.
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-58.
 
 ## Backlog
 
@@ -147,6 +148,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-10 Heart-rate and power zones | Could (phase 2) | F-49 (phase 2) |
 | AP-11 Power curve and best efforts | Could (phase 2) | F-50 (phase 2) |
 | AP-23 Lap and split comparison chart | Could (phase 2) | F-51 (phase 2) |
+| AP-24 How the summary is computed (dialog) | — (planned) | F-58 |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
 | SH-2 Draft / published (unlisted), no unpublish | Must | F-09, F-12, F-15, F-19 |
 | SH-4 Start and end hiding | Should | F-16, F-19 |
@@ -767,3 +769,7 @@ The original questions follow for reference.
 **Decided on 14 Nov 2026, F-55 two sliders** (user, SH-4, F-55): the start and end hiding toggle is replaced by two sliders on the edit page, Start and End, each 0 to 2 km in 50 m steps with nothing between 0 and 200 m (0, 200, 250, … 2,000 m); 0 = that end not hidden, so one end can be hidden alone; default 0 for both; the value is shown while dragging ("Start: hide 500 m") and the edit page's shading follows live. Existing workouts with hiding on get 300 m at both ends. Supersedes the single radius choice of the entry above, OQ-247 and OQ-250. OQ-246, OQ-248, OQ-249 stay open with their suggestions. Updated: spec (SH-4, scope table, PIN-7); F-55; F-56 (radius per end); this file (F-55 row, coverage).
 
 **Decided on 14 Nov 2026, F-55 slider steps** (user, SH-4, F-55): the sliders run 0, 50, 100, 150, … 2,000 m (50 m steps, no gap); the 200 m minimum of the entry above is removed. Updated: spec SH-4, scope table; F-55.
+
+**Recorded on 14 Nov 2026, how the summary is computed** (user request, new AP-24, F-58 draft): a second dialog, styled like the How to use dialog (AP-22), opened at the summary strip, explains how the stats come about (device totals or computed, moving and elapsed time, transitions, ranges and laps vs totals, trim, hiding, pool lengths, zones source). Planned; proposed build order right after F-53 and before F-54. Open: OQ-251 to OQ-260. Updated: spec (scope table, AP-24); F-58 (new); this file (table, coverage).
+
+**Decided on 14 Nov 2026, F-55 open questions** (user, SH-4, SH-10, F-55): OQ-246, OQ-248, OQ-249 accepted as suggested: raising either radius on a published workout (including from 0) hides more and is removed within 60 s, lowering is an ordinary change; every upload starts at 0 for both ends, nothing remembered; the edit page's shading follows the sliders before saving, the public page changes only after Save. F-55 decided. Updated: F-55; this file (F-55 row).

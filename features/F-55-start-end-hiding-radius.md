@@ -1,6 +1,6 @@
 # F-55 Selectable radius for start and end hiding (two sliders)
 
-- **Status:** draft; reworked 14 Nov 2026 from "Privacy zones" (OQ-229 to OQ-233 superseded); OQ-246, OQ-248, OQ-249 open; OQ-247, OQ-250 superseded by the two-slider decision
+- **Status:** decided (14 Nov 2026); acceptance criteria to write
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** both (backend first)
 - **Lane:** critical (location privacy)
@@ -23,12 +23,11 @@ A sharer chooses how much of the start and of the end of the route is hidden, se
 - Free values outside the slider steps. Circles around other places (SH-3 privacy zones, discarded 14 Nov 2026).
 
 ## Acceptance criteria
-To be written once the open questions are decided.
+To be written from the scope.
 
 ## Decisions (user, 14 Nov 2026)
 - Two sliders, 0 to 2,000 m in 50 m steps (the 200 m minimum was dropped the same day), default 0, value shown while dragging, shading live; replaces the toggle. Supersedes OQ-247 (control) and OQ-250 (existing workouts: 300 m at both ends when hiding was on).
 
-## Open questions
-- [ ] **OQ-246 Larger radius counts as hiding more.** Suggested: yes; raising either radius on a published workout (including from 0) is a hides-more change (SH-10, removed within 60 s); lowering one is an ordinary change.
-- [ ] **OQ-248 Remembered for the next upload.** Suggested: no; every upload starts at 0 for both ends. Nothing is stored in the browser.
-- [ ] **OQ-249 Edit-page preview.** Suggested, and now implied by the live shading: the shading follows the sliders at once, before saving; the public page changes only after Save.
+- **OQ-246 (14 Nov 2026):** raising either radius on a published workout (including from 0) is a hides-more change (SH-10, removed within 60 s); lowering one is an ordinary change.
+- **OQ-248 (14 Nov 2026):** not remembered; every upload starts at 0 for both ends; nothing is stored in the browser.
+- **OQ-249 (14 Nov 2026):** the shading follows the sliders at once, before saving; the public page changes only after Save.
