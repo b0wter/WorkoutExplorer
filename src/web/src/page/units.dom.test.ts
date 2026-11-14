@@ -257,7 +257,12 @@ describe('theme drop-down (DS-4, user 3 Nov 2026)', () => {
     theme().dispatchEvent(new Event('change'));
     flushSync();
   };
-  afterEach(() => delete document.documentElement.dataset.theme);
+  const scheme = (): string | null => document.querySelector('meta[name="color-scheme"]')!.getAttribute('content');
+  beforeEach(() => document.head.insertAdjacentHTML('beforeend', '<meta name="color-scheme" content="light dark" />'));
+  afterEach(() => {
+    delete document.documentElement.dataset.theme;
+    document.querySelector('meta[name="color-scheme"]')?.remove();
+  });
 
   it('System by default; a forced theme wins over the system and is remembered; System forgets it', async () => {
     setLanguages(['de-DE']);
@@ -265,8 +270,10 @@ describe('theme drop-down (DS-4, user 3 Nov 2026)', () => {
     expect([...theme().options].map((o) => [o.value, o.text])).toEqual([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]);
     expect(theme().value).toBe('system');
     expect(stubLog.chartStack[0].scheme).toBe('light');
+    expect(scheme()).toBe('light dark');
     choose('dark');
     expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(scheme()).toBe('dark'); // iOS Safari's toolbar area follows the meta (user 14 Nov 2026)
     expect(localStorage.getItem('wx.theme')).toBe('dark');
     expect(stubLog.chartStack[0].scheme).toBe('dark');
     for (const f of mqListeners) f({ matches: false }); // the system says light: ignored
@@ -276,9 +283,11 @@ describe('theme drop-down (DS-4, user 3 Nov 2026)', () => {
     for (const f of mqListeners) f({ matches: true });
     choose('light');
     expect(document.documentElement.dataset.theme).toBe('light');
+    expect(scheme()).toBe('light');
     expect(stubLog.chartStack[0].scheme).toBe('light');
     choose('system');
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(scheme()).toBe('light dark');
     expect(localStorage.getItem('wx.theme')).toBeNull();
     expect(stubLog.chartStack[0].scheme).toBe('dark');
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -288,6 +297,7 @@ describe('theme drop-down (DS-4, user 3 Nov 2026)', () => {
     localStorage.setItem('wx.theme', 'dark');
     await open();
     expect(theme().value).toBe('dark');
+    expect(scheme()).toBe('dark');
     expect(stubLog.chartStack[0].scheme).toBe('dark');
   });
 

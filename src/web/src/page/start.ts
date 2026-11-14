@@ -137,10 +137,16 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   };
   // DS-4: the head script applied the stored theme before the first paint; a choice sets the
   // attribute first, so the charts and the map read the new CSS when the scheme prop changes.
+  // The color-scheme meta follows too: iOS Safari paints the area under its toolbar from the meta,
+  // not the root's CSS color-scheme (white strip under a forced dark page, user 14 Nov 2026).
+  const scheme = win.document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+  const metaScheme = (theme: string): void => scheme?.setAttribute('content', theme === 'system' ? 'light dark' : theme);
+  metaScheme(look.theme);
   addThemeSelect(root, look.theme, (theme) => {
     const html = win.document.documentElement;
     if (theme === 'system') delete html.dataset.theme;
     else html.dataset.theme = theme;
+    metaScheme(theme);
     prefs.setTheme(theme);
     look.theme = theme;
   });
