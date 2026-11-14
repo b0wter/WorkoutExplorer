@@ -1,9 +1,9 @@
 # F-58 How the summary is computed
 
-- **Status:** draft (OQ-251 to OQ-260 open)
+- **Status:** decided (14 Nov 2026); build after F-53, before F-54
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
-- **Lane:** normal (critical only if OQ-253 lets the viewing page state hiding details)
+- **Lane:** critical (privacy): the viewing page now shows this workout's state, and a careless example could reveal how much is hidden, e.g. by comparing the visible route length with the total distance. Keep QA at effort high for that check only.
 - **Requirements:** AP-24 (new); explains AP-2, AP-4, AP-12, AP-16, AP-10, UP-6, SH-4, SH-9; reuses the AP-22 dialog
 - **Depends on:** F-39 (how-to dialog), F-13 (summary strip); before F-54 (OQ-260)
 
@@ -22,7 +22,9 @@ A viewer who wonders why a number differs from their watch, or from a selected r
   - **Hidden start and end:** hiding changes the map, not the totals (SH-4, SH-9).
   - **Pool swims:** lengths count active lengths only (AP-16, AP-13).
   - **Zones:** where to find the source line (AP-10).
-- The content is general text with this workout's metrics filled in. It states nothing on the viewing page about this workout's hiding beyond what SH-9 already says (OQ-253).
+- The content is the general description of each topic plus this workout's actual state as an example (OQ-253), e.g. "This workout: trimmed at the start, totals recomputed, moving time 1:42 of 1:55 elapsed".
+- **Viewing page:** the example never states whether, which end, or how far the start or end is hidden, and shows no value from which that follows (no visible route length next to the total distance, no hidden time or distance). Everything else may be shown: trim, device or computed totals in general, multisport, pool, zones source. Every value in the example comes from the public data only.
+- **Edit page:** the same button and dialog; the example also shows the start and end radii and which totals were recomputed (OQ-256).
 - Closes like the how-to dialog (×, Esc, tap outside); opening it adds no history entry (as F-39 AC 4).
 - Code and text load only when it is opened; entry bundle and LCP budgets unchanged (OQ-259).
 
@@ -30,21 +32,23 @@ A viewer who wonders why a number differs from their watch, or from a selected r
 - Formulas or per-sample detail; editing values; a glossary of every chart.
 
 ## Acceptance criteria
-- [ ] The summary strip has the trigger on the viewing page, and on the edit page if OQ-256 says so; without JavaScript there is none (OQ-257).
+- [ ] The summary strip has the ⓘ button on the viewing and edit pages; without JavaScript there is none (OQ-257).
 - [ ] Opening it shows the dialog in the how-to dialog's style, over the summary strip on wide screens and as the same full dialog on a phone; it closes with ×, Esc and a tap outside, and adds no history entry.
 - [ ] Only topics for metrics and features this workout has are listed: no pool line on a ride, no transition line without multisport, no trim line on an untrimmed workout (OQ-254).
-- [ ] On the viewing page, no text reveals whether, which end, or how much of the route is hidden, beyond the SH-9 notice (OQ-253).
+- [ ] The dialog shows each topic's general line and this workout's example; on a trimmed workout the example says so and that the totals were recomputed.
+- [ ] On the viewing page, for workouts with neither, one and both ends hidden at several radii, the dialog's text is identical apart from values that do not depend on hiding: no text or value reveals whether, which end, or how much of the route is hidden, beyond the SH-9 notice (OQ-253).
+- [ ] On the edit page, the example shows the start and end radii (0 shown as not hidden).
 - [ ] The dialog's code and text are not in the entry bundle; the entry bundle stays within its budget and LCP is unchanged.
 - [ ] Both themes (DS-4); the units setting is used in any value shown (DS-1).
 
-## Open questions
-- [ ] **OQ-251 Trigger.** Suggested: a small "ⓘ" button at the summary strip's top-right corner, with the label "How these numbers are computed" as its tooltip only (no room for text); no accent colour, no "first visit" emphasis.
-- [ ] **OQ-252 Shared component.** Suggested: one dialog component for both, the how-to dialog and this one; one line added to the how-to dialog pointing to the ⓘ.
-- [ ] **OQ-253 General or this workout's state.** Suggested: general text, filtered to the topics this workout has (OQ-254); on the viewing page never "this workout's start was hidden (500 m)", since that tells a viewer how far the home is from the visible start; trimmed or not may be stated (it reveals nothing about places).
-- [ ] **OQ-254 Which topics.** Suggested: only those this workout has (multisport, pool, zones, trim on the edit page); totals, moving and elapsed time, and range/laps always.
-- [ ] **OQ-255 Device total or computed, per metric.** Suggested: not per metric now ("where the device recorded no total, the server computed it"); per-metric marks need the data file to say which, a later idea.
-- [ ] **OQ-256 Edit page.** Suggested: yes, the same trigger, plus this workout's actual state for the owner (trim set, start and end radii, which totals are recomputed); the owner may see it.
-- [ ] **OQ-257 Without JavaScript.** Suggested: no trigger, as the how-to button (AP-22).
-- [ ] **OQ-258 Position.** Suggested: anchored over the summary strip on wide screens (two columns), the normal centred dialog on phones.
-- [ ] **OQ-259 Budget.** Suggested: lazy chunk shared with the how-to dialog's text, at most about 3 KB gzip extra; entry bundle gains only the button (under 200 bytes).
-- [ ] **OQ-260 Build order and translation.** Suggested: build F-58 right after F-53 and before F-54, so its texts are translated with everything else; otherwise F-54 must cover them anyway.
+## Decisions (user, 14 Nov 2026)
+- **OQ-251:** a small "ⓘ" button at the summary strip's top-right corner, tooltip "How these numbers are computed"; no accent colour, no first-visit emphasis.
+- **OQ-252:** one dialog component shared with the How to use dialog; the How to use dialog gets one line pointing to the ⓘ.
+- **OQ-253 (changed):** general description plus this workout's actual state as an example; on the viewing page never whether or how far start or end are hidden (a radius roughly reveals how far home is from the visible start); everything else may be shown.
+- **OQ-254:** only topics this workout has; totals, moving and elapsed time, and ranges and laps versus totals always.
+- **OQ-255:** not per metric; one general line on device and computed totals.
+- **OQ-256 (merged with OQ-253):** on the edit page the owner also sees the radii and which totals were recomputed.
+- **OQ-257:** no button without JavaScript.
+- **OQ-258:** anchored over the summary strip on wide screens; the normal centred dialog on phones.
+- **OQ-259:** lazy, about 3 KB gzip extra at most; the entry bundle gains only the button (under 200 bytes).
+- **OQ-260:** built after F-53 and before F-54, so its texts are translated once.
