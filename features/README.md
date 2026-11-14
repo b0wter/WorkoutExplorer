@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -65,13 +65,31 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done, checked by the user 14 Nov | — |
 | [F-51](F-51-split-comparison-chart.md) | Lap and split comparison chart | 2 | frontend | F-18, F-42, F-46, F-47, F-48, F-49 | done (QA r2: r2-1 accepted by the user, r2-2 fixed) | user: browser check (chart, break mark, both themes, wording); theme strip check on iPhone (659c6be); AC 10 timing not measured |
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-51) | — |
-| [F-24](F-24-viewer-download.md) | Viewer download of the published data | 3 | backend | F-16 | deferred | |
+| [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | not started | open questions OQ-210 to OQ-217 and docker-group risk (user) |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). Phase 3: 1 feature (F-24, deferred; design kept).
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52.
+
+## Backlog
+
+Since 14 Nov 2026 (past the MVP) the backlog has three categories:
+
+- **Planned:** will be built. Has a feature file and a row in the table above, in build order.
+- **Idea:** worth keeping, no commitment, no order. One line in [Ideas](#ideas), no feature file. When the user says "build idea X", it gets a feature file with the next F-number and becomes Planned.
+- **Fix:** bugs and QA minors. Kept in the feature's Waiting on column, no separate list.
+
+Requirement IDs stay. Priority (Must/Should/Could) and phase stay on existing entries but are not set on new ones.
+
+### Ideas
+
+- F-51 chart: non-symmetric pace axis (median not centred; space above sized to the fastest bar, below to the slowest), so recovery laps are drawn instead of clipped (AP-23; user 14 Nov 2026)
+
+### Discarded ideas
+
+- F-24 viewer download of the published data (SH-8 viewer part): discarded 14 Nov 2026, minimal use, not worth the risks and effort. Feature file kept, marked discarded; the parked branch `wip/f-24-export` can be deleted.
 
 ## Requirement coverage
 
-Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8 owner download, DS-4) as MVP; the SH-8 viewer download is Later (phase 3), UP-11 is Should within phase 2 (F-35); and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
+Every requirement with priority Must or Should is in the MVP: the scope table marks the Should items (AP-9, AP-15, SH-4, SH-8 owner download, DS-4) as MVP; the SH-8 viewer download was dropped on 14 Nov 2026, UP-11 is Should within phase 2 (F-35); and the Must items not named in it (e.g. UP-2, UP-4, SH-1, SH-2, SH-6, AC-1, AC-4, AC-5, INF-3) are treated as MVP by their priority.
 
 | Requirement | Priority | Covered by |
 | --- | --- | --- |
@@ -115,9 +133,9 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | SH-5 Preview card | Must | F-23, F-32; F-36 in phase 2 |
 | SH-12 Preview image with map context, made in the browser | Could | F-36 (phase 2) |
 | SH-6 Share and copy-link buttons | Must | F-13, F-20 |
-| SH-8 Download setting and original | Should | F-12, F-20 (owner original); F-24 (viewer download, phase 3) |
+| SH-8 Owner download of the original (viewer download dropped 14 Nov 2026) | Should | F-12, F-20 |
 | SH-9 Privacy notice | Must | F-13 |
-| SH-10 Fast removal, recall notice | Must | F-15, F-16, F-20, F-21, F-22, F-30; F-47 in phase 2; F-24 in phase 3 |
+| SH-10 Fast removal, recall notice | Must | F-15, F-16, F-20, F-21, F-22, F-30; F-47 in phase 2 |
 | AC-1 Edit link shown only on the published page | Must | F-09, F-11, F-20 |
 | AC-2, AC-3 | Removed | — (removed in the spec) |
 | SH-7 iframe embed | Removed | — (removed in the spec, 11 Nov 2026) |
@@ -136,6 +154,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | INF-5 iOS Shortcut upload link (opt-in) | Could | F-34 (phase 2) |
 | INF-6 Single-use delete link in the notification | Should (phase 2, assumed) | F-37 (phase 2) |
 | INF-7 Impressum page (opt-in, text loaded by JavaScript, noindex) | Should (phase 2) | F-38 (phase 2) |
+| INF-8 Automatic updates for hosters (opt-in, signed, same minor only) | — (planned) | F-52 |
 | NFR Performance: LCP under 2.5 s | — | F-13, F-32 |
 | NFR Performance: 60 fps on 12-hour workout | — | F-05, F-06, F-07, F-25, F-32 |
 | NFR Performance: data file under 500 KB | — | F-03, F-07, F-32 |
@@ -145,7 +164,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | NFR Privacy: `noindex` | — | F-15, F-23; F-38 (Impressum, `robots.txt`) |
 | NFR Security: 128-bit IDs, hashed tokens | — | F-09, F-12; delete keys: F-37 |
 | NFR Security: upload size, rate, uploads at once, parse limits; zip never reaches the server | — | F-08, F-09, F-11, F-31; F-35 in phase 2 |
-| NFR Security: originals never public | — | F-12, F-22; F-24 in phase 3 |
+| NFR Security: originals never public | — | F-12, F-22 |
 | NFR Privacy: no data outlives its workout | — | F-12, F-21, F-27 |
 | NFR Accessibility | — | **Deliberately not covered**: not a goal. Only Esc to leave fullscreen (F-26). |
 | NFR Compatibility | — | F-11, F-13, F-26, F-32; F-35 in phase 2 |
@@ -164,7 +183,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 - Pool length and number of lengths in the summary — AP-16: detailed in [F-44](F-44-pool-summary.md).
 - Suggested title from sport, time of day and nearest town (GeoNames attribution added to About) — UP-5, INF-1: detailed in [F-45](F-45-suggested-title.md).
 - Lap triggers, splits only without device laps, split presets per sport — AP-8, AP-20: detailed in [F-46](F-46-laps-and-splits.md).
-- Trim start and end, with totals recomputed (trims also apply to the viewer download once it ships in phase 3) — UP-6, AP-2, SH-8, AC-5: detailed in [F-47](F-47-trim.md).
+- Trim start and end, with totals recomputed — UP-6, AP-2, SH-8, AC-5: detailed in [F-47](F-47-trim.md).
 - Pool swims: lengths and stroke type — AP-13: detailed in [F-48](F-48-pool-strokes.md).
 - Lap and split comparison chart — AP-23: detailed in [F-51](F-51-split-comparison-chart.md).
 
@@ -703,3 +722,9 @@ The original questions follow for reference.
 **Decided on 14 Nov 2026, lap and split comparison chart** (user, AP-23, F-51, OQ-196 to OQ-209): all suggestions accepted, except OQ-206 colours: as the zones' intensity scale, faster bars red (zone-5 colour), slower bars blue (zone-1 colour), on pace grey; overlay line in its chart line colour. Updated: F-51 (ready for architecture after F-50), spec AP-23 and open questions.
 
 **Decided on 14 Nov 2026, comparison chart scale** (user, AP-23, F-51, QA-51-r1-1): the half-range is capped at 3× the 75th-percentile deviation of the bars, and in pace sports at half the reference pace (edge limit, so every axis label is a real value); a bar beyond is drawn clipped with a break mark at its end; its value stays in the table; median and best unchanged. Accepted (QA-51-r2-1): recovery laps of interval runs slower than reference/1.5 are clipped ("recovery is less important than consistent pace"). Updated: F-51 architecture SC-11 (v0.3).
+
+**Decided on 14 Nov 2026, backlog categories** (user): the app is past the MVP; the backlog is Planned (feature file, build order), Idea (one line in [Ideas](#ideas), no feature file, no order; "build idea X" promotes it to a feature file with the next F-number) or Fix (bugs and QA minors, in the Waiting on column). Requirement IDs stay; priority and phase are kept on existing entries, not set on new ones. First idea: the non-symmetric pace axis for the F-51 chart. Existing Later and not-broken-down items are not yet reclassified. Updated: this file ([Backlog](#backlog)).
+
+**Decided on 14 Nov 2026, viewer download discarded** (user, SH-8, F-24): the viewer download is dropped entirely ("minimal use not worth the risks and effort"). F-24 leaves the feature table and goes to [Discarded ideas](#discarded-ideas); its file stays, marked discarded. SH-8 keeps only the owner's download of the original. Fix (frontend and backend, small lane): the edit page's hidden download toggle and the `allow_download` setting have no purpose now and are to be removed. Updated: spec (goals, sharer story 7, scope table, UP-4, SH-8, AC-5, roadmap phase 3); F-24; this file (table, counts, coverage SH-8, SH-10, NFR Security, Phase 2 list). Technical design still to update (engineering): Publish 4 and 5, public files (`export.{hash}.fit`), `workouts` table, hides-more glossary; ADR-036 to mark superseded.
+
+**Decided on 14 Nov 2026, automatic updates for hosters** (user, new INF-8, F-52; critical lane, owner backend; built after F-50): opt-in, off by default, installed by the hoster; signed releases verified on the server against a key kept outside GitHub (the release's SHA256SUMS alone is not authenticity); applied automatically only within the same minor version, newer minor or major versions reported only; a failed update (deploy exit 1, 3 or 4) alerts through Pushover when set up and stops further automatic updates until a manual deploy; no more privilege than `deploy.sh` needs; no inbound endpoint. Open: OQ-210 to OQ-217 (F-52). Updated: spec (non-goals, scope table, INF-8, NFR Privacy); F-52 (new); this file (table, coverage).
