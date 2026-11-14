@@ -64,7 +64,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-48](F-48-pool-strokes.md) | Pool swims: lengths and stroke type | 2 | both (backend first) | F-44, F-46, F-47 | done | checked by the user 13 Nov; minors r1-1 to r1-4 fixed; a length under 2 samples is not selectable (accepted by the user 13 Nov) |
 | [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done, checked by the user 14 Nov | — |
 | [F-51](F-51-split-comparison-chart.md) | Lap and split comparison chart | 2 | frontend | F-18, F-42, F-46, F-47, F-48, F-49 | done (QA r2: r2-1 accepted by the user, r2-2 fixed) | user: browser check (chart, break mark, both themes, wording); theme strip check on iPhone (659c6be); AC 10 timing not measured |
-| [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | ready for architecture (after F-51) | — |
+| [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | in implementation | — |
 | [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-31, F-30, F-37 | ready for architecture (after F-50) | — |
 | [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 | [F-54](F-54-translated-interface.md) | Translated interface: German, Spanish, French | — | both (backend first) | all features with text; F-53 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
