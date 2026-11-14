@@ -11,7 +11,7 @@
 A sharer chooses how much of the start and of the end of the route is hidden, separately, so the hidden part fits where they live, or hides only one end.
 
 ## Scope
-- On the edit page, before and after publishing, two sliders replace the single start and end hiding toggle: **Start** and **End**, each 0 to 2,000 m in 50 m steps, with no value between 0 and 200 m (0, 200, 250, … 2,000 m). 0 means that end is not hidden, so only the start or only the end can be hidden.
+- On the edit page, before and after publishing, two sliders replace the single start and end hiding toggle: **Start** and **End**, each 0 to 2,000 m in 50 m steps (0, 50, 100, 150, … 2,000 m). 0 means that end is not hidden, so only the start or only the end can be hidden.
 - Default 0 for both, so nothing is hidden unless the sharer chooses it (as today's default off).
 - While dragging, the value is shown ("Start: hide 500 m", "Start: not hidden" at 0), and the edit page's shading of the hidden sections follows live, before saving.
 - The SH-4 rule is unchanged except for the radius: the start section runs until the route first gets more than the start radius (straight line) from the first position; the end section likewise from the last position with the end radius. After a trim it applies to the trimmed route.
@@ -26,7 +26,7 @@ A sharer chooses how much of the start and of the end of the route is hidden, se
 To be written once the open questions are decided.
 
 ## Decisions (user, 14 Nov 2026)
-- Two sliders, 0 and 200 to 2,000 m in 50 m steps, default 0, value shown while dragging, shading live; replaces the toggle. Supersedes OQ-247 (control) and OQ-250 (existing workouts: 300 m at both ends when hiding was on).
+- Two sliders, 0 to 2,000 m in 50 m steps (the 200 m minimum was dropped the same day), default 0, value shown while dragging, shading live; replaces the toggle. Supersedes OQ-247 (control) and OQ-250 (existing workouts: 300 m at both ends when hiding was on).
 
 ## Open questions
 - [ ] **OQ-246 Larger radius counts as hiding more.** Suggested: yes; raising either radius on a published workout (including from 0) is a hides-more change (SH-10, removed within 60 s); lowering one is an ordinary change.
