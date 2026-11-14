@@ -21,7 +21,7 @@ import { parseRangeLink, rangeFragment } from '../lib/rangelink';
 import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceHowto, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
-import { formatElapsed, formatSpeedOrPace, speedOrPaceUnit } from '../lib/format';
+import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
@@ -225,8 +225,8 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     // chunk; failing, laps only.
     const splits = distanceAdvances(data);
     if (splits || data.meta.lengths.length) {
-      const fmt = [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit] as const;
-      import('../splits').then((m) => m.startSplits(root, data, units, laps.splits, fmt, splits), () => console.warn('page: splits chunk failed'));
+      const fmt = [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit, isPaceSport] as const;
+      import('../splits').then((m) => m.startSplits(root, data, units, laps, fmt, splits), () => console.warn('page: splits chunk failed'));
     }
     // F-49 ZN-8: the zones section is a lazy chunk, here over the whole public data file (ZN-7).
     const zones = (src?: ZoneSource) => import('../zones').then((m) => m.startZones(root, data, selection, formatElapsed, src), () => console.warn('page: zones chunk failed'));

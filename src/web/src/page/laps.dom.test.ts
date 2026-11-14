@@ -14,8 +14,10 @@ import { enhanceLaps } from './laps';
 import { enhanceUnits } from './enhance';
 import { startSplits } from '../splits';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
-import { formatElapsed, formatSpeedOrPace, speedOrPaceUnit } from '../lib/format';
+import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
 import { sectionRanges, sections } from '../lib/sections';
+import { createRangeStats, emptyValues } from '../lib/range';
+import { presetBounds, splitChoice } from '../lib/splits';
 import { legWithoutLaps } from '../lib/page/samples';
 
 function golden(name: string): WorkoutData {
@@ -73,7 +75,7 @@ function open(data: WorkoutData, units: 'metric' | 'imperial' = 'metric', withUn
   const laps = enhanceLaps(target, enhanceWith, selection);
   laps.taps();
   const splits = distanceAdvances(enhanceWith);
-  if (splits || enhanceWith.meta.lengths.length) startSplits(target, enhanceWith, store, laps.splits, [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit], splits);
+  if (splits || enhanceWith.meta.lengths.length) startSplits(target, enhanceWith, store, laps, [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit, isPaceSport], splits);
   cleanup = () => {
     unmount(app);
     target.remove();
@@ -479,5 +481,132 @@ describe('separator rows (F-42 MS-6; AC 2, AC 3)', () => {
     const last = p.rows()[p.rows().length - 1];
     last.click();
     expect([p.selection.start(), p.selection.end()]).toEqual([laps[laps.length - 1].start_index, laps[laps.length - 1].end_index - 1]);
+  });
+});
+
+describe('comparison chart (F-51; AP-23)', () => {
+  const chart = (p: Page) => p.section?.querySelector<HTMLElement>('.compare') ?? null;
+  const bars = (p: Page) => [...(chart(p)?.querySelectorAll<SVGRectElement>('rect.bar') ?? [])];
+  const head = (p: Page) => chart(p)?.querySelector('.compare-head')?.firstChild?.textContent;
+  const overlay = (p: Page) => chart(p)?.querySelector<HTMLSelectElement>('.compare-overlay select') ?? null;
+  /** A click at slot i of n, with a 600 px wide plot (jsdom has no layout). */
+  const tap = (p: Page, i: number, n: number) => {
+    const svg = chart(p)!.querySelector('svg')!;
+    svg.getBoundingClientRect = () => ({ left: 0, width: 600 }) as DOMRect;
+    svg.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: (i + 0.5) * (600 / n) }));
+  };
+  const median = (xs: number[]) => {
+    const s = [...xs].sort((a, b) => a - b);
+    const m = s.length >> 1;
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+
+  it('laps: one bar per lap, last in the section, header from the lap totals; units redraw it', () => {
+    const p = open(ride(), 'metric', true);
+    const laps = p.data.meta.laps;
+    expect(chart(p)?.hidden).toBe(false);
+    expect(p.section?.lastElementChild).toBe(chart(p));
+    expect(bars(p)).toHaveLength(laps.length);
+    const v = laps.map((l) => l.totals.avg_speed!);
+    expect(head(p)).toBe('Median ' + formatSpeedOrPace('cycling', median(v)) + ' km/h · Best ' + formatSpeedOrPace('cycling', Math.max(...v)) + ' km/h');
+    expect(chart(p)?.querySelector('.compare-foot')?.firstChild?.textContent).toBe('Laps');
+    for (const b of bars(p)) {
+      const d = (laps[+b.dataset.i!].totals.avg_speed! - median(v)) / median(v);
+      expect(b.classList.contains(d > 0.03 ? 'faster' : d < -0.03 ? 'slower' : 'pace')).toBe(true);
+    }
+    p.units.set('imperial');
+    expect(head(p)).toContain(' mph · Best ');
+  });
+
+  it('1 km splits: 14 bars, the partial last one left out of median and best; the chart stays last', () => {
+    const p = open(ride());
+    p.button('Splits')?.click();
+    p.choose('1 km');
+    expect(bars(p)).toHaveLength(14);
+    expect(p.section?.lastElementChild).toBe(chart(p));
+    const d = createRangeStats(p.data);
+    const c = splitChoice(p.data.meta, d.distance![d.distance!.length - 1] - d.distance![0]);
+    const b = presetBounds(d.distance!, c.presets.find((x) => x.label === '1 km')!, null);
+    const out = emptyValues();
+    const v = b.slice(1).map((e, i) => d.query(b[i], e, out).speed);
+    expect(head(p)).toBe('Median ' + formatSpeedOrPace('cycling', median(v.slice(0, 13))) + ' km/h · Best ' + formatSpeedOrPace('cycling', Math.max(...v.slice(0, 13))) + ' km/h');
+    expect(chart(p)?.querySelector('.compare-foot')?.firstChild?.textContent).toBe('1 km splits');
+    p.button('Laps')?.click();
+    expect(bars(p)).toHaveLength(p.data.meta.laps.length);
+  });
+
+  it('a bar tap selects as its row tap and highlights the bar; a row tap and a clear move the highlight', () => {
+    const p = open(ride());
+    const laps = p.data.meta.laps;
+    tap(p, 2, laps.length);
+    expect([p.selection.start(), p.selection.end()]).toEqual([laps[2].start_index, laps[2].end_index - 1]);
+    p.frame();
+    expect(p.rows()[2].classList.contains('on')).toBe(true);
+    expect(bars(p).map((r) => r.classList.contains('sel'))).toEqual(laps.map((_, i) => i === 2));
+    p.rows()[4].click();
+    p.frame();
+    expect(bars(p).map((r) => r.classList.contains('sel'))).toEqual(laps.map((_, i) => i === 4));
+    p.selection.set(10, 20);
+    p.frame();
+    expect(bars(p).some((r) => r.classList.contains('sel'))).toBe(false);
+  });
+
+  it('hover highlights the bar and its row, mouse only', () => {
+    const p = open(ride());
+    const svg = chart(p)!.querySelector('svg')!;
+    svg.getBoundingClientRect = () => ({ left: 0, width: 600 }) as DOMRect;
+    const move = (pointerType: string) => svg.dispatchEvent(Object.assign(new MouseEvent('pointermove', { clientX: 150 }), { pointerType }));
+    move('touch');
+    expect(p.section?.querySelector('.hover')).toBeNull();
+    move('mouse');
+    expect(p.rows()[1].classList.contains('hover')).toBe(true);
+    expect(bars(p)[1].classList.contains('hover')).toBe(true);
+    svg.dispatchEvent(new MouseEvent('pointerleave'));
+    expect(p.section?.querySelector('.hover')).toBeNull();
+  });
+
+  it('overlay: only metrics the rows have, None first; one dot per bar; kept on a rebuild that offers it', () => {
+    const p = open(ride());
+    const sel = overlay(p)!;
+    expect(sel.value).toBe('');
+    expect([...sel.options].map((o) => o.text)).toEqual(['None', 'Heart rate', 'Power', 'Cadence']);
+    expect(chart(p)?.querySelector('circle')).toBeNull();
+    sel.value = 'avg_heart_rate';
+    sel.dispatchEvent(new Event('change'));
+    expect(chart(p)?.querySelectorAll('.ov-heart_rate circle')).toHaveLength(p.data.meta.laps.filter((l) => l.totals.avg_heart_rate !== undefined).length);
+    p.button('Splits')?.click();
+    expect(overlay(p)?.value).toBe('avg_heart_rate');
+    const noHr = withLaps(ride(), ride().meta.laps.map((l) => ({ ...l, totals: { avg_speed: l.totals.avg_speed } })));
+    cleanup?.();
+    const q = open(noHr, 'metric', false);
+    expect(overlay(q)).toBeNull(); // only None left: no drop-down (SC-6)
+  });
+
+  it('run: pace in the header, faster bars point up', () => {
+    const p = open(golden('run-30min'));
+    if (p.button('Splits')) p.button('Splits')!.click();
+    expect(head(p)).toMatch(/^Median \d+:\d\d \/km · Best \d+:\d\d \/km$/);
+    for (const b of bars(p).filter((r) => r.classList.contains('faster'))) expect(+b.getAttribute('y')! + +b.getAttribute('height')!).toBeCloseTo(55, 5);
+  });
+
+  it('pool swim lengths: one bar per active length, none for rest; no overlay', () => {
+    const p = open(golden('pool-swim'));
+    p.button('Lengths')?.click();
+    expect(bars(p)).toHaveLength(40);
+    expect(chart(p)?.querySelectorAll('text')[0].textContent).toBe('1');
+    expect(overlay(p)).toBeNull();
+    expect(chart(p)?.querySelector('.compare-foot')?.firstChild?.textContent).toBe('Lengths');
+  });
+
+  it('a lap without speed keeps an empty slot; fewer than 2 bars, multisport: no chart', () => {
+    const laps = ride().meta.laps;
+    const p = open(withLaps(ride(), laps.map((l, i) => (i === 1 ? { ...l, totals: { ...l.totals, avg_speed: undefined } } : l))));
+    expect(bars(p).map((b) => b.dataset.i)).toEqual(['0', '2', '3', '4', '5']);
+    cleanup?.();
+    const q = open(withLaps(ride(), laps.map((l, i) => (i ? { ...l, totals: {} } : l))));
+    expect(chart(q)?.hidden).toBe(true);
+    cleanup?.();
+    const r = open(golden('triathlon'));
+    expect(chart(r)).toBeNull();
   });
 });

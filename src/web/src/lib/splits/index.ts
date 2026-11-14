@@ -75,7 +75,18 @@ export function splitChoice(meta: Pick<WorkoutMeta, 'sport' | 'summary'>, advanc
 
 /** Split boundaries for a preset (F-18 L-4; LS-6: a pool split ends within 1 % of a recorded length). */
 export function presetBounds(d: Float64Array, p: Preset, pool: Pool | null): number[] {
-  return splitBounds(d, p.length, pool ? 0.01 * pool.recorded : 1e-6);
+  return splitBounds(d, p.length, tolerance(pool));
+}
+
+const tolerance = (pool: Pool | null): number => (pool ? 0.01 * pool.recorded : 1e-6);
+
+/** True when the last split of `bounds` is partial (F-51 SC-4): it reaches no further multiple of
+ *  the preset than the boundary before it, so splitBounds ended it at the workout's end. */
+export function partialLast(d: Float64Array, bounds: readonly number[], p: Preset, pool: Pool | null): boolean {
+  const n = bounds.length;
+  const tol = tolerance(pool);
+  const multiples = (i: number): number => Math.floor((d[i] - d[0] + tol) / p.length);
+  return n > 1 && multiples(bounds[n - 1]) <= multiples(bounds[n - 2]);
 }
 
 /** A pool split's distance in the pool's unit (LS-6): a whole split shows the preset's distance,

@@ -1,7 +1,7 @@
 // Split presets and rules (F-46 LS-5, LS-6; AP-20; AC 34 to 36).
 import { describe, expect, it } from 'vitest';
 import type { Summary } from '../datafile';
-import { poolDistance, presetBounds, splitChoice } from '.';
+import { partialLast, poolDistance, presetBounds, splitChoice } from '.';
 
 const labels = (sport: string, advance = 1e6, summary: Summary = {}): string[] => splitChoice({ sport, summary }, advance).presets.map((p) => p.label);
 const chosen = (sport: string, advance = 1e6, summary: Summary = {}): string => {
@@ -88,5 +88,34 @@ describe('pool rule (LS-6; AC 36)', () => {
 
   it('offers pool presets by their stream length', () => {
     expect(splitChoice({ sport: 'swimming', summary: pool(25, 25) }, 450).presets.map((p) => p.label)).toEqual(['100 m', '200 m', '400 m']);
+  });
+});
+
+describe('partial last split (F-51 SC-4)', () => {
+  const km = { label: '1 km', length: 1000 };
+  const d = (...xs: number[]) => Float64Array.from(xs);
+
+  it('10.4 km: the 0.4 km split is partial; 10.0 km ends on a whole split', () => {
+    const run = Float64Array.from({ length: 105 }, (_, i) => i * 100);
+    expect(partialLast(run, presetBounds(run, km, null), km, null)).toBe(true);
+    const even = run.subarray(0, 101);
+    expect(partialLast(even, presetBounds(even, km, null), km, null)).toBe(false);
+  });
+
+  it('a whole last split after an overshooting boundary is not partial; one partial split is', () => {
+    const x = d(0, 1003, 1500, 2000);
+    expect(presetBounds(x, km, null)).toEqual([0, 1, 3]);
+    expect(partialLast(x, [0, 1, 3], km, null)).toBe(false);
+    expect(partialLast(d(0, 400, 800), [0, 2], km, null)).toBe(true);
+  });
+
+  it('pool: a split short by less than 1 % of a length is whole', () => {
+    const s = pool(33, 33.33);
+    const c = splitChoice({ sport: 'swimming', summary: s }, 1e6);
+    const x = Float64Array.from({ length: 8 }, (_, i) => Math.round(i * 333.3) / 10);
+    x[6] -= 0.2;
+    const b = presetBounds(x, c.presets[0], c.pool);
+    expect(partialLast(x, b, c.presets[0], c.pool)).toBe(true);
+    expect(partialLast(x, b.slice(0, 3), c.presets[0], c.pool)).toBe(false);
   });
 });

@@ -24,3 +24,111 @@
   font: inherit;
   font-size: 13px;
 }
+
+/* The comparison chart under the table (F-51 SC-8, SC-9): colours by class, so a theme switch needs
+   no redraw; geometry in the SVG's attributes (no style attributes, ADR-032). */
+.compare {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.compare-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 26px;
+  color: var(--fg);
+  font-size: 13px;
+}
+.compare-overlay {
+  color: var(--muted);
+}
+.compare-plot {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px;
+}
+.compare-plot svg {
+  width: 100%;
+  display: block;
+  cursor: pointer;
+  overflow: visible;
+}
+.compare-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 110px;
+  line-height: 1;
+  text-align: right;
+}
+.compare-axis.right {
+  text-align: left;
+}
+.compare .band {
+  fill: var(--zone-grey);
+  opacity: 0.18;
+}
+.compare .ref {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+.compare .faster {
+  fill: var(--zone-red);
+  background: var(--zone-red);
+}
+.compare .slower {
+  fill: var(--zone-blue);
+  background: var(--zone-blue);
+}
+.compare .pace {
+  fill: var(--zone-grey);
+  background: var(--zone-grey);
+}
+.compare .bar.hover {
+  opacity: 0.7;
+}
+/* The selected bar: an outline, so it shows without colour (SC-8). */
+.compare .bar.sel {
+  stroke: var(--fg);
+  stroke-width: 1.5;
+}
+.compare text {
+  fill: var(--muted);
+  font-size: 10px;
+  text-anchor: middle;
+}
+.compare .ov line {
+  stroke-width: 1.5;
+}
+.compare .ov-heart_rate {
+  stroke: var(--c-heart_rate);
+  fill: var(--c-heart_rate);
+}
+.compare .ov-power {
+  stroke: var(--c-power);
+  fill: var(--c-power);
+}
+.compare .ov-cadence {
+  stroke: var(--c-cadence);
+  fill: var(--c-cadence);
+}
+.compare-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+.compare-legend > span {
+  margin-left: 10px;
+}
+.compare-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 2px;
+}
+.laps tbody tr.hover {
+  box-shadow: inset 3px 0 0 var(--fg);
+}

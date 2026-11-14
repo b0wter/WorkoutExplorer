@@ -3,15 +3,18 @@
 // the workout has lengths. Fills the laps heading slot (the Laps / Splits / Lengths switch when two
 // or more exist, the split-distance drop-down in the splits view) and builds the splits and lengths
 // tables on demand; on a page without laps it shows the first view at once and reveals the module.
+// Under the tables, the comparison chart of the shown view's rows (F-51, ./chart).
 
 import './splits.css';
 import type { Length, Totals, WorkoutData } from '../lib/datafile';
-import type { formatElapsed, formatSpeedOrPace, speedOrPaceUnit, Units } from '../lib/format';
+import type { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit, Units } from '../lib/format';
 import type { codeWord, lapsGroup } from '../lib/page';
 import { hasStrokeCounts, lengthRows } from '../lib/lengths';
 import { createRangeStats, emptyValues, type RangeStats } from '../lib/range';
-import { poolDistance, presetBounds, splitChoice, type Pool, type Preset } from '../lib/splits';
+import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset } from '../lib/splits';
 import type { UnitsStore } from '../lib/units';
+import type { LapsSeams } from '../page/laps';
+import { createChart, type Slot } from './chart';
 
 /** The entry's formatters, passed in: imported here, Vite splits lib/format out of the entry into a
  *  second script of the page. A tuple, as property names would survive minification in the entry. */
@@ -21,6 +24,7 @@ export type Fmt = readonly [
   formatElapsed: typeof formatElapsed,
   formatSpeedOrPace: typeof formatSpeedOrPace,
   speedOrPaceUnit: typeof speedOrPaceUnit,
+  isPaceSport: typeof isPaceSport,
 ];
 
 /** A table from a header and cell texts. */
@@ -59,10 +63,8 @@ function lengthsTable([, codeWord, formatElapsed, formatSpeedOrPace, speedOrPace
   return table(doc, heads, rows);
 }
 
-/** One splits table (F-18 L-5): range values over each split, formatted by lib/page's lapsGroup.
- *  NaN values reach lapsGroup as non-finite totals, which it treats as absent. A pool split's
- *  distance is in the pool's unit, header included (LS-6). */
-function splitsTable(laps: Fmt[0], doc: Document, sport: string, stats: RangeStats, bounds: number[], units: Units, preset: Preset, pool: Pool | null): HTMLTableElement {
+/** Range values over each split, as lap totals (one source for the table and the chart, F-51 SC-3). */
+function splitTotals(stats: RangeStats, bounds: number[]): { totals: Totals }[] {
   const out = emptyValues();
   const totals: { totals: Totals }[] = [];
   for (let i = 1; i < bounds.length; i++) {
@@ -79,6 +81,13 @@ function splitsTable(laps: Fmt[0], doc: Document, sport: string, stats: RangeSta
       },
     });
   }
+  return totals;
+}
+
+/** One splits table (F-18 L-5): the split totals, formatted by lib/page's lapsGroup. NaN values
+ *  reach lapsGroup as non-finite totals, which it treats as absent. A pool split's distance is in
+ *  the pool's unit, header included (LS-6). */
+function splitsTable(laps: Fmt[0], doc: Document, sport: string, totals: { totals: Totals }[], units: Units, preset: Preset, pool: Pool | null): HTMLTableElement {
   const group = laps(sport, totals, units);
   const dj = pool ? (group?.Columns.findIndex((c) => c.Key === 'distance') ?? -1) : -1;
   return table(
@@ -90,9 +99,10 @@ function splitsTable(laps: Fmt[0], doc: Document, sport: string, stats: RangeSta
 
 type View = 'Laps' | 'Splits' | 'Lengths';
 
-/** The chunk's entry. `seam` is the laps enhancer's (LS-8): the rows of the shown splits or lengths
- *  table tap through its one listener. `splits`: the distance advances (F-18 L-6). */
-export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsStore, seam: (container: Element, pairs: readonly number[]) => void, fmt: Fmt, splits: boolean): void {
+/** The chunk's entry. `seams` are the laps enhancer's (LS-8): the rows of the shown splits or lengths
+ *  table tap through its one listener; the chart mirrors its mark (F-51 SC-7). `splits`: the
+ *  distance advances (F-18 L-6). */
+export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsStore, seams: Pick<LapsSeams, 'splits' | 'marked'>, fmt: Fmt, splits: boolean): void {
   const section = root.querySelector<HTMLElement>('section.laps');
   const slot = section?.querySelector('#laps-slot');
   if (!section || !slot || slot.firstChild) return;
@@ -109,6 +119,16 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   const pairs: Partial<Record<View, number[]>> = {};
   const choice = d ? splitChoice(data.meta, d[d.length - 1] - d[0]) : null;
   let preset = choice?.presets[choice.index];
+  const seam = seams.splits;
+  // F-51 SC-4: no chart for a multisport workout (AP-12). Slots per view, from the rows its table is built from (SC-3).
+  const chart = data.meta.sport === 'multisport' ? null : createChart(section, data.meta.sport, [fmt[3], fmt[4], fmt[5]], seams.marked);
+  const slots: Partial<Record<View, Slot[]>> = {};
+  if (server) {
+    const rows = [...server.querySelectorAll('tbody tr:not(.laps-section)')];
+    const laps = data.meta.laps;
+    slots.Laps = rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1) })) : [];
+  }
+  const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? preset!.label + ' splits' : current, units.get());
   // LS-9, PL-8: built only on arrival, a change, a switch to it or a units change; the selection is untouched (LS-7).
   const build = (view: View): void => {
     const wrap = doc.createElement('div');
@@ -116,17 +136,24 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     wrap.hidden = view !== current;
     if (view === 'Splits') {
       const bounds = presetBounds(d!, preset!, choice!.pool);
-      wrap.appendChild(splitsTable(fmt[0], doc, data.meta.sport, stats!, bounds, units.get(), preset!, choice!.pool));
+      const totals = splitTotals(stats!, bounds);
+      wrap.appendChild(splitsTable(fmt[0], doc, data.meta.sport, totals, units.get(), preset!, choice!.pool));
       pairs.Splits = bounds.slice(1).flatMap((b, i) => [bounds[i], b]);
+      const partial = partialLast(d!, bounds, preset!, choice!.pool);
+      const rows = wrap.querySelectorAll('tbody tr');
+      slots.Splits = totals.map((t, i) => ({ row: rows[i], totals: t.totals, label: String(i + 1), partial: partial && i === totals.length - 1 }));
     } else {
       wrap.appendChild(lengthsTable(fmt, doc, lengths, units.get()));
       // L-2: a length selects start_index … end_index − 1, rest lengths too.
       pairs.Lengths = lengths.flatMap((l) => [l.start_index, l.end_index - 1]);
+      // SC-4: rest lengths take no slot.
+      const rows = wrap.querySelectorAll('tbody tr');
+      slots.Lengths = lengthRows(lengths).flatMap((r, i) => (lengths[i].rest ? [] : [{ row: rows[i], totals: { avg_speed: lengths[i].avg_speed }, label: String(r.number) }]));
     }
     if (view === current) seam(wrap, pairs[view]!);
     const old = boxes[view];
     if (old) old.replaceWith(wrap);
-    else section.appendChild(wrap);
+    else section.insertBefore(wrap, section.querySelector('.compare')); // SC-9: the chart stays last
     boxes[view] = wrap;
   };
   const select = doc.createElement('select');
@@ -139,6 +166,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     for (const v of views) if (boxes[v]) boxes[v].hidden = v !== view;
     select.hidden = view !== 'Splits';
     buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === view)));
+    draw();
   };
   if (views.length > 1) {
     const control = doc.createElement('span');
@@ -161,6 +189,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     select.addEventListener('change', () => {
       preset = choice.presets[+select.value];
       build('Splits');
+      draw();
     });
     slot.appendChild(select);
   }
@@ -168,6 +197,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   units.subscribe(() => {
     if (boxes.Splits) build('Splits');
     if (boxes.Lengths) build('Lengths');
+    draw();
   });
   // LS-3: no device laps: the module, headed by its first view, is revealed on it.
   if (!server) section.querySelector('h2')!.textContent = current;

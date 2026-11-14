@@ -20,11 +20,13 @@ export interface LapsSeams {
   /** LS-8: the splits chunk's current table container and its row ranges; a marked row in the
    *  previous one is unmarked. */
   splits(container: Element, pairs: Ranges): void;
+  /** F-51 SC-7: `f` hears every mark step (the marked row, or null), at once with the current one. */
+  marked(f: (row: Element | null) => void): void;
 }
 
 export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: SelectionStore, win: Window = window): LapsSeams {
   const section = root.querySelector<HTMLElement>('section.laps');
-  if (!section) return { taps: () => {}, legs: () => {}, splits: () => {} };
+  if (!section) return { taps: () => {}, legs: () => {}, splits: () => {}, marked: () => {} };
   // L-2: lap rows map to meta.laps by DOM order (a = start_index, b = end_index − 1, the shared
   // boundary sample included), only when the counts agree. A separator row's pair is NaN (not
   // selectable) until legs fills the NaNs in order.
@@ -50,6 +52,7 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
   let marked: Element | null = null;
   let ma = -1;
   let mb = -1;
+  let note = (_row: Element | null): void => {};
 
   const mark = (row: Element | null, a = -1, b = -1): void => {
     marked?.classList.remove('on');
@@ -57,6 +60,7 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
     marked = row;
     ma = a;
     mb = b;
+    note(row);
   };
   // L-3: O(1) per flush, a drag frame compares with the marked row only.
   selection.subscribe((a, b) => {
@@ -97,5 +101,9 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
     splitsBox = container;
     splitRanges = pairs;
   };
-  return { taps, legs, splits };
+  const onMark = (f: typeof note): void => {
+    note = f;
+    f(marked);
+  };
+  return { taps, legs, splits, marked: onMark };
 }

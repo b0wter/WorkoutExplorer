@@ -43,34 +43,3 @@
   font-size: 12px;
   color: var(--muted);
 }
-
-/* Zone colours (ZN-8): muted, same pattern as the page tokens; the Z label stays the primary cue. */
-:root {
-  --zone-grey: #8a8f98;
-  --zone-blue: #4f8fd6;
-  --zone-green: #5aa469;
-  --zone-yellow: #c9a82e;
-  --zone-orange: #d98a3a;
-  --zone-red: #cf4f48;
-  --zone-purple: #8d63b8;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --zone-grey: #9a9fa8;
-    --zone-blue: #6aa9f0;
-    --zone-green: #7cc08a;
-    --zone-yellow: #dcc050;
-    --zone-orange: #eba35c;
-    --zone-red: #f26b66;
-    --zone-purple: #ae88d8;
-  }
-}
-:root[data-theme='dark'] {
-  --zone-grey: #9a9fa8;
-  --zone-blue: #6aa9f0;
-  --zone-green: #7cc08a;
-  --zone-yellow: #dcc050;
-  --zone-orange: #eba35c;
-  --zone-red: #f26b66;
-  --zone-purple: #ae88d8;
-}

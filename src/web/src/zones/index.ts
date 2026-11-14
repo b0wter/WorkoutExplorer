@@ -4,6 +4,7 @@
 // zone values (the saved sharer value first). Fills #zones-slot; recomputes on a selection flush
 // only, never on a cursor move. Units do not apply (bpm and W).
 
+import '../theme/zones.css';
 import './zones.css';
 import type { WorkoutData, ZoneKind, Zones } from '../lib/datafile';
 import type { formatElapsed } from '../lib/format';
