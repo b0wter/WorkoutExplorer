@@ -179,6 +179,22 @@ describe('the tapped row stays in place (L-7; AC 8)', () => {
     p.frame();
     expect(scroll).toHaveBeenCalledTimes(1);
   });
+
+  it('range → none (a second tap clears): scrolls by the row’s shift too', () => {
+    const p = open(ride());
+    const row = p.rows()[3];
+    row.click();
+    p.frame();
+    let top = 520;
+    vi.spyOn(row, 'getBoundingClientRect').mockImplementation(() => ({ top }) as DOMRect);
+    const scroll = vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
+    p.selection.subscribe((a) => {
+      if (a < 0) top = 400; // the panel disappears: the row moves up by 120
+    });
+    row.click();
+    p.frame();
+    expect(scroll).toHaveBeenCalledExactlyOnceWith(0, -120);
+  });
 });
 
 const dist = (rows: HTMLTableRowElement[]): string[] => rows.map((r) => r.cells[2].textContent ?? '');

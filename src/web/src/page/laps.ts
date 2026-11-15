@@ -95,13 +95,10 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
  *  2 samples, or a markup that does not match) or already the range, which it then clears. */
 export function selectRow(row: Element, a: number, b: number, selection: SelectionStore, win: Window): boolean {
   if (!(b > a)) return false;
-  if (a === selection.start() && b === selection.end()) {
-    selection.clear();
-    return false;
-  }
-  if (selection.start() < 0) {
-    // L-7: the panel appears above the rows. Compare the row's top before the write with its top
-    // in the flush, after the glue's slot listener (subscribed earlier), and scroll the difference.
+  // L-7: the panel appears above the rows (and disappears on a clearing tap). Compare the row's top
+  // before the write with its top in the flush, after the glue's slot listener (subscribed earlier),
+  // and scroll the difference.
+  const keep = (): void => {
     const top = row.getBoundingClientRect().top;
     let first = true;
     const off = selection.subscribe(() => {
@@ -112,7 +109,13 @@ export function selectRow(row: Element, a: number, b: number, selection: Selecti
       off();
       win.scrollBy(0, row.getBoundingClientRect().top - top);
     });
+  };
+  if (a === selection.start() && b === selection.end()) {
+    keep();
+    selection.clear();
+    return false;
   }
+  if (selection.start() < 0) keep();
   selection.set(a, b);
   return true;
 }
