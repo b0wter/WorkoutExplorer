@@ -1,11 +1,11 @@
 # F-52 Optional automatic updates for hosters
 
-- **Status:** ready for architecture (after F-50); OQ-210 to OQ-217 decided 14 Nov 2026
+- **Status:** ready for architecture (after F-50); OQ-210 to OQ-217 decided 14 Nov 2026. **Built after F-59 (15 Nov 2026):** the design (`architect/F-52-auto-update.md`, ADR-050, ADR-051) is revised once F-59 is done, for releases as a published image; this file's scope still describes the tarball layout and is updated with that revision
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** backend
 - **Lane:** critical (code that installs and runs new code on the server; a new signing key; the update path is an attack path)
 - **Requirements:** INF-8 (new), INF-4 (alerts), non-goals and NFR Privacy (second opt-in third party: the release host), NFR Security, UP-7 and AC-4 (a failed rebuild may delete workouts, as on a manual deploy, OQ-53); technical design: Hosting and operations (Deploys), Configuration, Security and privacy
-- **Depends on:** F-31 (deploy, release layout), F-30 (regenerate in the deploy), F-37 (Pushover notifier)
+- **Depends on:** F-59 (published image, install paths), F-31 (deploy, release layout), F-30 (regenerate in the deploy), F-37 (Pushover notifier)
 
 ## Goal
 A hoster who opts in gets every new release installed without doing anything, and is told when an update failed. A forged or tampered release is never installed.
@@ -26,7 +26,7 @@ A hoster who opts in gets every new release installed without doing anything, an
 - Technical design updates (architect): Deploys, Configuration, Security and privacy (signing key, updater rights), third-party list.
 
 ## Out of scope
-- Rollback to an earlier version (ADR-019: no rollback). Updating Docker, the OS or the host's reverse proxy. Updating self-hosts that build their image from a clone (OQ-215). Any inbound trigger. Update notifications to services other than Pushover. Key rotation beyond "pin a new key by hand" (OQ-217). Notify-only or same-minor modes.
+- Rollback to an earlier version (ADR-019: no rollback). Updating Docker, the OS or the host's reverse proxy. Updating self-hosts that build their image from a clone (OQ-215). Bare-metal installs (F-59): planned as F-60, after F-52. Any inbound trigger. Update notifications to services other than Pushover. Key rotation beyond "pin a new key by hand" (OQ-217). Notify-only or same-minor modes.
 
 ## Acceptance criteria
 - [ ] On a fresh install that follows the runbook without the updater steps, no updater is installed, no timer runs, and no request to the release host is made (checked over a full check interval).
@@ -48,7 +48,7 @@ A hoster who opts in gets every new release installed without doing anything, an
 - [ ] The runbook covers install, turning on and off, pinning the public key, clearing a stopped state and uninstalling; a hoster following it from scratch gets a working updater.
 
 ## Decisions (user, 14 Nov 2026)
-- **OQ-210 Signing tool and key:** minisign (Ed25519), private key held offline by the operator; the hoster pins the public key in the updater's settings at install; its fingerprint is published on GitHub and in a second place GitHub does not control (e.g. the operator's instance's About page).
+- **OQ-210 Signing tool and key:** minisign (Ed25519), private key held offline by the operator; the hoster pins the public key in the updater's settings at install; its fingerprint is published on GitHub and in a second place GitHub does not control: a DNS TXT record on the operator's domain (decided 15 Nov 2026).
 - **OQ-211 What is signed:** one manifest (`SHA256SUMS` listing every release file, including a deploy-files archive), with the tag inside the signed text.
 - **OQ-212 Who signs:** the operator, locally, after CI has built the release; uploads `SHA256SUMS.minisig`. An unsigned release is never applied.
 - **OQ-213 Interval:** once a day at a random minute in a night hour the hoster sets, via a systemd timer (or cron) as the deploy user.
@@ -57,4 +57,6 @@ A hoster who opts in gets every new release installed without doing anything, an
 - **OQ-216 About page:** when the updater is on, the third-party list adds "This server downloads software updates from GitHub; no workout or visitor data is sent", from a setting the app reads.
 - **OQ-217 Key loss:** no automatic rotation; the operator announces a new key, hosters pin it by hand; until then updates are refused and alerted.
 - **Docker group:** accepted risk; the updater has exactly the rights of `deploy.sh` (docker group), nothing more; rootless Podman hosts keep their lower rights.
+- **P-1 to P-5 (15 Nov 2026, architecture points):** every release deploy goes through `update.sh` and needs `minisign` and the pinned key (P-1); releases stay drafts until the operator signs them with a local script (P-2); a failed manual deploy also sets the stopped state, and the hoster must be told (P-3, how: open); no back-port releases (P-4); systemd timer only (P-5). P-6 (Podman) open.
+- **15 Nov 2026, install paths (F-59):** releases become a published image (ghcr.io) built by CI; F-59 comes first. The updater covers Docker Compose and rootless Podman on the image; bare metal later (F-60). The signed manifest (OQ-211) must cover the image digest, which F-59 lists in the release. **P-6 closed:** Podman is a supported path through F-59 and covered by the revised design. **P-3 open:** how the hoster learns that a failed manual deploy stopped automatic updates; suggestion: the deploy prints a line in the terminal saying so, and the updater also sends a Pushover alert when set up.
 - **External service:** the release host as a second hoster-only, opt-in exception (spec non-goals, NFR Privacy) is accepted.

@@ -5,6 +5,7 @@
 - **History:** [history/ADR-035-deploy-run-by-the-operator-no-server-credentials-in-ci.md](history/ADR-035-deploy-run-by-the-operator-no-server-credentials-in-ci.md)
 - **Features:** F-31 (introduces it); F-30 (adds the `regenerate` step to the same script)
 - **Supersedes:** none. Settles the TD open question "deploy script" together with F-31 DP-10, DP-18
+- **Superseded in part (15 Nov 2026):** item 3 and "published" in item 1 by [ADR-050](ADR-050-deploys-run-on-the-server-from-a-signed-release.md) (F-52): releases are drafts until the operator signs them; every deploy runs on the server through `update.sh`. Items 2, 4, 5 stand
 - **Depends on:** [ADR-001](ADR-001-repository-layout-and-build-entry-point.md) items 4 and 5 (CI runs `make -k ci`; deploy consumes `build/`), [ADR-019](ADR-019-sqlite-store-schema-and-migrations.md) (forward-only migrations)
 - **Requirements:** F-31 AC 1, AC 2; NFR Security, NFR Privacy; decision log 2 Nov 2026
 

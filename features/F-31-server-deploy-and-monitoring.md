@@ -26,7 +26,7 @@ The app runs on one EU VPS, deploys with one script, and restarts itself after a
 - CDN and object storage (scaling path). Analytics (none at first).
 - The `regenerate` deploy step (F-30).
 - Standalone mode (Caddy with automatic TLS on ports 80/443, ACME); may come later.
-- Publishing images: no image registry, no public image, no CI push to the server.
+- Publishing images: no image registry, no public image, no CI push to the server. *(Superseded 15 Nov 2026 by F-59: CI publishes one image per release to ghcr.io; still no CI push to the server.)*
 - Uptime monitoring: the operator sets up their own monitor later (decision log 1 Nov 2026).
 
 ## Acceptance criteria
