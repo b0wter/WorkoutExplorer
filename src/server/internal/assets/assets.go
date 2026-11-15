@@ -98,10 +98,10 @@ func firstList(dataDir string) error {
 	return os.Rename(tmp, dir)
 }
 
-// Clean keeps the list current and every other list that names an asset in
-// used that is not on current (names are content hashes, QA-30-r1-1); it
-// removes every other file of site/assets, then every list not kept. Call it
-// only after a run that processed every workout (F-30 RG-10).
+// Clean keeps the list current, every other list that names an asset in used
+// that is not on current (names are content hashes, QA-30-r1-1), and every
+// name in used; it removes every other file of site/assets, then every list
+// not kept. Call it only after a run that processed every workout (F-30 RG-10).
 func Clean(dataDir, current string, used []string) (filesRemoved, listsRemoved int, err error) {
 	keep, err := readList(filepath.Join(bundles(dataDir), current))
 	if err != nil {
@@ -133,6 +133,9 @@ func Clean(dataDir, current string, used []string) (filesRemoved, listsRemoved i
 		for n := range names {
 			keep[n] = true
 		}
+	}
+	for _, u := range used { // a served page's name is never wrong to keep, list or not (QA-59-r1-3)
+		keep[u] = true
 	}
 	present, err := files(siteAssets(dataDir))
 	if err != nil {

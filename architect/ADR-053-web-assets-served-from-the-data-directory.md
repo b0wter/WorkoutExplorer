@@ -15,7 +15,7 @@ Published pages name content-hashed assets of the release they were built with u
 
 1. **Caddy serves `/assets/*` from `{data}/site/assets/`** on every path; it never reads the web build. No new mount: `site/` is already Caddy's.
 2. **`serve` (at start, before the shells and before listening) and `regenerate` (at start) copy the web build's assets there, additively:** identical files stay, anything else is written by temporary name and rename; a copy never removes anything.
-3. **One new package is the only writer of `site/assets/` and `{data}/bundles/`.** `shell` stays the only writer of the shell files in `site/`. Each copy records the current bundle's file names as a list keyed by its content. On a data directory without `bundles/`, the files already in `site/assets/` first become one list (as `pre-f30`).
+3. **One new package is the only writer of `site/assets/` and `{data}/bundles/`.** `shell` stays the only writer of the shell files in `site/`. Each copy records the current bundle's file names as a list keyed by its content. On a data directory without `bundles/`, the files already in `site/assets/` first become one list (as `pre-f59`).
 4. **`regenerate` performs the clean-up** after a run that processed every workout, with RG-10's rule (keep the current list and every list naming an asset a served page names; remove other files, then empty lists), and reports a failed clean-up distinctly.
 5. **No lock.** A copy adds only the running version's names; a clean-up never removes the current list; the RG-9 scan can only over-keep.
 

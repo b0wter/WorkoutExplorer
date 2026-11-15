@@ -9,7 +9,7 @@
 
 ## Context
 
-`deploy.sh` takes `compose.yaml`, `Caddyfile`, `caddy.env` and its own steps from a git checkout at the tag and checks the release against that checkout (`COMMIT` = HEAD). An updater on the server has no trusted checkout: a `git fetch` trusts GitHub, which INF-8 must not. Locking against a concurrent manual deploy and clearing the stopped state also need one place on the server, which the remote mode (many separate `ssh` calls) cannot hold.
+`deploy.sh` took `compose.yaml`, `Caddyfile`, `caddy.env` and its own steps from a git checkout at the tag (since F-59 from the release's deploy archive, and `caddy.env` is gone, IP-19) and checks the release against that checkout (`COMMIT` = HEAD). An updater on the server has no trusted checkout: a `git fetch` trusts GitHub, which INF-8 must not. Locking against a concurrent manual deploy and clearing the stopped state also need one place on the server, which the remote mode (many separate `ssh` calls) cannot hold.
 
 ## Decision
 

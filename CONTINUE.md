@@ -32,7 +32,7 @@ The user hosts on a 2 GB VPS.
 F-31 (Compose behind the operator's proxy, IPv4/IPv6 limits, deploy/RUNBOOK.md) QA r1 ready with conditions, minors fixed. The user deploys and runs the server checks listed in qa/F-31-server-deploy-and-monitoring-r1.md; then F-23 AC 8/9 messenger checks.
 
 
-F-23 built, card v2 approved by the user, QA r3 ready. Waiting on the user: AC 3 loop-route check and AC 8/9 messenger checks (needs a deployed instance). F-21 done. F-22 built (Caddy headers, pinned Caddy 2.11.7 via `make caddy`, `caddy-check` in `make ci`); QA r1 ready with conditions, minors fixed (40169a3). Waiting on the user: F-22 browser check through Caddy (no CSP errors, tiles, Copy/download, published page with Go stopped makes no /api request) and F-20's network log. For the browser check use the pinned binary `build/tools/caddy-2.11.7/caddy`, not /usr/bin/caddy (2.10.2). The pinned binary hash in deploy/caddy.env was taken from the downloaded binary, not verified independently.
+F-23 built, card v2 approved by the user, QA r3 ready. Waiting on the user: AC 3 loop-route check and AC 8/9 messenger checks (needs a deployed instance). F-21 done. F-22 built (Caddy headers, `caddy-check` in `make ci`); QA r1 ready with conditions, minors fixed (40169a3). Waiting on the user: F-22 browser check through Caddy (no CSP errors, tiles, Copy/download, published page with Go stopped makes no /api request) and F-20's network log. For the browser check use the pinned binary `build/tools/caddy-2.11.7/caddy`, not /usr/bin/caddy (2.10.2). The pinned binary hash in deploy/caddy.env was taken from the downloaded binary, not verified independently.
 
 Dev setup for hand checks: Go `make dev-server DEV_ADDR=127.0.0.1:18081` (8080 is taken by another app), Caddy `WX_SITE=http://:18082 WX_API=127.0.0.1:18081 WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web caddy run --config deploy/Caddyfile --adapter caddyfile`, user opens http://<your-lan-ip>:18082/.
 
@@ -46,7 +46,7 @@ Open user checks are in the Waiting on column of `features/README.md` (moved the
 
 - F-24 (viewer download) discarded on 14 Nov 2026 (was deferred to phase 3 on 2 Nov 2026). Its design (architect/F-24-viewer-download.md, ADR-036) is done; unfinished B-1 work (internal/fitexport, publish/page/template/Caddyfile changes, no QA, `make ci` not run) is parked on the local, unpushed branch `wip/f-24-export` (332e041). Rebase it onto main when phase 3 starts, or drop it.
 
-- F-31: take the Caddy version from `deploy/caddy.env` (pinned 2.11.7; 2.10.2 answers `.br` with 206).
+- Caddy: official image by minor tag (`compose.yaml`), patches float (F-59); 2.10.2 answered `.br` with 206.
 
 - F-31: Go + Caddy in one Docker setup (decision 31 Oct). Its design must reword the systemd assumptions in F-31 (lines ~13–30), the TD (Hosting and operations, Logs) and the F-21 design hand-off (`Restart=always`).
 

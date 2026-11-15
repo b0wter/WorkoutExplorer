@@ -66,6 +66,10 @@ jobs:
     if: needs.ci.outputs.release == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # One release job at a time across tags, never cancelled: step 4 reads and moves `latest` (QA-59-r1-2).
+    concurrency:
+      group: release
+      cancel-in-progress: false
     permissions:
       contents: write # the release (DP-14)
       packages: write # the app image (F-59 IP-4); the only write permissions in CI; no checkout, no repository code

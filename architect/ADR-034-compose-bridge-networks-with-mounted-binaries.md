@@ -23,7 +23,7 @@ Go and Caddy run as two containers with restart policies, without host networkin
 3. **No Docker daemon settings required.** Clients never reach a published port directly, so the userland proxy and ip6tables do not affect client addresses.
 4. **(rev. 5) Images:** `app` runs our published image, pinned by digest in the release's `compose.yaml`; `caddy` runs the official Caddy image on a pinned minor tag; see [ADR-052](ADR-052-release-image-built-once-pushed-by-the-release-job.md). Self-hosters build the app image locally with the override `compose.build.yaml`.
 5. **Bind mounts of host directories at the same path inside**, never single files, never created by Compose. `app` mounts the data directory and the operator folder (read-only). Caddy mounts `public/` and `site/` from the data directory (the web assets live in `site/assets/`, ADR-053) and the `conf/` folder with the Caddyfile, all read-only; a `tmpfs` covers the image's state directories, so no anonymous volume exists.
-6. **Two non-root UIDs.** Caddy gets `app`'s GID as a supplementary group, so it can read `public/` and `site/` and nothing else. Both run with a read-only root, all capabilities dropped and `no-new-privileges`. (rev. 5) Exception: the official Caddy binary carries `cap_net_bind_service` as a file capability, which the kernel refuses to exec with an empty bounding set; the Caddy container adds exactly that capability back to the bounding set. As a non-root user under `no-new-privileges` the process holds no permitted or effective capability (F-59 IP-7).
+6. **Two non-root UIDs.** Caddy gets `app`'s GID as a supplementary group, so it can read `public/` and `site/` and nothing else. Both run with a read-only root, all capabilities dropped and `no-new-privileges`. (rev. 5) Caddy too runs with an empty bounding set: the official binary's file capability has no effective bit since 2.11.8, and a `cap_add` would leave it in CapPrm under Docker. Every Caddy pull is guarded, because a patch with the effective bit back would not exec (F-59 IP-7, user decision 16 Nov 2026).
 
 ## Consequences
 
@@ -31,7 +31,7 @@ Go and Caddy run as two containers with restart policies, without host networkin
 - The rate limit is per real client as long as the operator's proxy appends the client's address and `WX_TRUSTED_PROXIES` names only that proxy (runbook, F-31 Verification). Every host process shares the proxy's source address and is trusted with it; the host is the operator's.
 - No TLS keys, certificates or ACME account in our setup; TLS is the operator's proxy's.
 - (rev. 5) A deploy is an image pull and a recreate of `app`; Caddy is recreated only when a new patch of its minor arrived or its definition changed (brief page outage, accepted). There is still no rollback (ADR-019).
-- (rev. 5) Caddy's bounding set is not empty; a kernel or runtime bug that let the process regain a bounding capability could bind a low port inside its container. Accepted: no effect outside the container's network namespace.
+- (rev. 5) A Caddy patch whose binary needs its file capability again is refused by the pull guard (F-59 IP-7); Caddy then stays on its previous patch until our release changes the setup.
 
 ## Reversibility
 
@@ -42,4 +42,4 @@ Cheap. Only the Compose files, the Podman units, the Caddyfile and the runbook c
 - Standalone mode comes (Caddy with TLS on 80/443, decision log 1 Nov 2026, later): `edge` publishes 80/443 with IPv6, Caddy trusts no proxy, and the userland proxy off plus ip6tables on become runbook duties again, because clients then reach a published port directly.
 - Go and Caddy move to separate hosts (TD scaling path): set Go's trusted address to the Caddy host's.
 - The operator's proxy is on another host: bind `WX_LISTEN` to a private interface only that host reaches, and trust its address; not supported until asked.
-- The official Caddy image drops its file capability: then Caddy's bounding set becomes empty too.
+- A Caddy patch restores the effective bit for good: add `NET_BIND_SERVICE` to Caddy's bounding set (process still holds none on Podman; CapPrm 0x400 on Docker).

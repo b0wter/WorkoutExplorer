@@ -3,7 +3,7 @@
 # user "workouts". Install as /usr/local/sbin/workout-explorer-ctl (root, 0755); PODMAN.md.
 #   sudo workout-explorer-ctl install <dir>    units, Caddyfile and this script from an unpacked deploy
 #                                              archive; pulls both images and validates the Caddyfile first
-#   sudo workout-explorer-ctl pull             both images of the installed units (Caddy's newest patch)
+#   sudo workout-explorer-ctl pull             both images of the installed units (Caddy's newest patch, guarded)
 #   sudo workout-explorer-ctl status|start|stop|restart
 #   sudo workout-explorer-ctl restart-app      only the app; published pages stay online
 #   sudo workout-explorer-ctl reload-caddy     graceful Caddyfile reload
@@ -28,6 +28,27 @@ huid=$(( $(awk -F: -v u="$u" '$1==u{print $2}' /etc/subuid) + 10000 ))
 hgid=$(( $(awk -F: -v u="$u" '$1==u{print $2}' /etc/subgid) + 10000 ))
 as_user() { runuser -u "$u" -- env XDG_RUNTIME_DIR="/run/user/$uid" "$@"; }
 images() { sed -n 's/^Image=//p' "$@"; }
+# The Caddy guard (F-59 IP-7): does Caddy image $1 start hardened (empty bounding set) and accept the Caddyfile in dir $2?
+caddy_ok() {
+	as_user podman run --rm --network none --read-only --user 10002:10002 --cap-drop all \
+		--security-opt no-new-privileges --tmpfs /config --tmpfs /data -v "$2:/c:ro" -e WX_DATA=/srv/workouts \
+		"$1" caddy validate --config /c/Caddyfile --adapter caddyfile >/dev/null 2>&1
+}
+# Pull the images of the units $2...; a Caddy that fails caddy_ok against dir $1 gets its tag back
+# on the previous image, so no later start (restart, reboot with Pull=missing) runs it.
+pull_guarded() {
+	c=$1; shift
+	for i in $(images "$@"); do
+		prev=$(as_user podman image inspect -f '{{.Id}}' "$i" 2>/dev/null || true)
+		as_user podman pull -q "$i" >/dev/null || { echo "pulling $i failed" >&2; return 1; } # set -e is off under ||
+		case $i in docker.io/library/caddy:*) ;; *) continue ;; esac
+		caddy_ok "$i" "$c" && continue
+		[ -z "$prev" ] || as_user podman tag "$prev" "$i"
+		echo "$i does not run hardened or rejects the Caddyfile; the previous image keeps the tag, nothing changed" >&2
+		return 1
+	done
+}
+caddy_image() { images "$units/workout-explorer-caddy.container"; }
 cmd=${1:-status}
 [ $# -gt 0 ] && shift
 case "$cmd" in
@@ -36,23 +57,22 @@ install)
 	[ -f "$d/Caddyfile" ] && [ -f "$d/podman/workout-explorer-app.container" ] || { echo "install: $d is not an unpacked deploy archive" >&2; exit 1; }
 	! grep -q ':unreleased' "$d/podman/workout-explorer-app.container" || { echo "install: $d is the repository's copy; use a release's deploy archive" >&2; exit 1; }
 	# Nothing changes until both images are pulled and the pulled Caddy accepts the new Caddyfile.
-	for i in $(images "$d"/podman/*.container); do as_user podman pull -q "$i" >/dev/null; done
 	tmp=$(mktemp -d)
 	trap 'rm -rf "$tmp"' EXIT
 	install -m 0644 "$d/Caddyfile" "$tmp/Caddyfile"
 	chmod 0755 "$tmp"
-	as_user podman run --rm --network none --read-only --user 10002:10002 --cap-drop all \
-		--security-opt no-new-privileges --tmpfs /config --tmpfs /data -v "$tmp:/c:ro" -e WX_DATA=/srv/workouts \
-		"$(images "$d/podman/workout-explorer-caddy.container")" caddy validate --config /c/Caddyfile --adapter caddyfile >/dev/null 2>&1 ||
-		{ echo "install: the new Caddy does not run hardened or rejects the new Caddyfile; nothing changed" >&2; exit 1; }
+	pull_guarded "$tmp" "$d"/podman/*.container || { echo "install: nothing changed" >&2; exit 1; }
 	install -d -m 0755 "$units" "$conf"
 	for f in "$d"/podman/*.container "$d"/podman/*.network; do install -m 0644 "$f" "$units/"; done
 	cmp -s "$d/Caddyfile" "$conf/Caddyfile" || { install -m 0644 "$d/Caddyfile" "$conf/.Caddyfile.new" && mv "$conf/.Caddyfile.new" "$conf/Caddyfile"; echo "install: Caddyfile changed"; }
 	install -m 0755 "$d/podman/workout-explorer-ctl" /usr/local/sbin/.workout-explorer-ctl.new && mv /usr/local/sbin/.workout-explorer-ctl.new /usr/local/sbin/workout-explorer-ctl
 	as_user systemctl --user daemon-reload ;;
-pull)          for i in $(images "$units"/workout-explorer-*.container); do as_user podman pull -q "$i"; done ;;
+pull)          pull_guarded "$conf" "$units"/workout-explorer-*.container ;;
 status)        as_user systemctl --user --no-pager status "$app" "$caddy" "$@" ;;
-start|stop|restart) as_user systemctl --user "$cmd" "$app" "$caddy" "$@" ;;
+start|restart)
+	caddy_ok "$(caddy_image)" "$conf" || { echo "$cmd: $(caddy_image) does not run hardened or rejects the Caddyfile; nothing changed" >&2; exit 1; }
+	as_user systemctl --user "$cmd" "$app" "$caddy" "$@" ;;
+stop)          as_user systemctl --user stop "$app" "$caddy" "$@" ;;
 restart-app)   as_user systemctl --user restart "$app" ;;
 reload-caddy)  as_user podman exec workout-explorer-caddy caddy reload --config "$conf/Caddyfile" --adapter caddyfile ;;
 daemon-reload) as_user systemctl --user daemon-reload ;;

@@ -175,6 +175,13 @@ func TestClean(t *testing.T) {
 		t.Errorf("shared name: %v %d %d assets %v", err, f, l, names(t, site))
 	}
 
+	// A page names a file no list has (old assets copied by hand after the
+	// first start, QA-59-r1-3): the file stays.
+	write(t, filepath.Join(site, "late.js"), "l")
+	if _, _, err := Clean(data, "v2", []string{"c.js", "late.js"}); err != nil || !slices.Contains(names(t, site), "late.js") {
+		t.Errorf("unlisted used name: %v assets %v", err, names(t, site))
+	}
+
 	// No page at all: the current bundle stays whole, list included.
 	if _, _, err := Clean(data, "v2", nil); err != nil || !slices.Equal(names(t, site), []string{".c.js.new", "c-map.js", "c.js", "shared.css"}) ||
 		!slices.Equal(names(t, filepath.Join(data, "bundles")), []string{"v2"}) {

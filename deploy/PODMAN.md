@@ -142,7 +142,7 @@ Read the release notes and RUNBOOK's changes first. Then, as root:
 4. `sudo workout-explorer-ctl regenerate`: rebuilds every workout, then removes old web assets no page needs. It ends with `rebuilt= deleted= kept= skipped=` and `files_removed= bundles_removed=`. Exit 1: run it again; exit 4: the rebuild finished, the clean-up did not (run it again later). There is no separate clean-up step.
 5. OOM check: `sudo workout-explorer-ctl podman inspect -f '{{.State.OOMKilled}}' workout-explorer-app` is `false`, and `NRestarts` of the app unit did not grow.
 
-Between releases, `sudo workout-explorer-ctl pull && sudo workout-explorer-ctl restart` brings Caddy's newest patch.
+Between releases, `sudo workout-explorer-ctl pull && sudo workout-explorer-ctl restart` brings Caddy's newest patch. `install`, `pull`, `start` and `restart` first check that the Caddy image starts under our hardening and accepts the Caddyfile. A pulled patch that fails gives its tag back to the previous image, so neither a restart nor a reboot (Quadlet starts the local tag) runs it; the command then exits 1 and nothing changed. Use `pull`, never `podman pull` directly.
 
 ### Migrating from the tarball setup (bind-mounted binaries)
 

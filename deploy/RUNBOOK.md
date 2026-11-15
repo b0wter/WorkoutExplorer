@@ -322,13 +322,15 @@ Here `deploy/` of the clone is the deploy directory, and the Caddyfile is mounte
 Read the release notes first. Then, with the new `v`:
 
 1. Download and check the new deploy archive and unpack it to `/tmp/wx-$v` as in section 2 (not yet copying anything).
-2. Pull the new images before anything changes, and check the new Caddyfile with the pulled Caddy:
+2. Pull the new images before anything changes, and check that the pulled Caddy starts under our hardening and accepts the new Caddyfile. If it does not, the tag goes back to the previous Caddy image; stop there (nothing changed) and report it:
    ```sh
    cd /srv/workout-explorer
+   c=docker.io/library/caddy:2.11                                  # the Caddy tag of the new compose.yaml
+   prev=$(docker image inspect -f '{{.Id}}' $c)
    docker compose --project-directory . -f /tmp/wx-$v/compose.yaml pull
    docker run --rm --network none --read-only --user 10002:10002 --cap-drop ALL --security-opt no-new-privileges:true \
-     --tmpfs /config --tmpfs /data -v /tmp/wx-$v:/c:ro docker.io/library/caddy:2.11 \
-     caddy validate --config /c/Caddyfile --adapter caddyfile      # use the Caddy tag of the new compose.yaml
+     --tmpfs /config --tmpfs /data -v /tmp/wx-$v:/c:ro $c caddy validate --config /c/Caddyfile --adapter caddyfile ||
+     { docker tag $prev $c; echo 'REFUSED: stop here'; }
    ```
 3. Install: `cp /tmp/wx-$v/compose.yaml /tmp/wx-$v/compose.notify.yaml .` and, if it differs, `cp /tmp/wx-$v/Caddyfile conf/Caddyfile`.
 4. `docker compose up -d`. It recreates `app` on the new image (a few seconds without API) and `caddy` only when a newer Caddy patch arrived or its definition changed (a moment without pages). If only the Caddyfile changed: `docker compose exec caddy caddy reload --config /srv/workout-explorer/conf/Caddyfile --adapter caddyfile`.
@@ -339,7 +341,19 @@ Read the release notes first. Then, with the new `v`:
    ```
    (use your `WX_DATA` if you changed it). It prints `rebuilt=`, `deleted=`, `kept=` and `skipped=` counts, then `files_removed=` and `bundles_removed=`; its log lines go to stderr. Exit 0 means every workout was processed and the old web files cleaned up. A workout whose file the new version cannot read at all is deleted (as if it had expired); one that failed for another reason (load, disk) is kept unchanged with its old web files, and rebuilt by the next run. Exit 1: it stopped early or could not start, nothing was removed; run it again. Exit 4: every workout was processed, but removing old web files failed; run it again later.
 
-`deploy.sh` (section 13) does exactly these steps. Between releases, `docker compose pull && docker compose up -d` brings Caddy's newest patch of its minor.
+`deploy.sh` (section 13) does exactly these steps. Between releases, Caddy's newest patch of its minor comes with the same guard (never a plain `docker compose pull`: a refused patch would stay the local tag and the next `up -d` would start it):
+
+```sh
+cd /srv/workout-explorer
+c=docker.io/library/caddy:2.11                                    # the Caddy tag of compose.yaml
+prev=$(docker image inspect -f '{{.Id}}' $c)
+docker compose pull caddy
+if docker run --rm --network none --read-only --user 10002:10002 --cap-drop ALL --security-opt no-new-privileges:true \
+  --tmpfs /config --tmpfs /data -v "$PWD/conf:/c:ro" $c caddy validate --config /c/Caddyfile --adapter caddyfile
+then docker compose up -d
+else docker tag $prev $c; echo 'REFUSED: Caddy stays on its previous patch'
+fi
+```
 
 Remove old images when you like: `docker image prune`.
 
@@ -616,7 +630,7 @@ Installs from before the image (the operator's server, and "use a public release
    sudo setpriv --reuid=10001 --regid=10001 --clear-groups sh -c 'mkdir -p -m 0750 /srv/workouts/site/assets && cp -rn /srv/workout-explorer/web/assets/. /srv/workouts/site/assets/'
    ```
 4. Install the new files: `compose.yaml`, `compose.notify.yaml`, `conf/Caddyfile` (section 2). In `.env`: delete the `WX_WEB` line; keep `COMPOSE_FILE` only as `compose.yaml` or `compose.yaml:compose.notify.yaml` (no `compose.build.yaml`).
-5. `docker compose pull && docker compose up -d`, wait for `/api/health` to show the new tag. The first start turns the copied files into one list in `bundles/`. Database changes of the new release run at this start, as on any update (there is no way back to the old release afterwards).
+5. `docker compose pull`, then the Caddy check of section 8 step 2 with `-v "$PWD/conf:/c:ro"` (a fresh pull: there is no previous Caddy to give the tag back to; if it is refused, stop and report it), then `docker compose up -d`; wait for `/api/health` to show the new tag. The first start turns the copied files into one list in `bundles/`. Database changes of the new release run at this start, as on any update (there is no way back to the old release afterwards).
 6. `regenerate` (section 8, step 6) must exit 0. It rebuilds every page with the new version; the old web files go once no served page names them.
 7. Only then remove the old program files: `rm -rf /srv/workout-explorer/bin /srv/workout-explorer/web /srv/workout-explorer/bundles /srv/workout-explorer/clean-assets.sh`.
 

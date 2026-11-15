@@ -55,10 +55,12 @@ for f in compose.yaml compose.notify.yaml; do cp_to "$tmp/a/$f" ".deploy-new/$f"
 cp_to "$tmp/a/Caddyfile" .deploy-new/conf/Caddyfile
 # The new file set, with .env's COMPOSE_FILE overrides (compose.notify.yaml) taken from .deploy-new.
 new='f=; for c in $(sed -n "s/^COMPOSE_FILE=//p" .env | tr : " "); do f="$f -f .deploy-new/$c"; done; docker compose --project-directory . ${f:--f .deploy-new/compose.yaml}'
-r "$new pull -q" || { echo "deploy: pulling the images failed; nothing changed" >&2; exit 1; }
 caddy_image=$(sed -n 's/^ *image: *\(docker\.io\/library\/caddy:[0-9.]*\) *$/\1/p' "$tmp/a/compose.yaml")
+caddy_prev=$(r "docker image inspect -f '{{.Id}}' '$caddy_image' 2>/dev/null" || true)
+r "$new pull -q" || { echo "deploy: pulling the images failed; nothing changed" >&2; exit 1; }
+# The Caddy guard (F-59 IP-7): a refused patch gives the tag back to the previous image, so no later `up -d` starts it.
 r "docker run --rm --network none --read-only --user 10002:10002 --cap-drop ALL --security-opt no-new-privileges:true --tmpfs /config --tmpfs /data -v \"\$PWD/.deploy-new/conf:/c:ro\" -e WX_DATA=/srv/workouts '$caddy_image' caddy validate --config /c/Caddyfile --adapter caddyfile >/dev/null 2>&1" ||
-	{ echo "deploy: $caddy_image does not run hardened or rejects the release's Caddyfile; nothing changed" >&2; exit 1; }
+	{ [ -z "$caddy_prev" ] || r "docker tag '$caddy_prev' '$caddy_image'"; echo "deploy: $caddy_image does not run hardened or rejects the release's Caddyfile; nothing changed" >&2; exit 1; }
 
 # 3. Install, then start what changed: app on its new image; caddy only when a new patch arrived
 # or its definition changed (brief page outage, accepted). A Caddyfile-only change is a reload.
