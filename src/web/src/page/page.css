@@ -415,6 +415,7 @@ body > .page .charts {
 .map-slot {
   position: relative;
   height: 320px;
+  margin-bottom: 8px; /* gap to the charts below; reset in the two-column layouts */
   background: var(--map-bg);
   overflow: hidden;
 }
@@ -689,6 +690,7 @@ tbody tr:nth-child(even of :not(.laps-section)) {
     top: 0;
     left: 0;
     width: var(--map-w, 40%);
+    margin-bottom: 0;
     padding: 0;
     height: 100vh;
     height: 100lvh;
@@ -736,6 +738,7 @@ tbody tr:nth-child(even of :not(.laps-section)) {
     align-self: start;
     position: sticky;
     top: 0;
+    margin-bottom: 0;
     padding: 0;
     height: 100vh;
     height: 100lvh;
