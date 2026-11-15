@@ -28,7 +28,8 @@
 | npm packages in any bundle, lazy chunks included | Vite 8 `build.license` with a `.json` file name in `.vite/` (not served); then `scripts/bundled-licenses.mjs` adds the installed runtime-dependency tree of each (packages like MapLibre ship pre-bundled, invisible to Vite; tree-shaken extras are accepted, same failure rule) | Name, version, identifier, full text |
 | Go modules linked into the binary | The built binary's build info (`debug/buildinfo`), so test-only modules never appear; texts from the module cache | Path, version, every `LICENSE*`, `LICENCE*`, `COPYING*`, `NOTICE*` file at the module root |
 | Go standard library and runtime | The toolchain that built the binary | `GOROOT/LICENSE` |
-| Caddy | Version from `deploy/caddy.env` | Apache-2.0, committed text. Its own dependencies are not listed (we do not ship its binary) |
+| Caddy | The pinned minor from `deploy/compose.yaml`'s Caddy tag, shown as e.g. `2.11.x` (F-59 IP-6, IP-19; `caddy.env` is gone) | Apache-2.0, committed text. Its own dependencies are not listed (we do not ship its binary: official image or apt package) |
+| Base image of the published app image (F-59 IP-2) | The committed sources file; `make ci` checks its package list against the image | Image name, Debian release, each package with its licence, link to the distroless source. The packages' copyright files ship in the image |
 | Data, styles, fonts and formats outside any package: OpenStreetMap (ODbL), OpenFreeMap, OpenMapTiles, Natural Earth, the map styles, the Noto Sans glyphs (F-06 hand-off, F-14 D-12); the **FIT Protocol licence** (OQ-5, 4 Nov 2026; no origin); GeoNames once UP-5 ships | The committed sources file; an entry names the origins it claims, if any (AB-6) | Attribution line, licence name and link, each taken from the source's own page |
 
 **Settings (TD Configuration rows)**

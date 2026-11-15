@@ -14,7 +14,7 @@ INF-7 puts an "Impressum" footer link on every page, but only when the hoster ha
 
 1. **The static pages are shells with comment markers.** `serve` reads them from `-web` once at start, replaces each per-deployment marker with fixed bytes (today only F-38's footer link, or nothing), and writes them to `{data}/site/<name>.html` (temporary file and rename, `0644`) before it listens. A shell without its marker, or a failed write, makes `serve` exit 1. Shells for features that are off (the Impressum page when unset) are removed, so Caddy answers `404`.
 2. **One writer:** only the page-shell package writes under `{data}/site/`. Nothing in it is per workout or per request; it is public content.
-3. **Caddy serves those routes from `{data}/site/`**, mounted read-only like `public/`; assets stay in the web build. The data directory as a whole is still never mounted into Caddy.
+3. **Caddy serves those routes from `{data}/site/`**, mounted read-only like `public/`. The data directory as a whole is still never mounted into Caddy. *(Note 15 Nov 2026, [ADR-053](ADR-053-web-assets-served-from-the-data-directory.md): the web assets now live in `site/assets/` too, written by their own package; `shell` stays the only writer of the shell files.)*
 4. **Fill rule as F-29 AB-4:** markers become constant bytes; nothing from a request, nothing interpreted.
 
 ## Consequences
