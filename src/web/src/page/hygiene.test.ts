@@ -107,14 +107,14 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(css).toMatch(/^\.readout \.unit,\n\.range-panel \.unit \{[^}]*line-height: 13px;/m);
     expect(css).toMatch(/^#charts-slot \.readout,\n#map-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/m); // F-33: the strip shares the tracks
     expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: 1;\s*\}\s*#charts-slot \.readout,\s*#map-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
-    expect(rule('.charts')).toContain('calc(var(--bar) + var(--r) * 29px + 8px + var(--area) + var(--hint))');
+    expect(rule('.charts')).toContain('calc(var(--bar) + var(--r) * 29px + 16px + var(--area) + var(--hint))');
   });
 
   it('F-17: the hint row is always reserved with charts, the axis toolbar row only with has-distance', () => {
     expect(rule('.charts')).toMatch(/--bar: 0px;[^}]*--hint: 24px;/);
-    expect(rule('.charts.has-distance')).toContain('--bar: 32px');
+    expect(rule('.charts.has-distance')).toContain('--bar: 40px');
     const stack = readWebFile('src/components/charts/ChartStack.svelte');
-    expect(stack).toMatch(/\.toolbar \{\s*height: 32px;/);
+    expect(stack).toMatch(/\.toolbar \{\s*box-sizing: border-box;\s*height: 40px;/);
     expect(stack).toMatch(/\.select-hint \{\s*height: 20px;\s*margin: 4px 0 0;/);
   });
 

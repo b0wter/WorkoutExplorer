@@ -478,10 +478,13 @@ body > .page .charts {
   --r: var(--r4);
   --bar: 0px;
   --hint: 24px;
-  height: calc(var(--bar) + var(--r) * 29px + 8px + var(--area) + var(--hint)); /* + the readout card's 4 px padding top and bottom */
+  height: calc(var(--bar) + var(--r) * 29px + 16px + var(--area) + var(--hint)); /* + the readout card's 4 px padding top and bottom + its 8 px bottom margin (gap to the first chart title) */
 }
 .charts.has-distance {
-  --bar: 32px;
+  --bar: 40px; /* 32 px toolbar + 8 px gap above the readout */
+}
+#charts-slot .readout {
+  margin-bottom: 8px;
 }
 #charts-slot .readout,
 #map-slot .readout {

@@ -195,7 +195,9 @@
   }
   /* Fixed heights: the page reserves them (page.css --bar, --hint). */
   .toolbar {
-    height: 32px;
+    box-sizing: border-box;
+    height: 40px;
+    padding-bottom: 8px;
     display: flex;
     align-items: center;
   }
