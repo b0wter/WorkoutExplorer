@@ -55,4 +55,4 @@ Escalate to the user instead of looping when a finding needs a product decision 
 
 ## Releases
 
-- Before every release, check whether a newer Caddy minor version exists (Caddy patches float automatically, minors are pinned, F-59). If one does, raise the pin in the small lane and test it before tagging.
+- Before every release, check whether a newer Caddy minor version exists (Caddy patches float automatically, minors are pinned, F-59). If one does, raise the pin in the small lane and test it before tagging. If a new Caddy **major** version exists, have `senior-requirements-engineer` add a feature "Upgrade to Caddy N" (upgrade and test) at the top of the build order in `features/README.md`, and tell the user.
