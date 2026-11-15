@@ -65,7 +65,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-49](F-49-zones.md) | Heart-rate and power zones | 2 | both (backend first) | F-15, F-17, F-19, F-42, F-47 | done, checked by the user 14 Nov | — |
 | [F-51](F-51-split-comparison-chart.md) | Lap and split comparison chart | 2 | frontend | F-18, F-42, F-46, F-47, F-48, F-49 | done, chart checked by the user 14 Nov (colours, spacing, elevation overlay) | user: theme strip check on iPhone (659c6be); AC 10 timing not measured |
 | [F-50](F-50-power-curve-and-best-efforts.md) | Power curve and best efforts | 2 | frontend | F-17, F-18, F-40, F-42, F-47, F-49 | done (QA r1 ready) | user: browser check (tables, curve in both themes, wording, tap a row), curve timing on the phone (QA-50-r1-4); minors r1-1 to r1-3 open |
-| [F-59](F-59-container-image-and-install-paths.md) | Container image and install paths | — | backend | F-31, F-30, F-37, F-38 | in progress | — |
+| [F-59](F-59-container-image-and-install-paths.md) | Container image and install paths | — | backend | F-31, F-30, F-37, F-38 | built, QA r1 ready with conditions | real-host checks (qa/F-59-container-image-and-install-paths-r1.md: first tag on GitHub, Podman, bare metal, every path); minors QA-59-r1-1 to r1-4 |
 | [F-52](F-52-auto-update.md) | Optional automatic updates for hosters | — | backend | F-59, F-31, F-30, F-37 | in architecture | — |
 | [F-60](F-60-bare-metal-auto-update.md) | Automatic updates for bare-metal installs | — | backend | F-59, F-52 | decided (acceptance criteria to write after F-52's revised design) | — |
 | [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
