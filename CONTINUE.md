@@ -1,20 +1,17 @@
-# Continue here (state of 11 Nov 2026)
+# Continue here (state of 15 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (12 Nov 2026): v0.7.0 released (F-45, F-46); deploy pending
+## Current (15 Nov 2026): v0.8.0 released; next F-52 auto-update
 
-- v0.7.0 = F-45 suggested title (UP-5, embedded GeoNames table, ADR-045), F-46 laps and splits (lap trigger column, split presets per sport, no laps view without device laps, 33 m pool as 33⅓, ADR-046), summary order (tinted: speed, HR, power, cadence, elevation, temperature), selected striped row fix, split drop-down gap. Tagged and pushed 12 Nov; the user deploys (`deploy/deploy.sh v0.7.0 <host>`). Data file format is now version 4: `regenerate` rebuilds workouts; failures may lose old workouts (accepted).
-- v0.6.0 (11 Nov): F-42 multisport, F-43 device info, F-44 pool summary, uPlot trim. SH-7 iframe embed removed.
-- Entry bundle 56,351 / 60,000 gzip, reserve 3,649; splits chunk 1,602 + 226 CSS.
-- User checks still open: Waiting on column of features/README.md (F-22 Caddy browser check, F-32 U-1 to U-10, and hand checks on done features; F-46: pool splits on a real file, phone scrub trace).
-- F-47 trim (UP-6, ADR-047, migration 0006) done and checked by the user 12 Nov; on main, not yet released (next: v0.8.0).
-- Brotli sidecars for `/assets/*` (F-22 H-7, `make precompress-assets`, small lane) on main, not yet released.
-- F-48 pool strokes (AP-13, ADR-048, data file v5, Lengths view) done and checked by the user 13 Nov; on main, not yet released.
-- Roadmap (user picks): AP-10/11 zones and power curve, map pins; hiding radius (F-55); later: time-based splits, splits per multisport leg.
+- v0.8.0 = F-47 trim (UP-6, ADR-047), brotli sidecars for `/assets/*` (F-22 H-7), F-48 pool strokes (AP-13, ADR-048, Lengths view), F-49 zones (AP-10, migration 0007), F-50 power curve and best efforts (AP-11), F-51 lap and split comparison chart (AP-23), Apple device names, colour-scheme meta follows the theme, `allow_download` removed (migration 0008, ADR-036 superseded), row taps toggle (L-7 also on clearing), spacing around map, toggle and readout. Tagged and pushed 15 Nov; the user deploys (`deploy/deploy.sh v0.8.0 <host>`). Data file format is now version 6: `regenerate` rebuilds workouts; failures may lose old workouts (accepted).
+- v0.7.0 (12 Nov): F-45, F-46. v0.6.0 (11 Nov): F-42 to F-44, uPlot trim.
+- Build order and backlog (Planned, Idea, Fix, Discarded): `features/README.md`. Next: F-52 auto-update (INF-8, critical lane, ready for architecture).
+- Minors to batch (small lane): F-50 QA r1-1 to r1-3; TD/roadmap still lists items that are now ideas.
+- User checks still open: Waiting on column of `features/README.md`.
 - Dev server: `make dev-server DEV_ADDR=127.0.0.1:18081 DEV_BASE_URL=http://192.168.178.98:18080`; Caddy `WX_SITE=http://:18080 WX_API=127.0.0.1:18081 WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web build/tools/caddy-2.11.7/caddy run --config deploy/Caddyfile --adapter caddyfile`; after `make build`: restart Go, then `WORKOUT_EXPLORER_BASE_URL=http://192.168.178.98:18080 build/workout-explorer regenerate -data build/data -web build/web`. Only while the user tests.
 
-Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) v0.5.0 (10 Nov 2026: F-39 to F-41), v0.6.0 (11 Nov 2026: F-42 to F-44, uPlot trim) and v0.7.0 (12 Nov 2026: F-45, F-46) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
+Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) v0.5.0 (10 Nov 2026: F-39 to F-41), v0.6.0 (11 Nov 2026: F-42 to F-44, uPlot trim) v0.7.0 (12 Nov 2026: F-45, F-46) and v0.8.0 (15 Nov 2026: F-47 to F-51) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
 Done 3 Nov 2026: F-25 route colouring (ADR-037; coloured selection with outline, route faded) and F-26 fullscreen map (CSS overlay, ADR-038; OQ-100 accepted: bars stay visible), both checked by the user. Theme drop-down System/Light/Dark (DS-4, inline head script allowed by CSP hash); header controls on their own line on narrow screens; F-19 download toggle hidden until F-24.
 
