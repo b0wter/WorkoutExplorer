@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/about"
+	"workout-explorer/internal/assets"
 	"workout-explorer/internal/httpapi"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/lifecycle"
@@ -81,6 +82,10 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	}
 	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return nil, nil, fmt.Errorf("data directory: %w", err)
+	}
+	// ADR-053: this build's assets, before the shells that name them and before the listener opens.
+	if _, err := assets.Copy(dataDir, s.webDir); err != nil {
+		return nil, nil, err
 	}
 	// ADR-043: the page shells Caddy serves, filled for this start, before the listener opens.
 	if err := shell.Write(dataDir, s.webDir, impressum); err != nil {

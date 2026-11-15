@@ -1,0 +1,8 @@
+# compose.yaml's networks.edge (F-59 IP-11): fixed subnet, so the addresses are known.
+[Unit]
+Description=Workout Explorer edge network
+
+[Network]
+NetworkName=workout-explorer_edge
+Subnet=10.250.0.0/29
+Gateway=10.250.0.1

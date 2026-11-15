@@ -1,0 +1,8 @@
+# compose.notify.yaml's networks.egress (ADR-039): not internal; app is its only member.
+# Used only with notifications on (PODMAN.md, "Notifications").
+[Unit]
+Description=Workout Explorer egress network (notifications)
+
+[Network]
+NetworkName=workout-explorer_egress
+Subnet=10.250.2.0/29

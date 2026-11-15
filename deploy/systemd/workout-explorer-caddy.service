@@ -1,0 +1,64 @@
+# Caddy on bare metal (F-59 IP-13 to IP-15): /usr/bin/caddy from Caddy's apt repository, held
+# at our minor by caddy.pref, run with our Caddyfile. Not the package's own caddy.service.
+# Install as /etc/systemd/system/workout-explorer-caddy.service; values below change by a drop-in.
+[Unit]
+Description=Workout Explorer Caddy (static files + API proxy)
+After=network.target workout-explorer.service
+Wants=workout-explorer.service
+
+[Service]
+Type=notify
+User=workout-explorer-caddy
+Group=workout-explorer-caddy
+# app's group: reads public/ and site/ (0750) and nothing else (DP-5)
+SupplementaryGroups=workout-explorer
+Environment=WX_DATA=/srv/workouts
+Environment=WX_API=127.0.0.1:8080
+Environment=WX_SITE=http://:8088
+# Bound to loopback by Caddy itself (no port publishing here); the proxy on this host connects from loopback.
+Environment=WX_BIND=127.0.0.1
+Environment="WX_TRUSTED_PROXIES=127.0.0.1 ::1"
+Environment=WX_ADMIN=unix//run/workout-explorer-caddy/admin.sock
+Environment=XDG_CONFIG_HOME=/run/workout-explorer-caddy
+Environment=XDG_DATA_HOME=/run/workout-explorer-caddy
+Environment=HOME=/run/workout-explorer-caddy
+# State and the admin socket: gone at stop, reachable by this user and root only.
+RuntimeDirectory=workout-explorer-caddy
+RuntimeDirectoryMode=0700
+ExecStart=/usr/bin/caddy run --config /srv/workout-explorer/conf/Caddyfile --adapter caddyfile
+ExecReload=/usr/bin/caddy reload --config /srv/workout-explorer/conf/Caddyfile --adapter caddyfile --force
+Restart=always
+RestartSec=2s
+TimeoutStopSec=30s
+# Sandbox. The data and deploy directories are empty here except public/, site/ and conf/ (F-59 IP-15):
+# no database, stored FIT file or .env is visible.
+TemporaryFileSystem=/srv/workouts:ro /srv/workout-explorer:ro
+BindReadOnlyPaths=/srv/workouts/public /srv/workouts/site /srv/workout-explorer/conf
+NoNewPrivileges=yes
+# The apt binary carries no file capability (checked for 2.11.9); if one appears, add CAP_NET_BIND_SERVICE here (IP-7).
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target

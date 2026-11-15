@@ -1,0 +1,10 @@
+# Restarts our Caddy when the package replaces /usr/bin/caddy (a patch through apt, F-59 IP-14):
+# a brief page outage, accepted. Install next to workout-explorer-caddy-upgrade.service and enable.
+[Unit]
+Description=Restart Workout Explorer Caddy after a Caddy package upgrade
+
+[Path]
+PathChanged=/usr/bin/caddy
+
+[Install]
+WantedBy=multi-user.target

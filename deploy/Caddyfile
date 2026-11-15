@@ -1,30 +1,31 @@
 # Workout Explorer: Caddy config (F-15 design P-13, F-22 design H-1 to H-10,
-# ADR-032). TLS, paths and the deployment (Docker) are F-31's; it extends this file.
+# ADR-032). TLS, paths and the deployment are F-31's and F-59's; they extend this file.
 #
 # Environment (no defaults for the paths, so a missing one fails loudly; the
-# Compose file, deploy/compose.yaml, sets all of them, F-31 DP-1, DP-6, DP-9):
+# deploy files set all of them: compose.yaml, podman/, systemd/):
 #   WX_DATA  the data directory (serve -data), e.g. /srv/workouts; only
-#            {WX_DATA}/public and {WX_DATA}/site (the page shells serve
-#            fills at start, ADR-043) are ever served
-#   WX_WEB   the web build (serve -web), e.g. build/web
+#            {WX_DATA}/public and {WX_DATA}/site (the page shells and the web
+#            assets serve writes at start, ADR-043, ADR-053) are ever served
 #   WX_API   the Go server's address (default 127.0.0.1:8080)
 #   WX_SITE  the site address (default http://127.0.0.1:8088, plain HTTP; the
-#            Compose file uses http://:8088, any host, behind the operator's proxy)
+#            deploy files use http://:8088, any host, behind the operator's proxy)
+#   WX_BIND  the listener's host address(es) (default 0.0.0.0, all; bare metal:
+#            127.0.0.1, F-59 IP-13; the containers publish the port instead)
 #   WX_TRUSTED_PROXIES  addresses or CIDR prefixes whose X-Forwarded-For Caddy
 #            believes (the operator's proxy). Default: none (empty). The client
 #            address is then the peer, and Go gets it as the only
 #            X-Forwarded-For entry (ADR-021 rev. 6 item 6)
-#   WX_ADMIN the admin API address (default off; Compose: localhost:2019, for
-#            `caddy reload` inside the container)
+#   WX_ADMIN the admin API address (default off; containers: localhost:2019,
+#            bare metal: a unix socket, for `caddy reload`)
 #
-# Caddy version: the pin in deploy/caddy.env (F-22 H-7), a downloaded release
-# binary that is never committed; `make caddy` fetches it into build/tools/.
-# `make caddy-check` runs this file against a real server (F-22 H-12).
+# Caddy version: the minor of compose.yaml's official image tag (F-59 IP-6, IP-19);
+# `make caddy` takes that image's binary into build/tools/, `make caddy-check`
+# runs this file against a real server (F-22 H-12).
 # Local run:
-#   WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web build/tools/caddy-<version>/caddy run --config deploy/Caddyfile --adapter caddyfile
+#   WX_DATA=$PWD/build/data build/tools/caddy-<minor>/caddy run --config deploy/Caddyfile --adapter caddyfile
 #
-# Never served: any HTML file of build/web (the page template, the About page Go serves, the unfilled shells),
-# private/, tmp/, the database, public.lock, dot files, anything above public/ and site/ (H-10).
+# Never served: the web build itself (the page template, the About page Go serves, the unfilled shells),
+# private/, tmp/, bundles/, the database, public.lock, dot files, anything above public/ and site/ (H-10).
 {
 	admin {$WX_ADMIN:off}
 	auto_https off # plain HTTP only: TLS is the operator's proxy's (ADR-034 rev. 2)
@@ -34,8 +35,8 @@
 		trusted_proxies_strict
 	}
 
-	# DP-9: no `log` directive, so no access log; Caddy 2.11.7 writes nothing per
-	# request (not even a 502 with Go down); TestCaddyLogsNoRequests guards a pin bump.
+	# DP-9: no `log` directive, so no access log; Caddy 2.11 writes nothing per
+	# request (not even a 502 with Go down); TestCaddyLogsNoRequests guards a minor bump.
 }
 
 # H-2 (and OQ-89: X-Robots-Tag site-wide) on every response. Deferred, so it
@@ -53,6 +54,7 @@
 }
 
 {$WX_SITE:http://127.0.0.1:8088} {
+	bind {$WX_BIND:0.0.0.0}
 	import security
 
 	# H-7: on the fly for everything without a .br sidecar (clients without br too), draft.bin (octet-stream) included.
@@ -156,10 +158,11 @@
 		reverse_proxy {$WX_API:127.0.0.1:8080}
 	}
 
-	# The bundle (Vite-hashed names); the upload page at /.
+	# The bundles (Vite-hashed names), copied into {WX_DATA}/site/assets by serve and
+	# regenerate, older releases' kept until no served page needs them (ADR-053); the upload page at /.
 	handle /assets/* {
 		header Cache-Control "public, max-age=31536000, immutable"
-		root * {$WX_WEB}
+		root * {$WX_DATA}/site
 		file_server {
 			precompressed br
 		}

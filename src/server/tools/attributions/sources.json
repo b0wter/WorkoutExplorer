@@ -61,5 +61,20 @@
     "licence": "CC BY 4.0",
     "link": "https://creativecommons.org/licenses/by/4.0/",
     "origins": []
+  },
+  {
+    "name": "Debian (base of the published container image)",
+    "attribution": "The app image is built on Google's distroless static image (gcr.io/distroless/static-debian13), Debian 13 \"trixie\"; each package's copyright file ships in the image under /usr/share/doc",
+    "licence": "Distroless (Apache-2.0); the packages' own licences above",
+    "link": "https://github.com/GoogleContainerTools/distroless",
+    "origins": [],
+    "packages": {
+      "base-files": "GPL-2.0-or-later",
+      "ca-certificates": "MPL-2.0 and GPL-2.0-or-later",
+      "media-types": "public domain",
+      "netbase": "GPL-2.0",
+      "tzdata": "public domain",
+      "tzdata-legacy": "public domain"
+    }
   }
 ]

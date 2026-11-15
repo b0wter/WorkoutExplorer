@@ -1,0 +1,44 @@
+# compose.yaml's services.caddy for rootless Podman (F-59 IP-7, IP-11): the official image on
+# compose.yaml's minor (patches float, `workout-explorer-ctl pull`). Plain HTTP on
+# 127.0.0.1:8080 only; the host's reverse proxy terminates TLS and forwards here.
+[Unit]
+Description=Workout Explorer Caddy (static files + API proxy)
+Wants=workout-explorer-app.service
+After=workout-explorer-app.service
+
+[Container]
+ContainerName=workout-explorer-caddy
+Image=docker.io/library/caddy:2.11
+Pull=missing
+User=10002
+Group=10002
+GroupAdd=10001
+Exec=caddy run --config /srv/workout-explorer/conf/Caddyfile --adapter caddyfile
+Environment=WX_DATA=/srv/workouts
+Environment=WX_API=app:8080
+Environment=WX_SITE=http://:8088
+# Rootless port forwarding shows host clients as Caddy's own edge address (not the gateway)
+Environment=WX_TRUSTED_PROXIES=10.250.0.2
+Environment=WX_ADMIN=localhost:2019
+# The image's state directories; U = owned by the container user (Podman form of uid=10002)
+Tmpfs=/config:rw,size=16m,mode=0700,U
+Tmpfs=/data:rw,size=16m,mode=0700,U
+ReadOnly=true
+DropCapability=all
+NoNewPrivileges=true
+StopTimeout=30
+Volume=/srv/workout-explorer/conf:/srv/workout-explorer/conf:ro
+Volume=/srv/workouts/public:/srv/workouts/public:ro
+# Page shells and web assets the server writes at start (ADR-043, ADR-053)
+Volume=/srv/workouts/site:/srv/workouts/site:ro
+PublishPort=127.0.0.1:8080:8088
+# Fixed, because WX_TRUSTED_PROXIES names it
+Network=workout-explorer-edge.network:ip=10.250.0.2
+Network=workout-explorer-backend.network:ip=10.250.1.2
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

@@ -3,13 +3,17 @@
 // workout-explorer binary, and uses the standard library only.
 //
 //	go run ./tools/attributions -web ../../build/web -binary ../../build/workout-explorer \
-//	    -caddy-env ../../deploy/caddy.env -caddyfile ../../deploy/Caddyfile
+//	    -compose ../../deploy/compose.yaml -caddyfile ../../deploy/Caddyfile
+//	go run ./tools/attributions -base-packages <file>
 //
 // It replaces the marker <!--wx:attributions--> in <web>/about.html with
 // <!--wx:generated--> and the list. Inputs: Vite's .vite/license.json, the
 // binary's build info (module texts come from the module cache), the Go
-// toolchain's LICENSE, the pinned Caddy version, and the committed sources.json.
-// Any input it cannot read or complete is an error (exit 1), so the build fails.
+// toolchain's LICENSE, the pinned Caddy minor (compose.yaml's Caddy tag), and
+// the committed sources.json. Any input it cannot read or complete is an
+// error (exit 1), so the build fails. With -base-packages it only checks that
+// the file (one package name per line, from the app image) lists exactly the
+// packages of the sources entry for the image's base (F-59 IP-2).
 package main
 
 import (
@@ -42,6 +46,7 @@ const (
 type source struct {
 	Name, Attribution, Licence, Link string
 	Origins                          []string
+	Packages                         map[string]string // base image only: Debian package -> licence (F-59 IP-2)
 }
 
 type pkg struct{ name, version, id, text string }
@@ -49,20 +54,28 @@ type pkg struct{ name, version, id, text string }
 func main() {
 	web := flag.String("web", "", "web build directory (required)")
 	bin := flag.String("binary", "", "built workout-explorer binary (required)")
-	caddyEnv := flag.String("caddy-env", "", "deploy/caddy.env (required)")
+	compose := flag.String("compose", "", "deploy/compose.yaml, for the Caddy minor (required)")
 	caddyfile := flag.String("caddyfile", "", "deploy/Caddyfile (required)")
+	basePkgs := flag.String("base-packages", "", "check this package list of the app image against sources.json, nothing else")
 	flag.Parse()
-	if *web == "" || *bin == "" || *caddyEnv == "" || *caddyfile == "" {
-		fmt.Fprintln(os.Stderr, "attributions: -web, -binary, -caddy-env and -caddyfile are required")
+	if *basePkgs != "" {
+		if err := checkBase(*basePkgs); err != nil {
+			fmt.Fprintln(os.Stderr, "attributions:", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if *web == "" || *bin == "" || *compose == "" || *caddyfile == "" {
+		fmt.Fprintln(os.Stderr, "attributions: -web, -binary, -compose and -caddyfile are required")
 		os.Exit(2)
 	}
-	if err := run(*web, *bin, *caddyEnv, *caddyfile); err != nil {
+	if err := run(*web, *bin, *compose, *caddyfile); err != nil {
 		fmt.Fprintln(os.Stderr, "attributions:", err)
 		os.Exit(1)
 	}
 }
 
-func run(web, bin, caddyEnv, caddyfile string) error {
+func run(web, bin, compose, caddyfile string) error {
 	page := filepath.Join(web, "about.html")
 	tmpl, err := os.ReadFile(page)
 	if err != nil {
@@ -86,7 +99,7 @@ func run(web, bin, caddyEnv, caddyfile string) error {
 	if err != nil {
 		return err
 	}
-	caddy, err := caddyPackage(caddyEnv)
+	caddy, err := caddyPackage(compose)
 	if err != nil {
 		return err
 	}
@@ -275,19 +288,52 @@ func goPackages(bin string) ([]pkg, error) {
 	return append(out, pkg{"Go standard library and runtime", strings.TrimPrefix(info.GoVersion, "go"), "BSD-3-Clause", string(b)}), nil
 }
 
-var caddyVersion = regexp.MustCompile(`(?m)^CADDY_VERSION=([0-9][0-9A-Za-z.+-]*)\s*$`)
+// caddyImage is the one home of the Caddy minor (F-59 IP-6): compose.yaml's tag of the official image.
+var caddyImage = regexp.MustCompile(`(?m)^\s*image:\s*docker\.io/library/caddy:([0-9]+\.[0-9]+)\s*$`)
 
-func caddyPackage(envFile string) (pkg, error) {
-	b, err := os.ReadFile(envFile)
+func caddyPackage(compose string) (pkg, error) {
+	b, err := os.ReadFile(compose)
 	if err != nil {
 		return pkg{}, err
 	}
-	m := caddyVersion.FindSubmatch(b)
+	m := caddyImage.FindSubmatch(b)
 	if m == nil {
-		return pkg{}, errors.New(envFile + ": no CADDY_VERSION")
+		return pkg{}, errors.New(compose + ": no docker.io/library/caddy:<minor> image")
 	}
 	t, _ := embedded.ReadFile("caddy-LICENSE.txt")
-	return pkg{"Caddy (web server, run next to this app)", string(m[1]), "Apache-2.0", string(t)}, nil
+	return pkg{"Caddy (web server, run next to this app)", string(m[1]) + ".x", "Apache-2.0", string(t)}, nil
+}
+
+// checkBase compares the app image's package list (file) with the one sources
+// entry that has packages, so a base bump cannot silently change what the
+// published image redistributes (F-59 IP-2).
+func checkBase(file string) error {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	srcs, err := loadSources()
+	if err != nil {
+		return err
+	}
+	var want []string
+	for _, s := range srcs {
+		for p := range s.Packages {
+			want = append(want, p)
+		}
+	}
+	var got []string
+	for _, l := range strings.Split(string(b), "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			got = append(got, l)
+		}
+	}
+	sort.Strings(want)
+	sort.Strings(got)
+	if len(got) == 0 || strings.Join(got, " ") != strings.Join(want, " ") {
+		return fmt.Errorf("the app image's base packages %v differ from sources.json's %v: update the base image entry (names and licences)", got, want)
+	}
+	return nil
 }
 
 func esc(s string) string { return html.EscapeString(s) }
@@ -305,9 +351,21 @@ func render(srcs []source, npm, golang []pkg) string {
 	var sb strings.Builder
 	sb.WriteString("<div class=\"attributions\">\n<h3>This app</h3>\n<ul>\n")
 	sb.WriteString("<li>Workout Explorer <!--wx:version-->, licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). <a href=\"" + esc(repoURL) + "\">Source code</a></li>\n</ul>\n")
-	sb.WriteString("<h3>Map data, styles and fonts</h3>\n<ul>\n")
+	sb.WriteString("<h3>Data, styles, fonts and the container image</h3>\n<ul>\n")
 	for _, s := range srcs {
-		sb.WriteString("<li>" + esc(s.Name) + ": " + esc(s.Attribution) + ". Licence: <a href=\"" + esc(s.Link) + "\">" + esc(s.Licence) + "</a></li>\n")
+		sb.WriteString("<li>" + esc(s.Name) + ": " + esc(s.Attribution) + ". ")
+		if len(s.Packages) > 0 {
+			names := make([]string, 0, len(s.Packages))
+			for p := range s.Packages {
+				names = append(names, p)
+			}
+			sort.Strings(names)
+			for i, p := range names {
+				names[i] = p + " (" + s.Packages[p] + ")"
+			}
+			sb.WriteString("Packages: " + esc(strings.Join(names, ", ")) + ". ")
+		}
+		sb.WriteString("Licence: <a href=\"" + esc(s.Link) + "\">" + esc(s.Licence) + "</a></li>\n")
 	}
 	sb.WriteString("</ul>\n<h3>Libraries in the web page</h3>\n<ul>\n")
 	for _, p := range npm {

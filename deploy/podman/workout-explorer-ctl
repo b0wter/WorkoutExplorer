@@ -1,0 +1,76 @@
+#!/bin/sh
+# Manage Workout Explorer under rootless Podman (F-59 IP-11): the Quadlet user units of
+# user "workouts". Install as /usr/local/sbin/workout-explorer-ctl (root, 0755); PODMAN.md.
+#   sudo workout-explorer-ctl install <dir>    units, Caddyfile and this script from an unpacked deploy
+#                                              archive; pulls both images and validates the Caddyfile first
+#   sudo workout-explorer-ctl pull             both images of the installed units (Caddy's newest patch)
+#   sudo workout-explorer-ctl status|start|stop|restart
+#   sudo workout-explorer-ctl restart-app      only the app; published pages stay online
+#   sudo workout-explorer-ctl reload-caddy     graceful Caddyfile reload
+#   sudo workout-explorer-ctl daemon-reload    after a unit changed
+#   sudo workout-explorer-ctl logs [-f] [-n 100]
+#   sudo workout-explorer-ctl podman ...       e.g. podman ps, podman inspect workout-explorer-app
+#   sudo workout-explorer-ctl reports          visitor reports, read-only
+#   sudo workout-explorer-ctl delete [-y] <public_id>
+#   sudo workout-explorer-ctl regenerate       rebuild all workouts, then remove unused bundles
+set -eu
+u=workouts
+data=/srv/workouts
+conf=/srv/workout-explorer/conf
+app=workout-explorer-app.service
+caddy=workout-explorer-caddy.service
+[ "$(id -u)" = 0 ] || { echo "run with sudo" >&2; exit 1; }
+cd /
+uid=$(id -u "$u")
+units=/etc/containers/systemd/users/$uid
+# container UID/GID 10001 as seen on the host (rootless: subuid/subgid start + 10000)
+huid=$(( $(awk -F: -v u="$u" '$1==u{print $2}' /etc/subuid) + 10000 ))
+hgid=$(( $(awk -F: -v u="$u" '$1==u{print $2}' /etc/subgid) + 10000 ))
+as_user() { runuser -u "$u" -- env XDG_RUNTIME_DIR="/run/user/$uid" "$@"; }
+images() { sed -n 's/^Image=//p' "$@"; }
+cmd=${1:-status}
+[ $# -gt 0 ] && shift
+case "$cmd" in
+install)
+	d=${1:?usage: workout-explorer-ctl install <unpacked deploy archive>}
+	[ -f "$d/Caddyfile" ] && [ -f "$d/podman/workout-explorer-app.container" ] || { echo "install: $d is not an unpacked deploy archive" >&2; exit 1; }
+	! grep -q ':unreleased' "$d/podman/workout-explorer-app.container" || { echo "install: $d is the repository's copy; use a release's deploy archive" >&2; exit 1; }
+	# Nothing changes until both images are pulled and the pulled Caddy accepts the new Caddyfile.
+	for i in $(images "$d"/podman/*.container); do as_user podman pull -q "$i" >/dev/null; done
+	tmp=$(mktemp -d)
+	trap 'rm -rf "$tmp"' EXIT
+	install -m 0644 "$d/Caddyfile" "$tmp/Caddyfile"
+	chmod 0755 "$tmp"
+	as_user podman run --rm --network none --read-only --user 10002:10002 --cap-drop all \
+		--security-opt no-new-privileges --tmpfs /config --tmpfs /data -v "$tmp:/c:ro" -e WX_DATA=/srv/workouts \
+		"$(images "$d/podman/workout-explorer-caddy.container")" caddy validate --config /c/Caddyfile --adapter caddyfile >/dev/null 2>&1 ||
+		{ echo "install: the new Caddy does not run hardened or rejects the new Caddyfile; nothing changed" >&2; exit 1; }
+	install -d -m 0755 "$units" "$conf"
+	for f in "$d"/podman/*.container "$d"/podman/*.network; do install -m 0644 "$f" "$units/"; done
+	cmp -s "$d/Caddyfile" "$conf/Caddyfile" || { install -m 0644 "$d/Caddyfile" "$conf/.Caddyfile.new" && mv "$conf/.Caddyfile.new" "$conf/Caddyfile"; echo "install: Caddyfile changed"; }
+	install -m 0755 "$d/podman/workout-explorer-ctl" /usr/local/sbin/.workout-explorer-ctl.new && mv /usr/local/sbin/.workout-explorer-ctl.new /usr/local/sbin/workout-explorer-ctl
+	as_user systemctl --user daemon-reload ;;
+pull)          for i in $(images "$units"/workout-explorer-*.container); do as_user podman pull -q "$i"; done ;;
+status)        as_user systemctl --user --no-pager status "$app" "$caddy" "$@" ;;
+start|stop|restart) as_user systemctl --user "$cmd" "$app" "$caddy" "$@" ;;
+restart-app)   as_user systemctl --user restart "$app" ;;
+reload-caddy)  as_user podman exec workout-explorer-caddy caddy reload --config "$conf/Caddyfile" --adapter caddyfile ;;
+daemon-reload) as_user systemctl --user daemon-reload ;;
+logs)          exec journalctl --no-pager -o cat "_SYSTEMD_USER_UNIT=$app" + "_SYSTEMD_USER_UNIT=$caddy" "$@" ;;
+podman)        as_user podman "$@" ;;
+reports)
+	exec setpriv --reuid="$huid" --regid="$hgid" --clear-groups sqlite3 -readonly -line "$data/workouts.db" "
+	  SELECT r.id AS report, datetime(r.created_at, 'unixepoch') AS filed_utc, r.reason,
+	         w.public_id, w.visibility AS state, datetime(w.expires_at, 'unixepoch') AS expires_utc, w.title,
+	         quote(replace(r.message, char(10), '\\n')) AS message
+	  FROM reports r JOIN workouts w ON w.id = r.workout_id
+	  ORDER BY r.id;" ;;
+regenerate)
+	as_user podman exec workout-explorer-app /srv/workout-explorer/bin/workout-explorer regenerate -data "$data" -web /srv/workout-explorer/web "$@" ;;
+delete)
+	t=
+	[ -t 0 ] && t=-t
+	# shellcheck disable=SC2086 # $t is empty or -t
+	as_user podman exec -i $t workout-explorer-app /srv/workout-explorer/bin/workout-explorer delete -data "$data" "$@" ;;
+*) echo "usage: $0 install|pull|status|start|stop|restart|restart-app|reload-caddy|daemon-reload|logs|podman|reports|delete|regenerate ..." >&2; exit 2 ;;
+esac

@@ -2,8 +2,8 @@
 
 package main
 
-// F-22 H-12: deploy/Caddyfile in a real Caddy (WX_CADDY, the pin of
-// deploy/caddy.env) in front of the real server wiring (newApp, runServer on
+// F-22 H-12: deploy/Caddyfile in a real Caddy (WX_CADDY, the binary of the
+// official image at compose.yaml's minor, `make caddy`) in front of the real server wiring (newApp, runServer on
 // a TCP port) over a scratch data directory, synthetic files only. Run by
 // `make caddy-check`; without the binary it fails (OQ-90).
 
@@ -105,7 +105,7 @@ func startRigWith(t *testing.T, apiOverride, trusted string, impressum ...string
 	logs := &syncBuffer{}
 	cmd := exec.Command(caddy, "run", "--config", filepath.Join("..", "..", "..", "..", "deploy", "Caddyfile"), "--adapter", "caddyfile")
 	cmd.Env = []string{"HOME=" + home, "XDG_CONFIG_HOME=" + home, "XDG_DATA_HOME=" + home,
-		"WX_DATA=" + a.dir, "WX_WEB=" + web, "WX_API=" + strings.TrimPrefix(api, "http://"), "WX_SITE=" + r.site,
+		"WX_DATA=" + a.dir, "WX_BIND=127.0.0.1", "WX_API=" + strings.TrimPrefix(api, "http://"), "WX_SITE=" + r.site,
 		"WX_TRUSTED_PROXIES=" + trusted}
 	r.logs = logs
 	cmd.Stdout, cmd.Stderr = logs, logs
@@ -350,6 +350,12 @@ func TestCaddy(t *testing.T) {
 			r.check("asset "+e.Name(), r.get("/assets/"+e.Name()), 200, ccAsset)
 		}
 		r.check("missing asset", r.get("/assets/main-00000000.js"), 404, ccNoCache)
+		// ADR-053: assets come from {data}/site/assets, older releases' included; the lists never.
+		if err := os.WriteFile(filepath.Join(r.a.dir, "site", "assets", "old-00000000.js"), []byte("old"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		r.check("older release's asset", r.get("/assets/old-00000000.js"), 200, ccAsset)
+		r.check("bundle lists", r.get("/bundles/"), 404, ccNoCache)
 		r.check("unknown path", r.get("/about-nothing"), 404, ccNoCache)
 		r.check("template", r.get("/index.html"), 404, ccNoCache)
 		// F-29 AB-4: Go's filled page through Caddy; the build's file is never served.

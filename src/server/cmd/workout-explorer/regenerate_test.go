@@ -3,12 +3,15 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 
 	"workout-explorer/internal/datafile"
@@ -35,13 +38,17 @@ func newWeb(t *testing.T, asset string) string {
 	if err := os.WriteFile(filepath.Join(dir, "index.html"), bytes.ReplaceAll(b, []byte("/src/main.ts"), []byte("/assets/"+asset)), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	os.Mkdir(filepath.Join(dir, "assets"), 0o755)
+	if err := os.WriteFile(filepath.Join(dir, "assets", asset), []byte(asset), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return dir
 }
 
 type regenResult struct {
 	code        int
 	counts      map[string]string
-	assets      []string
+	clean       map[string]string // files_removed, bundles_removed (ADR-053)
 	out, stderr string
 }
 
@@ -49,11 +56,11 @@ func runRegen(t *testing.T, ctx context.Context, dir, web string, each func(life
 	t.Helper()
 	var out, errb bytes.Buffer
 	code := regenerate(ctx, dir, settings{webDir: web, baseURL: testBaseURL}, &out, &errb, each)
-	r := regenResult{code: code, counts: map[string]string{}, out: out.String(), stderr: errb.String()}
+	r := regenResult{code: code, counts: map[string]string{}, clean: map[string]string{}, out: out.String(), stderr: errb.String()}
 	for _, l := range strings.Split(strings.TrimSpace(out.String()), "\n") {
 		k, v, _ := strings.Cut(l, "=")
-		if k == "asset" {
-			r.assets = append(r.assets, v)
+		if k == "files_removed" || k == "bundles_removed" {
+			r.clean[k] = v
 		} else if k != "" {
 			r.counts[k] = v
 		}
@@ -120,9 +127,6 @@ func TestRegenerateFormatBump(t *testing.T) {
 	web := newWeb(t, "new-1.js")
 	r := runRegen(t, context.Background(), dir, web, nil)
 	r.want(t, 0, "3", "0", "0", "0")
-	if !slices.Equal(r.assets, []string{"new-1.js"}) {
-		t.Errorf("assets %v", r.assets)
-	}
 	check := func() {
 		t.Helper()
 		for pub, bin := range bins {
@@ -322,8 +326,8 @@ func TestRegenerateInterrupted(t *testing.T) {
 	web := newWeb(t, "new-1.js")
 	r := runRegen(t, ctx, dir, web, func(lifecycle.Outcome) { cancel() })
 	r.want(t, 1, "1", "0", "0", "0")
-	if r.assets != nil || !strings.Contains(r.stderr, "stopped before the end") {
-		t.Errorf("assets %v\n%s", r.assets, r.stderr)
+	if len(r.clean) != 0 || !strings.Contains(r.stderr, "stopped before the end") {
+		t.Errorf("clean-up after an incomplete run: %v\n%s", r.clean, r.stderr)
 	}
 	changed := 0
 	for _, p := range pubs {
@@ -404,5 +408,84 @@ func TestRegenerateCommand(t *testing.T) {
 	run(nil, io.Discard, &errb)
 	if !strings.Contains(errb.String(), "regenerate ") {
 		t.Errorf("usage %s", errb.String())
+	}
+}
+
+// TestRegenerateAssets (F-59 AC 11, ADR-053): serve copied its assets; an
+// older release's bundle stays while a kept page names it and goes after the
+// run that rebuilds that page; bundles no page names go at once.
+func TestRegenerateAssets(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root ignores the read-only modes")
+	}
+	dir := t.TempDir()
+	a := openStorageApp(t, dir, 0)
+	site := filepath.Join(dir, "site", "assets")
+	if b, err := os.ReadFile(filepath.Join(site, fixtureAsset)); err != nil || string(b) != "fixture" {
+		t.Fatalf("serve did not copy its assets: %v", err)
+	}
+	kept, _ := a.published("ride-30min.fit")
+	other, _ := a.published("run-30min.fit")
+	makeOld(t, a.app, kept)
+	makeOld(t, a.app, other)
+	// The older release: its entry (named by the pages) and a lazy chunk (named only inside JavaScript).
+	for _, n := range []string{"old-1.js", "old-map.js"} {
+		os.WriteFile(filepath.Join(site, n), []byte(n), 0o644)
+	}
+	os.WriteFile(filepath.Join(dir, "bundles", "old"), []byte("old-1.js\nold-map.js\n"), 0o644)
+	ls := func(sub string) []string {
+		es, _ := os.ReadDir(filepath.Join(dir, sub))
+		var out []string
+		for _, e := range es {
+			out = append(out, e.Name())
+		}
+		return out
+	}
+
+	web := newWeb(t, "new-1.js")
+	os.Chmod(filepath.Join(dir, "public", kept), 0o550) // its rebuild fails: kept with the old page
+	r := runRegen(t, context.Background(), dir, web, nil)
+	os.Chmod(filepath.Join(dir, "public", kept), 0o750)
+	r.want(t, 0, "1", "0", "1", "0")
+	if want := map[string]string{"files_removed": "1", "bundles_removed": "1"}; !reflect.DeepEqual(r.clean, want) {
+		t.Errorf("clean-up %v", r.clean)
+	}
+	if want := []string{"new-1.js", "old-1.js", "old-map.js"}; !slices.Equal(ls("site/assets"), want) {
+		t.Errorf("assets %v", ls("site/assets"))
+	}
+	if !slices.Contains(ls("bundles"), "old") || len(ls("bundles")) != 2 {
+		t.Errorf("bundles %v", ls("bundles"))
+	}
+
+	// The next run rebuilds the kept page: the old bundle goes, the current one stays.
+	r = runRegen(t, context.Background(), dir, web, nil)
+	r.want(t, 0, "2", "0", "0", "0")
+	if want := map[string]string{"files_removed": "2", "bundles_removed": "1"}; !reflect.DeepEqual(r.clean, want) {
+		t.Errorf("clean-up %v", r.clean)
+	}
+	if !slices.Equal(ls("site/assets"), []string{"new-1.js"}) || len(ls("bundles")) != 1 {
+		t.Errorf("assets %v bundles %v", ls("site/assets"), ls("bundles"))
+	}
+
+	// A clean-up that cannot remove is reported as exit 4, after a complete run.
+	os.WriteFile(filepath.Join(site, "stray.js"), []byte("x"), 0o644)
+	os.Chmod(site, 0o550)
+	r = runRegen(t, context.Background(), dir, web, nil)
+	os.Chmod(site, 0o750)
+	r.want(t, 4, "2", "0", "0", "0")
+	if !strings.Contains(r.stderr, "asset clean-up failed") || strings.Contains(r.stderr, dir) {
+		t.Errorf("log:\n%s", r.stderr)
+	}
+}
+
+// pathless keeps no path of either error type (RG-3).
+func TestPathless(t *testing.T) {
+	for _, err := range []error{
+		fmt.Errorf("x: %w", &fs.PathError{Op: "open", Path: "/srv/workouts/private/w1/draft.bin", Err: syscall.ENOSPC}),
+		fmt.Errorf("x: %w", &os.LinkError{Op: "rename", Old: "/srv/a", New: "/srv/b", Err: syscall.EACCES}),
+	} {
+		if got := pathless(err); strings.Contains(got, "/srv") || got == "" {
+			t.Errorf("%q", got)
+		}
 	}
 }

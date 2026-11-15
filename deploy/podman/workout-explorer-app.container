@@ -1,0 +1,34 @@
+# compose.yaml's services.app for rootless Podman (F-59 IP-11). The release's copy names
+# our image by digest, the same value as its compose.yaml (ADR-052).
+[Unit]
+Description=Workout Explorer API server
+
+[Container]
+ContainerName=workout-explorer-app
+Image=ghcr.io/b0wter/workout-explorer:unreleased
+Pull=missing
+User=10001
+Group=10001
+Exec=serve -addr :8080 -data /srv/workouts -web /srv/workout-explorer/web
+EnvironmentFile=/srv/workout-explorer/.env
+# Caddy's address on backend: the one proxy the server believes (DP-1a)
+Environment=WORKOUT_EXPLORER_TRUSTED_PROXY=10.250.1.2
+ReadOnly=true
+DropCapability=all
+NoNewPrivileges=true
+# mem_limit = memswap_limit = 1200m (compose.yaml, DP-8); Quadlet 5.4 has no Memory= key
+PodmanArgs=--memory=1200m --memory-swap=1200m
+StopTimeout=30
+Volume=/srv/workouts:/srv/workouts
+# About page operator text and Impressum (public), read-only
+Volume=/srv/workout-explorer/operator:/srv/workout-explorer/operator:ro
+Network=workout-explorer-backend.network:ip=10.250.1.3
+NetworkAlias=app
+# Notifications (ADR-039): a drop-in adds the egress network (PODMAN.md, "Notifications").
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

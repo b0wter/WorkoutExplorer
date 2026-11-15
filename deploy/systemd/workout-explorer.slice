@@ -1,0 +1,8 @@
+# The app's memory cap on bare metal (F-59 IP-15): compose.yaml's mem_limit = memswap_limit,
+# shared by `serve` and the subcommands (workout-explorer-run), as `exec` into the container.
+[Unit]
+Description=Workout Explorer (app and its subcommands)
+
+[Slice]
+MemoryMax=1200M
+MemorySwapMax=0

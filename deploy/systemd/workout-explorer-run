@@ -1,0 +1,27 @@
+#!/bin/sh
+# Run a subcommand on bare metal as the app does (F-59 IP-16, F-30 RG-13): as its user, with
+# its .env, inside its slice (memory cap) and with its sandbox. Install as
+# /usr/local/sbin/workout-explorer-run (root, 0755).
+#   sudo workout-explorer-run regenerate           rebuild all workouts, then remove unused bundles
+#   sudo workout-explorer-run delete [-y] <public_id>
+#   sudo workout-explorer-run parse /srv/workouts/<file>.fit
+# The sandbox repeats workout-explorer.service's main lines; keep them in step.
+set -eu
+[ "$(id -u)" = 0 ] || { echo "run with sudo" >&2; exit 1; }
+cmd=${1:?usage: workout-explorer-run regenerate|delete|parse ...}
+shift
+case "$cmd" in
+regenerate) set -- regenerate -data /srv/workouts -web /srv/workout-explorer/web "$@" ;;
+delete)     set -- delete -data /srv/workouts "$@" ;;
+parse)      set -- parse "$@" ;;
+*) echo "usage: workout-explorer-run regenerate|delete|parse ..." >&2; exit 2 ;;
+esac
+io=--pipe
+[ -t 0 ] && [ -t 1 ] && io=--pty # delete asks Delete? [y/N]
+exec systemd-run --quiet --wait --collect "$io" --service-type=exec \
+	-p User=workout-explorer -p Group=workout-explorer -p Slice=workout-explorer.slice \
+	-p EnvironmentFile=/srv/workout-explorer/.env \
+	-p NoNewPrivileges=yes -p CapabilityBoundingSet= -p ProtectSystem=strict -p ReadWritePaths=/srv/workouts \
+	-p ProtectHome=yes -p PrivateTmp=yes -p PrivateDevices=yes -p RestrictAddressFamilies="AF_INET AF_INET6 AF_UNIX" \
+	-p IPAddressDeny=any -p IPAddressAllow=localhost \
+	/srv/workout-explorer/bin/workout-explorer "$@"

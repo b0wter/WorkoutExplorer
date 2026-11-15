@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -62,11 +63,40 @@ func TestRenderEscapes(t *testing.T) {
 }
 
 func TestCaddyPackage(t *testing.T) {
-	f := filepath.Join(t.TempDir(), "caddy.env")
-	os.WriteFile(f, []byte("# c\nCADDY_VERSION=2.11.7\n"), 0o644)
-	p, err := caddyPackage(f)
-	if err != nil || p.version != "2.11.7" || !strings.Contains(p.text, "Apache License") {
+	p, err := caddyPackage(filepath.Join("..", "..", "..", "..", "deploy", "compose.yaml"))
+	if err != nil || !regexp.MustCompile(`^[0-9]+\.[0-9]+\.x$`).MatchString(p.version) || !strings.Contains(p.text, "Apache License") {
 		t.Errorf("%+v %v", p, err)
+	}
+	f := filepath.Join(t.TempDir(), "compose.yaml")
+	os.WriteFile(f, []byte("    image: docker.io/library/caddy:2.11.9\n"), 0o644) // a patch pin is not the minor
+	if _, err := caddyPackage(f); err == nil {
+		t.Error("patch tag accepted")
+	}
+}
+
+// F-59 IP-2: the image's package list must equal the base entry's, both ways.
+func TestCheckBase(t *testing.T) {
+	f := filepath.Join(t.TempDir(), "pkgs")
+	srcs, _ := loadSources()
+	var names []string
+	for _, s := range srcs {
+		for p := range s.Packages {
+			names = append(names, p)
+		}
+	}
+	if len(names) == 0 {
+		t.Fatal("no base image entry with packages")
+	}
+	for name, list := range map[string]string{
+		"equal": strings.Join(names, "\n") + "\n", "extra": strings.Join(names, "\n") + "\nlibc6\n", "missing": strings.Join(names[1:], "\n"), "empty": "",
+	} {
+		os.WriteFile(f, []byte(list), 0o644)
+		if err := checkBase(f); (err == nil) != (name == "equal") {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if out := render(srcs, nil, nil); !strings.Contains(out, "base-files (GPL-2.0-or-later)") {
+		t.Error("packages not listed")
 	}
 }
 

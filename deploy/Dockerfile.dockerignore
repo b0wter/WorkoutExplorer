@@ -1,9 +1,9 @@
-# Allow-list (F-31 DP-16): real FIT files, corpus/real, expected/real and build/ never enter the context.
+# Allow-list (F-59 IP-1, F-31): real FIT files, corpus/real, expected/real and build/ never enter the context.
 *
+!LICENSE
 !Makefile
-!deploy/caddy.env
-!deploy/fetch-caddy.sh
 !deploy/Caddyfile
+!deploy/compose.yaml
 !src/server
 !src/web
 **/testdata

@@ -2,42 +2,40 @@
 
 Workout Explorer turns an uploaded FIT file (from a bike computer or sports watch) into a shareable page with map, charts and laps. There are no accounts. Every workout is deleted after 7 days by default (at most 30). Nothing is backed up, on purpose: a lost server loses its workouts.
 
-To run the containers rootless with Podman and systemd instead of Docker, see [PODMAN.md](PODMAN.md).
-
-Design background: `architect/F-31-server-deploy-and-monitoring.md` (DP-1 to DP-18), ADR-034, ADR-035.
+Design background: `architect/F-31-server-deploy-and-monitoring.md`, `architect/F-59-container-image-and-install-paths.md`, ADR-034, ADR-035, ADR-052, ADR-053.
 
 ## Which way should I run it?
 
-| | Self-host (sections 1 to 12) | Operator deploy (section 13) |
-| --- | --- | --- |
-| For | You. Anyone with Docker | The project operator's own VPS |
-| How | You build one image from a clone and run it with Docker Compose | `deploy/deploy.sh` copies a GitHub Release (built by CI on a version tag) to the server |
-| Needs | Docker, Compose, a clone of this repository | SSH access, a pushed `vX.Y.Z` tag with its release, the GitHub CLI |
+Every release publishes our app image (`ghcr.io/b0wter/workout-explorer:vX.Y.Z`: the server and the web files, nothing else), a **deploy archive** with the files each path installs, a bare-metal tarball and `SHA256SUMS`. Caddy, the small web server in front of the app, is not ours: the official Caddy image, or Caddy's own Debian package. The privacy and security guarantees are the same on every path.
 
-**Pick self-hosting.** Section 13 is only for the operator and can be skipped. Instead of building the image you can also use a public release (section 6a).
+| | Docker Compose (sections 1 to 12) | Rootless Podman ([PODMAN.md](PODMAN.md)) | Bare metal (section 14) |
+| --- | --- | --- | --- |
+| For | Anyone with Docker. **Pick this if unsure** | Hosts with Podman and systemd, no Docker daemon | Hosts without containers |
+| Runs | Our image and the official Caddy image | The same two images, as systemd user units (Quadlet) | The binary from the tarball and Caddy's apt package, as two systemd services |
+| Updates | By hand, section 8 | By hand, PODMAN.md section 9 | By hand, section 14.6 |
+
+Also here: building the image yourself from a clone (section 6a), the project operator's own deploy (section 13), moving an existing tarball install to the image (section 15), releasing (section 13.3).
 
 ## How it fits together
 
 ```
-browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy, in Docker)
-                                                   |-- /w/..., /assets/...: files from disk
-                                                   '-- /api/*  --> Go server (in Docker, no internet unless notifications are on, section 4a)
+browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy)
+                                                   |-- /w/..., /assets/..., pages: files from the data directory
+                                                   '-- /api/*  --> Go server (no internet unless notifications are on, section 4a)
 ```
 
 - Your reverse proxy (Caddy, nginx, Traefik, ...) handles the domain and TLS. This project does not get certificates and opens no public port.
-- Our Caddy listens on plain HTTP, by default on `127.0.0.1:8088` only.
-- Two containers (`app` and `caddy`) run from one image. The only host folder they use is the data directory (default `/srv/workouts`).
+- Our Caddy listens on plain HTTP, by default on `127.0.0.1:8088` only, and reads only `public/` and `site/` of the data directory (default `/srv/workouts`). The server writes the static pages and the web files there at every start; files of older releases stay until no published page needs them.
 
 ## 1. Prerequisites
 
 | Need | Detail |
 | --- | --- |
-| CPU | **linux/amd64 (x86-64).** arm64 (Raspberry Pi, Apple silicon servers) is not supported: the Caddy pin has only an amd64 checksum |
-| RAM | 2 GB. The `app` container is capped at 1200 MB (`compose.yaml`); leave room for the OS, Docker and Caddy. Building the image also needs memory (see "Updating", tip for small hosts) |
-| Disk | About 3 GB for the image and build cache, plus the storage cap you set (default 1000 MB), plus Docker logs (at most 5 x 10 MB per container). Local disk, one file system |
-| Docker | **Docker Engine 28 or newer** (ADR-039 relies on it to block direct access to unpublished container ports) with the Compose plugin, **Compose 2.24 or newer** (`docker compose version`). Default daemon settings |
-| Git | To clone the repository |
-| `sqlite3` | Only to read reports from visitors (section 10). Debian: `apt install sqlite3` |
+| CPU | **linux/amd64 (x86-64).** Our image is published for amd64 only |
+| RAM | 2 GB. The `app` container is capped at 1200 MB (`compose.yaml`); leave room for the OS, Docker and Caddy |
+| Disk | About 1 GB for the images, plus the storage cap you set (default 1000 MB), plus Docker logs (at most 5 x 10 MB per container). Local disk, one file system |
+| Docker | **Docker Engine 28 or newer** (ADR-039 relies on it to block direct access to unpublished container ports) with the Compose plugin, **Compose 2.24 or newer** (`docker compose version`). Default daemon settings. Pulls from `ghcr.io` and Docker Hub, no login |
+| Tools | `curl`, `tar`, `sha256sum`. `sqlite3` only to read reports from visitors (section 10). Debian: `apt install curl sqlite3` |
 | Domain and proxy | A domain name pointing at your host, and a reverse proxy **on the same host** that terminates TLS (section 5) |
 | Port | `8088/tcp` free on the host loopback (or another port, see `WX_LISTEN`) |
 | Location | For GDPR purposes, host in the EU if your visitors are there. No analytics or third-party trackers are used. The map tiles come from `tiles.openfreemap.org` (the visitor's browser fetches them) |
@@ -50,14 +48,24 @@ docker compose version          # Docker Compose version v2.24.0 or newer
 uname -m                        # x86_64
 ```
 
-## 2. Get the code
+## 2. Get the deploy files
+
+Releases are public; no GitHub login is needed. Take the newest `vX.Y.Z` from the repository's Releases page. Use the release's files, not the repository's `deploy/` folder: the release's `compose.yaml` names our image by its digest, so it runs exactly the tested image with the matching Caddyfile.
 
 ```sh
-git clone <this repository's URL> workout-explorer
-cd workout-explorer/deploy
+v=v1.4.0                             # the release you chose
+base=https://github.com/b0wter/WorkoutExplorer/releases/download/$v
+sudo install -d -o "$USER" -m 0755 /srv/workout-explorer /srv/workout-explorer/conf
+cd /srv/workout-explorer
+curl -fLO $base/workout-explorer-$v-deploy.tar.gz -O $base/SHA256SUMS
+sha256sum -c --ignore-missing SHA256SUMS            # must print: ...deploy.tar.gz: OK
+mkdir -p /tmp/wx-$v && tar -xzf workout-explorer-$v-deploy.tar.gz -C /tmp/wx-$v
+cp /tmp/wx-$v/compose.yaml /tmp/wx-$v/compose.notify.yaml /tmp/wx-$v/example.env /tmp/wx-$v/*.example.txt .
+cp /tmp/wx-$v/Caddyfile conf/Caddyfile
+rm workout-explorer-$v-deploy.tar.gz SHA256SUMS
 ```
 
-All following commands run in `deploy/` unless stated otherwise.
+All following commands run in `/srv/workout-explorer` unless stated otherwise. The image tag `latest` exists for a quick `docker pull` look only; never put it into `compose.yaml` (a newer app with older deploy files can break pages).
 
 ## 3. Create the data directory
 
@@ -67,29 +75,27 @@ Compose never creates host folders. The server runs as user ID 10001, Caddy as 1
 sudo install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public /srv/workouts/site
 ```
 
-You should see: `ls -ld /srv/workouts /srv/workouts/public /srv/workouts/site` shows `drwxr-x---` and owner `10001 10001` for all three. `site/` holds the static pages (upload, expired workout, edit, Impressum) that the server fills at every start; Caddy serves them from there.
-
-**Upgrading from a version without `site/`:** create it once with the same command before `docker compose up -d`, or Caddy does not start.
+You should see: `ls -ld /srv/workouts /srv/workouts/public /srv/workouts/site` shows `drwxr-x---` and owner `10001 10001` for all three. `site/` holds the static pages (upload, expired workout, edit, Impressum) and the web files (`site/assets/`) that the server writes at every start; Caddy serves them from there. `bundles/` (next to it, created by the server) lists which web files belong to which release.
 
 Keep it on the local disk. To use another path, set `WX_DATA` (section 4) to it.
 
 ### The About page: operator file
 
-The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` mounts the folder `/srv/workout-explorer/operator` read-only (`deploy.sh` never writes there). Create it once (`deploy.sh` also creates the empty folder on the operator server, so an upgrade does not stop `app`), then write the file:
+The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` reads the folder `/srv/workout-explorer/operator` read-only (`deploy.sh` never writes there). Create it once (`deploy.sh` also creates the empty folder on the operator server, so an upgrade does not stop `app`), then write the file:
 
 ```sh
 sudo install -d -o "$USER" -m 0755 /srv/workout-explorer/operator
-cp deploy/operator.example.txt /srv/workout-explorer/operator/about.txt   # fill every [bracketed prompt], including your proxy's logging
+cp operator.example.txt /srv/workout-explorer/operator/about.txt   # fill every [bracketed prompt], including your proxy's logging
 ```
 
-Set `WORKOUT_EXPLORER_OPERATOR_FILE=/srv/workout-explorer/operator/about.txt` in `.env` (section 4) and restart `app` after every edit (`docker compose restart app`). Format: `## Heading`, `- list item`, other lines are paragraphs, a blank line ends a block; no links or markup (everything is shown as plain text); at most 16 KiB. Without the file the page shows `[OPERATOR DETAILS: ...]` and `app` logs a warning: replace it before you send links to anyone. Never commit this file.
+Set `WORKOUT_EXPLORER_OPERATOR_FILE=/srv/workout-explorer/operator/about.txt` in `.env` (section 4) and restart `app` after every edit (`docker compose restart app`; Podman and bare metal: their restart command). Format: `## Heading`, `- list item`, other lines are paragraphs, a blank line ends a block; no links or markup (everything is shown as plain text); at most 16 KiB. Without the file the page shows `[OPERATOR DETAILS: ...]` and `app` logs a warning: replace it before you send links to anyone. Never commit this file.
 
 ### Impressum (optional)
 
 If you need an Impressum (legal notice), write it as a plain text file in the operator folder, in the same format as the operator file above (`## Heading`, `- list item`, paragraphs; at most 16 KiB; no links or markup):
 
 ```sh
-cp deploy/impressum.example.txt /srv/workout-explorer/operator/impressum.txt   # replace every [bracketed prompt]
+cp impressum.example.txt /srv/workout-explorer/operator/impressum.txt   # replace every [bracketed prompt]
 ```
 
 Then:
@@ -103,18 +109,10 @@ Do the same after every edit, and to remove it (unset the key, restart, `regener
 ## 4. Configure
 
 ```sh
-cp example.env .env
+cp example.env .env && chmod 0600 .env
 ```
 
-Edit `.env`. Then enable the build override by removing the `#` from this line near the end of the file:
-
-```
-COMPOSE_FILE=compose.yaml:compose.build.yaml
-```
-
-Without that line, `docker compose` expects the operator's prebuilt files and fails. Leave `WX_WEB` at its default (the web files are inside the image).
-
-Unset or empty keys use the default. An invalid value stops the server at start (exit code 2) with a message naming the key.
+Edit `.env`. Unset or empty keys use the default. An invalid value stops the server at start (exit code 2) with a message naming the key.
 
 | Key | Default | Meaning and when to change it |
 | --- | --- | --- |
@@ -125,7 +123,6 @@ Unset or empty keys use the default. An invalid value stops the server at start 
 | `WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV4` | `60` | Uploads per hour per IPv4 address (1 to 240) |
 | `WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV6` | `60` | Uploads per hour per IPv6 /64 prefix (1 to 240) |
 | `WX_DATA` | `/srv/workouts` | Host folder for all workout data. Same path inside the containers |
-| `WX_WEB` | `/srv/workout-explorer/web` | Web files. **Leave as is when self-hosting**; they come from the image |
 | `WX_LISTEN` | `127.0.0.1:8088` | Where Caddy's HTTP port is published on the host. Your proxy forwards here. **Never a public address**: Docker publishes ports around the host firewall, and this port is plain HTTP. Change it only for a proxy in a container (section 5) |
 | `WX_TRUSTED_PROXIES` | `10.250.0.1` (when unset) | Source address(es) of your reverse proxy as Caddy sees them. Separate several by spaces, not commas. See section 5 |
 | `WORKOUT_EXPLORER_PUSHOVER_TOKEN` | unset (off) | Pushover application token for report notifications, section 4a. **A secret** |
@@ -133,9 +130,9 @@ Unset or empty keys use the default. An invalid value stops the server at start 
 | `WORKOUT_EXPLORER_OPERATOR_FILE` | unset (placeholder) | Absolute path of your About page text, see "The About page: operator file" above. `WX_OPERATOR` (default `/srv/workout-explorer/operator`) is the host folder mounted for it |
 | `WORKOUT_EXPLORER_IMPRESSUM_FILE` | unset (no Impressum) | Absolute path of your Impressum text, see "Impressum (optional)" above. Set but missing or invalid stops the server at start |
 | `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section) | `https://` link to your iPhone upload Shortcut, shown on the About page, section 4b. Anything that is not an absolute `https://` link stops the server at start |
-| `COMPOSE_FILE` | unset | Self-hosters: `compose.yaml:compose.build.yaml`; with notifications add `:compose.notify.yaml` (section 4a) |
+| `COMPOSE_FILE` | unset | With notifications: `compose.yaml:compose.notify.yaml` (section 4a). Self-builders: section 6a |
 
-`WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`.
+`WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`. There is no setting for the images: the release's `compose.yaml` fixes ours by digest and Caddy's by minor version.
 
 With notifications on, the file holds two secrets. Keep it mode `0600` and never commit it.
 
@@ -157,9 +154,11 @@ Turning it on needs **both** steps; one without the other does not work:
 2. Give the server a route out by adding `compose.notify.yaml` to `COMPOSE_FILE` in `.env`:
 
    ```
-   COMPOSE_FILE=compose.yaml:compose.build.yaml:compose.notify.yaml   # self-hosters
-   COMPOSE_FILE=compose.yaml:compose.notify.yaml                      # operator (section 13); release users (section 6a) copy compose.notify.yaml next to compose.yaml
+   COMPOSE_FILE=compose.yaml:compose.notify.yaml                      # the published image
+   COMPOSE_FILE=compose.yaml:compose.build.yaml:compose.notify.yaml   # self-builders (section 6a)
    ```
+
+   Rootless Podman: a drop-in instead (PODMAN.md section 8). Bare metal: `notify.conf` (section 14.4).
 
 Then `docker compose up -d`. Check: `docker compose logs app | grep 'server started'` shows `"notifications":true`. Report one of your own published workouts from its page; a message arrives within seconds.
 
@@ -275,80 +274,78 @@ Traefik with Docker labels: the same router, but the backend is a host address, 
 
 Wrong `WX_TRUSTED_PROXIES`: too narrow shows as every visitor sharing one upload limit. Too wide lets clients choose their own address. Only the proxy's own source may be listed.
 
-## 6. Build and start
+## 6. Start
 
 ```sh
-docker compose build
+docker compose pull
 docker compose up -d
 ```
 
-The first build takes several minutes (it builds the web app and the server, and downloads the pinned Caddy with a checksum). You should see `Image workout-explorer:local Built`, then `Container workout-explorer-app-1 Started` and `Container workout-explorer-caddy-1 Started`.
+You should see `Container workout-explorer-app-1 Started` and `Container workout-explorer-caddy-1 Started`.
 
 Check:
 
 ```sh
 docker compose ps                                  # both services "Up"
-curl -fsS http://127.0.0.1:8088/api/health         # {"status":"ok","version":"unknown"}
+curl -fsS http://127.0.0.1:8088/api/health         # {"status":"ok","version":"v1.4.0"}
 curl -fsS https://workouts.example.org/api/health  # the same, through your proxy
 ```
 
-The image reports version `unknown`; that is normal. Open `https://workouts.example.org/` in a browser: the upload page appears. Upload a FIT file, publish it and open the link.
+Open `https://workouts.example.org/` in a browser: the upload page appears. Upload a FIT file, publish it and open the link.
 
 If it does not start: `docker compose logs app` names the bad setting.
 
-## 6a. Alternative: use a public release instead of building
+## 6a. Building the image yourself (not a separate path)
 
-Releases are public; no GitHub login is needed. Take the latest `vX.Y.Z` from the repository's Releases page, then (sections 1, 3 and 4 still apply; `.env` as in section 4, with `COMPOSE_FILE` unset):
+For changes of your own, build the app image from a clone instead of pulling ours. Everything else stays as above (Caddy still comes from the official image); there are no automatic updates for this setup.
 
 ```sh
-cd workout-explorer                  # the clone from section 2, for compose.yaml, Caddyfile and fetch-caddy.sh
-v=v1.4.0                             # the release you chose
-base=https://github.com/b0wter/WorkoutExplorer/releases/download/$v
-mkdir -p ../run && cd ../run
-curl -fLO $base/workout-explorer-$v-linux-amd64.tar.gz -O $base/SHA256SUMS
-sha256sum -c SHA256SUMS              # must print: ...tar.gz: OK
-mkdir -p bin conf web
-tar -xzf workout-explorer-$v-linux-amd64.tar.gz workout-explorer web
-mv workout-explorer bin/
-sh ../workout-explorer/deploy/fetch-caddy.sh bin/caddy
-cp ../workout-explorer/deploy/compose.yaml ../workout-explorer/deploy/example.env .
-cp ../workout-explorer/deploy/Caddyfile conf/Caddyfile
+git clone <this repository's URL> /opt/workout-explorer-src && cd /opt/workout-explorer-src && git checkout v1.4.0
+cd deploy && cp example.env .env                   # as in section 4, plus the line below
+echo 'COMPOSE_FILE=compose.yaml:compose.build.yaml' >> .env
+docker compose build --build-arg VERSION=v1.4.0    # several minutes; without the argument the version is "unknown"
+docker compose up -d
 ```
 
-Then, in `run/`, start with `docker compose up -d` (set `WX_WEB` in `.env` to the absolute path of `run/web`). This is the layout `deploy.sh` produces on the operator's server (section 13). `/api/health` reports the tag as its version. To update, repeat with the new tag and run `docker compose restart app`.
+Here `deploy/` of the clone is the deploy directory, and the Caddyfile is mounted from `deploy/conf/`: create it with `mkdir -p conf && cp Caddyfile conf/`. To update: `git fetch && git checkout <new tag>`, copy the Caddyfile again, `docker compose build ... && docker compose up -d`, then `regenerate` (section 8). Small hosts (2 GB): stop `app` while building (`docker compose stop app`).
 
 ## 7. Check the result
 
 - `ss -ltn`: the only listener of this project is `WX_LISTEN`'s port. Nothing on 80 or 443 comes from it.
 - `curl -sI https://workouts.example.org/ | grep -i strict-transport-security` prints exactly one line.
 - `docker compose logs caddy` and `docker compose logs app` contain no visitor addresses (section 11).
+- Hardening: `grep -E 'CapPrm|CapEff|CapBnd' /proc/$(docker inspect -f '{{.State.Pid}}' workout-explorer-caddy-1)/status` shows only zeros; the same for `workout-explorer-app-1`.
 - Test with your own file first. The About page (`/about`) is the privacy page; your part of it comes from the operator file (see "The About page: operator file").
 
 ## 8. Updating
 
-```sh
-cd workout-explorer
-git pull
-cd deploy
-docker compose build
-docker compose up -d
-```
+Read the release notes first. Then, with the new `v`:
 
-Both containers are recreated, so pages are unreachable for a moment. Then rebuild every stored workout with the new version (published pages, drafts, preview images):
+1. Download and check the new deploy archive and unpack it to `/tmp/wx-$v` as in section 2 (not yet copying anything).
+2. Pull the new images before anything changes, and check the new Caddyfile with the pulled Caddy:
+   ```sh
+   cd /srv/workout-explorer
+   docker compose --project-directory . -f /tmp/wx-$v/compose.yaml pull
+   docker run --rm --network none --read-only --user 10002:10002 --cap-drop ALL --security-opt no-new-privileges:true \
+     --tmpfs /config --tmpfs /data -v /tmp/wx-$v:/c:ro docker.io/library/caddy:2.11 \
+     caddy validate --config /c/Caddyfile --adapter caddyfile      # use the Caddy tag of the new compose.yaml
+   ```
+3. Install: `cp /tmp/wx-$v/compose.yaml /tmp/wx-$v/compose.notify.yaml .` and, if it differs, `cp /tmp/wx-$v/Caddyfile conf/Caddyfile`.
+4. `docker compose up -d`. It recreates `app` on the new image (a few seconds without API) and `caddy` only when a newer Caddy patch arrived or its definition changed (a moment without pages). If only the Caddyfile changed: `docker compose exec caddy caddy reload --config /srv/workout-explorer/conf/Caddyfile --adapter caddyfile`.
+5. Wait until `curl -fsS http://127.0.0.1:8088/api/health` shows the new version.
+6. Rebuild every stored workout with the new version (published pages, drafts, preview images) and remove the web files no page needs any more:
+   ```sh
+   docker compose exec -T app /srv/workout-explorer/bin/workout-explorer regenerate -data /srv/workouts -web /srv/workout-explorer/web
+   ```
+   (use your `WX_DATA` if you changed it). It prints `rebuilt=`, `deleted=`, `kept=` and `skipped=` counts, then `files_removed=` and `bundles_removed=`; its log lines go to stderr. Exit 0 means every workout was processed and the old web files cleaned up. A workout whose file the new version cannot read at all is deleted (as if it had expired); one that failed for another reason (load, disk) is kept unchanged with its old web files, and rebuilt by the next run. Exit 1: it stopped early or could not start, nothing was removed; run it again. Exit 4: every workout was processed, but removing old web files failed; run it again later.
 
-```sh
-docker compose exec -T app /srv/workout-explorer/bin/workout-explorer regenerate -data /srv/workouts -web /srv/workout-explorer/web
-```
+`deploy.sh` (section 13) does exactly these steps. Between releases, `docker compose pull && docker compose up -d` brings Caddy's newest patch of its minor.
 
-(use your `WX_DATA` and `WX_WEB` if you changed them). It prints `rebuilt=`, `deleted=`, `kept=` and `skipped=` counts and the asset names pages still use; its log lines go to stderr. Exit 0 means every workout was processed. A workout whose file the new version cannot read at all is deleted (as if it had expired); one that failed for another reason (load, disk) is kept unchanged and rebuilt by the next run, so simply run it again. Exit 1: it stopped early or could not start; run it again. With your own image build, old web files are replaced, so pages of kept workouts may lose their styles until a later run rebuilds them.
-
-Small hosts (2 GB): stop the app while building (`docker compose stop app`, then build, then `docker compose up -d`), or build on another amd64 machine and move the image: `docker save workout-explorer:local | ssh host docker load`.
-
-Remove old build leftovers when you like: `docker image prune`.
+Remove old images when you like: `docker image prune`.
 
 ## 9. Data, backups and privacy
 
-- All workout data is in `WX_DATA` (default `/srv/workouts`): the database (`workouts.db`), the private originals (`private/`), and what is served to visitors (`public/`).
+- All workout data is in `WX_DATA` (default `/srv/workouts`): the database (`workouts.db`), the private originals (`private/`), what is served to visitors (`public/`), and the static pages and web assets of the releases still in use (`site/`, `bundles/`; a few MB per release, counted towards the storage limit).
 - A workout whose sharer's browser sent a map for the link preview also keeps that map in `private/` (`preview-map.*.png`, up to about 2.5 MB each). It counts towards the storage limit, is never served as it is, and is deleted with the workout. The server itself never contacts the map tile host.
 - **There are no backups, by design.** Workouts are short-lived, and a copy would outlive the deletion that the app promises to its users. Do not back up this folder. Turn off provider snapshots for the host if you can. Losing the server loses its workouts; that is accepted.
 - Expiry deletes everything stored for a workout, in the database and on disk. Drafts are deleted after 48 hours.
@@ -367,9 +364,8 @@ A crash, an out-of-memory kill or a reboot restarts the containers by themselves
 To delete everything, including all workouts:
 
 ```sh
-docker compose down
+docker compose down --rmi all
 sudo rm -rf /srv/workouts
-docker rmi workout-explorer:local
 ```
 
 ### Reports from visitors
@@ -426,22 +422,20 @@ docker compose logs --tail 100 caddy
 | `app` exits at start, `docker compose logs app` shows "must be ..." | A setting is invalid or `WORKOUT_EXPLORER_BASE_URL` is missing. Fix `.env` |
 | Upload fails with permission errors, or `app` cannot create files | The data directory is not owned by 10001: `sudo chown -R 10001:10001 /srv/workouts && sudo chmod 0750 /srv/workouts /srv/workouts/public` |
 | Published pages give 404 from the container but exist | Caddy cannot read `public/`: mode must be 0750 with group 10001 (section 3) |
-| `caddy` does not start: a bind mount source `.../site` does not exist | Create `site/` as in section 3, then `docker compose up -d` |
+| `caddy` does not start: a bind mount source `.../site` or `conf` does not exist | Create `site/` as in section 3 and `conf/Caddyfile` as in section 2, then `docker compose up -d` |
 | `/`, `/edit/...` or the expired-workout page give 404 | `app` has not started once since `site/` was created; it writes those pages at start (`docker compose logs app`) |
 | Uploads return 503 | The storage limit is reached. Raise `WORKOUT_EXPLORER_STORAGE_LIMIT_MB` (and check free disk), or wait for expiry |
 | "network ... overlaps" or no route to the other 10.250.x hosts | The project fixes two networks, `10.250.0.0/29` (edge) and `10.250.1.0/29` (backend). If your host, VPN or other containers already use them, change them in `compose.yaml` in all places: the two `subnet` lines, `WORKOUT_EXPLORER_TRUSTED_PROXY`, both `ipv4_address` lines of Caddy, the `app` address, and the `WX_TRUSTED_PROXIES` default (the edge gateway). Then `docker compose up -d` |
-| `docker compose` complains about `!override` or unknown tag | Compose is older than 2.24. Upgrade the plugin |
-| Build fails with "exec format error" or on arm64 | Only linux/amd64 is supported |
-| Build is killed (out of memory) | Stop `app` while building, or build elsewhere (section 8) |
-| Styles missing on old workouts after an update | Run `regenerate` (section 8); a workout it reports as kept is rebuilt by a later run |
+| "exec format error", or no image for your platform | Only linux/amd64 is supported |
+| `app` fails to pull: `manifest unknown` for `workout-explorer:unreleased` | You use the repository's `compose.yaml`. Use the one from a release's deploy archive (section 2), or build the image yourself (section 6a) |
+| `caddy` exits with `operation not permitted` | A Caddy patch pulled between releases no longer runs without capabilities. Report it; a release of ours handles it. The update's check (section 8, step 2) catches this before anything changes |
+| Styles missing on old workouts after an update | `app` has not started once with the new version, or `site/assets` was emptied by hand. Restart `app`, then run `regenerate` (section 8) |
 | No notification; `docker compose logs app` shows `"notification failed","class":"network"` | `compose.notify.yaml` is missing from `COMPOSE_FILE`, or the host has no internet route (section 4a). `"status":400` means a wrong token or user key, `"status":429` Pushover's monthly quota |
 | `delete` says "database schema N is not this binary's" | `app` has not yet run with this version. Start it once (`docker compose up -d`), then delete |
 
 ## 13. Operator deploy (for the project operator only)
 
-Everything below is the operator's own VPS setup. Self-hosters can skip it.
-
-Shape: `deploy.sh` downloads the GitHub Release of a version tag (binary and web files), copies it to the server, and runs the same `compose.yaml` without the build override. Caddy and Go binaries are bind-mounted read-only into a distroless base image (DP-2).
+Everything below is the operator's own VPS setup. It is the Compose path of sections 1 to 12, driven by `deploy/deploy.sh` from the operator's machine.
 
 ### 13.1 The VPS (DP-13)
 
@@ -457,17 +451,21 @@ Shape: `deploy.sh` downloads the GitHub Release of a version tag (binary and web
 
 ```sh
 adduser --disabled-password deploy && usermod -aG docker deploy      # add your SSH key to ~deploy/.ssh/authorized_keys
-install -d -o deploy -g deploy -m 0755 /srv/workout-explorer /srv/workout-explorer/bin /srv/workout-explorer/conf /srv/workout-explorer/web /srv/workout-explorer/web/assets
+install -d -o deploy -g deploy -m 0755 /srv/workout-explorer /srv/workout-explorer/conf
 install -d -o 10001 -g 10001 -m 0750 /srv/workouts /srv/workouts/public /srv/workouts/site
-install -d -o deploy -g deploy -m 0755 /srv/workout-explorer/operator   # About page text (public), copy deploy/operator.example.txt there
+install -d -o deploy -g deploy -m 0755 /srv/workout-explorer/operator   # About page text (public), from operator.example.txt
 install -m 0600 -o deploy -g deploy /dev/null /srv/workout-explorer/.env
 ```
 
-A server set up before `site/` existed: run the `install` line for `/srv/workouts/site` once before the next deploy, or Caddy does not start.
+Fill `/srv/workout-explorer/.env` from `example.env` as in section 4; with notifications set `COMPOSE_FILE=compose.yaml:compose.notify.yaml` (section 4a). It must stay readable by `deploy` (`0600`). Your reverse proxy: section 5. A server still on the tarball layout (`bin/`, `web/` in `/srv/workout-explorer`) is moved once with section 15 before the first deploy of a release with the image.
 
-Copy `deploy/example.env` to `/srv/workout-explorer/.env` and edit it as in section 4, but **do not** enable the build override (the operator path has none); with notifications set `COMPOSE_FILE=compose.yaml:compose.notify.yaml` (section 4a; `deploy.sh` copies the file). The file must stay readable by `deploy` (`0600`). Your reverse proxy: section 5.
+### 13.3 Releasing and deploying
 
-### 13.3 First and later deploys
+**One-time, after the first release with an image:** in GitHub, Packages, `workout-explorer`, Package settings: visibility **public**, linked to this repository, and under "Manage Actions access" only this repository with the **Write** role. No other repository or person gets write access; no personal token is ever created for it.
+
+**Before every release:** check for a newer Caddy minor version (CLAUDE.md, Releases). A minor bump changes the tag in `deploy/compose.yaml`, `deploy/podman/workout-explorer-caddy.container` and `deploy/systemd/caddy.pref` together (`make ci` fails if they differ) and must pass `make caddy-check`.
+
+**CSP hash of the inline theme script** (ADR-032 item 3, F-30 RG-14): a release that changes the script adds its new hash to `deploy/Caddyfile` and keeps the old one, because Caddy reloads before `regenerate` has rebuilt the old pages. Drop the old hash only in a later release, and only if the previous deploy reported `kept=0` and finished with exit 0.
 
 **Cut a release.** On the commit to ship (pushed; CI runs only on `v*` tags and by hand via "Run workflow", never on branch pushes, so run `make ci` locally first):
 
@@ -475,9 +473,7 @@ Copy `deploy/example.env` to `/srv/workout-explorer/.env` and edit it as in sect
 git tag v1.4.0 && git push origin v1.4.0
 ```
 
-**CSP hash of the inline theme script** (ADR-032 item 3, F-30 RG-14): a release that changes the script adds its new hash to `deploy/Caddyfile` and keeps the old one, because Caddy reloads before `regenerate` has rebuilt the old pages. Drop the old hash only in a later release, and only if the previous deploy reported `kept=0` and finished with exit 0.
-
-CI builds with that version, and the `release` job publishes `workout-explorer-v1.4.0-linux-amd64.tar.gz` and `SHA256SUMS` (only for plain `vX.Y.Z` tags, and only if the tests pass). A release is never replaced: if it is broken or the job failed, ship the next version (or delete the release by hand and use "Re-run all jobs" on the tag run in GitHub; re-running only `release` fails once the 1-day hand-off artefact has expired).
+CI builds and tests the image once, and only if everything passes the `release` job pushes exactly that image to `ghcr.io/b0wter/workout-explorer:v1.4.0`, creates the release (bare-metal tarball, deploy archive with the image's digest in `compose.yaml`, `SHA256SUMS`) and moves `latest` to it if it is the highest version. Only plain `vX.Y.Z` tags release. A version is never replaced: a re-run of the whole workflow builds another digest and stops before pushing; if a release is broken, ship the next version. If the job failed after pushing the image, "Re-run failed jobs" on the same run completes it (within a day, while the hand-off artefacts last).
 
 **Deploy it.** On your machine, from a clean checkout of that tag (`git checkout v1.4.0`; `gh auth login` once):
 
@@ -485,26 +481,24 @@ CI builds with that version, and the `release` job publishes `workout-explorer-v
 deploy/deploy.sh v1.4.0 deploy@your.vps
 ```
 
-Or, when you are logged in on the server itself (clone and `gh` there, running user owns the deploy directory and is in the `docker` group), use `local` instead of `user@host`: `deploy/deploy.sh v1.4.0 local`. Same steps and checks, no `ssh`/`scp`.
+Or, when logged in on the server itself (clone and `gh` there, running user owns the deploy directory and is in the `docker` group): `deploy/deploy.sh v1.4.0 local`. Needs `git`, `gh`, `ssh`, `scp`, `tar` and `sha256sum`; any platform.
 
-Run it from a linux/amd64 machine with `git`, `gh`, `ssh`, `scp`, `tar`, `curl`, `sha256sum` and `sha512sum` (it runs the downloaded Caddy locally to validate the Caddyfile; macOS and arm64 do not work).
+It refuses a dirty tree, HEAD not at the tag, a bad checksum, a release built from another commit, or a server still on the tarball layout. It downloads the deploy archive, then on the server pulls both images with the new `compose.yaml` and checks the new Caddyfile with the pulled Caddy; **nothing on the server changes until both succeed**. Then it installs `compose.yaml`, `compose.notify.yaml` and `conf/Caddyfile`, runs `docker compose up -d` (Caddyfile-only change: a graceful reload), and waits (60 s) for `/api/health` through Caddy to report exactly the tag. It never connects from CI and has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version).
 
-It refuses a dirty tree, HEAD not at the tag, a bad checksum, or a release built from another commit. It downloads the release, copies it, starts the services, restarts `app` and waits (60 s) for `/api/health` through Caddy to report exactly the tag as its version. It never connects from CI and has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version).
-
-Then it runs `regenerate` in the `app` container (same `.env`, mounts and memory cap as `serve`), which rebuilds every live workout with the new version, and removes old bundles. It ends with one line:
+Then it runs `regenerate` in the `app` container (same `.env`, mounts and memory cap as `serve`), which rebuilds every live workout and removes old web files. It ends with one line:
 
 ```
 deploy: v1.4.0 done: rebuilt=12 deleted=0 kept=0 skipped=0 files_removed=17 bundles_removed=1
 ```
 
 - `deleted`: workouts whose stored file the new version rejects; they are gone, as on expiry. Each has a `fit rejected` log line with the device model.
-- `kept`: workouts whose rebuild failed for a server-side reason (load, time limit, disk); they keep serving their previous files and bundle. `skipped`: expired or deleted during the run.
-- Old bundles: `deploy.sh` keeps one list per release in `bundles/{tag}` (the first deploy with F-30 also writes `bundles/pre-f30` for the files already there). After a successful run it keeps the current release and every release whose files a served page still names, and removes every other file in `web/assets/` and every other list. A viewer who had a page open across the clean-up may need to reload it.
-- Exit codes: 0 healthy and regenerated (whatever was deleted or kept); 1 refused or not healthy; 3 `regenerate` did not finish (the new version is live, nothing was removed); 4 the bundle clean-up failed.
+- `kept`: workouts whose rebuild failed for a server-side reason (load, time limit, disk); they keep serving their previous files and web files. `skipped`: expired or deleted during the run.
+- Old web files: the server keeps one list per release in `/srv/workouts/bundles/`. After a complete run it keeps the current release and every release whose files a served page still names, and removes the rest from `site/assets/`. A viewer who had a page open across the clean-up may need to reload it.
+- Exit codes: 0 healthy and regenerated (whatever was deleted or kept); 1 refused or not healthy; 3 `regenerate` did not finish (the new version is live, nothing was removed); 4 the clean-up failed.
 - After a deploy: `docker inspect -f '{{.State.OOMKilled}}' workout-explorer-app-1` must print `false` (F-30 RG-13, ADR-017 rev. 8). `OOMKilled` resets on a container restart and may not show for an exec'd process, so also compare `docker inspect -f '{{.RestartCount}}' workout-explorer-app-1` before and after the deploy (it must not grow), and treat `regenerate` exit 3 as a possible OOM kill.
-- **Retry** after exit 3 or 4, or to rebuild kept workouts: run `deploy/deploy.sh` again with the same tag. It is idempotent and costs one `app` restart.
+- **Retry** after exit 3 or 4, or to rebuild kept workouts: run `deploy/deploy.sh` again with the same tag. It is idempotent.
 
-API downtime is the `app` restart. A new Caddy binary, a changed `compose.yaml`, or a changed `.env` value that Caddy itself uses (`WX_LISTEN`, `WX_TRUSTED_PROXIES`, `WX_DATA`, `WX_WEB`) recreates the Caddy container (other `.env` changes recreate only `app`): published pages are unreachable for a moment. A Caddyfile-only change is a graceful reload.
+API downtime is the recreate of `app`. A newer Caddy patch, a changed Caddy definition in `compose.yaml`, or a changed `.env` value that Caddy itself uses (`WX_LISTEN`, `WX_TRUSTED_PROXIES`, `WX_DATA`) recreates the Caddy container: published pages are unreachable for a moment.
 
 ### 13.4 Day to day
 
@@ -514,7 +508,7 @@ API downtime is the `app` restart. A new Caddy binary, a changed `compose.yaml`,
 - Uptime monitor (yours, later): check `/api/health` and `/`, never a workout page.
 - Links go to friends once the operator file is filled in and `/about` shows your details (F-29).
 
-### 13.5 Measurements to record (AC 8, 9, 10)
+### 13.5 Measurements to record (F-31 AC 8, 9, 10)
 
 Fill these in on the real VPS; the Compose cap must stay at or above the first value (+ headroom, DP-8).
 
@@ -528,3 +522,102 @@ Fill these in on the real VPS; the Compose cap must stay at or above the first v
 | Time of `regenerate` over 100 synthetic workouts (F-30 AC 10) | `time docker compose exec -T app ... regenerate ...` on a scratch data directory; more than 30 s: run two at a time (RG-13) | at the first F-30 deploy. Dev machine: 10.0 to 10.7 s, max RSS 46 MB (25 each of ride-4h, ride-30min, triathlon, run-30min, all published) |
 
 A fifth simultaneous upload gets "try again in a minute"; `docker inspect -f '{{.State.OOMKilled}}' workout-explorer-app-1` stays `false`.
+
+## 14. Bare metal (no containers)
+
+The server binary and Caddy as two systemd services, with the same guarantees as the containers: both run as their own non-root users without capabilities, the app has no outbound connection unless notifications are on, Caddy sees only `public/` and `site/` of the data directory, the app's memory is capped. Needs Debian 13 (or another distribution with systemd 254+ and cgroup v2), linux/amd64. The unit files are in the release's deploy archive (`systemd/`).
+
+### 14.1 Caddy from Caddy's apt repository
+
+```sh
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl sqlite3
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+```
+
+Then, after unpacking the deploy archive (14.2): `sudo install -m 0644 /tmp/wx-$v/systemd/caddy.pref /etc/apt/preferences.d/workout-explorer-caddy.pref`, `sudo apt update && sudo apt install caddy`. The pin holds the package at our release's minor version (for example `2.11.*`): patches arrive with your normal package updates, a new minor only with a release of ours. It applies to every use of the package on this host: if your TLS proxy is the same Caddy package, it is held there too.
+
+The package starts its own `caddy.service` on port 80. Unless that is your TLS proxy, turn it off: `sudo systemctl disable --now caddy`. Ours is a separate unit with our Caddyfile.
+
+### 14.2 Users, directories, files
+
+```sh
+sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin workout-explorer
+sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin -G workout-explorer workout-explorer-caddy
+sudo install -d -m 0755 /srv/workout-explorer /srv/workout-explorer/bin /srv/workout-explorer/conf /srv/workout-explorer/operator
+sudo install -d -o workout-explorer -g workout-explorer -m 0750 /srv/workouts /srv/workouts/public /srv/workouts/site
+```
+
+Download and check both archives of the release (section 2, plus the tarball):
+
+```sh
+v=v1.4.0; base=https://github.com/b0wter/WorkoutExplorer/releases/download/$v
+mkdir -p /tmp/wx-$v && cd /tmp/wx-$v
+curl -fLO $base/workout-explorer-$v-deploy.tar.gz -O $base/workout-explorer-$v-linux-amd64.tar.gz -O $base/SHA256SUMS
+sha256sum -c SHA256SUMS                         # both: OK
+tar -xzf workout-explorer-$v-deploy.tar.gz && mkdir app && tar -xzf workout-explorer-$v-linux-amd64.tar.gz -C app
+sudo install -m 0755 app/workout-explorer /srv/workout-explorer/bin/workout-explorer
+sudo cp -r app/web /srv/workout-explorer/web && sudo chmod -R u=rwX,go=rX /srv/workout-explorer/web
+sudo install -m 0644 Caddyfile /srv/workout-explorer/conf/Caddyfile
+sudo install -m 0644 systemd/*.service systemd/*.slice systemd/*.path /etc/systemd/system/
+sudo install -m 0755 systemd/workout-explorer-run /usr/local/sbin/workout-explorer-run
+```
+
+`.env`: from `example.env` as in section 4, **root-owned, `0600`** (`sudo install -m 0600 /dev/null /srv/workout-explorer/.env`, then edit). systemd reads it for the app only; Caddy never sees it. Only the `WORKOUT_EXPLORER_*` keys matter; do not set `WORKOUT_EXPLORER_TRUSTED_PROXY` (the app trusts loopback, where Caddy runs). The operator file and Impressum go to `/srv/workout-explorer/operator/` as in section 3.
+
+### 14.3 Start
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now workout-explorer.service workout-explorer-caddy.service workout-explorer-caddy-upgrade.path
+curl -fsS http://127.0.0.1:8088/api/health     # {"status":"ok","version":"v1.4.0"}
+```
+
+Your reverse proxy forwards to `127.0.0.1:8088` (section 5, "Proxy on the host"); our Caddy trusts `X-Forwarded-For` from `127.0.0.1` and `::1` only. To change a value of the Caddy unit (port in `WX_SITE`, `WX_TRUSTED_PROXIES`, `WX_BIND`) use a drop-in: `sudo systemctl edit workout-explorer-caddy`. `workout-explorer-caddy-upgrade.path` restarts our Caddy when apt replaces `/usr/bin/caddy` (a moment without pages).
+
+Both services restart after a crash, an out-of-memory kill or a reboot. Stop: `sudo systemctl stop workout-explorer workout-explorer-caddy` (until the next boot); to keep them off, `sudo systemctl disable --now workout-explorer workout-explorer-caddy`.
+
+### 14.4 Notifications (optional)
+
+Set both Pushover keys in `.env` (section 4a), then lift the app's outbound block (Caddy's stays):
+
+```sh
+sudo install -d /etc/systemd/system/workout-explorer.service.d
+sudo install -m 0644 /tmp/wx-$v/systemd/notify.conf /etc/systemd/system/workout-explorer.service.d/notify.conf
+sudo systemctl daemon-reload && sudo systemctl restart workout-explorer
+```
+
+### 14.5 Day to day
+
+- `sudo workout-explorer-run regenerate`, `sudo workout-explorer-run delete [-y] <public_id>`, `sudo workout-explorer-run parse /srv/workouts/<file>.fit`: the subcommands as the app's user, with its `.env`, memory cap and sandbox (exit codes as in sections 8 and 10).
+- Reports: the query of section 10, as the app's user: `sudo -u workout-explorer sqlite3 -readonly -line /srv/workouts/workouts.db "SELECT ..."`.
+- Logs: `journalctl -u workout-explorer -u workout-explorer-caddy`; journal retention as in PODMAN.md section 10.
+- Checks: `ss -ltnp` shows Caddy on `127.0.0.1:8088` and the app on `127.0.0.1:8080` only. `sudo systemd-run --pipe --wait -p User=workout-explorer -p IPAddressDeny=any -p IPAddressAllow=localhost curl -sS https://api.pushover.net` fails (that is the app's view without notifications). `grep Cap /proc/$(systemctl show -p MainPID --value workout-explorer-caddy)/status` shows only zeros.
+
+### 14.6 Updating
+
+By hand until automatic updates exist for this path. As root, with the new `v`:
+
+1. Download and check both archives as in 14.2, unpack them in `/tmp/wx-$v`.
+2. `caddy validate --config /tmp/wx-$v/Caddyfile --adapter caddyfile` (with `WX_DATA=/srv/workouts`); when `systemd/caddy.pref` changed, install it first and `apt update && apt install caddy`.
+3. Binary by temporary name and rename (the running file is busy): `install -m 0755 app/workout-explorer /srv/workout-explorer/bin/.workout-explorer.new && mv /srv/workout-explorer/bin/.workout-explorer.new /srv/workout-explorer/bin/workout-explorer`. Replace `web/` whole: `rm -rf /srv/workout-explorer/web.new && cp -r app/web /srv/workout-explorer/web.new && chmod -R u=rwX,go=rX /srv/workout-explorer/web.new && rm -rf /srv/workout-explorer/web && mv /srv/workout-explorer/web.new /srv/workout-explorer/web` (old pages keep their files: those live in `/srv/workouts/site/assets/`).
+4. Unit files and `workout-explorer-run` when they changed (`diff -r systemd/ ...`), then `systemctl daemon-reload`.
+5. `systemctl restart workout-explorer`; wait for `/api/health` to show the new tag. If the Caddyfile changed: install it and `systemctl reload workout-explorer-caddy`.
+6. `workout-explorer-run regenerate` (as in section 8, step 6).
+
+## 15. Moving an existing install to the image (from the tarball layout)
+
+Installs from before the image (the operator's server, and "use a public release" of earlier runbooks) have `bin/`, `web/`, `bundles/` and `clean-assets.sh` in `/srv/workout-explorer` and `WX_WEB` in `.env`. The move changes program files only: the data directory stays in place with its owner, so every workout, draft, report, edit link, preview image and published page keeps its links and expiry. Pages and API are down for a minute. The Podman setup has its own steps (PODMAN.md section 9).
+
+1. Get the new release's deploy files to `/tmp/wx-$v` (section 2, without copying yet).
+2. Stop: `docker compose down` in `/srv/workout-explorer`.
+3. Copy the old web files into the data directory as the server's user, so pages published under the old release keep their scripts and styles until `regenerate` has rebuilt them:
+   ```sh
+   sudo setpriv --reuid=10001 --regid=10001 --clear-groups sh -c 'mkdir -p -m 0750 /srv/workouts/site/assets && cp -rn /srv/workout-explorer/web/assets/. /srv/workouts/site/assets/'
+   ```
+4. Install the new files: `compose.yaml`, `compose.notify.yaml`, `conf/Caddyfile` (section 2). In `.env`: delete the `WX_WEB` line; keep `COMPOSE_FILE` only as `compose.yaml` or `compose.yaml:compose.notify.yaml` (no `compose.build.yaml`).
+5. `docker compose pull && docker compose up -d`, wait for `/api/health` to show the new tag. The first start turns the copied files into one list in `bundles/`. Database changes of the new release run at this start, as on any update (there is no way back to the old release afterwards).
+6. `regenerate` (section 8, step 6) must exit 0. It rebuilds every page with the new version; the old web files go once no served page names them.
+7. Only then remove the old program files: `rm -rf /srv/workout-explorer/bin /srv/workout-explorer/web /srv/workout-explorer/bundles /srv/workout-explorer/clean-assets.sh`.
+
+Rehearse it on a copy first (copy `/srv/workouts` and `/srv/workout-explorer` to a scratch host with the same owners): afterwards every workout, link, expiry and report must be unchanged, and `regenerate` reports `deleted=0`.

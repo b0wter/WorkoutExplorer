@@ -1,0 +1,7 @@
+# Holds Caddy's apt package at our minor (F-59 IP-14): patches arrive with the host's package
+# updates, a new minor only with our release (the same minor as compose.yaml; `make ci` checks).
+# Install as /etc/apt/preferences.d/workout-explorer-caddy.pref. It applies to every use of the
+# package on this host, a hoster's own proxy Caddy included (OQ-266).
+Package: caddy
+Pin: version 2.11.*
+Pin-Priority: 1001

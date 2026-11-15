@@ -121,10 +121,11 @@ func dataLeft(t *testing.T, dir, id, pub string, more ...string) []string {
 			if exists(filepath.Join(p, pub)) {
 				left = append(left, "public/{public_id}")
 			}
-		case "site": // page shells (ADR-043): fixed names, nothing per workout
+		case "bundles": // the releases' asset lists (ADR-053): nothing per workout
+		case "site": // page shells (ADR-043) and the releases' assets (ADR-053): nothing per workout
 			es, _ := os.ReadDir(p)
 			for _, e := range es {
-				if !slices.Contains(append(shell.Shells, shell.Impressum), e.Name()) {
+				if !slices.Contains(append(shell.Shells, shell.Impressum, "assets"), e.Name()) {
 					left = append(left, "site/"+e.Name())
 				}
 			}

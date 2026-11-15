@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"workout-explorer/internal/assets"
 	"workout-explorer/internal/lifecycle"
 	"workout-explorer/internal/places"
 	"workout-explorer/internal/privatedir"
@@ -23,9 +24,11 @@ import (
 
 // regenerateCmd is `workout-explorer regenerate -data <dir> -web <dir>` (F-30
 // RG-1): every live workout is rebuilt from its original with this binary
-// and template. Log lines (JSON) go to stderr, the report to stdout (RG-8).
-// Exit 0: the whole list was processed; 1: it could not start or did not
-// finish; 2: usage or settings.
+// and template, then the bundles no served page needs are removed (ADR-053).
+// Log lines (JSON) go to stderr, the report to stdout (RG-8).
+// Exit 0: the whole list was processed and cleaned up; 1: it could not start
+// or did not finish (nothing removed); 2: usage or settings; 4: the whole
+// list was processed, but the clean-up failed.
 func regenerateCmd(args []string, getenv func(string) string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("regenerate", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -87,6 +90,11 @@ func regenerate(ctx context.Context, dataDir string, s settings, stdout, stderr 
 		return failed(err)
 	}
 	defer db.Close()
+	// ADR-053: this build's assets and list, as serve does at start (after the checks, RG-1).
+	current, err := assets.Copy(dataDir, s.webDir)
+	if err != nil {
+		return failed(err)
+	}
 	files, err := privatedir.Open(dataDir)
 	if err != nil {
 		return failed(err)
@@ -137,13 +145,16 @@ func regenerate(ctx context.Context, dataDir string, s settings, stdout, stderr 
 		fmt.Fprintln(stderr, "regenerate: stopped before the end; run it again")
 		return 1
 	}
-	// RG-9: the assets the served pages still name, for the deploy's clean-up.
-	assets, err := public.Assets()
-	if err != nil {
-		return failed(err)
+	// RG-9, RG-10: only after a complete run; the assets the served pages still name keep their bundles.
+	used, err := public.Assets()
+	if err == nil {
+		var files, lists int
+		files, lists, err = assets.Clean(dataDir, current, used)
+		fmt.Fprintf(stdout, "files_removed=%d\nbundles_removed=%d\n", files, lists)
 	}
-	for _, a := range assets {
-		fmt.Fprintf(stdout, "asset=%s\n", a)
+	if err != nil {
+		logger.Error("asset clean-up failed", "error", pathless(err))
+		return 4
 	}
 	return 0
 }

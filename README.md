@@ -84,7 +84,7 @@ or run `export DEV_ADDR=127.0.0.1:18080` once per shell.
 - [`architect/INDEX.md`](architect/INDEX.md): all architecture docs and ADRs
 - [`architect/F-01-project-skeleton-and-ci.md`](architect/F-01-project-skeleton-and-ci.md): server command, health contract, size check
 - [`architect/F-02-fit-parsing-and-normalisation.md`](architect/F-02-fit-parsing-and-normalisation.md): FIT parsing, normalisation rules, corpus
-- [`deploy/RUNBOOK.md`](deploy/RUNBOOK.md): running it yourself (Docker Compose, build the image, reverse proxy examples, troubleshooting); the operator's deploy script is its last section
+- [`deploy/RUNBOOK.md`](deploy/RUNBOOK.md): running it yourself (Docker Compose with the published image, building the image yourself, bare metal, reverse proxy examples, troubleshooting, the operator's deploy); [`deploy/PODMAN.md`](deploy/PODMAN.md): rootless Podman
 - [`spec/`](spec/): what the app does
 
 

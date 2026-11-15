@@ -1,13 +1,12 @@
-# Workout Explorer on one VPS (F-31, ADR-034 rev. 2): Caddy on plain HTTP behind the
+# Workout Explorer on one VPS (F-31, ADR-034 rev. 5, F-59): Caddy on plain HTTP behind the
 # operator's reverse proxy, and the Go server on an internal network. Lives at
-# /srv/workout-explorer/compose.yaml next to .env (deploy/example.env), bin/, web/, conf/.
-# No image is built: both services run one pinned distroless base image with the
-# binaries bind-mounted read-only (DP-2). Nothing here creates a host path (DP-3); deploy.sh creates the empty operator/ folder, never writes inside it (F-29).
+# /srv/workout-explorer/compose.yaml next to .env (deploy/example.env), conf/Caddyfile and operator/.
+# Use the copy from a release's deploy archive: it names our image by digest (F-59 IP-5). This
+# repository copy names a tag that never exists, so it starts `app` only with compose.build.yaml.
+# Nothing here creates a host path (DP-3).
 name: workout-explorer
 
 x-common: &common
-  # gcr.io/distroless/static-debian13:nonroot, the multi-arch index digest. A bump is a reviewed change.
-  image: gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329
   restart: unless-stopped # a crash, an OOM kill or a reboot restarts; `docker compose stop` stays stopped (DP-7)
   read_only: true
   cap_drop: [ALL]
@@ -20,9 +19,10 @@ x-common: &common
 services:
   app:
     <<: *common
+    # The release writes ghcr.io/<owner>/workout-explorer:vX.Y.Z@sha256:… here (ADR-052); no variable, so .env cannot redirect it.
+    image: ghcr.io/b0wter/workout-explorer:unreleased
     user: "10001:10001"
-    entrypoint: ["/srv/workout-explorer/bin/workout-explorer"]
-    command: ["serve", "-addr", ":8080", "-data", "${WX_DATA:-/srv/workouts}", "-web", "${WX_WEB:-/srv/workout-explorer/web}"]
+    command: ["serve", "-addr", ":8080", "-data", "${WX_DATA:-/srv/workouts}", "-web", "/srv/workout-explorer/web"]
     env_file: .env
     environment:
       # Caddy's address on `backend`: the one proxy Go believes (DP-1a). Same value as Caddy's ipv4_address below.
@@ -34,8 +34,6 @@ services:
     mem_limit: 1200m
     memswap_limit: 1200m
     volumes:
-      - {type: bind, source: ./bin, target: /srv/workout-explorer/bin, read_only: true, bind: {create_host_path: false}}
-      - {type: bind, source: "${WX_WEB:-/srv/workout-explorer/web}", target: "${WX_WEB:-/srv/workout-explorer/web}", read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: "${WX_DATA:-/srv/workouts}", target: "${WX_DATA:-/srv/workouts}", bind: {create_host_path: false}}
       - {type: bind, source: "${WX_OPERATOR:-/srv/workout-explorer/operator}", target: "${WX_OPERATOR:-/srv/workout-explorer/operator}", read_only: true, bind: {create_host_path: false}} # the operator file of the About page (F-29 AB-8), public content
     networks:
@@ -43,27 +41,27 @@ services:
 
   caddy:
     <<: *common
+    # The official image on our minor; patches float (F-59 IP-6). The one home of the minor:
+    # the Podman unit and the bare-metal apt pin must carry the same (`make ci` checks).
+    image: docker.io/library/caddy:2.11
     user: "10002:10002"
     group_add: ["10001"] # app's group: reads public/ and site/ (0750) and nothing else (DP-5)
-    entrypoint: ["/srv/workout-explorer/bin/caddy", "run", "--config", "/srv/workout-explorer/conf/Caddyfile", "--adapter", "caddyfile"]
+    # No capability, not even in the bounding set: since 2.11.8 the binary's file capability has no
+    # effective bit, so it runs without one (a cap_add here would leave it in CapPrm). Port 8088 needs none.
+    command: ["caddy", "run", "--config", "/srv/workout-explorer/conf/Caddyfile", "--adapter", "caddyfile"]
     environment:
       WX_DATA: ${WX_DATA:-/srv/workouts}
-      WX_WEB: ${WX_WEB:-/srv/workout-explorer/web}
       WX_API: app:8080
       WX_SITE: http://:8088 # any host: the site name lives only in WORKOUT_EXPLORER_BASE_URL (DP-6)
       WX_TRUSTED_PROXIES: ${WX_TRUSTED_PROXIES:-10.250.0.1} # default: the edge gateway (DP-1b)
       WX_ADMIN: localhost:2019 # for `caddy reload` inside this container only (DP-9)
-      XDG_CONFIG_HOME: /caddy-state/config
-      XDG_DATA_HOME: /caddy-state/data
-      HOME: /caddy-state
-    tmpfs:
-      - /caddy-state:uid=10002,gid=10002,mode=0700,size=16m # nothing here needs to survive
+    tmpfs: # the image's state directories (XDG_CONFIG_HOME, XDG_DATA_HOME); nothing here needs to survive
+      - /config:uid=10002,gid=10002,mode=0700,size=16m
+      - /data:uid=10002,gid=10002,mode=0700,size=16m
     volumes:
-      - {type: bind, source: ./bin, target: /srv/workout-explorer/bin, read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: ./conf, target: /srv/workout-explorer/conf, read_only: true, bind: {create_host_path: false}}
-      - {type: bind, source: "${WX_WEB:-/srv/workout-explorer/web}", target: "${WX_WEB:-/srv/workout-explorer/web}", read_only: true, bind: {create_host_path: false}}
       - {type: bind, source: "${WX_DATA:-/srv/workouts}/public", target: "${WX_DATA:-/srv/workouts}/public", read_only: true, bind: {create_host_path: false}}
-      - {type: bind, source: "${WX_DATA:-/srv/workouts}/site", target: "${WX_DATA:-/srv/workouts}/site", read_only: true, bind: {create_host_path: false}} # page shells serve fills at start (ADR-043)
+      - {type: bind, source: "${WX_DATA:-/srv/workouts}/site", target: "${WX_DATA:-/srv/workouts}/site", read_only: true, bind: {create_host_path: false}} # page shells and assets serve writes at start (ADR-043, ADR-053)
     ports:
       - "${WX_LISTEN:-127.0.0.1:8088}:8088" # the only published port; never a public address (DP-13)
     networks:

@@ -1,0 +1,47 @@
+# The app on bare metal (F-59 IP-13, IP-15): the systemd form of compose.yaml's `app`.
+# Install as /etc/systemd/system/workout-explorer.service (RUNBOOK.md, "Bare metal").
+[Unit]
+Description=Workout Explorer API server
+After=network.target
+
+[Service]
+Type=exec
+User=workout-explorer
+Group=workout-explorer
+Slice=workout-explorer.slice
+# Root-owned 0600; systemd reads it, Caddy's unit never does.
+EnvironmentFile=/srv/workout-explorer/.env
+ExecStart=/srv/workout-explorer/bin/workout-explorer serve -addr 127.0.0.1:8080 -data /srv/workouts -web /srv/workout-explorer/web
+Restart=always
+RestartSec=2s
+TimeoutStopSec=30s
+# Sandbox: no capability, nothing writable but the data directory, localhost only.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ReadWritePaths=/srv/workouts
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# No outbound route unless notifications are on: notify.conf lifts the deny for this unit only (ADR-039).
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target

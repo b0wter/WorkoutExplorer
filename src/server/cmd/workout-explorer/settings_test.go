@@ -54,11 +54,21 @@ func TestMain(m *testing.M) {
 	if err := os.WriteFile(filepath.Join(dir, "about.html"), []byte(aboutFixture), 0o644); err != nil {
 		panic(err)
 	}
+	// One asset, which serve and regenerate copy into site/assets (ADR-053).
+	if err := os.MkdirAll(filepath.Join(dir, "assets"), 0o755); err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "assets", fixtureAsset), []byte("fixture"), 0o644); err != nil {
+		panic(err)
+	}
 	testWeb = dir
 	code := m.Run()
 	os.RemoveAll(dir)
 	os.Exit(code)
 }
+
+// fixtureAsset is the one asset of testWeb; no page names it.
+const fixtureAsset = "fixture-1.js"
 
 // aboutFixture is a finished About page: the list is generated, every marker is present.
 const aboutFixture = `<main><!--wx:operator-->|<!--wx:version-->

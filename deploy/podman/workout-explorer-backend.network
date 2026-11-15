@@ -1,0 +1,8 @@
+# compose.yaml's networks.backend: no route out.
+[Unit]
+Description=Workout Explorer backend network
+
+[Network]
+NetworkName=workout-explorer_backend
+Subnet=10.250.1.0/29
+Internal=true

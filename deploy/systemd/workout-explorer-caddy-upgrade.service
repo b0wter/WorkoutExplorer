@@ -1,0 +1,7 @@
+# Started by workout-explorer-caddy-upgrade.path; a stopped Caddy stays stopped.
+[Unit]
+Description=Restart Workout Explorer Caddy after a Caddy package upgrade
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl try-restart workout-explorer-caddy.service
