@@ -1,6 +1,6 @@
 # F-60 Automatic updates for bare-metal installs
 
-- **Status:** draft (decided 15 Nov 2026; acceptance criteria to write after F-52's revised design)
+- **Status:** decided (15 Nov 2026; OQ-262, OQ-263 decided); acceptance criteria to write after F-52's revised design
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** backend
 - **Lane:** critical (code that installs and runs new code on the server, outside any container)
@@ -18,6 +18,6 @@ A bare-metal hoster who opts in gets new releases installed like a Docker or Pod
 ## Out of scope
 - Everything F-52 excludes (rollback, OS or proxy updates, inbound triggers).
 
-## Open questions
-1. **OQ-262 Rights to restart services.** Replacing files and restarting system services needs more than the service users have. Suggestion: the updater runs as a dedicated deploy user that owns the program directory and may only restart the two units (a polkit rule or a narrow sudoers line for `systemctl restart` of exactly those units); never as root. Affects the bare-metal runbook and the F-52 least-privilege rule.
-2. **OQ-263 Unit file changes.** A release may change the systemd units (hardening, limits). Suggestion: units are part of the signed release and installed by the updater only if they changed, followed by a daemon reload; a change that needs root the deploy user lacks stops the update with an alert. Affects F-59's unit layout and OQ-262.
+## Decisions (user, 15 Nov 2026)
+- **OQ-262 Rights:** the updater runs as a dedicated deploy user that owns the program directory and may only restart the two units, through a polkit rule or one narrow sudoers line for `systemctl restart` of exactly those units; never as root. This is a bare-metal-only exception to F-52's "never calls sudo".
+- **OQ-263 Unit files:** part of the signed release, installed only when they changed, followed by a daemon reload; if the deploy user lacks the rights for a change, the update stops with an alert (the F-52 stopped state).
