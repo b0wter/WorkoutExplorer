@@ -88,7 +88,7 @@ Beyond the AC, on each path where it applies: CapPrm and CapEff 0 for both proce
 
 ## Open points (for the user)
 
-Built as suggested unless the user objects (OQ-264 to OQ-266 in the index).
+Decided by the user on 15 Nov 2026 as suggested (decision log of `features/README.md`).
 
 1. **OQ-264 `latest` with Compose.** A `compose.yaml` switched to `:latest` runs a new app with old deploy files (Caddyfile CSP hashes, service changes) and can break pages. Suggestion: the runbook never uses `latest` for Compose or Podman; it names `latest` only for a quick `docker pull` look.
 2. **OQ-265 Caddy's one bounding capability (IP-7).** The official binary cannot run with an empty bounding set; the container keeps `NET_BIND_SERVICE` there, while the process itself holds no capability. Suggestion: accept as meeting AC 8 ("without capabilities" = none held).
