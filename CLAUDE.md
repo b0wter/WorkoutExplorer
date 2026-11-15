@@ -52,3 +52,7 @@ Escalate to the user instead of looping when a finding needs a product decision 
 - Architecture: `architect/F-NN-<slug>.md` for a feature's design, `architect/ADR-NNN-<slug>.md` for decisions. The system-wide picture (invariants, code structure, conventions, glossary) lives in the technical design, `spec/Workout Explorer — Technical Design.md`.
 - QA: `qa/F-NN-<slug>-rN.md`, where N is the review round (r1, r2, ...).
 - Requirement IDs (UP-, AP-, SH-, PIN-, AC-, DS-, INF-) come from the product spec; cite them in every document.
+
+## Releases
+
+- Before every release, check whether a newer Caddy minor version exists (Caddy patches float automatically, minors are pinned, F-59). If one does, raise the pin in the small lane and test it before tagging.
