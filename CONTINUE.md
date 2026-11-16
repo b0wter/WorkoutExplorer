@@ -1,15 +1,20 @@
-# Continue here (state of 15 Nov 2026)
+# Continue here (state of 16 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (15 Nov 2026): v0.8.0 released; next F-52 auto-update
+## Current (16 Nov 2026): F-59 and F-52 built, not released; next: F-52 QA r2 minors, then v0.9.0
 
-- v0.8.0 = F-47 trim (UP-6, ADR-047), brotli sidecars for `/assets/*` (F-22 H-7), F-48 pool strokes (AP-13, ADR-048, Lengths view), F-49 zones (AP-10, migration 0007), F-50 power curve and best efforts (AP-11), F-51 lap and split comparison chart (AP-23), Apple device names, colour-scheme meta follows the theme, `allow_download` removed (migration 0008, ADR-036 superseded), row taps toggle (L-7 also on clearing), spacing around map, toggle and readout. Tagged and pushed 15 Nov; the user deploys (`deploy/deploy.sh v0.8.0 <host>`). Data file format is now version 6: `regenerate` rebuilds workouts; failures may lose old workouts (accepted).
+- **F-59** container image and install paths (INF-9; ADR-052, ADR-053, ADR-034 rev. 5): app image on ghcr.io (CI release job), Caddy from the official image by minor tag (patches float, no capability, start guard on every pull route), web assets served from `{data}/site/assets`, docs split into `deploy/RUNBOOK.md` (shared), `DOCKER.md`, `PODMAN.md`, `BAREMETAL.md`. QA r1 ready with conditions, minors fixed. Waiting on real-host checks (Waiting on column).
+- **F-52** automatic updates (INF-8; ADR-050, ADR-051, ADR-054; design v0.3): `update.sh` (manual `update.sh vX.Y.Z` and nightly timer, Compose and rootless Podman), `sign-release.sh` (checks the draft against the local tag, signs, publishes), CI makes draft releases, `latest.yml` moves `latest` on publication. QA r2 ready with conditions (`qa/F-52-auto-update-r2.md`).
+- **Next:** (1) fix F-52 QA-52-r2-1 to r2-4 in the small lane (backend; r2-3 = `tar --mode` in `deploy-archive`, else the first signing may refuse every draft). (2) Ask the user P-9 (signature vouches for deploy files; image and tarball binary trusted from CI; suggestion accept), still open. (3) First release v0.9.0 (check Caddy minor/major first, CLAUDE.md Releases): tag, CI, `deploy/sign-release.sh v0.9.0` on the user's machine, then migrate the VPS (`DOCKER.md` section on moving a tarball install) and run the F-59/F-52 real-host checks. Every deploy is now `ssh deploy@host /srv/workout-explorer/update.sh vX.Y.Z` (no more `deploy.sh <tag> <host>`).
+- Release signing key: created by the user 16 Nov; public key in `deploy/minisign.pub` and DNS TXT `_wx-release-key.workouts.plugman.de` (checked). The secret key stays on the user's machine.
+- After F-52: F-60 bare-metal auto-update (decided, AC to write), then F-53, F-58, F-54, F-57, F-55, F-56.
+- v0.8.0 (15 Nov): F-47 to F-51 and more; data file format version 6.
 - v0.7.0 (12 Nov): F-45, F-46. v0.6.0 (11 Nov): F-42 to F-44, uPlot trim.
-- Build order and backlog (Planned, Idea, Fix, Discarded): `features/README.md`. Next: F-52 auto-update (INF-8, critical lane, ready for architecture).
+- Build order and backlog (Planned, Idea, Fix, Discarded): `features/README.md`.
 - Minors to batch (small lane): F-50 QA r1-1 to r1-3; TD/roadmap still lists items that are now ideas.
 - User checks still open: Waiting on column of `features/README.md`.
-- Dev server: `make dev-server DEV_ADDR=127.0.0.1:18081 DEV_BASE_URL=http://192.168.178.98:18080`; Caddy `WX_SITE=http://:18080 WX_API=127.0.0.1:18081 WX_DATA=$PWD/build/data WX_WEB=$PWD/build/web build/tools/caddy-2.11.7/caddy run --config deploy/Caddyfile --adapter caddyfile`; after `make build`: restart Go, then `WORKOUT_EXPLORER_BASE_URL=http://192.168.178.98:18080 build/workout-explorer regenerate -data build/data -web build/web`. Only while the user tests.
+- Dev server: `make dev-server DEV_ADDR=127.0.0.1:18081 DEV_BASE_URL=http://192.168.178.98:18080`; Caddy (`make caddy` first) `WX_SITE=http://:18080 WX_API=127.0.0.1:18081 WX_DATA=$PWD/build/data build/tools/caddy-2.11/caddy run --config deploy/Caddyfile --adapter caddyfile`; after `make build`: restart Go, then `WORKOUT_EXPLORER_BASE_URL=http://192.168.178.98:18080 build/workout-explorer regenerate -data build/data -web build/web`. Only while the user tests.
 
 Repo is public (AGPL-3.0) at github.com/b0wter/WorkoutExplorer, branch `main`; history restarted on 2 Nov 2026 (commit hashes cited in older docs no longer exist). CI runs on `v*` tags and manual runs only; releases v0.1.0, v0.2.0 (4 Nov 2026, up to F-29), v0.3.0 (8 Nov 2026: F-30, F-33, F-25 colouring rework, map controls) v0.4.0 (9 Nov 2026: F-35 to F-38, F-34) v0.5.0 (10 Nov 2026: F-39 to F-41), v0.6.0 (11 Nov 2026: F-42 to F-44, uPlot trim) v0.7.0 (12 Nov 2026: F-45, F-46) and v0.8.0 (15 Nov 2026: F-47 to F-51) exist. Deploy with `deploy/deploy.sh <tag> <host>|local` (HEAD must be the tag's commit). `make ci` runs Go tests uncached (`-count=1`, about 2 min 46 s).
 
