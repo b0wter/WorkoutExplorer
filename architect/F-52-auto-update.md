@@ -75,7 +75,7 @@ One path for every deploy on both container paths (ADR-050). The installed, alre
 Beyond the AC, on Compose **and** rootless Podman: a tamper matrix on a scratch release host or local file server (each AU-7 step failing once, each AU-8 non-failure case once); the Compose units installed as on a real host, writes outside the deploy directory failing; on Podman no process of the update path runs as root (`ps` during a run) and no root-owned file is written; a Caddy image that fails the guard leaves the running stack and the local tag as before; `ps` with Pushover set shows no secret; a manual and a scheduled run started together; the `latest` job moves the tag only on publication and only upwards; the private key and signing absent from CI logs and history.
 
 ## Open points (for the user)
-
+Decided by the user on 16 Nov 2026 as suggested (decision log of `features/README.md`).
 See the report of 16 Nov 2026; recorded in the decision log once answered. Built as suggested unless the user objects.
 
 | # | Point | Suggestion |

@@ -1,6 +1,6 @@
 # ADR-054 Rootless Podman: deploy files and units belong to the service user; root never runs them
 
-- **Status:** proposed (16 Nov 2026), with the F-52 design v0.2; accepted when the user confirms P-7
+- **Status:** accepted (16 Nov 2026, user confirmed P-7), with the F-52 design v0.2
 - **Date:** 16 Nov 2026
 - **Features:** F-52 (introduces it), F-59 (changes IP-11's ownership)
 - **Supersedes:** F-59 IP-11 "Root installs the units (root-owned unit directory, as today)" and PODMAN.md's `sudo workout-explorer-ctl` from `/usr/local/sbin`

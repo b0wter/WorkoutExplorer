@@ -39,7 +39,7 @@ A hoster installs and updates Workout Explorer from a published image with Docke
 - Other architectures (arm64, multi-arch). Image signing with cosign or similar (the digest in F-52's signed manifest is enough). Automatic updates (F-52 for Docker and Podman; bare metal: F-60, planned after F-52). Kubernetes, Swarm, other registries. Standalone mode with TLS in Caddy. Hosters' own reverse proxy setup beyond today's runbook section.
 
 ## Acceptance criteria
-- [ ] Pushing a `vX.Y.Z` tag with green CI publishes exactly one image `ghcr.io/…:vX.Y.Z` (linux/amd64), moves `latest` to it, and creates a release whose checksummed files include the image's digest; a red run publishes neither. A pre-release or other tag publishes no image and leaves `latest` unchanged; pushing an older version than the newest never moves `latest`.
+- [ ] Pushing a `vX.Y.Z` tag with green CI publishes exactly one image `ghcr.io/…:vX.Y.Z` (linux/amd64) and creates a draft release whose checksummed files include the image's digest; a red run publishes neither. A pre-release or other tag publishes no image and leaves `latest` unchanged; `latest` moves to the image only when the operator publishes the signed release (F-52, P-8), and never to an older version than the newest.
 - [ ] The digest pushed equals the digest of the image tested in that CI run; re-running the job for an existing version does not change the image behind the tag.
 - [ ] Only the release job has write access to the package; no other job and no repository script can push.
 - [ ] The image can be pulled without a login. It contains the Go binary and the web build, and no Caddy, Caddyfile, settings, data, operator file, Impressum, key or token (checked by listing its file system).
