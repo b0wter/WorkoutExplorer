@@ -1,0 +1,50 @@
+# Moves the app image's `latest` tag when the operator publishes a signed release (F-52 AU-5, P-8;
+# ADR-052 item 2; F-59 IP-4 step 4's rule). Registry rights only: no checkout, no repository code,
+# no contents permission. Shares the release job's concurrency group.
+name: latest
+on:
+  release:
+    types: [published]
+permissions: {}
+jobs:
+  latest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      packages: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          set -eu
+          if [ "$PRERELEASE" = true ] || ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "not a vX.Y.Z release: latest unchanged"; exit 0
+          fi
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          repo=ghcr.io/$owner/workout-explorer
+          printf '%s' "$GH_TOKEN" | skopeo login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          # manifest <ref> prints the raw manifest, nothing when the tag does not exist; any other error stops.
+          manifest() {
+            if skopeo inspect --raw "docker://$1" 2>err; then return; fi
+            grep -qiE 'manifest unknown|name unknown|not found' err || { cat err >&2; exit 1; }
+          }
+          [ -n "$(manifest "$repo:$TAG")" ] || { echo "$repo:$TAG does not exist"; exit 1; }
+          digest=$(skopeo inspect --format '{{.Digest}}' "docker://$repo:$TAG") # the version tag's digest, copied as is
+          # latest only to a higher version than the current latest's label (numeric per component).
+          cur=
+          latest=$(manifest "$repo:latest") # an assignment, so a registry error stops the job (set -e)
+          if [ -n "$latest" ]; then
+            cur=$(skopeo inspect --format '{{index .Labels "org.opencontainers.image.version"}}' "docker://$repo:latest")
+          fi
+          newer() { [ -z "$2" ] || [ "$(printf '%s\n%s\n' "${1#v}" "${2#v}" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" = "${1#v}" ] && [ "${1#v}" != "${2#v}" ]; }
+          if newer "$TAG" "$cur"; then
+            skopeo copy --preserve-digests "docker://$repo@$digest" "docker://$repo:latest"
+            echo "latest is now $TAG ($digest)"
+          else
+            echo "latest stays at ${cur:-?}"
+          fi

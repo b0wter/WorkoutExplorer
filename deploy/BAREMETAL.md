@@ -66,7 +66,7 @@ sudo systemctl daemon-reload && sudo systemctl restart workout-explorer
 
 ## 5. Day to day
 
-- `sudo workout-explorer-run regenerate`, `sudo workout-explorer-run delete [-y] <public_id>`, `sudo workout-explorer-run parse /srv/workouts/<file>.fit`: the subcommands as the app's user, with its `.env`, memory cap and sandbox (exit codes: DOCKER.md section 8 step 6 and RUNBOOK.md, "Delete one workout").
+- `sudo workout-explorer-run regenerate`, `sudo workout-explorer-run delete [-y] <public_id>`, `sudo workout-explorer-run parse /srv/workouts/<file>.fit`: the subcommands as the app's user, with its `.env`, memory cap and sandbox (exit codes: section 6, step 6, and RUNBOOK.md, "Delete one workout").
 - Reports: the query of RUNBOOK.md, "Reports from visitors", as the app's user: `sudo -u workout-explorer sqlite3 -readonly -line /srv/workouts/workouts.db "SELECT ..."`.
 - Logs: `journalctl -u workout-explorer -u workout-explorer-caddy`; journal retention as in PODMAN.md section 10.
 - Checks: `ss -ltnp` shows Caddy on `127.0.0.1:8088` and the app on `127.0.0.1:8080` only. `sudo systemd-run --pipe --wait -p User=workout-explorer -p IPAddressDeny=any -p IPAddressAllow=localhost curl -sS https://api.pushover.net` fails (that is the app's view without notifications). `grep Cap /proc/$(systemctl show -p MainPID --value workout-explorer-caddy)/status` shows only zeros.
@@ -80,4 +80,4 @@ By hand until automatic updates exist for this path. As root, with the new `v`:
 3. Binary by temporary name and rename (the running file is busy): `install -m 0755 app/workout-explorer /srv/workout-explorer/bin/.workout-explorer.new && mv /srv/workout-explorer/bin/.workout-explorer.new /srv/workout-explorer/bin/workout-explorer`. Replace `web/` whole: `rm -rf /srv/workout-explorer/web.new && cp -r app/web /srv/workout-explorer/web.new && chmod -R u=rwX,go=rX /srv/workout-explorer/web.new && rm -rf /srv/workout-explorer/web && mv /srv/workout-explorer/web.new /srv/workout-explorer/web` (old pages keep their files: those live in `/srv/workouts/site/assets/`).
 4. Unit files and `workout-explorer-run` when they changed (`diff -r systemd/ ...`), then `systemctl daemon-reload`.
 5. `systemctl restart workout-explorer`; wait for `/api/health` to show the new tag. If the Caddyfile changed: install it and `systemctl reload workout-explorer-caddy`.
-6. `workout-explorer-run regenerate` (as in DOCKER.md section 8, step 6).
+6. `workout-explorer-run regenerate`: rebuilds every workout and removes the web files no page needs. It prints `rebuilt=`, `deleted=`, `kept=` and `skipped=`, then `files_removed=` and `bundles_removed=`. Exit 0: done; 1: it stopped early, nothing removed, run it again; 4: rebuilt, but the clean-up failed, run it again later.

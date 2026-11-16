@@ -30,7 +30,7 @@ describe('About page', () => {
   });
 
   it('has each server marker exactly once, the version at least once', () => {
-    for (const m of ['<!--wx:attributions-->', '<!--wx:operator-->', '<!--wx:pushover-->', '<!--/wx:pushover-->', '<!--wx:shortcut-->', '<!--/wx:shortcut-->']) {
+    for (const m of ['<!--wx:attributions-->', '<!--wx:operator-->', '<!--wx:pushover-->', '<!--/wx:pushover-->', '<!--wx:shortcut-->', '<!--/wx:shortcut-->', '<!--wx:updates-->', '<!--/wx:updates-->']) {
       expect(count(m), m).toBe(1);
     }
     expect(count('<!--wx:version-->')).toBeGreaterThan(0);
@@ -40,6 +40,10 @@ describe('About page', () => {
     expect(sc).toContain('<h2>Upload from your iPhone</h2>');
     expect(sc).toContain('<a href="<!--wx:shortcut-url-->"><!--wx:shortcut-url--></a>');
     expect(count('<!--wx:shortcut-url-->')).toBe(2);
+    // F-52 PT-9a (OQ-216): the update sentence only inside its block.
+    const up = html.slice(html.indexOf('<!--wx:updates-->'), html.indexOf('<!--/wx:updates-->'));
+    expect(up).toContain('This server downloads software updates from GitHub; no workout or visitor data is sent.');
+    expect(count('software updates from GitHub')).toBe(1);
   });
 
   it('states the facts of AC 2 and AC 3', () => {

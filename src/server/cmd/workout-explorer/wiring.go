@@ -42,6 +42,7 @@ type settings struct {
 	operatorHTML         string // the rendered operator file (F-29 AB-8); "": the placeholder
 	iosShortcutURL       string // the About page's iOS Shortcut link (F-34); "": no section
 	impressumHTML        string // the rendered Impressum file (F-38 IM-1); "": no Impressum, no page, no footer link
+	autoUpdate           bool   // WORKOUT_EXPLORER_AUTO_UPDATE=on: the About page's update sentence (F-52 AU-12, PT-9a)
 	// onParser is called with the parser newApp built; nil in production.
 	onParser func(*ingest.Parser)
 	// onService is called with the service and the storage total newApp
@@ -70,7 +71,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	if err != nil {
 		return nil, nil, err
 	}
-	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != "", Shortcut: s.iosShortcutURL, Impressum: impressum})
+	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != "", Shortcut: s.iosShortcutURL, Impressum: impressum, Updates: s.autoUpdate})
 	if err != nil {
 		return nil, nil, err
 	}

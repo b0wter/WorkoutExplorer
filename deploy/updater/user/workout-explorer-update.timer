@@ -1,0 +1,13 @@
+# Rootless Podman: once a day in the hoster's hour, at a random but fixed minute; no catch-up
+# (F-52 AU-13, OQ-213). Change the hour with a drop-in (PODMAN.md, "Automatic updates").
+[Unit]
+Description=Workout Explorer automatic update, nightly
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=1h
+FixedRandomDelay=true
+Persistent=false
+
+[Install]
+WantedBy=timers.target

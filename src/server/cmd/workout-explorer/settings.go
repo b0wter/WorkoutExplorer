@@ -33,6 +33,7 @@ const (
 	envOperatorFile         = "WORKOUT_EXPLORER_OPERATOR_FILE"
 	envIOSShortcutURL       = "WORKOUT_EXPLORER_IOS_SHORTCUT_URL"
 	envImpressumFile        = "WORKOUT_EXPLORER_IMPRESSUM_FILE"
+	envAutoUpdate           = "WORKOUT_EXPLORER_AUTO_UPDATE"
 )
 
 const (
@@ -241,6 +242,20 @@ func iosShortcutURL(getenv func(string) string) (string, error) {
 	return v, nil
 }
 
+// autoUpdate reads the host updater's switch (F-52 AU-12): unset or empty is
+// off, "on" is on, anything else is an error naming the setting. serve only
+// uses it for the About page's update sentence (PT-9a); the updater on the
+// host reads the same key.
+func autoUpdate(getenv func(string) string) (bool, error) {
+	switch getenv(envAutoUpdate) {
+	case "":
+		return false, nil
+	case "on":
+		return true, nil
+	}
+	return false, errors.New(envAutoUpdate + " must be unset or on")
+}
+
 // trustedProxy reads Caddy's address (ADR-021 rev. 6 item 6): unset or empty
 // is the zero Addr (loopback only); otherwise exactly one IP address, no zone,
 // no prefix. IPv4-mapped IPv6 is unmapped to match the peer comparison.
@@ -303,7 +318,11 @@ func readSettings(getenv func(string) string) (settings, error) {
 	if err != nil {
 		return settings{}, err
 	}
-	return settings{impressumHTML: im, iosShortcutURL: sc, operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
+	au, err := autoUpdate(getenv)
+	if err != nil {
+		return settings{}, err
+	}
+	return settings{autoUpdate: au, impressumHTML: im, iosShortcutURL: sc, operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
 		pushoverToken: pt, pushoverUser: pu}, nil
 }
 

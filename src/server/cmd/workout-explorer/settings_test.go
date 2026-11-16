@@ -72,7 +72,7 @@ const fixtureAsset = "fixture-1.js"
 
 // aboutFixture is a finished About page: the list is generated, every marker is present.
 const aboutFixture = `<main><!--wx:operator-->|<!--wx:version-->
-<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:generated-->{{ list <!--wx:version--> }}</main><!--wx:impressum-->`
+<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:updates-->UPDATES<!--/wx:updates--><!--wx:generated-->{{ list <!--wx:version--> }}</main><!--wx:impressum-->`
 
 // TestAboutTemplateContract: the frontend's source template carries every
 // marker serve and the generator fill (F-29 AB-3, AB-5).
@@ -81,7 +81,7 @@ func TestAboutTemplateContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->", "<!--wx:shortcut-->", "<!--wx:shortcut-url-->", "<!--/wx:shortcut-->"} {
+	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->", "<!--wx:shortcut-->", "<!--wx:shortcut-url-->", "<!--/wx:shortcut-->", "<!--wx:updates-->", "<!--/wx:updates-->"} {
 		if !strings.Contains(string(src), m) {
 			t.Errorf("about.html lacks %s", m)
 		}
@@ -134,6 +134,26 @@ func TestIOSShortcutSetting(t *testing.T) {
 	}
 }
 
+// TestAutoUpdateSetting (F-52 AU-12): unset or empty is off, "on" is on,
+// anything else stops serve with exit 2 and a message naming the setting.
+func TestAutoUpdateSetting(t *testing.T) {
+	for v, want := range map[string]bool{"": false, "on": true} {
+		if s, err := readSettings(envOf(map[string]string{envAutoUpdate: v})); err != nil || s.autoUpdate != want {
+			t.Errorf("%q = %v, %v", v, s.autoUpdate, err)
+		}
+	}
+	for _, v := range []string{"ON", "On", "off", "1", "true", "yes", " on", "on ", "on\n"} {
+		if _, err := readSettings(envOf(map[string]string{envAutoUpdate: v})); err == nil || !strings.Contains(err.Error(), envAutoUpdate) {
+			t.Errorf("%q: %v", v, err)
+		}
+	}
+	t.Setenv(envAutoUpdate, "off")
+	var stderr bytes.Buffer
+	if got := run([]string{"serve", "-data", filepath.Join(t.TempDir(), "data"), "-web", testWeb, "-addr", "127.0.0.1:0"}, nil, &stderr); got != 2 || !strings.Contains(stderr.String(), envAutoUpdate) {
+		t.Errorf("serve = %d, %q", got, stderr.String())
+	}
+}
+
 // TestAboutRoute (F-29 AB-4): GET and HEAD /about, values filled and escaped,
 // the Pushover block only with both secrets, other methods not served.
 func TestAboutRoute(t *testing.T) {
@@ -170,6 +190,12 @@ func TestAboutRoute(t *testing.T) {
 	if sc := get(settings{iosShortcutURL: "https://www.icloud.com/shortcuts/x?a=1&b=2"}, "GET").Body.String(); !strings.Contains(sc, `<a href="https://www.icloud.com/shortcuts/x?a=1&amp;b=2">SC</a>`) {
 		t.Errorf("Shortcut section: %q", sc)
 	}
+	if strings.Contains(rec.Body.String(), "UPDATES") {
+		t.Error("updates block present with automatic updates off")
+	}
+	if up := get(settings{autoUpdate: true}, "GET").Body.String(); !strings.Contains(up, "UPDATES") || strings.Contains(up, "<!--/wx:updates-->") {
+		t.Errorf("updates block: %q", up)
+	}
 	if h := get(settings{}, "HEAD"); h.Code != 200 || h.Body.Len() != 0 {
 		t.Errorf("HEAD = %d, %d body bytes", h.Code, h.Body.Len())
 	}
@@ -187,6 +213,7 @@ func TestAboutMissingOrUngenerated(t *testing.T) {
 		"no operator marker": strings.ReplaceAll(aboutFixture, "<!--wx:operator-->", ""),
 		"no block":           strings.ReplaceAll(aboutFixture, "<!--wx:pushover-->", ""),
 		"no shortcut block":  strings.ReplaceAll(aboutFixture, "<!--/wx:shortcut-->", ""),
+		"no updates block":   strings.ReplaceAll(aboutFixture, "<!--wx:updates-->", ""),
 	} {
 		dir := t.TempDir()
 		idx, _ := os.ReadFile(filepath.Join(testWeb, "index.html"))

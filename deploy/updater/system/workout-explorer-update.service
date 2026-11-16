@@ -1,0 +1,20 @@
+# Docker Compose: the nightly run of update.sh (F-52 AU-13). Installed once by root into
+# /etc/systemd/system, never changed by a release (DOCKER.md, "Automatic updates"). Runs as the
+# deploy user (owner of the deploy directory, docker group); root runs no code of ours. A user
+# other than "deploy" or another deploy directory: `systemctl edit` a drop-in.
+[Unit]
+Description=Workout Explorer automatic update
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+ExecStart=/bin/sh /srv/workout-explorer/update.sh
+NoNewPrivileges=true
+# Writes only where a manual deploy writes: the deploy directory (and a private /tmp).
+ProtectSystem=strict
+ReadWritePaths=/srv/workout-explorer
+PrivateTmp=true
+ProtectHome=read-only
+TimeoutStartSec=1h

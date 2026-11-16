@@ -26,7 +26,7 @@ DEV_BASE_URL ?= http://127.0.0.1:8088
         lint lint-server lint-web \
         test test-server test-web \
         build build-server build-web attributions precompress-assets \
-        size ci caddy caddy-check image deploy-archive docker-check corpus corpus-update corpus-gen prototype-data prototype-serve dev-server dev-web clean
+        size ci caddy caddy-check image deploy-archive docker-check update-check corpus corpus-update corpus-gen prototype-data prototype-serve dev-server dev-web clean
 
 # ---- dependencies ---------------------------------------------------------
 
@@ -94,7 +94,7 @@ size: build-web
 
 # ---- CI -------------------------------------------------------------------
 
-ci: lint test build size caddy-check docker-check
+ci: lint test build size caddy-check docker-check update-check
 
 # ---- Caddy (F-22 H-7, H-12; F-59 IP-6, IP-19) ---------------------------------
 
@@ -127,8 +127,9 @@ DEPLOY_ARCHIVE := $(BUILD_DIR)/deploy.tar.gz
 REVISION ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 # The release's value for our image in compose.yaml and the Podman app unit; make ci uses a test digest.
 APP_IMAGE ?= ghcr.io/test/workout-explorer:v0.0.0@sha256:0000000000000000000000000000000000000000000000000000000000000000
-# Every file the deploy archive may hold (IP-5): never .env, the Dockerfile, compose.build.yaml, minisign.pub.
-DEPLOY_ALLOW := ^\./$$|^\./(compose\.yaml|compose\.notify\.yaml|Caddyfile|deploy\.sh|example\.env|operator\.example\.txt|impressum\.example\.txt|COMMIT|podman/|podman/workout-explorer-(app|caddy)\.container|podman/workout-explorer-(edge|backend|egress)\.network|podman/workout-explorer-ctl|systemd/|systemd/workout-explorer(|-caddy|-caddy-upgrade)\.service|systemd/workout-explorer\.slice|systemd/workout-explorer-caddy-upgrade\.path|systemd/caddy\.pref|systemd/notify\.conf|systemd/workout-explorer-run)$$
+# Every file the deploy archive may hold (IP-5, F-52 AU-3): never .env, the Dockerfile, compose.build.yaml,
+# minisign.pub, sign-release.sh or the updater's tests.
+DEPLOY_ALLOW := ^\./$$|^\./(compose\.yaml|compose\.notify\.yaml|Caddyfile|deploy\.sh|update\.sh|updater/|updater/(system|user)/|updater/(system|user)/workout-explorer-update\.(service|timer)|example\.env|operator\.example\.txt|impressum\.example\.txt|COMMIT|podman/|podman/workout-explorer-(app|caddy)\.container|podman/workout-explorer-(edge|backend|egress)\.network|podman/workout-explorer-ctl|systemd/|systemd/workout-explorer(|-caddy|-caddy-upgrade)\.service|systemd/workout-explorer\.slice|systemd/workout-explorer-caddy-upgrade\.path|systemd/caddy\.pref|systemd/notify\.conf|systemd/workout-explorer-run)$$
 
 # The image, built with no cache, saved as one OCI archive: the bytes every check below and the
 # release job see (IP-3). One plain linux/amd64 manifest: no provenance or SBOM attestations.
@@ -140,9 +141,9 @@ image:
 # The deploy files of a release (IP-5) with APP_IMAGE written in; CI calls it with the tested digest.
 deploy-archive:
 	rm -rf $(BUILD_DIR)/deploy && mkdir -p $(BUILD_DIR)/deploy
-	cp deploy/compose.yaml deploy/compose.notify.yaml deploy/Caddyfile deploy/deploy.sh deploy/example.env \
+	cp deploy/compose.yaml deploy/compose.notify.yaml deploy/Caddyfile deploy/deploy.sh deploy/update.sh deploy/example.env \
 		deploy/operator.example.txt deploy/impressum.example.txt $(BUILD_DIR)/deploy/
-	cp -r deploy/podman deploy/systemd $(BUILD_DIR)/deploy/
+	cp -r deploy/podman deploy/systemd deploy/updater $(BUILD_DIR)/deploy/
 	git rev-parse HEAD > $(BUILD_DIR)/deploy/COMMIT
 	cd $(BUILD_DIR)/deploy && sed -i 's|ghcr\.io/[a-z0-9._-]*/workout-explorer:unreleased|$(APP_IMAGE)|' compose.yaml podman/workout-explorer-app.container && \
 		[ "$$(grep -c 'image: $(APP_IMAGE)$$' compose.yaml)" = 1 ] && [ "$$(grep -c '^Image=$(APP_IMAGE)$$' podman/workout-explorer-app.container)" = 1 ] && \
@@ -164,7 +165,7 @@ docker-check: image deploy-archive
 	[ "$$leak" = 0 ] || { echo "docker-check: forbidden files reach the build context"; exit 1; }
 	@# The deploy archive: only allow-listed files, scripts parse, every Compose file set validates (test digest).
 	@bad=$$(tar -tzf $(DEPLOY_ARCHIVE) | grep -Ev '$(DEPLOY_ALLOW)'); [ -z "$$bad" ] || { echo "docker-check: not allowed in the deploy archive: $$bad"; exit 1; }
-	@for f in deploy.sh podman/workout-explorer-ctl systemd/workout-explorer-run; do sh -n $(BUILD_DIR)/deploy/$$f || { echo "docker-check: $$f does not parse"; exit 1; }; done
+	@for f in deploy.sh update.sh podman/workout-explorer-ctl systemd/workout-explorer-run; do sh -n $(BUILD_DIR)/deploy/$$f || { echo "docker-check: $$f does not parse"; exit 1; }; done
 	@d=$(BUILD_DIR)/deploy; cp deploy/example.env $$d/.env; made=; [ -e deploy/.env ] || { cp deploy/example.env deploy/.env; made=1; }; \
 	docker compose -f $$d/compose.yaml config -q && docker compose -f $$d/compose.yaml -f $$d/compose.notify.yaml config -q && \
 	docker compose -f deploy/compose.yaml -f deploy/compose.build.yaml config -q && \
@@ -191,6 +192,14 @@ docker-check: image deploy-archive
 	for p in $$(cat $$t/pkgs); do grep -qx "usr/share/doc/$$p/copyright" $$t/img || { echo "docker-check: no copyright file for $$p"; exit 1; }; done; \
 	(cd $(SERVER_DIR) && go run ./tools/attributions -base-packages $$t/pkgs) || exit 1; \
 	echo "docker-check: ok ($$(tar -xOf $(IMAGE_ARCHIVE) index.json | grep -o 'sha256:[0-9a-f]*' | head -1))"
+
+# ---- updater (F-52) ------------------------------------------------------------
+
+# deploy/update.sh against a local fake release host with a throwaway key (deploy/test/update_test.py).
+# Uses the distribution's minisign, else a test double (Python cryptography); fails, never skips, without both.
+update-check:
+	sh -n deploy/update.sh && sh -n deploy/sign-release.sh
+	python3 -W ignore::ResourceWarning -I deploy/test/update_test.py
 
 # ---- parser corpus (ADR-004) ------------------------------------------------
 

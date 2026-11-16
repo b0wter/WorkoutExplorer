@@ -2,17 +2,17 @@
 
 Workout Explorer turns an uploaded FIT file (from a bike computer or sports watch) into a shareable page with map, charts and laps. There are no accounts. Every workout is deleted after 7 days by default (at most 30). Nothing is backed up, on purpose: a lost server loses its workouts.
 
-Design background: `architect/F-31-server-deploy-and-monitoring.md`, `architect/F-59-container-image-and-install-paths.md`, ADR-034, ADR-035, ADR-052, ADR-053.
+Design background: `architect/F-31-server-deploy-and-monitoring.md`, `architect/F-59-container-image-and-install-paths.md`, `architect/F-52-auto-update.md`, ADR-034, ADR-035, ADR-050 to ADR-054.
 
 ## Which way should I run it?
 
-Every release publishes our app image (`ghcr.io/b0wter/workout-explorer:vX.Y.Z`: the server and the web files, nothing else), a **deploy archive** with the files each path installs, a bare-metal tarball and `SHA256SUMS`. Caddy, the small web server in front of the app, is not ours: the official Caddy image, or Caddy's own Debian package. The privacy and security guarantees are the same on every path. Each path has its own guide (prerequisites, install, check, update, remove); this file holds what they share.
+Every release publishes our app image (`ghcr.io/b0wter/workout-explorer:vX.Y.Z`: the server and the web files, nothing else), a **deploy archive** with the files each path installs, a bare-metal tarball, `SHA256SUMS` and its signature `SHA256SUMS.minisig` ("Updates"). Caddy, the small web server in front of the app, is not ours: the official Caddy image, or Caddy's own Debian package. The privacy and security guarantees are the same on every path. Each path has its own guide (prerequisites, install, check, update, remove); this file holds what they share.
 
 | | Docker Compose ([DOCKER.md](DOCKER.md)) | Rootless Podman ([PODMAN.md](PODMAN.md)) | Bare metal ([BAREMETAL.md](BAREMETAL.md)) |
 | --- | --- | --- | --- |
 | For | Anyone with Docker. **Pick this if unsure** | Hosts with Podman and systemd, no Docker daemon | Hosts without containers |
 | Runs | Our image and the official Caddy image | The same two images, as systemd user units (Quadlet) | The binary from the tarball and Caddy's apt package, as two systemd services |
-| Updates | By hand, DOCKER.md section 8 | By hand, PODMAN.md section 9 | By hand, BAREMETAL.md section 6 |
+| Updates | `update.sh vX.Y.Z`, or automatically every night (DOCKER.md section 8) | The same (PODMAN.md section 9) | By hand, BAREMETAL.md section 6 |
 
 Also in DOCKER.md: building the image yourself from a clone, moving an existing tarball install to the image. The project operator's own deploy and releasing are at the end of this file.
 
@@ -75,8 +75,10 @@ Each path's guide says where `.env` lives and how to create it. Edit `.env`. Uns
 | `WORKOUT_EXPLORER_IMPRESSUM_FILE` | unset (no Impressum) | Absolute path of your Impressum text, see "Impressum (optional)" above. Set but missing or invalid stops the server at start |
 | `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section) | `https://` link to your iPhone upload Shortcut, shown on the About page, "iPhone upload Shortcut". Anything that is not an absolute `https://` link stops the server at start |
 | `COMPOSE_FILE` | unset | With notifications: `compose.yaml:compose.notify.yaml` (DOCKER.md section 5). Self-builders: DOCKER.md section 9 |
+| `WX_UPDATE_PUBLIC_KEY` | none, **required by `update.sh`** | The release signing key you pinned ("Updates", step 1). Docker Compose and rootless Podman: every release is installed by `update.sh`, which refuses to run without it. Read by `update.sh` only; no deploy ever writes it |
+| `WORKOUT_EXPLORER_AUTO_UPDATE` | unset (off) | `on`: the nightly timer installs every newer signed release ("Updates"). Anything else stops the server at start (exit code 2) and `update.sh` refuses to run. When on, the About page says that this server downloads updates from GitHub |
 
-`WX_*` and `COMPOSE_FILE` are read by Docker Compose only (the other paths ignore them). `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`. There is no setting for the images: the release's `compose.yaml` fixes ours by digest and Caddy's by minor version.
+`WX_*` and `COMPOSE_FILE` are read by Docker Compose only (the other paths ignore them), except `WX_UPDATE_PUBLIC_KEY`, which `update.sh` reads on both container paths. `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`. There is no setting for the images: the release's `compose.yaml` fixes ours by digest and Caddy's by minor version.
 
 With notifications on, the file holds two secrets. Keep it mode `0600` and never commit it.
 
@@ -207,6 +209,47 @@ Traefik with Docker labels: the same router, but the backend is a host address, 
 
 Wrong `WX_TRUSTED_PROXIES`: too narrow shows as every visitor sharing one upload limit. Too wide lets clients choose their own address. Only the proxy's own source may be listed.
 
+## Updates (Docker Compose and rootless Podman)
+
+Every release is installed by `update.sh` in `/srv/workout-explorer`, by hand or, if you turn it on, every night. It downloads the release's `SHA256SUMS` and checks its signature with `minisign` against the key you pinned, before anything is unpacked or run; then it runs the release's own `deploy.sh` (pull both images, check the new Caddy, install, restart, wait for `/api/health`, `regenerate`). The checksums alone are never enough: a release without a valid signature by the pinned key is refused, whatever its checksums say. Bare metal is updated by hand (BAREMETAL.md section 6). Self-built images (DOCKER.md section 9) are not updated by it.
+
+Each path's guide has the commands (who runs them, the timer): DOCKER.md section 8, PODMAN.md section 9. What they share:
+
+**1. Pin the release signing key (once).** The operator signs every release with a key kept offline. Its public half is published in two places that one attacker is unlikely to control both of: the file `deploy/minisign.pub` in the repository on GitHub (its second line), and a DNS TXT record on the operator's domain:
+
+```sh
+curl -fsS https://raw.githubusercontent.com/b0wter/WorkoutExplorer/main/deploy/minisign.pub | sed -n 2p
+dig +short TXT _wx-release-key.workouts.plugman.de          # the same line, in quotes
+```
+
+Both must show the same line, starting with `RW`. If they differ, stop and ask the operator. Put the line into `.env` as `WX_UPDATE_PUBLIC_KEY=RW...`. It is read from there only, never from a download. If the operator announces a new key (the old one was lost or stolen), repeat this step with the new line; until then every update is refused and alerts you.
+
+**2. Install `minisign`** from your distribution (`apt install minisign`; Debian 12 and 13 have it) next to `curl`, `tar`, `sha256sum` and `flock` (util-linux), which every Debian has.
+
+**3. The first release is checked by hand** with the same key (the path's guide shows it), because `update.sh` itself comes with it. From then on every deploy goes through the installed `update.sh`, which replaces itself with the copy of each release it installs (the new copy acts from the next run).
+
+**By hand:** `update.sh vX.Y.Z` installs exactly that release: also an older one, the running one again (for example after `regenerate` failed), and whether or not automatic updates are on. Exit codes: `0` installed and regenerated; `1` refused (signature, checksum, archive), not healthy, another deploy running, or the network failed; `2` a configuration error (`.env`, missing tool, wrong user); `3` `regenerate` did not finish (the new version is live; run the same command again); `4` the clean-up of old web files failed (run it again later). Never run the `deploy.sh` of a downloaded archive yourself; it refuses unless `update.sh` started it.
+
+**Automatically:** with `WORKOUT_EXPLORER_AUTO_UPDATE=on` and the timer installed, once a night (03:00 plus a random but fixed minute within the hour; the guide shows how to change the hour) `update.sh` asks the running server for its version, asks GitHub which release is the latest, and installs it if it is newer: patch, minor or major. Pre-releases, drafts, tags not in `vX.Y.Z` form, older versions and the running version are never installed. A stopped stack, or a server that does not answer `/api/health`, is left alone. No port is opened and nothing is sent anywhere except ordinary download requests to GitHub (and your Pushover message on a failure). The app itself still has no internet access. With the switch off, an installed timer runs but makes no request at all.
+
+**One at a time.** A manual and an automatic run never overlap: the second one sees the lock (`deploy.lock`); the nightly run skips (`reason=busy`), a manual run says so and exits 1.
+
+**The log line.** Every run ends with one line, in the journal for the timer and in the terminal by hand:
+
+```
+update: running=v1.4.0 latest=v1.5.0 action=applied reason=- exit=0
+```
+
+`action` is `none` (nothing to do), `applied`, `refused` (the release failed a check; nothing was unpacked or run) or `failed` (its `deploy.sh` ended with the exit code shown). `reason`: `off` (automatic updates off), `stopped`, `busy`, `health` (server not answering or not a release version), `current` (nothing newer), `network` (GitHub not reachable, an HTTP error, a missing file; tried again the next night, nothing changed), `config`, `signature`, `manifest`, `checksum`, `archive`, `deploy`. Before it, on an install, are `deploy.sh`'s own lines.
+
+**When an update is refused or fails**, `update.sh` sends one Pushover message (when both Pushover keys are set in `.env`, "Notifications"; this one comes from the host, not from the app), for example `v1.5.0 failed (exit 3). Automatic updates are stopped until a manual deploy succeeds.`, and writes the stopped state `/srv/workout-explorer/update.stopped`. While that file exists, the nightly run does nothing and sends nothing more (`reason=stopped`). Without Pushover the log line is the only alert: check the journal now and then.
+
+- Read the state: `cat /srv/workout-explorer/update.stopped` (time, version, `refused` or `failed`, exit code, reason).
+- Clear it: fix the cause (or wait for a newer release), then deploy by hand with `update.sh vX.Y.Z`. Its success removes the file and the nightly runs resume. A failed manual deploy sets the state too, and with automatic updates on says so in the terminal and alerts you.
+- A failed `regenerate` may have deleted workouts whose stored file the new version cannot read, exactly as on a manual deploy (exit 3 or the `deleted=` count).
+
+There is no rollback (ADR-019): a broken release is fixed by a newer one.
+
 ## Data, backups and privacy
 
 - All workout data is in `WX_DATA` (default `/srv/workouts`): the database (`workouts.db`), the private originals (`private/`), what is served to visitors (`public/`), and the static pages and web assets of the releases still in use (`site/`, `bundles/`; a few MB per release, counted towards the storage limit).
@@ -219,7 +262,7 @@ Wrong `WX_TRUSTED_PROXIES`: too narrow shows as every visitor sharing one upload
 
 ### Reports from visitors
 
-Docker Compose: this query. Podman: `sudo workout-explorer-ctl reports` (PODMAN.md section 5). Bare metal: BAREMETAL.md section 5.
+Docker Compose: this query. Podman: `wx reports` (PODMAN.md section 5). Bare metal: BAREMETAL.md section 5.
 
 Visitors can report a published workout (reason and an optional message, no contact details, no address). A report is deleted with its workout, and at the latest 30 days after it was filed. There is no admin page: read them with `sqlite3` on the host, **read-only and as the server's user ID 10001**:
 
@@ -240,7 +283,7 @@ sudo setpriv --reuid=10001 --regid=10001 --clear-groups sqlite3 -readonly -line 
 
 Any workout (published, draft or past its deadline), with its reports and files, exactly like the owner's delete:
 
-Run it in your path's way: Docker, DOCKER.md section 10; Podman, `sudo workout-explorer-ctl delete <public_id>` (PODMAN.md section 5); bare metal, `sudo workout-explorer-run delete [-y] <public_id>` (BAREMETAL.md section 5). It prints the workout's ID, state, created and expiry times, title and number of reports, and asks `Delete? [y/N]`; `-y` skips the question.
+Run it in your path's way: Docker, DOCKER.md section 10; Podman, `wx delete <public_id>` (PODMAN.md section 5); bare metal, `sudo workout-explorer-run delete [-y] <public_id>` (BAREMETAL.md section 5). It prints the workout's ID, state, created and expiry times, title and number of reports, and asks `Delete? [y/N]`; `-y` skips the question.
 
 The page is gone as soon as the command finishes (nothing is cached). Exit status: `0` deleted; `1` not deleted or not completely (the message says which; a leftover public folder goes within about a minute, a private folder at the next start of `app`), also when you answered no; `2` wrong usage or a malformed ID; `3` no workout with this ID (also when it was already deleted). The storage total shown to uploads frees the space only at the next restart of `app`; restart it if uploads are refused as full.
 
@@ -264,19 +307,19 @@ Problems of one install path are in its guide (DOCKER.md section 13, PODMAN.md "
 
 ## Operator deploy (for the project operator only)
 
-Everything below is the operator's own VPS setup. It is the Docker Compose path (DOCKER.md), driven by `deploy/deploy.sh` from the operator's machine.
+Everything below is the operator's own VPS setup. It is the Docker Compose path (DOCKER.md), deployed with `update.sh` on the server like every hoster's ("Updates").
 
 ### The VPS (DP-13)
 
 - EU data centre, **linux/amd64**, at least 2 GB RAM, Debian stable, local disk. About 600 MB of RAM stays free for the OS, Docker and Caddy next to the 1200 MB cap of the app.
 - **Provider backups and snapshots off.** No backup job, no off-server copy of `/srv/workouts`.
-- SSH by key only; unattended security upgrades on (`unattended-upgrades`). Packages: `curl`, `tar`, `sqlite3` (reports, "Reports from visitors").
+- SSH by key only; unattended security upgrades on (`unattended-upgrades`). Packages: `curl`, `tar`, `minisign` ("Updates"), `sqlite3` (reports, "Reports from visitors").
 - Firewall: this setup opens nothing. Docker's own rules bypass a host firewall, which is why `WX_LISTEN` stays on loopback.
 - Docker Engine and the Compose plugin from Docker's Debian repository, default daemon settings. Docker starts at boot; there is no unit of ours.
 
 ### Users and directories (DP-3 to DP-5)
 
-`deploy` is the account `deploy.sh` logs in as: it owns the deploy directory and is in the `docker` group (root-equivalent on this box).
+`deploy` is the account that runs `update.sh` (over SSH and from the timer): it owns the deploy directory and is in the `docker` group (root-equivalent on this box).
 
 ```sh
 adduser --disabled-password deploy && usermod -aG docker deploy      # add your SSH key to ~deploy/.ssh/authorized_keys
@@ -286,7 +329,7 @@ install -d -o deploy -g deploy -m 0755 /srv/workout-explorer/operator   # About 
 install -m 0600 -o deploy -g deploy /dev/null /srv/workout-explorer/.env
 ```
 
-Fill `/srv/workout-explorer/.env` from `example.env` as in "Configure"; with notifications set `COMPOSE_FILE=compose.yaml:compose.notify.yaml` (DOCKER.md section 5). It must stay readable by `deploy` (`0600`). Your reverse proxy: "Reverse proxy". A server still on the tarball layout (`bin/`, `web/` in `/srv/workout-explorer`) is moved once with DOCKER.md section 12 before the first deploy of a release with the image.
+Fill `/srv/workout-explorer/.env` from `example.env` as in "Configure", including `WX_UPDATE_PUBLIC_KEY` ("Updates", step 1); with notifications set `COMPOSE_FILE=compose.yaml:compose.notify.yaml` (DOCKER.md section 5). It must stay readable by `deploy` (`0600`). Your reverse proxy: "Reverse proxy". A server still on the tarball layout (`bin/`, `web/` in `/srv/workout-explorer`) is moved once with DOCKER.md section 12 before the first deploy of a release with the image. A server without `update.sh` gets it once by hand: DOCKER.md section 2 with the new release (verify, then copy only `update.sh` into `/srv/workout-explorer`), then deploy as below.
 
 ### Releasing and deploying
 
@@ -296,23 +339,38 @@ Fill `/srv/workout-explorer/.env` from `example.env` as in "Configure"; with not
 
 **CSP hash of the inline theme script** (ADR-032 item 3, F-30 RG-14): a release that changes the script adds its new hash to `deploy/Caddyfile` and keeps the old one, because Caddy reloads before `regenerate` has rebuilt the old pages. Drop the old hash only in a later release, and only if the previous deploy reported `kept=0` and finished with exit 0.
 
+**Release signing key (once, and after a loss).** On your own machine, never on the VPS or in CI, with the distribution's `minisign`:
+
+```sh
+rm deploy/minisign.pub                     # the placeholder
+mkdir -p ~/.minisign && minisign -G -p deploy/minisign.pub -s ~/.minisign/workout-explorer.key   # asks for a password
+```
+
+The secret key `~/.minisign/workout-explorer.key` and its password never enter the repository, CI, a release or the VPS. Keep an offline copy (for example on a USB stick). Commit `deploy/minisign.pub` (it replaces the placeholder) and publish its second line as a DNS TXT record on your domain, `_wx-release-key.workouts.plugman.de` (the name in "Updates", step 1), with the same value. If the key is lost or stolen: make a new one, replace both places, and tell hosters to pin the new line (until they do, every update is refused and alerts them); announce a stolen key at once, because releases it signs install until hosters re-pin.
+
 **Cut a release.** On the commit to ship (pushed; CI runs only on `v*` tags and by hand via "Run workflow", never on branch pushes, so run `make ci` locally first):
 
 ```sh
 git tag v1.4.0 && git push origin v1.4.0
 ```
 
-CI builds and tests the image once, and only if everything passes the `release` job pushes exactly that image to `ghcr.io/b0wter/workout-explorer:v1.4.0`, creates the release (bare-metal tarball, deploy archive with the image's digest in `compose.yaml`, `SHA256SUMS`) and moves `latest` to it if it is the highest version. Only plain `vX.Y.Z` tags release. A version is never replaced: a re-run of the whole workflow builds another digest and stops before pushing; if a release is broken, ship the next version. If the job failed after pushing the image, "Re-run failed jobs" on the same run completes it (within a day, while the hand-off artefacts last).
+CI builds and tests the image once, and only if everything passes the `release` job pushes exactly that image to `ghcr.io/b0wter/workout-explorer:v1.4.0` and creates the release as a **draft** (bare-metal tarball, deploy archive with the image's digest in `compose.yaml`, `SHA256SUMS`). A draft is invisible to hosters and to their updaters. Only plain `vX.Y.Z` tags release. A version is never replaced: a re-run of the whole workflow builds another digest and stops before pushing; if a release is broken, ship the next version. If the job failed after pushing the image, "Re-run failed jobs" on the same run completes it (within a day, while the hand-off artefacts last).
 
-**Deploy it.** On your machine, from a clean checkout of that tag (`git checkout v1.4.0`; `gh auth login` once):
+**Sign and publish it.** When CI is green, on your machine, in a checkout that has the tag (`gh auth login` once; `minisign` installed):
 
 ```sh
-deploy/deploy.sh v1.4.0 deploy@your.vps
+deploy/sign-release.sh v1.4.0
 ```
 
-Or, when logged in on the server itself (clone and `gh` there, running user owns the deploy directory and is in the `docker` group): `deploy/deploy.sh v1.4.0 local`. Needs `git`, `gh`, `ssh`, `scp`, `tar` and `sha256sum`; any platform.
+It downloads the draft's assets and refuses unless: the release is still a draft, no higher version is already published (releases go out in version order, no back-ports), every asset is listed in `SHA256SUMS` and matches, every name carries the tag, `COMMIT` in both archives is the tag's commit, and the deploy archive names our image by digest. Then it signs `SHA256SUMS` (minisign asks for the key's password), checks the signature against `deploy/minisign.pub`, uploads `SHA256SUMS.minisig`, and publishes the release as "latest". Publishing moves the image's `latest` tag (the `latest` workflow, registry rights only, and only to a higher version). From that moment hosters with automatic updates install it in their next night. Never sign a release you have not reviewed: the signature is what every hoster trusts.
 
-It refuses a dirty tree, HEAD not at the tag, a bad checksum, a release built from another commit, or a server still on the tarball layout. It downloads the deploy archive, then on the server pulls both images with the new `compose.yaml` and checks the new Caddyfile with the pulled Caddy; **nothing on the server changes until both succeed**. Then it installs `compose.yaml`, `compose.notify.yaml` and `conf/Caddyfile`, runs `docker compose up -d` (Caddyfile-only change: a graceful reload), and waits (60 s) for `/api/health` through Caddy to report exactly the tag. It never connects from CI and has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version).
+**Deploy it.** Over SSH, as the deploy user:
+
+```sh
+ssh deploy@your.vps /srv/workout-explorer/update.sh v1.4.0
+```
+
+It verifies the signature with the pinned key, then runs the release's `deploy.sh` ("Updates"). It refuses a missing or wrong signature, a bad checksum, or a server still on the tarball layout. It pulls both images with the new `compose.yaml` and checks the new Caddyfile with the pulled Caddy; **nothing on the server changes until both succeed**. Then it installs `compose.yaml`, `compose.notify.yaml`, `conf/Caddyfile` and `update.sh`, runs `docker compose up -d` (Caddyfile-only change: a graceful reload), and waits (60 s) for `/api/health` through Caddy to report exactly the tag. It has no rollback; a failed wait prints `docker compose ps` and the last log lines of `app` and `caddy` and exits 1 (fix forward with a newer version).
 
 Then it runs `regenerate` in the `app` container (same `.env`, mounts and memory cap as `serve`), which rebuilds every live workout and removes old web files. It ends with one line:
 
@@ -323,9 +381,9 @@ deploy: v1.4.0 done: rebuilt=12 deleted=0 kept=0 skipped=0 files_removed=17 bund
 - `deleted`: workouts whose stored file the new version rejects; they are gone, as on expiry. Each has a `fit rejected` log line with the device model.
 - `kept`: workouts whose rebuild failed for a server-side reason (load, time limit, disk); they keep serving their previous files and web files. `skipped`: expired or deleted during the run.
 - Old web files: the server keeps one list per release in `/srv/workouts/bundles/`. After a complete run it keeps the current release and every release whose files a served page still names, and removes the rest from `site/assets/`. A viewer who had a page open across the clean-up may need to reload it.
-- Exit codes: 0 healthy and regenerated (whatever was deleted or kept); 1 refused or not healthy; 3 `regenerate` did not finish (the new version is live, nothing was removed); 4 the clean-up failed.
+- Exit codes: 0 healthy and regenerated (whatever was deleted or kept); 1 refused or not healthy; 2 a configuration error; 3 `regenerate` did not finish (the new version is live, nothing was removed); 4 the clean-up failed. A failure also sets the stopped state ("Updates").
 - After a deploy: `docker inspect -f '{{.State.OOMKilled}}' workout-explorer-app-1` must print `false` (F-30 RG-13, ADR-017 rev. 8). `OOMKilled` resets on a container restart and may not show for an exec'd process, so also compare `docker inspect -f '{{.RestartCount}}' workout-explorer-app-1` before and after the deploy (it must not grow), and treat `regenerate` exit 3 as a possible OOM kill.
-- **Retry** after exit 3 or 4, or to rebuild kept workouts: run `deploy/deploy.sh` again with the same tag. It is idempotent.
+- **Retry** after exit 3 or 4, or to rebuild kept workouts: run `update.sh` again with the same tag. It is idempotent.
 
 API downtime is the recreate of `app`. A newer Caddy patch, a changed Caddy definition in `compose.yaml`, or a changed `.env` value that Caddy itself uses (`WX_LISTEN`, `WX_TRUSTED_PROXIES`, `WX_DATA`) recreates the Caddy container: published pages are unreachable for a moment.
 

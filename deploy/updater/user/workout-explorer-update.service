@@ -1,0 +1,11 @@
+# Rootless Podman: the nightly run of update.sh as the service user (F-52 AU-13, ADR-054).
+# Installed once by the hoster into ~workouts/.config/systemd/user, never changed by a release
+# (PODMAN.md, "Automatic updates"). No root step; no NoNewPrivileges or file-system confinement:
+# rootless Podman needs the setuid newuidmap, and this user owns everything it can write.
+[Unit]
+Description=Workout Explorer automatic update
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh /srv/workout-explorer/update.sh
+TimeoutStartSec=1h

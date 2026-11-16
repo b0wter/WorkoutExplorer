@@ -10,6 +10,7 @@
 //	<!--wx:version-->        serve: the binary's version, HTML-escaped (any number of times, also inside the list)
 //	<!--wx:pushover-->...<!--/wx:pushover-->  exactly one pair; kept (markers dropped) only when notifications are on
 //	<!--wx:shortcut-->...<!--/wx:shortcut-->  exactly one pair; kept only when the iOS Shortcut link is set (F-34, INF-5)
+//	<!--wx:updates-->...<!--/wx:updates-->    exactly one pair; kept only when automatic updates are on (F-52 AU-12, PT-9a)
 //	<!--wx:shortcut-url-->   serve: inside that pair, the link, HTML-escaped (also usable in an href)
 //	<!--wx:impressum-->      serve: exactly once, the footer's Impressum link or nothing (F-38 IM-7, package shell)
 package about
@@ -41,6 +42,8 @@ const (
 	markerSCOn    = "<!--wx:shortcut-->"
 	markerSCOff   = "<!--/wx:shortcut-->"
 	markerSCURL   = "<!--wx:shortcut-url-->"
+	markerUpOn    = "<!--wx:updates-->"
+	markerUpOff   = "<!--/wx:updates-->"
 )
 
 // Placeholder is the operator block while the operator file is missing (decision 25, AB-8).
@@ -52,10 +55,11 @@ const MaxOperatorFile = 16 << 10
 // Values are the per-deployment facts filled at start. Operator is the
 // rendered operator block (RenderOperator); empty shows the placeholder.
 // Shortcut is the iOS Shortcut link (F-34); empty drops its block.
-// Impressum puts the footer's Impressum link in (F-38).
+// Impressum puts the footer's Impressum link in (F-38). Updates keeps the
+// automatic-updates block (F-52).
 type Values struct {
-	Operator, Version, Shortcut string
-	Notifications, Impressum    bool
+	Operator, Version, Shortcut       string
+	Notifications, Impressum, Updates bool
 }
 
 // ParseOperator checks the operator file's content and renders it (AB-8):
@@ -143,6 +147,9 @@ func fill(src []byte, v Values) ([]byte, error) {
 	}
 	if s, ok = cutBlock(s, markerSCOn, markerSCOff, v.Shortcut != ""); !ok {
 		return nil, errors.New("about page: the shortcut block is missing or malformed")
+	}
+	if s, ok = cutBlock(s, markerUpOn, markerUpOff, v.Updates); !ok {
+		return nil, errors.New("about page: the updates block is missing or malformed")
 	}
 	s, err := shell.Fill("about page", s, v.Impressum)
 	if err != nil {

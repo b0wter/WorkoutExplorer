@@ -1,0 +1,16 @@
+# Docker Compose: once a day in the hour the hoster sets, at a random but fixed minute; no
+# catch-up after downtime (F-52 AU-13, OQ-213). Change the hour with `systemctl edit`:
+#   [Timer]
+#   OnCalendar=
+#   OnCalendar=*-*-* 04:00:00
+[Unit]
+Description=Workout Explorer automatic update, nightly
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=1h
+FixedRandomDelay=true
+Persistent=false
+
+[Install]
+WantedBy=timers.target
