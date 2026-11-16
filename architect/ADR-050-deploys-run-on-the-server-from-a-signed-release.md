@@ -1,6 +1,6 @@
 # ADR-050 Deploys run on the server from a signed release; a deploy-files archive replaces the checkout
 
-- **Status:** accepted (15 Nov 2026); items 1 and 3 revised 16 Nov 2026 with the F-52 design v0.2 (image layout, F-59); old text in [history](history/ADR-050-deploys-run-on-the-server-from-a-signed-release.md)
+- **Status:** accepted (15 Nov 2026); items 1 and 3 revised 16 Nov 2026 with the F-52 design v0.2 (image layout, F-59), item 4 with v0.3 (QA-52-r1-2); old text in [history](history/ADR-050-deploys-run-on-the-server-from-a-signed-release.md)
 - **Date:** 15 Nov 2026
 - **Features:** F-52 (introduces it), F-31 (deploy, release job), F-30 (regenerate step, unchanged)
 - **Supersedes:** [ADR-035](ADR-035-deploy-run-by-the-operator-no-server-credentials-in-ci.md) item 3 (the operator's command from a clean checkout, copying over SSH) and, in item 1, "published" at creation. ADR-035 items 2 and 5 stand (item 4 is superseded by ADR-052)
@@ -16,7 +16,7 @@
 1. **The operator signs `SHA256SUMS` offline;** it lists the deploy archive (ADR-052, F-59 IP-5, whose `compose.yaml` and Podman app unit name our image by digest) and the bare-metal tarball (F-52 AU-3 to AU-5).
 2. **CI creates the release as a draft;** the operator's signing step publishes it. No unsigned release is public.
 3. **Every deploy on Docker Compose and rootless Podman runs on the server, through `update.sh`:** with a tag by hand (as the path's deploy user), or without one on the nightly timer. It verifies the signed manifest, then runs the `deploy.sh` from the verified archive under one lock; `deploy.sh` drives both paths (F-52 AU-16). Exit codes 0, 1, 3, 4 unchanged; no remote mode, no checkout, `git` or `gh`; not an entry point.
-4. **The commit check moves to signing:** the operator checks `COMMIT` against the local tag before signing; afterwards the signature stands for it.
+4. **The release check moves to signing:** before signing, the operator's script rebuilds the deploy archive from the local tag and requires the draft's to match it file by file, and pins our image repository (F-52 AU-5); afterwards the signature stands for it. The image bytes behind the digest stay CI's (F-52 P-9).
 
 ## Consequences
 

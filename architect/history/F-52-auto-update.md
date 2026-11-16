@@ -1,5 +1,10 @@
 # F-52 auto-update design: history
 
+## v0.2 → v0.3 (16 Nov 2026), QA-52-r1-2
+
+- AU-5 signing checks were: hashes, `COMMIT` in the deploy archive equals the local tag's commit, names carry the tag. Now also image repository pinned and deploy archive rebuilt from the local tag and compared file by file; P-9 added.
+- Attack rows were: "GitHub account, repository or CI compromised; assets swapped" (refused without a signature, which held only after signing) and "CI builds malicious bytes from the tagged commit: not caught; `COMMIT` catches only a wrong commit. Residual".
+
 ## v0.1 (15 Nov 2026) → v0.2 (16 Nov 2026), revision on top of the built F-59
 
 Replaced rows of v0.1 (the release-tarball layout). Rows not listed here carried over unchanged in substance.
