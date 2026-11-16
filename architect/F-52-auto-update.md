@@ -5,7 +5,7 @@
 - **Feature:** [`features/F-52-auto-update.md`](../features/F-52-auto-update.md); "AC n" is the n-th acceptance criterion there
 - **Requirements:** INF-8, INF-4, INF-1, NFR Privacy, NFR Security, UP-7, AC-4; TD Hosting and operations (Deploys), Configuration, Security and privacy
 - **Builds on:** [F-31](F-31-server-deploy-and-monitoring.md) DP-3, DP-6, DP-10, DP-18; [F-30](F-30-regenerate-command.md) RG-10, RG-11; [F-29](F-29-about-page-and-attributions.md) AB-3; ADR-019, ADR-034, ADR-035, ADR-039. **New:** [ADR-050](ADR-050-deploys-run-on-the-server-from-a-signed-release.md), [ADR-051](ADR-051-updater-as-host-script-verified-by-minisign.md)
-- **Owner:** backend. Files: `deploy/update.sh` (new), `deploy/deploy.sh` (server-only), `deploy/sign-release.sh` (new, operator machine), two systemd units in `deploy/`, `deploy/minisign.pub`, `example.env`, `RUNBOOK.md` (6a, 13, new updater section), `ci.yml`, `make ci` (scripts parse), Go: one setting and the About block (`about.html` template line, frontend-owned file, backend may edit it in this feature)
+- **Owner:** backend. Files: `deploy/update.sh` (new), `deploy/deploy.sh` (server-only), `deploy/sign-release.sh` (new, operator machine), two systemd units in `deploy/`, `deploy/minisign.pub`, `example.env`, `RUNBOOK.md` (Operator deploy, new updater section), `DOCKER.md` (update steps), `ci.yml`, `make ci` (scripts parse), Go: one setting and the About block (`about.html` template line, frontend-owned file, backend may edit it in this feature)
 
 ## Shape
 

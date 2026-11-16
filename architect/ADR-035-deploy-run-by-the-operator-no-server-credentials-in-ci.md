@@ -24,7 +24,7 @@
 ## Consequences
 
 - A leaked GitHub token can change code and create releases, but cannot deploy them. The `SHA256SUMS` asset guards against a broken download, not against someone with write access to the repository: both live in the same place.
-- The repository and its releases are public (2 Nov 2026): `deploy.sh` and self-hosters (RUNBOOK 6a) download them without a login.
+- The repository and its releases are public (2 Nov 2026): `deploy.sh` and self-hosters (`deploy/DOCKER.md`) download them without a login.
 - A deploy needs the operator's machine, `gh` access to the repository and a pushed tag. There is no deploy on merge.
 - Release assets hold build output only. CI uses synthetic files.
 - Self-builders (F-59 IP-18) use no release and no deploy script; this ADR does not apply to them. Hosters on the published image use the release (F-59).

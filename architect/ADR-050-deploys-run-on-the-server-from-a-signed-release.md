@@ -22,7 +22,7 @@
 
 - One deploy path for manual and automatic deploys; no drift between them.
 - The operator's machine needs `minisign`, `gh` and the checkout only to sign; deploying needs only SSH. The linux/amd64 requirement for the operator's machine goes away (Caddy is validated on the server).
-- Release users (RUNBOOK 6a) get `regenerate` and the bundle clean-up they lacked, but need `minisign` and a pinned key even without automatic updates.
+- Release users (`deploy/DOCKER.md`) get `regenerate` and the bundle clean-up they lacked, but need `minisign` and a pinned key even without automatic updates.
 - Self-built clones are unaffected (OQ-215); they never used `deploy.sh`.
 - A release with a broken `deploy.sh` is still signed and runs; `make ci` and the operator's review are the guard, as before.
 

@@ -2,7 +2,7 @@
 
 This is one of the three install paths (RUNBOOK.md, "Which way should I run it?"). It runs the same two containers as the Docker Compose path, our published app image and the official Caddy image, with the same settings, but as **rootless Podman containers managed by systemd** through [Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html) units. The units and a control script are files of the release's deploy archive (`podman/`); this guide explains them.
 
-Everything in RUNBOOK.md that is not about Docker still applies: the data directory and the operator file and Impressum (section 3), configuration keys (section 4), the reverse proxy (section 5), data and privacy (section 9). This file covers what is different. Written for Podman 5.4 (netavark, pasta) on Debian 13.
+Everything in RUNBOOK.md that is not about Docker still applies: the operator file and Impressum, configuration keys, notifications, the reverse proxy, data and privacy (the sections of that name). This file covers what is different. Written for Podman 5.4 (netavark, pasta) on Debian 13.
 
 ## How Compose maps to Quadlet
 
@@ -28,7 +28,7 @@ Two differences that matter:
 
 - linux/amd64, Podman 5 with netavark and pasta (`podman info` shows `networkBackend: netavark`), `curl`, `sqlite3` (reports), `tar`, `sha256sum`.
 - cgroup v2 with the memory controller delegated to the service user (Debian 13 default), or the memory cap is silently not applied. Check after step 2: `cat /sys/fs/cgroup/user.slice/user-$(id -u workouts).slice/user@$(id -u workouts).service/cgroup.controllers` lists `memory`.
-- A reverse proxy on the host for TLS (RUNBOOK section 5; Caddy example in section 7 below).
+- A reverse proxy on the host for TLS (RUNBOOK.md, "Reverse proxy"; Caddy example in section 7 below).
 
 ## 2. Service user
 
@@ -64,7 +64,7 @@ mkdir d && tar -xzf workout-explorer-$v-deploy.tar.gz -C d
 sudo install -m 0755 d/podman/workout-explorer-ctl /usr/local/sbin/workout-explorer-ctl
 ```
 
-Write `/srv/workout-explorer/.env` from `d/example.env` as in RUNBOOK section 4. Only the `WORKOUT_EXPLORER_*` keys are read (the app unit loads it); `WX_*` and `COMPOSE_FILE` have no effect. Do not set `WORKOUT_EXPLORER_TRUSTED_PROXY`; the app unit sets it. The service user's Podman reads the file, so:
+Write `/srv/workout-explorer/.env` from `d/example.env` as in RUNBOOK.md, "Configure". Only the `WORKOUT_EXPLORER_*` keys are read (the app unit loads it); `WX_*` and `COMPOSE_FILE` have no effect. Do not set `WORKOUT_EXPLORER_TRUSTED_PROXY`; the app unit sets it. The service user's Podman reads the file, so:
 
 ```sh
 sudo chown root:workouts /srv/workout-explorer/.env && sudo chmod 0640 /srv/workout-explorer/.env
@@ -84,7 +84,7 @@ curl -s http://127.0.0.1:8080/api/health        # {"status":"ok","version":"v1.4
 
 `workout-explorer-ctl` runs `systemctl --user` and `podman` as the service user. Its header lists every command.
 
-| RUNBOOK (Docker) | Here |
+| DOCKER.md (Docker) | Here |
 | --- | --- |
 | `docker compose up -d` / `stop` / `restart` | `sudo workout-explorer-ctl start` / `stop` / `restart` |
 | `docker compose restart app` | `sudo workout-explorer-ctl restart-app` (published pages stay online) |
@@ -107,7 +107,7 @@ curl -s http://127.0.0.1:8080/api/health        # {"status":"ok","version":"v1.4
 
 ## 7. Host reverse proxy
 
-As RUNBOOK section 5, forwarding to `127.0.0.1:8080`. With Caddy on the host (`/etc/caddy/Caddyfile`):
+As RUNBOOK.md, "Reverse proxy", forwarding to `127.0.0.1:8080`. With Caddy on the host (`/etc/caddy/Caddyfile`):
 
 ```caddyfile
 workouts.example.org {
@@ -121,7 +121,7 @@ workouts.example.org {
 
 ## 8. Notifications (optional)
 
-Set both Pushover keys in `.env` (RUNBOOK section 4a), then give the app alone the egress network with a drop-in, which `install` never overwrites:
+Set both Pushover keys in `.env` (RUNBOOK.md, "Notifications"), then give the app alone the egress network with a drop-in, which `install` never overwrites:
 
 ```sh
 d=/etc/containers/systemd/users/$(id -u workouts)/workout-explorer-app.container.d
@@ -134,7 +134,7 @@ sudo workout-explorer-ctl daemon-reload && sudo workout-explorer-ctl restart
 
 ## 9. Updating
 
-Read the release notes and RUNBOOK's changes first. Then, as root:
+Read the release notes first. Then, as root:
 
 1. Download and check the new deploy archive as in section 3 (new `v`).
 2. `sudo workout-explorer-ctl install /tmp/wx-$v/d`. It prints `Caddyfile changed` when it did.

@@ -1,5 +1,5 @@
 # The app on bare metal (F-59 IP-13, IP-15): the systemd form of compose.yaml's `app`.
-# Install as /etc/systemd/system/workout-explorer.service (RUNBOOK.md, "Bare metal").
+# Install as /etc/systemd/system/workout-explorer.service (BAREMETAL.md).
 [Unit]
 Description=Workout Explorer API server
 After=network.target

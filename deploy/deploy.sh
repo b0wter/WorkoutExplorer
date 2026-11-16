@@ -4,7 +4,7 @@
 #   deploy/deploy.sh vX.Y.Z user@host   (needs git, gh, ssh, scp, tar, sha256sum)
 #   deploy/deploy.sh vX.Y.Z local        (on the server itself: same steps, no ssh/scp)
 # DEPLOY_DIR on the server defaults to /srv/workout-explorer; the SSH user owns it and is in the
-# docker group (RUNBOOK.md). It installs the release's deploy archive (compose.yaml names our image
+# docker group (DOCKER.md). It installs the release's deploy archive (compose.yaml names our image
 # by digest, Caddy by minor), pulls both images, starts them, waits for the health check, then
 # runs `regenerate`, which also removes the bundles no page needs (F-30, ADR-053).
 # No rollback (ADR-019). Exit 0: healthy and regenerated (whatever it deleted or kept); 1: refused
@@ -48,8 +48,8 @@ put() { # put <local> <remote relative path>: temporary name, then rename
 # 2. Nothing on the server changes until both images are pulled with the new compose.yaml and the
 # pulled Caddy accepts the new Caddyfile (F-59 IP-10).
 # {data}/site must exist (ADR-043; Caddy's mount has create_host_path: false).
-r 'd=$(sed -n "s/^WX_DATA=//p" .env); [ -d "${d:-/srv/workouts}/site" ]' || { echo "deploy: {data}/site is missing on the target; create it first (deploy/RUNBOOK.md section 3)" >&2; exit 1; }
-! r 'grep -q "^WX_WEB=" .env' || { echo "deploy: .env still sets WX_WEB: the target is on the old tarball layout; migrate it first (deploy/RUNBOOK.md, Migration)" >&2; exit 1; }
+r 'd=$(sed -n "s/^WX_DATA=//p" .env); [ -d "${d:-/srv/workouts}/site" ]' || { echo "deploy: {data}/site is missing on the target; create it first (deploy/DOCKER.md section 3)" >&2; exit 1; }
+! r 'grep -q "^WX_WEB=" .env' || { echo "deploy: .env still sets WX_WEB: the target is on the old tarball layout; migrate it first (deploy/DOCKER.md section 12)" >&2; exit 1; }
 r "rm -rf .deploy-new && mkdir -p .deploy-new/conf"
 for f in compose.yaml compose.notify.yaml; do cp_to "$tmp/a/$f" ".deploy-new/$f"; done
 cp_to "$tmp/a/Caddyfile" .deploy-new/conf/Caddyfile
