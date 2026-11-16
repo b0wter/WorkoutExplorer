@@ -195,11 +195,13 @@ docker-check: image deploy-archive
 
 # ---- updater (F-52) ------------------------------------------------------------
 
-# deploy/update.sh against a local fake release host with a throwaway key (deploy/test/update_test.py).
-# Uses the distribution's minisign, else a test double (Python cryptography); fails, never skips, without both.
+# deploy/update.sh (and the real deploy.sh) against a local fake release host, and deploy/sign-release.sh
+# against a fake gh and a scratch repository, with throwaway keys (deploy/test/). Uses the distribution's
+# minisign, else a test double (Python cryptography); fails, never skips, without both.
 update-check:
 	sh -n deploy/update.sh && sh -n deploy/sign-release.sh
 	python3 -W ignore::ResourceWarning -I deploy/test/update_test.py
+	python3 -W ignore::ResourceWarning -I deploy/test/sign_test.py
 
 # ---- parser corpus (ADR-004) ------------------------------------------------
 

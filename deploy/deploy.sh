@@ -28,9 +28,10 @@ else
 	echo "deploy: found both or neither of $dir/compose.yaml and $quadlet/workout-explorer-app.container" >&2
 	exit 1
 fi
-d=$(envval WX_DATA)
-[ "$path" = compose ] || d= # Podman's units fix the data directory
-[ -d "${d:-/srv/workouts}/site" ] || { echo "deploy: ${d:-/srv/workouts}/site is missing; create it first (DOCKER.md section 3, PODMAN.md section 3)" >&2; exit 1; }
+# No check of the data directory here: it is 0750 and owned by the containers' user, so the deploy
+# user cannot see into it (QA-52-r1-1). A missing site/ fails visibly when Caddy starts (bind mounts
+# are never created).
+d=$(envval WX_DATA) # Compose only; Podman's units fix the data directory
 ! grep -q "^WX_WEB=" .env || { echo "deploy: .env still sets WX_WEB: the host is on the old tarball layout; migrate it first (DOCKER.md section 12)" >&2; exit 1; }
 
 # put <file> <deploy dir relative path> <mode>: temporary name, then rename (AU-15: a running
@@ -82,6 +83,11 @@ else
 	l=$(envval WX_LISTEN)
 	health=${l:-127.0.0.1:8088}
 fi
+
+# The updater units of both paths, as the source for installing the timer later (DOCKER.md section
+# 8, PODMAN.md section 9); the installed units are never changed by a release (AU-13).
+mkdir -p updater/system updater/user
+for f in "$a"/updater/system/* "$a"/updater/user/*; do put "$f" "updater/${f#"$a/updater/"}" 644; done
 
 # 3. Health: the new tag answers through Caddy.
 up=no

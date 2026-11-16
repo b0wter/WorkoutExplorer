@@ -25,12 +25,15 @@ sudo install -d -m 0755 /srv/workout-explorer /srv/workout-explorer/bin /srv/wor
 sudo install -d -o workout-explorer -g workout-explorer -m 0750 /srv/workouts /srv/workouts/public /srv/workouts/site
 ```
 
-Download and check both archives of the release, the deploy archive and the tarball:
+Download both archives of the release, the deploy archive and the tarball, and check the signature first, then the checksums. The checksums alone prove nothing: whoever can change the files can change `SHA256SUMS` too. Pin the release signing key once as in RUNBOOK.md, "Updates", step 1 (compare GitHub with the DNS record), and install `minisign` (`apt install minisign`). If `minisign` says anything else than shown below, stop: the files are not the operator's.
 
 ```sh
+key=RW...                                       # the line you pinned
 v=v1.4.0; base=https://github.com/b0wter/WorkoutExplorer/releases/download/$v
 mkdir -p /tmp/wx-$v && cd /tmp/wx-$v
-curl -fLO $base/workout-explorer-$v-deploy.tar.gz -O $base/workout-explorer-$v-linux-amd64.tar.gz -O $base/SHA256SUMS
+curl -fLO $base/workout-explorer-$v-deploy.tar.gz -O $base/workout-explorer-$v-linux-amd64.tar.gz -O $base/SHA256SUMS -O $base/SHA256SUMS.minisig
+minisign -V -P "$key" -m SHA256SUMS             # must print: Signature and comment signature verified
+grep -c "  workout-explorer-$v-" SHA256SUMS     # must print 2: both names carry the tag you chose
 sha256sum -c SHA256SUMS                         # both: OK
 tar -xzf workout-explorer-$v-deploy.tar.gz && mkdir app && tar -xzf workout-explorer-$v-linux-amd64.tar.gz -C app
 sudo install -m 0755 app/workout-explorer /srv/workout-explorer/bin/workout-explorer

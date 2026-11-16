@@ -45,6 +45,7 @@ mkdir d && tar -xzf workout-explorer-$v-deploy.tar.gz -C d
 cd /srv/workout-explorer
 cp /tmp/wx-$v/d/compose.yaml /tmp/wx-$v/d/compose.notify.yaml /tmp/wx-$v/d/example.env /tmp/wx-$v/d/*.example.txt .
 install -m 0755 /tmp/wx-$v/d/update.sh update.sh
+cp -r /tmp/wx-$v/d/updater .                        # the timer units (section 8); every update refreshes them
 cp /tmp/wx-$v/d/Caddyfile conf/Caddyfile
 ```
 
@@ -130,11 +131,14 @@ After a failure, fix the cause and run the same command again; it is idempotent.
 
 ### Automatic updates (optional)
 
-Off by default. To install every newer signed release at night, install the timer once, as root (it runs `update.sh` as the deploy user; root runs no file of ours), from the deploy archive you checked in section 2:
+Off by default. To install every newer signed release at night, install the timer once, as root (it runs `update.sh` as the deploy user; root runs no file of ours). The units come from the last release you installed: section 2 and every `update.sh` put them into `/srv/workout-explorer/updater/`:
 
 ```sh
-sudo install -m 0644 /tmp/wx-$v/d/updater/system/workout-explorer-update.service /tmp/wx-$v/d/updater/system/workout-explorer-update.timer /etc/systemd/system/
+u=/srv/workout-explorer/updater/system
+sudo install -m 0644 $u/workout-explorer-update.service $u/workout-explorer-update.timer /etc/systemd/system/
 ```
+
+(Installed before these units were in the deploy directory? Run `update.sh` once with the running version, section 8.)
 
 If your deploy user is not called `deploy`, say so in a drop-in (`sudo systemctl edit workout-explorer-update.service`):
 
@@ -143,7 +147,7 @@ If your deploy user is not called `deploy`, say so in a drop-in (`sudo systemctl
 User=alice
 ```
 
-Then turn it on: set `WORKOUT_EXPLORER_AUTO_UPDATE=on` in `.env`, `docker compose up -d` (the About page now says that updates come from GitHub), and `sudo systemctl daemon-reload && sudo systemctl enable --now workout-explorer-update.timer`.
+Then turn it on. First `cat /srv/workout-explorer/update.stopped`: if the file exists, an earlier deploy failed and the nightly run would do nothing; fix that and run `update.sh vX.Y.Z` by hand until it succeeds. Then set `WORKOUT_EXPLORER_AUTO_UPDATE=on` in `.env`, `docker compose up -d` (the About page now says that updates come from GitHub), and `sudo systemctl daemon-reload && sudo systemctl enable --now workout-explorer-update.timer`.
 
 - **When:** every night between 03:00 and 04:00 (host time), always at the same minute. Another hour: `sudo systemctl edit workout-explorer-update.timer` with `[Timer]`, `OnCalendar=` (empty, clears the default) and `OnCalendar=*-*-* 05:00:00`. A night missed while the host was off is not caught up.
 - **Check:** `systemctl list-timers workout-explorer-update.timer` shows the next run; `journalctl -u workout-explorer-update.service -n 20` shows the last runs and their `update:` lines. Run one now: `sudo systemctl start workout-explorer-update.service`.

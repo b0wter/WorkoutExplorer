@@ -6,7 +6,7 @@
 # installed, else deploy/test/fake-minisign (Python `cryptography`); fails, never skips, without
 # either. `make update-check` runs it; WX_TEST_SHELL picks the shell (default sh).
 #   python3 -I deploy/test/update_test.py [-v] [Test.test_name]
-import base64, hashlib, http.server, io, json, os, shutil, ssl, subprocess, sys, tarfile, tempfile, threading, time, unittest
+import base64, hashlib, http.server, io, json, os, shutil, signal, ssl, subprocess, sys, tarfile, tempfile, threading, time, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UPDATE = os.environ.get("WX_TEST_UPDATE") or os.path.join(HERE, "..", "update.sh")
@@ -19,8 +19,7 @@ class Host:
     """The fake release host (HTTPS) plus Pushover, and the health endpoint (HTTP)."""
 
     def __init__(self, tmp):
-        self.files, self.latest, self.requests, self.pushover = {}, None, [], []
-        self.health_version, self.http_redirect, self.latest_status = None, False, 302
+        self.reset()
         host = self
 
         class TLS(http.server.BaseHTTPRequestHandler):
@@ -47,7 +46,28 @@ class Host:
                         return self.send(302, headers=[("Location", "http://127.0.0.1:%d%s" % (host.hport, p.replace("/releases/download/", "/objects/")))])
                     return self.send(302, headers=[("Location", "/objects/" + p[len("/releases/download/"):])])
                 if p.startswith("/objects/"):
-                    b = host.files.get(p[len("/objects/"):])
+                    name = p[len("/objects/"):]
+                    how = host.status.get(name)
+                    try:
+                        if how == "drop": # no response at all, as after a timeout
+                            return
+                        if how == "stall":
+                            time.sleep(5)
+                            return self.send(404)
+                        if isinstance(how, int):
+                            return self.send(how)
+                        if isinstance(how, tuple): # ("big", n): announce and send n bytes
+                            self.send_response(200)
+                            self.send_header("Content-Length", str(how[1]))
+                            self.end_headers()
+                            chunk = b"0" * 65536
+                            while host.sent.get(name, 0) < how[1]:
+                                self.wfile.write(chunk)
+                                host.sent[name] = host.sent.get(name, 0) + len(chunk)
+                            return
+                    except OSError: # the client went away
+                        return
+                    b = host.files.get(name)
                     return self.send(200, b) if b is not None else self.send(404)
                 self.send(404)
 
@@ -85,6 +105,7 @@ class Host:
     def reset(self):
         self.files, self.latest, self.requests, self.pushover = {}, None, [], []
         self.health_version, self.http_redirect, self.latest_status = None, False, 302
+        self.status, self.sent = {}, {} # per object: an HTTP status, "drop", "stall" or ("big", n); bytes sent
 
     def release_requests(self):
         return [r for r in self.requests if r.startswith(("/releases", "/objects"))]
@@ -123,6 +144,37 @@ def tgz(members):
     return buf.getvalue()
 
 
+# The curl on PATH: records its command line; answers the Podman health address (fixed, 127.0.0.1:8080)
+# with WX_TEST_PODMAN_HEALTH when set; with WX_TEST_OLD_CURL drops --max-filesize (a curl that
+# ignores it for a size it does not know in advance, as before curl 8.4).
+CURL_SHIM = r"""#!/bin/sh
+printf '%s\n' "$*" >>"$WX_TEST_ARGV"
+case "$*" in *127.0.0.1:8080/api/health*)
+	[ -z "${WX_TEST_PODMAN_HEALTH:-}" ] || { printf '{"status":"ok","version":"%s"}' "$WX_TEST_PODMAN_HEALTH"; exit 0; } ;;
+esac
+if [ -n "${WX_TEST_OLD_CURL:-}" ]; then
+	skip=
+	for a do
+		shift
+		[ -z "$skip" ] || { skip=; continue; }
+		[ "$a" != --max-filesize ] || { skip=1; continue; }
+		set -- "$@" "$a"
+	done
+fi
+exec @CURL@ "$@"
+"""
+
+# Test doubles for the real deploy.sh: docker (Compose) and the archive's control script (Podman).
+FAKE_DOCKER = """#!/bin/sh
+printf '%s\n' "$*" >>"$WX_TEST_DOCKER"
+case " $* " in *" regenerate "*) printf 'rebuilt=2\ndeleted=0\nkept=0\nskipped=0\nfiles_removed=0\nbundles_removed=0\n' ;; esac
+"""
+FAKE_CTL = """#!/bin/sh
+printf '%%s\n' "$*" >>%s
+[ "$1" != regenerate ] || printf 'rebuilt=3\ndeleted=0\nkept=0\nskipped=0\nfiles_removed=0\nbundles_removed=0\n'
+"""
+
+
 class Test(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -133,11 +185,16 @@ class Test(unittest.TestCase):
         shim = os.path.join(cls.base, "bin")
         os.mkdir(shim)
         with open(os.path.join(shim, "curl"), "w") as f: # records every curl command line (secrets must not appear)
-            f.write('#!/bin/sh\nprintf "%%s\\n" "$*" >>"$WX_TEST_ARGV"\nexec %s "$@"\n' % CURL)
+            f.write(CURL_SHIM.replace("@CURL@", CURL))
         os.chmod(os.path.join(shim, "curl"), 0o755)
         if not REAL_MINISIGN:
             os.symlink(os.path.join(HERE, "fake-minisign"), os.path.join(shim, "minisign"))
         cls.shim = shim
+        cls.fakes = os.path.join(cls.base, "fakes") # only for the tests of the real deploy.sh
+        os.mkdir(cls.fakes)
+        with open(os.path.join(cls.fakes, "docker"), "w") as f:
+            f.write(FAKE_DOCKER)
+        os.chmod(os.path.join(cls.fakes, "docker"), 0o755)
 
     @classmethod
     def tearDownClass(cls):
@@ -164,9 +221,9 @@ class Test(unittest.TestCase):
                 f.write("%s=%s\n" % (k, v))
 
     # --- releases -------------------------------------------------------------------------
-    def release(self, tag, rc=0, sec=None, sign=True, sleep=0, members=None, files=None):
+    def release(self, tag, rc=0, sec=None, sign=True, sleep=0, members=None, files=None, deploy=None):
         """Publishes a release (signed unless sign=False); its deploy.sh records the run, sleeps, exits rc."""
-        deploy = ("#!/bin/sh\necho \"deploy: fake $1\"\n[ \"$WX_DEPLOY_FROM_UPDATE\" = 1 ] || exit 99\n"
+        deploy = deploy or ("#!/bin/sh\necho \"deploy: fake $1\"\n[ \"$WX_DEPLOY_FROM_UPDATE\" = 1 ] || exit 99\n"
                   "printf '%%s %%s\\n' \"$1\" \"$DEPLOY_DIR\" >>%s/deploys\nsleep %d\nexit %d\n" % (self.d, sleep, rc)).encode()
         if members is None:
             members = [("./", "dir", b""), ("./deploy.sh", "file", deploy), ("./update.sh", "file", open(UPDATE, "rb").read()),
@@ -198,7 +255,8 @@ class Test(unittest.TestCase):
              "WX_UPDATE_RELEASES": "https://127.0.0.1:%d/releases" % self.host.port,
              "WX_UPDATE_PUSHOVER": "https://127.0.0.1:%d/pushover" % self.host.port}
         e.update(env or {})
-        p = subprocess.Popen([*SHELL, UPDATE, *args], env=e, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # Its own process group, as under systemd or a terminal: a test can signal the whole run.
+        p = subprocess.Popen([*SHELL, UPDATE, *args], env=e, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
         if not wait:
             return p
         out, err = p.communicate(timeout=60)
@@ -234,6 +292,18 @@ class Test(unittest.TestCase):
         self.assert_stopped("refused", tag, 1)
         self.assertEqual(len(self.host.pushover), 1)
         self.assertIn("refused%%20%%28%s%%29" % reason, self.host.pushover[0])
+
+    def podman_layout(self):
+        os.remove(os.path.join(self.srv, "compose.yaml"))
+        os.makedirs(os.path.join(self.home, ".config/containers/systemd"))
+        open(os.path.join(self.home, ".config/containers/systemd/workout-explorer-app.container"), "w").close()
+
+    def wait_for(self, cond, what):
+        for _ in range(100):
+            if cond():
+                return
+            time.sleep(0.1)
+        self.fail("timed out waiting for " + what)
 
     def pushover_on(self):
         self.env["WORKOUT_EXPLORER_PUSHOVER_TOKEN"] = "a" * 30
@@ -507,6 +577,8 @@ class Test(unittest.TestCase):
         self.assert_stopped("failed", "v1.5.0", 3)
         self.assertEqual(self.host.pushover, [])
         self.assertNotIn("automatic updates are now stopped", err)
+        # One terminal line says the state was set, so turning the switch on later is not a silent no-op (QA-52-r1-4).
+        self.assertIn("update: set %s/update.stopped: if you turn automatic updates on, they stay stopped" % self.srv, err)
 
     def test_manual_failure_with_switch_on_says_so_and_alerts(self):
         self.pushover_on()
@@ -572,6 +644,147 @@ class Test(unittest.TestCase):
         # The lock went with the process: the next run proceeds.
         self.host.health_version = "v1.4.0"
         self.expect(action="applied", reason="-")
+
+    # --- QA-52-r1-3: what must not count as a refusal, size caps, the lock ---------------------
+    def test_signature_server_error_or_timeout_is_not_a_refusal(self):
+        self.pushover_on()
+        self.release("v1.5.0")
+        self.host.latest = "v1.5.0"
+        for how in (500, 503, "drop"):
+            with self.subTest(status=how):
+                self.host.status["v1.5.0/SHA256SUMS.minisig"] = how
+                self.expect(action="none", reason="network")
+                self.expect(args=("v1.5.0",), action="none", reason="network", rc=1)
+        self.assertIsNone(self.state())
+        self.assertEqual(self.host.pushover, [])
+        self.assertEqual(self.deploys(), [])
+
+    def test_announced_oversized_download_is_not_read(self):
+        self.release("v1.5.0")
+        self.host.latest = "v1.5.0"
+        full = 64 << 20
+        for name in ("SHA256SUMS", "SHA256SUMS.minisig", "workout-explorer-v1.5.0-deploy.tar.gz"):
+            with self.subTest(name=name):
+                self.host.status = {"v1.5.0/" + name: ("big", full)}
+                self.host.sent = {}
+                self.expect(action="none", reason="network")
+                self.assertLess(self.host.sent.get("v1.5.0/" + name, 0), full, "curl read past --max-filesize")
+        self.assertIsNone(self.state())
+        self.assertEqual(self.deploys(), [])
+
+    def test_size_cap_holds_when_curl_ignores_max_filesize(self):
+        r = self.release("v1.5.0")
+        self.host.latest = "v1.5.0"
+        for name, cap in (("SHA256SUMS", 65536), ("SHA256SUMS.minisig", 4096)):
+            with self.subTest(name=name):
+                self.host.files["v1.5.0/" + name] = r[name] + b"#" * cap
+                self.expect(action="none", reason="network", env={"WX_TEST_OLD_CURL": "1"})
+                self.host.files["v1.5.0/" + name] = r[name]
+        self.assertIsNone(self.state())
+        self.assertEqual(self.deploys(), [])
+
+    def test_lock_not_inherited_by_deploy_children(self):
+        # deploy.sh leaves a child running (as rootless Podman's pause process does); it must not hold the lock.
+        pids = os.path.join(self.d, "children")
+        deploy = b"#!/bin/sh\nsleep 30 >/dev/null 2>&1 </dev/null &\necho $! >>%s\nexit 0\n" % pids.encode()
+        try:
+            for layout in ("compose", "podman"):
+                with self.subTest(layout=layout):
+                    if layout == "podman":
+                        self.podman_layout()
+                    self.release("v1.5.0", deploy=deploy)
+                    self.expect(args=("v1.5.0",), action="applied", reason="-")
+                    self.expect(args=("v1.5.0",), action="applied", reason="-")
+        finally:
+            for pid in open(pids).read().split() if os.path.exists(pids) else []:
+                try:
+                    os.kill(int(pid), 9)
+                except ProcessLookupError:
+                    pass
+
+    # --- QA-52-r1-5: a killed run ---------------------------------------------------------------
+    def test_killed_while_deploying_counts_as_failed(self):
+        self.pushover_on()
+        self.release("v1.5.0", sleep=30)
+        self.host.latest = "v1.5.0"
+        p = self.run_update(wait=False)
+        self.wait_for(lambda: self.deploys(), "deploy.sh to start")
+        os.killpg(p.pid, signal.SIGTERM) # as systemd's TimeoutStartSec does to the unit's processes
+        out, err = p.communicate(timeout=30)
+        line = self.logline(out)
+        self.assertEqual((line["action"], line["reason"], line["exit"], p.returncode), ("failed", "deploy", "143", 143), err)
+        self.assert_stopped("failed", "v1.5.0", 143)
+        self.assertEqual(len(self.host.pushover), 1)
+
+    def test_killed_before_deploying_changes_nothing(self):
+        self.pushover_on()
+        self.release("v1.5.0")
+        self.host.latest = "v1.5.0"
+        for sig, rc in ((signal.SIGHUP, 129), (signal.SIGINT, 130), (signal.SIGTERM, 143)):
+            with self.subTest(signal=sig):
+                self.host.requests = []
+                self.host.status["v1.5.0/SHA256SUMS"] = "stall"
+                p = self.run_update(wait=False)
+                self.wait_for(lambda: "/objects/v1.5.0/SHA256SUMS" in self.host.requests, "the manifest request")
+                os.killpg(p.pid, sig)
+                out, err = p.communicate(timeout=30)
+                line = self.logline(out)
+                self.assertEqual((line["action"], line["reason"], line["exit"], p.returncode), ("none", "killed", str(rc), rc), err)
+        self.assertIsNone(self.state())
+        self.assertEqual(self.host.pushover, [])
+        self.assertEqual(self.deploys(), [])
+
+    # --- QA-52-r1-1: the real deploy.sh on the guides' layouts ------------------------------------
+    def real_release(self, tag):
+        """A release whose deploy archive holds the repository's deploy files (our image written in, as
+        `make deploy-archive` does) and the real deploy.sh; only the Podman control script is a double."""
+        repo = os.path.join(HERE, "..")
+        image = ("ghcr.io/b0wter/workout-explorer:%s@sha256:%s" % (tag, "1" * 64)).encode()
+        def f(rel):
+            return open(os.path.join(repo, rel), "rb").read().replace(b"ghcr.io/b0wter/workout-explorer:unreleased", image)
+        self.ctl_log = os.path.join(self.d, "ctl")
+        members = [("./", "dir", b""), ("./COMMIT", "file", b"0" * 40 + b"\n")]
+        members += [("./" + n, "file", f(n)) for n in ("deploy.sh", "update.sh", "compose.yaml", "compose.notify.yaml", "Caddyfile")]
+        members += [("./podman/", "dir", b""), ("./podman/workout-explorer-ctl", "file", (FAKE_CTL % self.ctl_log).encode())]
+        members += [("./podman/" + n, "file", f("podman/" + n)) for n in sorted(os.listdir(os.path.join(repo, "podman"))) if n != "workout-explorer-ctl"]
+        members += [("./updater/", "dir", b"")]
+        for p in ("system", "user"):
+            members += [("./updater/%s/" % p, "dir", b"")]
+            members += [("./updater/%s/%s" % (p, n), "file", f("updater/%s/%s" % (p, n))) for n in sorted(os.listdir(os.path.join(repo, "updater", p)))]
+        self.release(tag, members=members)
+        return image.decode()
+
+    def test_real_deploy_sh_compose_layout(self):
+        # DOCKER.md section 3: the data directory is 0750 and owned by 10001, so the deploy user cannot see inside.
+        data = os.path.join(self.d, "data")
+        os.makedirs(os.path.join(data, "site"))
+        os.chmod(data, 0)
+        self.addCleanup(os.chmod, data, 0o750)
+        os.mkdir(os.path.join(self.srv, "conf"))
+        self.env["WX_DATA"] = data
+        self.write_env()
+        image = self.real_release("v1.5.0")
+        self.host.health_version = "v1.5.0"
+        log = os.path.join(self.d, "docker")
+        _, out, _ = self.expect(args=("v1.5.0",), action="applied", reason="-",
+                                env={"PATH": self.fakes + ":" + self.shim + ":" + os.environ["PATH"], "WX_TEST_DOCKER": log})
+        self.assertIn("deploy: v1.5.0 done: rebuilt=2 ", out)
+        calls = open(log).read().splitlines()
+        self.assertIn("compose up -d", calls)
+        self.assertTrue(any(c.endswith("regenerate -data %s -web /srv/workout-explorer/web" % data) for c in calls), calls)
+        self.assertIn("    image: " + image + "\n", open(os.path.join(self.srv, "compose.yaml")).read())
+        for n in ("update.sh", "conf/Caddyfile", "updater/system/workout-explorer-update.timer", "updater/user/workout-explorer-update.service"):
+            self.assertTrue(os.path.isfile(os.path.join(self.srv, n)), n)
+
+    def test_real_deploy_sh_podman_layout(self):
+        # PODMAN.md section 3: /srv/workouts belongs to the mapped 10001; deploy.sh must not need to see it.
+        self.podman_layout()
+        self.real_release("v1.5.0")
+        self.expect(args=("v1.5.0",), action="applied", reason="-", env={"WX_TEST_PODMAN_HEALTH": "v1.5.0"})
+        calls = open(self.ctl_log).read().splitlines()
+        self.assertEqual([c.split()[0] for c in calls], ["install", "restart", "regenerate"])
+        for n in ("update.sh", "updater/user/workout-explorer-update.timer"):
+            self.assertTrue(os.path.isfile(os.path.join(self.srv, n)), n)
 
 
 if __name__ == "__main__":

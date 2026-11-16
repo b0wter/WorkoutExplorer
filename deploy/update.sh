@@ -12,7 +12,8 @@
 # Last line of every run (AU-14):
 #   update: running=<v|-> latest=<v|-> action=<none|applied|refused|failed> reason=<class> exit=<n>
 # Exit: 0 nothing to do or applied; 1 refused, busy (manual), network (manual); 2 configuration or
-# usage; otherwise deploy.sh's status (1 refused or not healthy, 3 regenerate unfinished, 4 clean-up).
+# usage; 128 + signal when killed; otherwise deploy.sh's status (1 refused or not healthy,
+# 3 regenerate unfinished, 4 clean-up).
 # DEPLOY_DIR (default /srv/workout-explorer) is the deploy directory. WX_UPDATE_RELEASES and
 # WX_UPDATE_PUSHOVER replace the release host and the Pushover endpoint for tests only; neither
 # weakens the check, which trusts only the pinned key.
@@ -88,6 +89,7 @@ stop_() {
 	now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 	printf 'time=%s tag=%s action=%s exit=%s reason=%s\n' "$now" "$latest" "$1" "$3" "$2" >"$state.new" && mv "$state.new" "$state" ||
 		say "cannot write $state"
+	[ -z "$manual" ] || [ "$switch" = on ] || say "set $state: if you turn automatic updates on, they stay stopped until a manual deploy succeeds"
 	if [ -z "$manual" ] || [ "$switch" = on ]; then
 		[ -z "$manual" ] || say "automatic updates are now stopped until a manual deploy succeeds"
 		case $1 in refused) what="refused ($2)" ;; *) what="failed (exit $3)" ;; esac
@@ -105,6 +107,19 @@ alert() {
 		curl -q --proto =https -fsS --max-time 10 -o /dev/null --data-binary @- "$pushover" 2>/dev/null ||
 		say "the Pushover alert could not be sent"
 }
+
+# A run killed by systemd's timeout, a hang-up or Ctrl-C still ends with its log line; once
+# deploy.sh has started, as a failed deploy (stopped state, alert). The shell runs the trap when
+# the foreground command (curl, deploy.sh), killed with it, has ended.
+applying=
+killed() {
+	trap '' HUP INT TERM
+	[ -z "$applying" ] || stop_ failed deploy "$1"
+	done_ none killed "$1"
+}
+trap 'killed 129' HUP
+trap 'killed 130' INT
+trap 'killed 143' TERM
 
 # 3. Which tag (AU-6): scheduled runs only, against the running version.
 if [ -z "$manual" ]; then
@@ -155,6 +170,7 @@ mkdir "$work/a" && tar -xzf "$work/deploy.tar.gz" -C "$work/a" --no-same-owner -
 [ -z "$(find "$work/a" ! -type f ! -type d)" ] && [ -f "$work/a/deploy.sh" ] || stop_ refused archive 1
 
 # 5. Apply: the verified archive's deploy.sh (AU-16); its lines come before ours.
+applying=yes
 WX_DEPLOY_FROM_UPDATE=1 DEPLOY_DIR=$dir sh "$work/a/deploy.sh" "$tag" </dev/null 9>&- # the lock stays with this process
 rc=$?
 [ "$rc" = 0 ] || stop_ failed deploy "$rc"

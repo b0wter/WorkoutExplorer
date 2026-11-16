@@ -71,6 +71,7 @@ grep -c "  workout-explorer-$v-" SHA256SUMS     # must print 2: both names carry
 sha256sum -c --ignore-missing SHA256SUMS        # must print: ...deploy.tar.gz: OK
 mkdir d && tar -xzf workout-explorer-$v-deploy.tar.gz -C d
 sudo -u workouts install -m 0755 d/update.sh /srv/workout-explorer/update.sh
+sudo -u workouts cp -r d/updater /srv/workout-explorer/   # the timer units (section 9); every update refreshes them
 ```
 
 If `minisign` says anything else, stop: the files are not the operator's.
@@ -157,15 +158,15 @@ OOM check afterwards: `wx podman inspect -f '{{.State.OOMKilled}}' workout-explo
 
 ### Automatic updates (optional)
 
-Off by default. A user timer of the service user runs `update.sh` every night; no root step and no sudo are involved in the update itself. Install it once, as that user, from the deploy archive you checked in section 3:
+Off by default. A user timer of the service user runs `update.sh` every night; no root step and no sudo are involved in the update itself. Install it once, as that user. The units come from the last release you installed: section 3 and every `update.sh` put them into `/srv/workout-explorer/updater/` (installed before that? run `update.sh` once with the running version):
 
 ```sh
-u=/var/lib/workouts/.config/systemd/user
+u=/var/lib/workouts/.config/systemd/user s=/srv/workout-explorer/updater/user
 sudo -u workouts mkdir -p $u
-sudo -u workouts install -m 0644 /tmp/wx-$v/d/updater/user/workout-explorer-update.service /tmp/wx-$v/d/updater/user/workout-explorer-update.timer $u/
+sudo -u workouts install -m 0644 $s/workout-explorer-update.service $s/workout-explorer-update.timer $u/
 ```
 
-Then turn it on: set `WORKOUT_EXPLORER_AUTO_UPDATE=on` in `.env` and `wx restart-app` (the About page now says that updates come from GitHub), then:
+Then turn it on. First `cat /srv/workout-explorer/update.stopped`: if the file exists, an earlier deploy failed and the nightly run would do nothing; fix that and run `update.sh vX.Y.Z` by hand until it succeeds. Then set `WORKOUT_EXPLORER_AUTO_UPDATE=on` in `.env` and `wx restart-app` (the About page now says that updates come from GitHub), then:
 
 ```sh
 sudo systemctl --user -M workouts@ daemon-reload

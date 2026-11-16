@@ -240,12 +240,13 @@ Both must show the same line, starting with `RW`. If they differ, stop and ask t
 update: running=v1.4.0 latest=v1.5.0 action=applied reason=- exit=0
 ```
 
-`action` is `none` (nothing to do), `applied`, `refused` (the release failed a check; nothing was unpacked or run) or `failed` (its `deploy.sh` ended with the exit code shown). `reason`: `off` (automatic updates off), `stopped`, `busy`, `health` (server not answering or not a release version), `current` (nothing newer), `network` (GitHub not reachable, an HTTP error, a missing file; tried again the next night, nothing changed), `config`, `signature`, `manifest`, `checksum`, `archive`, `deploy`. Before it, on an install, are `deploy.sh`'s own lines.
+`action` is `none` (nothing to do), `applied`, `refused` (the release failed a check; nothing was unpacked or run) or `failed` (its `deploy.sh` ended with the exit code shown). `reason`: `off` (automatic updates off), `stopped`, `busy`, `health` (server not answering or not a release version), `current` (nothing newer), `network` (GitHub not reachable, an HTTP error, a missing file; tried again the next night, nothing changed), `config`, `signature`, `manifest`, `checksum`, `archive`, `deploy`, `killed` (stopped from outside before `deploy.sh` started; nothing changed). Before it, on an install, are `deploy.sh`'s own lines.
 
 **When an update is refused or fails**, `update.sh` sends one Pushover message (when both Pushover keys are set in `.env`, "Notifications"; this one comes from the host, not from the app), for example `v1.5.0 failed (exit 3). Automatic updates are stopped until a manual deploy succeeds.`, and writes the stopped state `/srv/workout-explorer/update.stopped`. While that file exists, the nightly run does nothing and sends nothing more (`reason=stopped`). Without Pushover the log line is the only alert: check the journal now and then.
 
 - Read the state: `cat /srv/workout-explorer/update.stopped` (time, version, `refused` or `failed`, exit code, reason).
-- Clear it: fix the cause (or wait for a newer release), then deploy by hand with `update.sh vX.Y.Z`. Its success removes the file and the nightly runs resume. A failed manual deploy sets the state too, and with automatic updates on says so in the terminal and alerts you.
+- Clear it: fix the cause (or wait for a newer release), then deploy by hand with `update.sh vX.Y.Z`. Its success removes the file and the nightly runs resume. A failed manual deploy sets the state too and says so in the terminal; with automatic updates on it also alerts you. So before you turn automatic updates on, check that the file does not exist.
+- A killed run (the 1-hour timeout, a lost SSH connection, Ctrl-C) still ends with its log line: `reason=killed` if it had not yet started the release's `deploy.sh`, else `action=failed reason=deploy` with the stopped state and the alert, because the new version may be half installed.
 - A failed `regenerate` may have deleted workouts whose stored file the new version cannot read, exactly as on a manual deploy (exit 3 or the `deleted=` count).
 
 There is no rollback (ADR-019): a broken release is fixed by a newer one.
@@ -339,14 +340,15 @@ Fill `/srv/workout-explorer/.env` from `example.env` as in "Configure", includin
 
 **CSP hash of the inline theme script** (ADR-032 item 3, F-30 RG-14): a release that changes the script adds its new hash to `deploy/Caddyfile` and keeps the old one, because Caddy reloads before `regenerate` has rebuilt the old pages. Drop the old hash only in a later release, and only if the previous deploy reported `kept=0` and finished with exit 0.
 
-**Release signing key (once, and after a loss).** On your own machine, never on the VPS or in CI, with the distribution's `minisign`:
+**Release signing key.** It exists: the public half is `deploy/minisign.pub` (committed) and the DNS TXT record `_wx-release-key.workouts.plugman.de` (the name in "Updates", step 1), both the same line; the secret half is `~/.minisign/workout-explorer.key` on your own machine, password-protected, with an offline copy (for example on a USB stick). The secret key and its password never enter the repository, CI, a release or the VPS. Leave `deploy/minisign.pub` as it is.
+
+**Only if the secret key is lost or stolen:** make a new one on your own machine, never on the VPS or in CI, with the distribution's `minisign` (`-f` overwrites the old key files):
 
 ```sh
-rm deploy/minisign.pub                     # the placeholder
-mkdir -p ~/.minisign && minisign -G -p deploy/minisign.pub -s ~/.minisign/workout-explorer.key   # asks for a password
+mkdir -p ~/.minisign && minisign -G -f -p deploy/minisign.pub -s ~/.minisign/workout-explorer.key   # asks for a password
 ```
 
-The secret key `~/.minisign/workout-explorer.key` and its password never enter the repository, CI, a release or the VPS. Keep an offline copy (for example on a USB stick). Commit `deploy/minisign.pub` (it replaces the placeholder) and publish its second line as a DNS TXT record on your domain, `_wx-release-key.workouts.plugman.de` (the name in "Updates", step 1), with the same value. If the key is lost or stolen: make a new one, replace both places, and tell hosters to pin the new line (until they do, every update is refused and alerts them); announce a stolen key at once, because releases it signs install until hosters re-pin.
+Commit `deploy/minisign.pub`, set the DNS TXT record to its second line, and tell hosters to pin the new line (until they do, every update is refused and alerts them). Announce a stolen key at once: releases it signs install until hosters re-pin.
 
 **Cut a release.** On the commit to ship (pushed; CI runs only on `v*` tags and by hand via "Run workflow", never on branch pushes, so run `make ci` locally first):
 
@@ -362,7 +364,15 @@ CI builds and tests the image once, and only if everything passes the `release` 
 deploy/sign-release.sh v1.4.0
 ```
 
-It downloads the draft's assets and refuses unless: the release is still a draft, no higher version is already published (releases go out in version order, no back-ports), every asset is listed in `SHA256SUMS` and matches, every name carries the tag, `COMMIT` in both archives is the tag's commit, and the deploy archive names our image by digest. Then it signs `SHA256SUMS` (minisign asks for the key's password), checks the signature against `deploy/minisign.pub`, uploads `SHA256SUMS.minisig`, and publishes the release as "latest". Publishing moves the image's `latest` tag (the `latest` workflow, registry rights only, and only to a higher version). From that moment hosters with automatic updates install it in their next night. Never sign a release you have not reviewed: the signature is what every hoster trusts.
+It downloads the draft's assets and checks them against your local tag, never against what CI says. It refuses unless: the release is still a draft, no higher version is already published (releases go out in version order, no back-ports), every asset is listed in `SHA256SUMS` and matches, every name carries the tag, `compose.yaml` names exactly `ghcr.io/b0wter/workout-explorer:<tag>@sha256:<digest>`, the deploy archive is identical (files, modes, bytes) to the one `make deploy-archive` builds with that reference from a clean worktree of your tag, and the tarball's `COMMIT` is the tag's commit. Then it prints the image reference, signs `SHA256SUMS` (minisign asks for the key's password), checks the signature against `deploy/minisign.pub`, uploads `SHA256SUMS.minisig`, and publishes the release as "latest". Publishing moves the image's `latest` tag (the `latest` workflow, registry rights only, and only to a higher version). From that moment hosters with automatic updates install it in their next night.
+
+The deploy files are checked against your source; **the image and the tarball's binary are not**: their bytes come from CI (F-52 P-9), and your signature vouches for them too. So before you type the password, review:
+
+- the tag: `git log` and the diff since the previous release are what you mean to ship;
+- the CI run for the tag (Actions): green, started by your tag push, with `.github/workflows/` as you know it (no workflow change you did not make);
+- the digest: the `release` job's log shows the digest it pushed; it must equal the one `sign-release.sh` printed, and the package page shows no image version you did not expect.
+
+Anything unexpected: do not sign (Ctrl-C at the password prompt), delete the draft, find the cause, and ship the next version.
 
 **Deploy it.** Over SSH, as the deploy user:
 
