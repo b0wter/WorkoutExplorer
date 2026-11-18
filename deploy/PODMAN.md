@@ -114,7 +114,7 @@ curl -s http://127.0.0.1:8080/api/health        # {"status":"ok","version":"v1.4
 
 - `curl -s https://workouts.example.org/api/health` shows the version; `/`, `/about` and `/robots.txt` return 200.
 - `ss -ltn`: the project listens only on `127.0.0.1:8080`.
-- Hardening: `wx podman exec workout-explorer-app grep Cap /proc/1/status` and the same for `workout-explorer-caddy` show `CapPrm` and `CapEff` all zero.
+- Hardening: `wx podman top workout-explorer-app capprm capeff` and the same for `workout-explorer-caddy` show `none` in both columns (the app image has no shell or `grep`).
 - **Trusted proxy:** set `WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV4=1` for a moment, upload from two networks (for example phone on mobile data and home): both must work once. If everyone shares one limit, the source address Caddy sees is not `10.250.0.2` (`wx podman inspect workout-explorer-caddy`).
 
 ## 7. Host reverse proxy

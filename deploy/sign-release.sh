@@ -64,6 +64,7 @@ echo "sign: $tag, image $ref: compare the digest with the ci job's make deploy-a
 
 minisign -S -s "$key" -m SHA256SUMS
 minisign -V -q -p "$pub" -m SHA256SUMS || { echo "sign: the signature does not verify with deploy/minisign.pub (wrong key?)" >&2; exit 1; }
-gh release upload "$tag" SHA256SUMS.minisig --clobber
+cd "$top" # gh resolves the repository from the working directory
+gh release upload "$tag" "$tmp/r/SHA256SUMS.minisig" --clobber
 gh release edit "$tag" --draft=false --latest
 echo "sign: $tag signed and published"

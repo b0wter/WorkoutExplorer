@@ -17,6 +17,7 @@ IMAGE = "ghcr.io/b0wter/workout-explorer:%s@sha256:%s" % (TAG, "a" * 64)
 # A draft release in $WX_GH/assets; uploads and edits are recorded next to it.
 FAKE_GH = r"""#!/bin/sh
 set -eu
+git rev-parse --git-dir >/dev/null 2>&1 || { echo "failed to run git: fatal: not a git repository" >&2; exit 128; } # real gh needs a repo
 [ "$1" = release ] || exit 2
 case $2 in
 view) # with the tag: draft or not ($WX_DRAFT, default draft); without: the latest published ($WX_LATEST, default none)
