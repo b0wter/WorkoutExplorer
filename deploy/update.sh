@@ -198,6 +198,10 @@ unpack() {
 get "$archive" "$work/deploy.tar.gz" 10485760
 unpack "$work/deploy.tar.gz" "$work/a"
 [ -f "$work/a/deploy.sh" ] || stop_ refused archive 1
+# Bare metal: a release whose units read .env from the deploy user's directory (v0.9.1 and older) is
+# never applied, so exit 5 never asks root to install them (BM-10, QA-60-r2-1).
+[ "$bare" = no ] || grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$work/a/systemd/workout-explorer.service" 2>/dev/null ||
+	{ say "$tag predates the /etc/workout-explorer layout; bare metal needs a newer release"; done_ none config 2; }
 # Bare metal: the program files come from the release tarball, checked the same way (BM-7).
 # Container paths never fetch it (AU-3).
 if [ "$bare" = yes ]; then

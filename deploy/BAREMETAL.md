@@ -8,13 +8,16 @@ Three users: `workout-explorer` runs the app and owns the data directory, `worko
 
 ## 1. Caddy from Caddy's apt repository
 
+First note which of these packages are not installed yet: section 8 removes only those.
+
 ```sh
+for p in debian-keyring debian-archive-keyring apt-transport-https gnupg curl sqlite3 minisign polkitd; do dpkg -s $p >/dev/null 2>&1 || echo $p; done | tee ~/wx-new-packages.txt   # not installed yet
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https gnupg curl sqlite3 minisign polkitd
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
 ```
 
-Note which of these packages were not installed before (`dpkg -l <name>`): section 8 removes only those. Then, after unpacking the deploy archive (section 2, in the same shell): `sudo install -m 0644 "$w"/systemd/caddy.pref /etc/apt/preferences.d/workout-explorer-caddy.pref`, `sudo apt update && sudo apt install caddy`. The pin holds the package at our release's minor version (for example `2.11.*`): patches arrive with your normal package updates, a new minor only with a release of ours. It applies to every use of the package on this host: if your TLS proxy is the same Caddy package, it is held there too. `update.sh` never runs `apt` and never changes Caddy.
+Then, after unpacking the deploy archive (section 2, in the same shell): `sudo install -m 0644 "$w"/systemd/caddy.pref /etc/apt/preferences.d/workout-explorer-caddy.pref`, `sudo apt update && sudo apt install caddy`. The pin holds the package at our release's minor version (for example `2.11.*`): patches arrive with your normal package updates, a new minor only with a release of ours. It applies to every use of the package on this host: if your TLS proxy is the same Caddy package, it is held there too. `update.sh` never runs `apt` and never changes Caddy.
 
 The package starts its own `caddy.service` on port 80. Unless that is your TLS proxy, turn it off: `sudo systemctl disable --now caddy`. Ours is a separate unit with our Caddyfile.
 
@@ -43,6 +46,7 @@ minisign -V -P "$key" -m SHA256SUMS             # must print: Signature and comm
 grep -c "  workout-explorer-$v-" SHA256SUMS     # must print 2: both names carry the tag you chose
 sha256sum -c --ignore-missing SHA256SUMS        # the deploy archive: OK
 tar -xzf workout-explorer-$v-deploy.tar.gz
+grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$w"/systemd/workout-explorer.service || { echo "release too old for this guide: stop"; exit 1; }
 sudo install -m 0644 "$w"/systemd/*.service "$w"/systemd/*.slice "$w"/systemd/*.path /etc/systemd/system/
 sudo install -m 0755 "$w"/systemd/workout-explorer-run /usr/local/sbin/workout-explorer-run
 sudo install -m 0644 "$w"/systemd/50-workout-explorer.rules /etc/polkit-1/rules.d/50-workout-explorer.rules
@@ -102,9 +106,10 @@ What it checks, its exit codes, the log line and the stopped state: RUNBOOK.md, 
 
 Then it replaces the binary, `web/` and `update.sh`, and the Caddyfile when it changed; restarts the app (and Caddy only for a new Caddyfile: a moment without pages); waits up to 60 s for `/api/health` to show the new version; and starts `workout-explorer-regenerate.service`, which rebuilds every stored workout and removes the web files no page needs. Its counts are in `journalctl -u workout-explorer-regenerate` (`deploy` cannot read the journal). After a failure, fix the cause and run the same command again.
 
-**When an update stops with exit 5** (`reason=root` in the log line and the stopped state): the release changes a file only root may install. As root, download and check that release as in section 2 (`v` set to the tag `update.sh` named, a new `w=$(mktemp -d)`, all checks, `tar`), install the files `update.sh` named, then run `update.sh` again, all in that one shell:
+**When an update stops with exit 5** (`reason=root` in the log line and the stopped state): the release changes a file only root may install. Take the version from the [Releases page](https://github.com/b0wter/WorkoutExplorer/releases) (the newest release), never from `update.stopped`, the log line or the alert: `deploy` writes those, and a genuine but older release would bring back units that read `.env` from its directory. If that version is older than the running one (`curl -fsS http://127.0.0.1:8088/api/health`), stop. As root, download and check that release as in section 2 (a new `w=$(mktemp -d)`, all checks, `tar`, the layout check), install the files `update.sh` named, then run `update.sh` again, all in that one shell:
 
 ```sh
+grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$w"/systemd/workout-explorer.service || { echo "release too old for this guide: stop"; exit 1; }
 sudo install -m 0644 "$w"/systemd/*.service "$w"/systemd/*.slice "$w"/systemd/*.path /etc/systemd/system/
 sudo install -m 0755 "$w"/systemd/workout-explorer-run /usr/local/sbin/workout-explorer-run
 sudo install -m 0644 "$w"/systemd/notify.conf /etc/systemd/system/workout-explorer.service.d/notify.conf   # only if you use notifications
@@ -147,7 +152,7 @@ and remove `WORKOUT_EXPLORER_AUTO_UPDATE` from `.env`, then `sudo systemctl rest
 
 An install set up before this guide had root-owned program files, `.env` and `operator/` in `/srv/workout-explorer`, and was updated by hand. `update.sh` refuses it cleanly until it is moved (it cannot write its lock; nothing changes). The data directory is not touched, so every workout, draft, report and link stays. Do steps 2 to 4 in one go: until step 3's units are installed, a restart of the app would not find `.env`.
 
-1. Section 1's `apt install` line (for `gnupg`, `minisign` and `polkitd`), and pin the signing key as RUNBOOK.md, "Updates", step 1.
+1. Section 1's package note and `apt install` line (for `gnupg`, `minisign` and `polkitd`), and pin the signing key as RUNBOOK.md, "Updates", step 1.
 2. While `/srv/workout-explorer` is still root's: the user `deploy` (section 2's `id deploy` check and `useradd ... deploy` line), then move root's files to `/etc/workout-explorer` (BM-2):
 
    ```sh
@@ -159,7 +164,7 @@ An install set up before this guide had root-owned program files, `.env` and `op
    sudoedit /etc/workout-explorer/.env   # operator and Impressum paths now /etc/workout-explorer/operator/...; add WX_UPDATE_PUBLIC_KEY=RW...
    ```
 
-3. Download and check the release you want to run (the running one or a newer one) as in section 2, and in that shell run its `install` lines for the units, `workout-explorer-run`, the rule and `update.sh` (not the `chown` yet); `notify.conf` too if you use notifications; the Caddy pin and `apt install caddy` if the release's pin differs. Then `sudo systemctl daemon-reload`.
+3. Take the version from the [Releases page](https://github.com/b0wter/WorkoutExplorer/releases): the first release with the `/etc/workout-explorer` layout (the next release after v0.9.1) or newer, never one named by `deploy`'s files. Download and check it as in section 2, run its layout check (the `grep -qx 'EnvironmentFile=/etc/workout-explorer/.env'` line: it stops on an older release) before any `sudo install`, and in that shell run its `install` lines for the units, `workout-explorer-run`, the rule and `update.sh` (not the `chown` yet); `notify.conf` too if you use notifications; the Caddy pin and `apt install caddy` if the release's pin differs. Then `sudo systemctl daemon-reload`.
 4. Hand the program directory to `deploy` (`chown -R` follows no symbolic link): `sudo chown -R deploy:deploy /srv/workout-explorer`.
 5. `sudo -u deploy /srv/workout-explorer/update.sh $v`. From then on, every update goes through it (section 6).
 
@@ -192,7 +197,7 @@ This removes everything this guide installed. **Removing the data directory dele
    ```
 
    The package's own leftovers, if any: `sudo rm -rf /etc/caddy /var/lib/caddy`, `sudo userdel caddy` and `sudo groupdel caddy`.
-7. Packages section 1 installed that were not there before (your note from section 1), if nothing else on the host uses them: `sudo apt purge` some of `polkitd minisign sqlite3 gnupg debian-keyring apt-transport-https` (never `debian-archive-keyring`); apt lists what would go before it asks. Not sure: keep it.
+7. Packages section 1 installed that were not there before (`~/wx-new-packages.txt` from section 1), if nothing else on the host uses them: `sudo apt purge` some of `polkitd minisign sqlite3 gnupg debian-keyring apt-transport-https` (never `debian-archive-keyring`); apt lists what would go before it asks. Not sure: keep it.
 8. The journal keeps our services' lines until its retention removes them (section 5). To drop them now: `sudo journalctl --rotate && sudo journalctl --vacuum-time=1s`, which empties the journal of the whole host.
 
 Check that nothing is left; each command must print nothing (or only "No such file or directory" / "not installed"):

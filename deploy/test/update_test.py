@@ -856,14 +856,15 @@ class Test(unittest.TestCase):
         e.update(kw)
         return e
 
-    def bare_release(self, tag, caddyfile=None, tarball=None):
+    def bare_release(self, tag, caddyfile=None, tarball=None, service=None):
         """A release with the repository's deploy files (real deploy.sh) and a tarball of new program files."""
         repo = os.path.join(HERE, "..")
         f = lambda rel: open(os.path.join(repo, rel), "rb").read()
         members = [("./", "dir", b""), ("./COMMIT", "file", b"0" * 40 + b"\n"), ("./systemd/", "dir", b""), ("./updater/", "dir", b"")]
         members += [("./" + n, "file", f(n)) for n in ("deploy.sh", "update.sh")]
         members += [("./Caddyfile", "file", caddyfile if caddyfile is not None else f("Caddyfile"))]
-        members += [("./systemd/" + n, "file", f("systemd/" + n)) for n in sorted(os.listdir(os.path.join(repo, "systemd")))]
+        members += [("./systemd/" + n, "file", service if service is not None and n == "workout-explorer.service" else f("systemd/" + n))
+                    for n in sorted(os.listdir(os.path.join(repo, "systemd")))]
         for p in ("system", "user"):
             members += [("./updater/%s/" % p, "dir", b"")]
             members += [("./updater/%s/%s" % (p, n), "file", f("updater/%s/%s" % (p, n))) for n in sorted(os.listdir(os.path.join(repo, "updater", p)))]
@@ -1068,6 +1069,20 @@ class Test(unittest.TestCase):
         self.env.pop("WORKOUT_EXPLORER_AUTO_UPDATE")
         self.write_env()
         self.expect(action="none", reason="off", env=self.bare_env())
+
+    def test_bare_metal_refuses_release_without_etc_layout(self):
+        # QA-60-r2-1: v0.9.1's units read .env from the deploy user's directory; such a release is a
+        # config error before the tarball is fetched, so exit 5 never asks root to install its units.
+        self.bare_layout()
+        unit = open(os.path.join(HERE, "..", "systemd/workout-explorer.service"), "rb").read()
+        self.bare_release("v0.9.1", service=unit.replace(b"/etc/workout-explorer/.env", b"/srv/workout-explorer/.env"))
+        before = self.program_files()
+        _, _, err = self.expect(args=("v0.9.1",), action="none", reason="config", rc=2, env=self.bare_env())
+        self.assertIn("predates the /etc/workout-explorer layout", err)
+        self.assertNotIn("linux-amd64", " ".join(self.host.requests))
+        self.assertEqual(self.program_files(), before)
+        self.assertEqual(self.changing_calls(), [])
+        self.assertIsNone(self.state())
 
     def test_bare_metal_units_read_root_files_from_etc(self):
         # BM-2, BM-10: every EnvironmentFile= PID 1 opens is root's, under /etc; none in the program directory.

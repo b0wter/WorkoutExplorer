@@ -76,10 +76,11 @@ sudo -u workouts cp -r d/updater /srv/workout-explorer/   # the timer units (sec
 
 If `minisign` says anything else, stop: the files are not the operator's.
 
-Write `/srv/workout-explorer/.env` from `d/example.env` as in RUNBOOK.md, "Configure", with `WX_UPDATE_PUBLIC_KEY` set to the key you pinned. Of the other keys only `WORKOUT_EXPLORER_*` are read (the app unit loads them); `WX_*` and `COMPOSE_FILE` have no effect. Do not set `WORKOUT_EXPLORER_TRUSTED_PROXY`; the app unit sets it. The service user reads the file, so:
+Write `/srv/workout-explorer/.env` from `d/example.env` as in RUNBOOK.md, "Configure", with `WX_UPDATE_PUBLIC_KEY` set to the key you pinned. Of the other keys only `WORKOUT_EXPLORER_*` are read (the app unit loads them); `WX_*` and `COMPOSE_FILE` have no effect. Do not set `WORKOUT_EXPLORER_TRUSTED_PROXY`; the app unit sets it. The service user reads the file. Root never runs `chown`, `chmod` or an editor on a path in `workouts`' directory (they follow a planted symlink): `install` replaces a link, `sudoedit` refuses one.
 
 ```sh
-sudo chown root:workouts /srv/workout-explorer/.env && sudo chmod 0640 /srv/workout-explorer/.env
+sudo install -o root -g workouts -m 0640 "$w"/d/example.env /srv/workout-explorer/.env   # $w: section 3's shell
+sudoedit /srv/workout-explorer/.env
 ```
 
 ## 4. Install and start
