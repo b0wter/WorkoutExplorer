@@ -1,0 +1,70 @@
+# F-60 Automatic updates for bare-metal installs: architecture
+
+- **Version:** 0.1 (18 Nov 2026)
+- **Status:** accepted. Critical lane. Built on the user decisions OQ-262, OQ-263 (15 Nov 2026) and those of 18 Nov 2026 (no Caddy updates; `workout-explorer-run` and drop-ins count as unit files; manual updates through `update.sh`; OQ-267 accepted). P-10 open (runbook only, does not block the build)
+- **Feature:** [`features/F-60-bare-metal-auto-update.md`](../features/F-60-bare-metal-auto-update.md); "AC n" is the n-th acceptance criterion there
+- **Requirements:** INF-8, INF-9, INF-4, INF-1, NFR Privacy, NFR Security
+- **Builds on:** [F-52](F-52-auto-update.md) AU-1 to AU-17 (all apply unless changed here), [F-59](F-59-container-image-and-install-paths.md) IP-8, IP-13 to IP-16, ADR-019, ADR-050, ADR-051, ADR-053, ADR-054. **Own:** [ADR-055](ADR-055-bare-metal-updater-rights-polkit-rule.md)
+- **Owner:** backend. Files: `deploy/update.sh`, `deploy/deploy.sh` (third path), new regenerate unit and polkit rule in the deploy archive, `Makefile` (`DEPLOY_ALLOW`), updater unit comments, `BAREMETAL.md`, `RUNBOOK.md` (paths table, exit code 5, reason class `root`)
+
+## Shape
+
+```
+system timer (root installs once, User=deploy)      hoster by hand: sudo -u deploy update.sh vX.Y.Z
+        └──────────────▶ /srv/workout-explorer/update.sh ◀──────────┘
+   F-52 steps (gate, tag, verify manifest, deploy archive) + tarball fetched and checked (BM-7)
+   → archive's deploy.sh, bare-metal branch (BM-6):
+       root-only files equal? Caddy minor = pin? new Caddyfile valid?   (else stop, nothing changed)
+       stage → swap bin, web/, Caddyfile, update.sh → restart app (+ Caddy if Caddyfile changed)
+       → health → start workout-explorer-regenerate.service → exit 0, 1, 3, 4, 5
+deploy user's only privileged actions (polkit, ADR-055): restart the two units, start the regenerate unit
+```
+
+## Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| BM-1 | **One updater, a third path.** `update.sh` and `deploy.sh` gain a bare-metal branch; no second script. Path markers: `compose.yaml` in the deploy directory (Compose), our Quadlet app unit (Podman), `/etc/systemd/system/workout-explorer.service` (bare metal); exactly one, otherwise config error before any request (AU-16's rule widened). Running version and health wait use `/api/health` at Caddy's address taken from the Caddy unit's effective environment (`systemctl show`, `WX_BIND` and `WX_SITE`'s port), so a hoster's drop-in that moves the port is followed | Lock, state, alert, log and verification stay in one code path (scope; ADR-050) |
+| BM-2 | **Deploy user and ownership (OQ-262).** A system user, default name `deploy` (as on Compose), in no group of the app or Caddy and in no admin group (`sudo`, `adm`, `systemd-journal`). It owns the program directory and `bin/`, `web/`, `conf/`, `updater/`, `update.sh`, the lock and the state. Root keeps `.env` (**`root:deploy`, `0640`**, so `update.sh` reads switch, key and Pushover keys) and `operator/`; no deploy step writes either (AU-12). **The deploy user is app-equivalent, not root-equivalent:** it chooses the binary systemd runs as the app user, and as directory owner it can rename root's files inside it, `.env` included. `.env`'s root ownership guards against a faulty release, not against the deploy user (as ADR-054 item 3) | Least privilege without root; the data's trust is the most a deploy needs |
+| BM-3 | **Rights: one polkit rule** ([ADR-055](ADR-055-bare-metal-updater-rights-polkit-rule.md)): user `deploy` may `restart` exactly `workout-explorer.service` and `workout-explorer-caddy.service` and `start` exactly `workout-explorer-regenerate.service`; nothing else (no stop, reload, daemon-reload, unit-file action, other unit). No sudo anywhere. The timer is F-52's system pair (`updater/system/`) unchanged, `User=deploy`, `NoNewPrivileges`, writes confined to the program directory and a private `/tmp`, **no IP filter**, so downloads and the alert work while the app's outbound block is on (AC 33) | `sudo` cannot run under `NoNewPrivileges`; polkit leaves the action to PID 1 |
+| BM-4 | **`regenerate` through a fixed oneshot unit (OQ-267).** `workout-explorer-regenerate.service` in the archive's `systemd/`: app user, app's `.env`, slice and sandbox (same lines as `workout-explorer-run`, kept in step), fixed command line, no caller arguments. `deploy.sh` starts it, waits, reads the exit status back unprivileged and maps it to 0, 3, 4 as today. The report lines go to that unit's journal, which the deploy user cannot read; `deploy.sh`'s summary names the `journalctl` command instead of counts. `delete` and `parse` stay root-only through `workout-explorer-run` | Adds no power: the deploy user already decides which binary the app user runs |
+| BM-5 | **Root-only files are never installed by the updater (OQ-263); a difference stops it before anything changes.** `deploy.sh` byte-compares (`cmp`) each archive file with its installed copy, all world-readable: `systemd/*.service`, `.slice`, `.path` in `/etc/systemd/system/` (missing counts as different, so a new unit stops the update); `notify.conf` only when installed; `workout-explorer-run` in `/usr/local/sbin/`; `caddy.pref` in `/etc/apt/preferences.d/`. Also, the installed Caddy's minor must match the release's pin (catches a pin installed without `apt install caddy`). Any mismatch: **exit 5**, the differing installed paths on stderr; `update.sh` records `failed`, **reason class `root`** (new AU-14 class), and the alert and state name it (AC 30). Never compared: the polkit rule and the timer units (installed once by root, AU-13; a release that needs a change says so in its notes), and the hoster's own drop-ins. A hand edit of our unit files stops every update; changes go in drop-ins. **AC 30's "if the deploy user may install them" never applies:** writing `/etc/systemd/system` is root (a unit names its own `User=`), so OQ-262 rules it out | No path from a release to root; one alert tells the hoster what to do |
+| BM-6 | **Apply (`deploy.sh`, bare-metal branch).** (1) Checks, nothing changes: BM-5 (exit 5); the new Caddyfile passes `/usr/bin/caddy validate` as the deploy user with the Caddy unit's effective environment and a throwaway home in the work directory (exit 1, AC 29). (2) Stage inside the program directory, same file system: `bin/.workout-explorer.new`, `web.new/`, `conf/.Caddyfile.new`, modes `u=rwX,go=rX`; leftovers of a killed run removed first; a staging failure removes the staged names, exit 1. (3) Swap by rename: binary; `web/` by two renames, `web.old` kept until (5); Caddyfile only if its bytes differ; `update.sh` and `updater/` as AU-15. (4) Restart the app; restart Caddy only when the Caddyfile changed (brief page outage, as IP-10); never reload. (5) Remove `web.old` (no rollback, ADR-019; old pages keep their assets in `{data}/site/assets/`, IP-8). (6) Health wait for the tag (exit 1, `systemctl status` of both units). (7) Regenerate (BM-4). Exit codes 0, 1, 3, 4 as F-52, plus 5 | Same steps as BAREMETAL.md section 6. The app reads `web/` only at start (`wiring.go` `newApp`: template, About, asset copy, shells), so the swap window before the restart is harmless; a crash restart inside it retries after 2 s |
+| BM-7 | **Tarball check in `update.sh`, the installed checking code (AU-7).** Bare-metal path only, after the deploy archive passed: fetch the tarball, SHA-256 against the verified manifest, the same member checks as the deploy archive (one shared check), required members a regular `workout-explorer` and `web/index.html`; unpacked without owners into its own empty directory in the work directory and handed to `deploy.sh`. Size cap above today's tarball with headroom. Mismatch: refused (`checksum` or `archive`), stopped state, nothing unpacked (AC 27). Container paths still never fetch it (AU-3). The binary's bytes stay CI's (P-9) | The release supplies only what runs after verification |
+| BM-8 | **F-59 invariants hold by construction (AC 33).** The updater writes no unit, drop-in, slice, pin, user or group, so sandbox, IP filtering, memory cap, Caddy's file-system view and non-root users are root's files only. A release changes the binary, `web/` and the Caddyfile; a listen address in the Caddyfile is signed and reviewed, and Caddy's unit still admits only localhost | AC 33 without new checks in the updater |
+| BM-9 | **Caddy (user decision 18 Nov 2026).** Never installed, upgraded or restarted for a package change by the updater; no `apt`. Patches arrive by apt and `workout-explorer-caddy-upgrade.path` (IP-14). The updater only validates with whatever Caddy is installed and compares its minor (BM-5), so a patch between runs changes nothing (AC 34) | Caddy's trust stays with its signed apt repository |
+| BM-10 | **Root installs and runs no file the deploy user can write** (as ADR-054 item 2). Root's steps (first install, migration, a BM-5 stop) take files from a release root downloaded and verified by hand (BAREMETAL.md section 2's commands), never from the program directory: this covers the timer units that `deploy.sh` copies into `{dir}/updater/`. `update.sh` refuses root (AU-13) | The deploy user is not root-equivalent here, unlike Compose |
+| BM-11 | **Install and migration (AC 35).** **Fresh:** root creates the three users, the directories, Caddy and its pin, installs the root-only files (regenerate unit and polkit rule included; package `polkitd`), `.env`, hands the program directory to `deploy`, `systemctl enable` (not `--now`) both units and the path unit, and copies `update.sh` from the hand-verified deploy archive; then `deploy` runs `update.sh vX.Y.Z`, which installs binary, `web/`, Caddyfile and starts the units (`restart` starts inactive units). BAREMETAL.md section 2's hand install of program files goes. **Hand-updated install:** the same root steps on the host as it is, `chown -R` of the program directory except `.env` and `operator/`, then `update.sh` with the running or a newer tag. The data directory is not touched, so every workout, draft, report and link survives by construction (as IP-17). An install not yet moved refuses cleanly: `update.sh` cannot write its lock in a root-owned directory (config error, nothing changed). Section 6 shrinks to BM-5's root steps | One install path for program files; no hand copy that can drift |
+| BM-12 | **Manual run** (decision of 18 Nov 2026, AC 26): `sudo -u deploy /srv/workout-explorer/update.sh vX.Y.Z` (or SSH as `deploy`). Same lock and state. Outside the timer's sandbox its work directory is in the host's `/tmp`; nothing else is written outside the program directory (AC 32, as AU-13) | P-1 extended |
+
+## Attack paths (bare-metal additions to F-52's table)
+
+| Path | Result |
+| --- | --- |
+| Signed release with a malicious unit file, `workout-explorer-run` or pin | Never installed by the updater: stop with reason `root`; the hoster installs by hand after reading the release notes |
+| Deploy user compromised | Runs code as the app user, restarts our units, rewrites `.env`; cannot become root, change a unit, filter or pin, or read Caddy's view beyond the app's. Accepted (OQ-262) |
+| App process compromised | Cannot write `bin/`, `web/` or `conf/` (owner `deploy`), so it cannot persist into the next start |
+| Caddyfile opening a public listener | Signed and reviewed; Caddy's unit admits only localhost (IP-15) |
+| Polkit rule broadened by a release | The rule is not in any compare or install step; only root changes it |
+
+## Verification notes (QA at effort high)
+
+Beyond the AC, on a fresh Debian 13 host: as `deploy`, `systemctl stop`, `reload`, `daemon-reload`, restart of the regenerate or the upgrade unit, `systemd-run` and any `sudo` fail; a release with each root-only file changed once (and a pin whose minor differs from the installed Caddy) stops with exit 5 and nothing changed (hashes of `bin/`, `web/`, `conf/`, unit states); a rejected Caddyfile leaves both units' PIDs unchanged; a run killed during staging leaves the running install untouched and the next run clears the leftovers; `ps` during a run shows no root process of ours; the migration rehearsal on a hand-updated install with workouts, drafts, reports and links; the timer run with notifications off still alerts through Pushover.
+
+## Documents changed with this design
+
+ADR-055 new. Notes: ADR-050 item 3, F-52 AU-17, F-59 IP-13 and IP-16, TD Hosting and operations (Deploys).
+
+## Open technical points (engineer confirms, no user needed)
+
+| # | Point | Blocks | Fallback |
+| --- | --- | --- | --- |
+| T-1 | Debian 13's `polkitd` evaluates JavaScript rules with systemd's `unit` and `verb` details, and works for a caller under the timer's `NoNewPrivileges` and `ProtectSystem=strict` | BM-3 | ADR-055 "would choose differently" |
+| T-2 | A failed oneshot's exit status stays readable after `systemctl start` returns (unit not collected) | BM-4 | Ask the architect; no `RemainAfterExit` (a second `start` would do nothing) |
+| T-3 | `caddy validate` as `deploy` with the unit's environment needs neither the data directory nor the admin socket | BM-6 (1) | Ask the architect; never a `systemd-run` right for the deploy user |
+
+## Open point for the user
+
+| # | Point | Suggestion |
+| --- | --- | --- |
+| P-10 | AC 35 asks for uninstalling "rule, timer and user", but the decision of 18 Nov 2026 makes `update.sh` (and so the user and rule) the only manual update path on bare metal, as P-1 does on the container paths | "Uninstall the updater" removes the timer and turns the switch off; rule, user and `update.sh` stay as the manual path and go only when Workout Explorer is removed. Requirements adjust AC 35's wording |

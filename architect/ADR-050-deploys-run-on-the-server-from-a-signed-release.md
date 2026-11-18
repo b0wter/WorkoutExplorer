@@ -15,7 +15,7 @@
 
 1. **The operator signs `SHA256SUMS` offline;** it lists the deploy archive (ADR-052, F-59 IP-5, whose `compose.yaml` and Podman app unit name our image by digest) and the bare-metal tarball (F-52 AU-3 to AU-5).
 2. **CI creates the release as a draft;** the operator's signing step publishes it. No unsigned release is public.
-3. **Every deploy on Docker Compose and rootless Podman runs on the server, through `update.sh`:** with a tag by hand (as the path's deploy user), or without one on the nightly timer. It verifies the signed manifest, then runs the `deploy.sh` from the verified archive under one lock; `deploy.sh` drives both paths (F-52 AU-16). Exit codes 0, 1, 3, 4 unchanged; no remote mode, no checkout, `git` or `gh`; not an entry point.
+3. **Every deploy on Docker Compose and rootless Podman runs on the server, through `update.sh`:** with a tag by hand (as the path's deploy user), or without one on the nightly timer. It verifies the signed manifest, then runs the `deploy.sh` from the verified archive under one lock; `deploy.sh` drives both paths (F-52 AU-16). Exit codes 0, 1, 3, 4 unchanged; no remote mode, no checkout, `git` or `gh`; not an entry point. *Note 18 Nov 2026 ([F-60](F-60-bare-metal-auto-update.md)): bare metal too, as a third path of the same scripts, with the tarball checked by `update.sh` and exit 5 for root-only changes (ADR-055).*
 4. **The release check moves to signing:** before signing, the operator's script rebuilds the deploy archive from the local tag and requires the draft's to match it file by file, and pins our image repository (F-52 AU-5); afterwards the signature stands for it. The image bytes behind the digest stay CI's (F-52 P-9).
 
 ## Consequences
@@ -23,7 +23,7 @@
 - One deploy path for manual and automatic deploys; no drift between them.
 - The operator's machine needs `minisign`, `gh` and the checkout only to sign; deploying needs only SSH.
 - Compose and Podman hosters need `minisign` and a pinned key even without automatic updates (P-1).
-- Self-built clones and bare metal are unaffected (OQ-215; F-60).
+- Self-built clones are unaffected (OQ-215); bare metal follows with F-60.
 - A release with a broken `deploy.sh` is still signed and runs; `make ci` and the operator's review are the guard, as before.
 
 ## Reversibility
