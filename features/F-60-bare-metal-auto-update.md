@@ -1,6 +1,6 @@
 # F-60 Automatic updates for bare-metal installs
 
-- **Status:** ready for architecture (decided 15 Nov 2026; OQ-262, OQ-263 decided; acceptance criteria written 18 Nov 2026; OQ-267 open)
+- **Status:** ready for architecture (decided 15 Nov 2026; OQ-262, OQ-263 decided; acceptance criteria written and OQ-267 decided 18 Nov 2026)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** backend
 - **Lane:** critical (code that installs and runs new code on the server, outside any container)
@@ -28,7 +28,7 @@ A bare-metal hoster who opts in gets new releases installed like a Docker or Pod
 - [ ] After an applied update: `/api/health` reports the new tag, `regenerate` has run, the log line says `applied`, and a page published under the old release loads every script and style before `regenerate` (as F-59's N to N+1 criterion).
 - [ ] A release whose Caddyfile the installed Caddy rejects fails before anything changes (exit 1, alert, stopped state): binary, `web/`, Caddyfile and both running units are as before. A release with a changed, valid Caddyfile is served with it afterwards.
 - [ ] A release whose unit files, drop-ins (`notify.conf`, when installed), `workout-explorer-run` or `caddy.pref` differ from the installed ones: if the deploy user may install them, they are installed and systemd is reloaded; otherwise the update stops before anything changes, the alert and the stopped state name the reason, and nothing is replaced. After the hoster installs those files by hand, `update.sh vX.Y.Z` applies the release and clears the state.
-- [ ] No updater process runs as root. The deploy user's only privileged actions are restarting exactly `workout-explorer.service` and `workout-explorer-caddy.service` (through one polkit rule or one sudoers line) and, if OQ-267 is accepted, running `regenerate` as the app user. As the deploy user, restarting any other unit, any other `sudo` command, and writing to `/etc`, `/usr/local/sbin` or the data directory fail.
+- [ ] No updater process runs as root. The deploy user's only privileged actions are restarting exactly `workout-explorer.service` and `workout-explorer-caddy.service` (through one polkit rule or one sudoers line) and running `regenerate` as the app user. As the deploy user, restarting any other unit, any other `sudo` command, and writing to `/etc`, `/usr/local/sbin` or the data directory fail.
 - [ ] The updater writes only to the program directory (default `/srv/workout-explorer`), its stopped-state file and its lock.
 - [ ] After an applied update, the F-59 bare-metal checks still pass: both services non-root without capabilities, the app without outbound access unless `notify.conf` is installed, `ss -ltn` unchanged, Caddy unable to read the database or stored FIT files, the memory cap unchanged. The updater's own downloads and its Pushover alert work while the app's outbound block is on.
 - [ ] The updater never runs `apt` and never changes a Caddy package; a Caddy patch installed by apt between runs does not affect the next update.
@@ -44,4 +44,4 @@ A bare-metal hoster who opts in gets new releases installed like a Docker or Pod
 - Manual bare-metal updates go through `update.sh vX.Y.Z` (P-1 extended), so a manual update clears the stopped state.
 
 ## Open questions
-- [ ] **OQ-267 Regenerate rights.** `regenerate` must run as the app user, which today needs root (`workout-explorer-run`); OQ-262 allows only the two restarts. **Suggestion:** allow the deploy user one more action in the same rule: starting `regenerate` as the app user (for example a fixed oneshot unit), never `delete` or `parse`. Affects the rights criterion and F-52's "regenerate has run" on bare metal; without it every bare-metal update ends in exit 3.
+- **OQ-267 Regenerate rights** (user, 18 Nov 2026): the same rule also lets the deploy user start `regenerate` as the app user through a fixed unit; never `delete`, `parse` or any other command.
