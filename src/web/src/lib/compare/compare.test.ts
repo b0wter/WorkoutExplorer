@@ -1,6 +1,6 @@
 // lib/compare (F-51 SC-4 to SC-6; AP-23 acceptance criteria 1, 2, 5, 6).
 import { describe, expect, it } from 'vitest';
-import { compare, halfRange, netElevation, overlay, type CompareRow } from '.';
+import { compare, halfRange, overlay, type CompareRow } from '.';
 
 const rows = (speeds: (number | undefined)[], extra: Partial<Record<'avg_heart_rate' | 'avg_power', number>>[] = []): CompareRow[] =>
   speeds.map((v, i) => ({ totals: { avg_speed: v, ...extra[i] } }));
@@ -140,21 +140,13 @@ describe('overlay (SC-6; AC 5)', () => {
 });
 
 describe('elevation overlay (SC-6)', () => {
-  it('net change: last valid minus first valid inside the range; NaN without a valid sample', () => {
-    const a = new Float64Array([NaN, 10, 12, 15, NaN, NaN]);
-    expect(netElevation(a, 0, 4)).toBe(5);
-    expect(netElevation(a, 2, 2)).toBe(0);
-    expect(netElevation(a, 4, 5)).toBeNaN();
-  });
-
-  it('offered only when a barred row has it; zero line only when the values cross zero', () => {
-    const r = rows([3, 3.1, 3.2]).map((x, i) => ({ ...x, elevation: [5, -10, 20][i] }));
+  it('offered only when a barred row has it; NaN rows get no dot', () => {
+    const r = rows([3, 3.1, 3.2]).map((x, i) => ({ ...x, elevation: [5, NaN, 20][i] }));
     const c = compare(r, false)!;
     expect(c.overlays).toEqual(['elevation']);
     const o = overlay(r, c, 'elevation');
-    expect([o.max, o.min]).toEqual([20, -10]);
-    expect(o.zero).toBeCloseTo(20 / 30, 12);
-    expect(overlay(r.map((x) => ({ ...x, elevation: Math.abs(x.elevation) })), c, 'elevation').zero).toBeNaN();
+    expect([o.max, o.min]).toEqual([20, 5]);
+    expect(o.ys[1]).toBeNaN();
     expect(compare(rows([3, 3.1]), false)!.overlays).toEqual([]);
   });
 });

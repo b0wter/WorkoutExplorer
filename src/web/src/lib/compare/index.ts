@@ -9,7 +9,7 @@ import type { Totals } from '../datafile';
 export interface CompareRow {
   readonly totals: Totals;
   readonly partial?: boolean;
-  /** Net elevation change over the row, m (see netElevation); absent for lengths. */
+  /** Elevation gain over the row, m (the range panel's, AP-7); absent for lengths. */
   readonly elevation?: number;
 }
 
@@ -109,8 +109,6 @@ export interface Overlay {
   /** The values at the plot's top and bottom edge. */
   readonly max: number;
   readonly min: number;
-  /** The zero line's position as a fraction, when the values cross zero; else NaN. */
-  readonly zero: number;
 }
 
 /** The overlay's own linear scale (SC-6): the barred rows' values span the plot height. */
@@ -123,13 +121,5 @@ export function overlay(rows: readonly CompareRow[], c: Comparison, k: OverlayKe
     max += 1;
     min -= 1;
   }
-  return { ys: vs.map((v) => (max - v) / (max - min)), max, min, zero: min < 0 && max > 0 ? max / (max - min) : NaN };
-}
-
-/** Net elevation change over samples a … b inclusive (m): the last valid altitude minus the first,
- *  both inside the range; NaN when it has fewer than one valid sample. */
-export function netElevation(alt: Float64Array, a: number, b: number): number {
-  while (a <= b && alt[a] !== alt[a]) a++;
-  while (b > a && alt[b] !== alt[b]) b--;
-  return a <= b ? alt[b] - alt[a] : NaN;
+  return { ys: vs.map((v) => (max - v) / (max - min)), max, min };
 }

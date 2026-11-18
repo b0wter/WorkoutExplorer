@@ -611,28 +611,26 @@ describe('comparison chart (F-51; AP-23)', () => {
     expect(overlay(q)).toBeNull(); // only None left: no drop-down (SC-6)
   });
 
-  it('elevation overlay: net change per lap (end minus start), signed axis in m or ft, zero line when it crosses', () => {
+  it('elevation overlay: gain per lap as the range panel shows it, no dot without valid altitude, m or ft', () => {
     const run = golden('run-30min');
     const n = run.sampleCount;
-    // Altitude 100 m, NaN at sample 0 (nearest valid inside the lap is used), climbing in lap 1, falling in lap 2.
     const altitude = new Float64Array(n).fill(100);
-    for (let i = 10; i < 20; i++) altitude[i] = 100 + (i - 10) * 2; // lap 2 ends at 118
-    for (let i = 20; i < 30; i++) altitude[i] = 118 - (i - 20) * 3; // lap 3 ends at 91
-    altitude[0] = NaN;
-    altitude[29] = NaN; // lap 3's last valid sample is 28: 118 - 24 = 94
+    for (let i = 20; i < 30; i++) altitude[i] = NaN; // lap 3: no valid altitude, so no dot (never 0)
+    // Cumulative gain: lap 1 (0…9) gains 9 m, lap 2 (10…19) 39 − 12 = 27 m.
+    const elevationGain = new Float64Array(n).map((_, i) => (i < 10 ? i : i < 20 ? 9 + 3 * (i - 9) : 39));
     const v = [4.5, 4.4, 4.6];
     const laps = v.map((speed, i) => ({ ...run.meta.laps[0], totals: { avg_speed: speed }, start_index: i * 10, end_index: i * 10 + 10 }));
-    const p = open(withLaps({ ...run, metrics: { ...run.metrics, altitude } }, laps), 'metric', false);
+    const p = open(withLaps({ ...run, elevationGain, metrics: { ...run.metrics, altitude } }, laps), 'metric', false);
+    const stats = createRangeStats(p.data);
+    expect([0, 10].map((a) => stats.query(a, a + 9, emptyValues()).gain)).toEqual([9, 27]);
     const sel = overlay(p)!;
     sel.value = 'elevation';
     sel.dispatchEvent(new Event('change'));
-    // Nets: 0, +18, −24 m.
-    expect([...chart(p)!.querySelectorAll('.compare-axis.right span')].map((s) => s.textContent)).toEqual(['+18 m', '', '-24 m']);
-    expect(chart(p)?.querySelectorAll('.ov-altitude circle')).toHaveLength(3);
-    const zero = chart(p)!.querySelector('.ov-altitude line.zero')!;
-    expect(+zero.getAttribute('y1')!).toBeCloseTo(4 + (18 / 42) * 102, 1);
+    expect([...chart(p)!.querySelectorAll('.compare-axis.right span')].map((s) => s.textContent)).toEqual(['27 m', '', '9 m']);
+    expect(chart(p)?.querySelectorAll('.ov-altitude circle')).toHaveLength(2);
+    expect(chart(p)?.querySelector('.ov-altitude line.zero')).toBeNull();
     p.units.set('imperial');
-    expect(chart(p)!.querySelector('.compare-axis.right span')?.textContent).toBe('+59 ft');
+    expect(chart(p)!.querySelector('.compare-axis.right span')?.textContent).toBe('89 ft');
   });
 
   it('QA-51-r1-2: an overlay change keeps the drop-down and its focus', () => {

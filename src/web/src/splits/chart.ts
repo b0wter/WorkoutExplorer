@@ -141,7 +141,6 @@ export function createChart(
         if (next === next && i + 1 < n) g += `<line x1="${r2((i + 0.5) * w)}%" x2="${r2((i + 1.5) * w)}%" y1="${r2(yp(y))}" y2="${r2(yp(next))}"/>`;
         g += `<circle cx="${r2((i + 0.5) * w)}%" cy="${r2(yp(y))}" r="2.5"/>`;
       });
-      if (ov.zero === ov.zero) g = `<line class="zero" x1="0" x2="100%" y1="${r2(yp(ov.zero))}" y2="${r2(yp(ov.zero))}"/>` + g;
       svg += `<g class="ov ov-${NAMES[choice as OverlayKey][1]}">${g}</g>`;
     }
     const plot = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -169,9 +168,9 @@ export function createChart(
     plot.addEventListener('pointermove', (e) => e.pointerType === 'mouse' && setHover(slotAt(e)));
     plot.addEventListener('pointerleave', () => setHover(undefined));
 
-    // Elevation in m or ft with its unit, signed (inlined, not lib/format: that would grow the entry).
+    // Elevation in m or ft with its unit (inlined, not lib/format: that would grow the entry).
     const ovText = (v: number): string =>
-      choice === 'elevation' ? (v > 0 ? '+' : '') + Math.round(units === 'metric' ? v : v / 0.3048) + (units === 'metric' ? ' m' : ' ft') : String(Math.round(v));
+      choice === 'elevation' ? Math.round(units === 'metric' ? v : v / 0.3048) + (units === 'metric' ? ' m' : ' ft') : String(Math.round(v));
     const axis = (cls: string, texts: readonly string[]): HTMLElement => {
       const a = el(doc, 'div', cls);
       a.append(...texts.map((t) => el(doc, 'span', '', t)));

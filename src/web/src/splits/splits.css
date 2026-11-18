@@ -136,10 +136,6 @@
   stroke: var(--c-power);
   fill: var(--c-power);
 }
-.compare .ov .zero {
-  stroke-dasharray: 3 3;
-  stroke-width: 1;
-}
 .compare .ov-altitude {
   stroke: var(--c-altitude);
   fill: var(--c-altitude);

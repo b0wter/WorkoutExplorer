@@ -10,7 +10,6 @@ import type { Length, Totals, WorkoutData } from '../lib/datafile';
 import type { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit, Units } from '../lib/format';
 import type { codeWord, lapsGroup } from '../lib/page';
 import { hasStrokeCounts, lengthRows } from '../lib/lengths';
-import { netElevation } from '../lib/compare';
 import { createRangeStats, emptyValues, type RangeStats } from '../lib/range';
 import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset } from '../lib/splits';
 import type { UnitsStore } from '../lib/units';
@@ -124,9 +123,10 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   // F-51 SC-4: no chart for a multisport workout (AP-12). Slots per view, from the rows its table is built from (SC-3).
   const chart = data.meta.sport === 'multisport' ? null : createChart(section, data.meta.sport, [fmt[3], fmt[4], fmt[5]], seams.marked);
   const slots: Partial<Record<View, Slot[]>> = {};
-  // F-51 SC-6: net elevation per lap or split row (samples a … b inclusive), when the workout has altitude.
-  const alt = data.metrics.altitude;
-  const net = (a: number, b: number): { elevation?: number } => (alt ? { elevation: netElevation(alt, a, b) } : {});
+  // F-51 SC-6: elevation gain per lap or split row (samples a … b inclusive), as the range panel shows it (AP-7).
+  const gs = chart && data.metrics.altitude ? (stats ?? createRangeStats(data)) : null;
+  const gv = emptyValues();
+  const net = (a: number, b: number): { elevation?: number } => (gs?.fields.includes('gain') ? { elevation: gs.query(a, b, gv).gain } : {});
   if (server) {
     const rows = [...server.querySelectorAll('tbody tr:not(.laps-section)')];
     const laps = data.meta.laps;
