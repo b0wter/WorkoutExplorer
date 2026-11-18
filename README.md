@@ -2,6 +2,10 @@
 
 A small, free viewer for FIT files: upload one, get a shareable activity page. Go server plus Svelte front end.
 
+## Install
+
+Releases are signed; see `deploy/RUNBOOK.md` for what every install shares, then the guide for your path: `deploy/DOCKER.md` (Docker Compose), `deploy/PODMAN.md` (rootless Podman) or `deploy/BAREMETAL.md` (systemd, no containers). The image is `ghcr.io/b0wter/workout-explorer`.
+
 ## Layout
 
 Decided in `architect/ADR-001-repository-layout-and-build-entry-point.md`.
