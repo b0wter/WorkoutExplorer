@@ -2,11 +2,11 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (18 Nov 2026): v0.9.1 released (F-59, F-52); next: VPS migration and real-host checks
+## Current (18 Nov 2026): v0.9.1 released and installed (F-59, F-52); next: F-60
 
 - **F-59** container image and install paths (INF-9; ADR-052, ADR-053, ADR-034 rev. 5): app image on ghcr.io (CI release job), Caddy from the official image by minor tag (patches float, no capability, start guard on every pull route), web assets served from `{data}/site/assets`, docs split into `deploy/RUNBOOK.md` (shared), `DOCKER.md`, `PODMAN.md`, `BAREMETAL.md`. QA r1 ready with conditions, minors fixed. Waiting on real-host checks (Waiting on column).
 - **F-52** automatic updates (INF-8; ADR-050, ADR-051, ADR-054; design v0.3): `update.sh` (manual `update.sh vX.Y.Z` and nightly timer, Compose and rootless Podman), `sign-release.sh` (checks the draft against the local tag, signs, publishes), CI makes draft releases, `latest.yml` moves `latest` on publication. QA r2 ready with conditions (`qa/F-52-auto-update-r2.md`), minors fixed (3d3295a); P-9 accepted 18 Nov.
-- **Next:** v0.9.1 signed and published 18 Nov (v0.9.0 draft deleted: `sign-release.sh` ran `gh` outside the repo, fixed in v0.9.1; the v0.9.0 tag and image remain). The user migrates the VPS (`DOCKER.md` section on moving a tarball install) and runs the F-59/F-52 real-host checks (Waiting on column). Every deploy is now `ssh deploy@host /srv/workout-explorer/update.sh vX.Y.Z`.
+- **Next:** v0.9.1 signed, published and installed on the user's VPS (rootless Podman) 18 Nov; automatic updates on there. Open checks: Waiting on of F-59 and F-52 (first nightly runs, hardening checks; other paths wait for another hoster). Then F-60 (AC to write). Every deploy is now `update.sh vX.Y.Z` run as the service user (Podman).
 - Release signing key: created by the user 16 Nov; public key in `deploy/minisign.pub` and DNS TXT `_wx-release-key.workouts.plugman.de` (checked). The secret key stays on the user's machine.
 - After F-52: F-60 bare-metal auto-update (decided, AC to write), then F-53, F-58, F-54, F-57, F-55, F-56.
 - v0.8.0 (15 Nov): F-47 to F-51 and more; data file format version 6.
