@@ -12,7 +12,7 @@ Every release publishes our app image (`ghcr.io/b0wter/workout-explorer:vX.Y.Z`:
 | --- | --- | --- | --- |
 | For | Anyone with Docker. **Pick this if unsure** | Hosts with Podman and systemd, no Docker daemon | Hosts without containers |
 | Runs | Our image and the official Caddy image | The same two images, as systemd user units (Quadlet) | The binary from the tarball and Caddy's apt package, as two systemd services |
-| Updates | `update.sh vX.Y.Z`, or automatically every night (DOCKER.md section 8) | The same (PODMAN.md section 9) | By hand, BAREMETAL.md section 6 |
+| Updates | `update.sh vX.Y.Z`, or automatically every night (DOCKER.md section 8) | The same (PODMAN.md section 9) | The same (BAREMETAL.md section 6) |
 
 Also in DOCKER.md: building the image yourself from a clone, moving an existing tarball install to the image. The project operator's own deploy and releasing are at the end of this file.
 
@@ -209,11 +209,11 @@ Traefik with Docker labels: the same router, but the backend is a host address, 
 
 Wrong `WX_TRUSTED_PROXIES`: too narrow shows as every visitor sharing one upload limit. Too wide lets clients choose their own address. Only the proxy's own source may be listed.
 
-## Updates (Docker Compose and rootless Podman)
+## Updates
 
-Every release is installed by `update.sh` in `/srv/workout-explorer`, by hand or, if you turn it on, every night. It downloads the release's `SHA256SUMS` and checks its signature with `minisign` against the key you pinned, before anything is unpacked or run; then it runs the release's own `deploy.sh` (pull both images, check the new Caddy, install, restart, wait for `/api/health`, `regenerate`). The checksums alone are never enough: a release without a valid signature by the pinned key is refused, whatever its checksums say. Bare metal is updated by hand (BAREMETAL.md section 6). Self-built images (DOCKER.md section 9) are not updated by it.
+Every release is installed by `update.sh` in `/srv/workout-explorer`, by hand or, if you turn it on, every night. It downloads the release's `SHA256SUMS` and checks its signature with `minisign` against the key you pinned, before anything is unpacked or run; then it runs the release's own `deploy.sh` (containers: pull both images, check the new Caddy; bare metal: check root's files and the new Caddyfile, BAREMETAL.md section 6; then install, restart, wait for `/api/health`, `regenerate`). The checksums alone are never enough: a release without a valid signature by the pinned key is refused, whatever its checksums say. Self-built images (DOCKER.md section 9) are not updated by it.
 
-Each path's guide has the commands (who runs them, the timer): DOCKER.md section 8, PODMAN.md section 9. What they share:
+Each path's guide has the commands (who runs them, the timer): DOCKER.md section 8, PODMAN.md section 9, BAREMETAL.md section 6. What they share:
 
 **1. Pin the release signing key (once).** The operator signs every release with a key kept offline. Its public half is published in two places that one attacker is unlikely to control both of: the file `deploy/minisign.pub` in the repository on GitHub (its second line), and a DNS TXT record on the operator's domain:
 
@@ -228,7 +228,7 @@ Both must show the same line, starting with `RW`. If they differ, stop and ask t
 
 **3. The first release is checked by hand** with the same key (the path's guide shows it), because `update.sh` itself comes with it. From then on every deploy goes through the installed `update.sh`, which replaces itself with the copy of each release it installs (the new copy acts from the next run).
 
-**By hand:** `update.sh vX.Y.Z` installs exactly that release: also an older one, the running one again (for example after `regenerate` failed), and whether or not automatic updates are on. Exit codes: `0` installed and regenerated; `1` refused (signature, checksum, archive), not healthy, another deploy running, or the network failed; `2` a configuration error (`.env`, missing tool, wrong user); `3` `regenerate` did not finish (the new version is live; run the same command again); `4` the clean-up of old web files failed (run it again later). Never run the `deploy.sh` of a downloaded archive yourself; it refuses unless `update.sh` started it.
+**By hand:** `update.sh vX.Y.Z` installs exactly that release: also an older one, the running one again (for example after `regenerate` failed), and whether or not automatic updates are on. Exit codes: `0` installed and regenerated; `1` refused (signature, checksum, archive), not healthy, another deploy running, or the network failed; `2` a configuration error (`.env`, missing tool, wrong user); `3` `regenerate` did not finish (the new version is live; run the same command again); `4` the clean-up of old web files failed (run it again later); `5` (bare metal only) the release changes a file only root may install, nothing changed (BAREMETAL.md section 6). Never run the `deploy.sh` of a downloaded archive yourself; it refuses unless `update.sh` started it.
 
 **Automatically:** with `WORKOUT_EXPLORER_AUTO_UPDATE=on` and the timer installed, once a night (03:00 plus a random but fixed minute within the hour; the guide shows how to change the hour) `update.sh` asks the running server for its version, asks GitHub which release is the latest, and installs it if it is newer: patch, minor or major. Pre-releases, drafts, tags not in `vX.Y.Z` form, older versions and the running version are never installed. A stopped stack, or a server that does not answer `/api/health`, is left alone. No port is opened and nothing is sent anywhere except ordinary download requests to GitHub (and your Pushover message on a failure). The app itself still has no internet access. With the switch off, an installed timer runs but makes no request at all.
 
@@ -240,7 +240,7 @@ Both must show the same line, starting with `RW`. If they differ, stop and ask t
 update: running=v1.4.0 latest=v1.5.0 action=applied reason=- exit=0
 ```
 
-`action` is `none` (nothing to do), `applied`, `refused` (the release failed a check; nothing was unpacked or run) or `failed` (its `deploy.sh` ended with the exit code shown). `reason`: `off` (automatic updates off), `stopped`, `busy`, `health` (server not answering or not a release version), `current` (nothing newer), `network` (GitHub not reachable, an HTTP error, a missing file; tried again the next night, nothing changed), `config`, `signature`, `manifest`, `checksum`, `archive`, `deploy`, `killed` (stopped from outside before `deploy.sh` started; nothing changed). Before it, on an install, are `deploy.sh`'s own lines.
+`action` is `none` (nothing to do), `applied`, `refused` (the release failed a check; nothing was unpacked or run) or `failed` (its `deploy.sh` ended with the exit code shown). `reason`: `off` (automatic updates off), `stopped`, `busy`, `health` (server not answering or not a release version), `current` (nothing newer), `network` (GitHub not reachable, an HTTP error, a missing file; tried again the next night, nothing changed), `config`, `signature`, `manifest`, `checksum`, `archive`, `deploy`, `root` (bare metal: exit 5, root must install changed system files first), `killed` (stopped from outside before `deploy.sh` started; nothing changed). Before it, on an install, are `deploy.sh`'s own lines.
 
 **When an update is refused or fails**, `update.sh` sends one Pushover message (when both Pushover keys are set in `.env`, "Notifications"; this one comes from the host, not from the app), for example `v1.5.0 failed (exit 3). Automatic updates are stopped until a manual deploy succeeds.`, and writes the stopped state `/srv/workout-explorer/update.stopped`. While that file exists, the nightly run does nothing and sends nothing more (`reason=stopped`). Without Pushover the log line is the only alert: check the journal now and then.
 

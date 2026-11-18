@@ -1,0 +1,18 @@
+// Bare-metal updater rights (F-60 BM-3, ADR-055): the user "deploy" may restart exactly our app
+// and Caddy units and start exactly the regenerate unit; everything else falls through to
+// polkit's defaults (denied without interactive authentication). Install once, as root, as
+// /etc/polkit-1/rules.d/50-workout-explorer.rules (needs the polkitd package). No release
+// changes it. Another deploy user's name: edit the one name below.
+polkit.addRule(function (action, subject) {
+	if (action.id !== "org.freedesktop.systemd1.manage-units" || subject.user !== "deploy") {
+		return polkit.Result.NOT_HANDLED;
+	}
+	var unit = action.lookup("unit"), verb = action.lookup("verb");
+	if (verb === "restart" && (unit === "workout-explorer.service" || unit === "workout-explorer-caddy.service")) {
+		return polkit.Result.YES;
+	}
+	if (verb === "start" && unit === "workout-explorer-regenerate.service") {
+		return polkit.Result.YES;
+	}
+	return polkit.Result.NOT_HANDLED;
+});

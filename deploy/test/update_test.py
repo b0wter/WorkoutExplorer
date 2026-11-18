@@ -174,6 +174,27 @@ printf '%%s\n' "$*" >>%s
 [ "$1" != regenerate ] || printf 'rebuilt=3\ndeleted=0\nkept=0\nskipped=0\nfiles_removed=0\nbundles_removed=0\n'
 """
 
+# Bare metal (F-60): systemctl as the deploy user sees it (show, is-active, and the three actions
+# polkit allows); the Caddy unit's environment puts Caddy on the fake health port.
+FAKE_SYSTEMCTL = r"""#!/bin/sh
+printf '%s\n' "$*" >>"$WX_TEST_SYSTEMCTL"
+case "$*" in
+"show -p Environment workout-explorer-caddy.service")
+	echo "Environment=WX_DATA=/srv/workouts WX_API=127.0.0.1:8080 WX_SITE=http://:$WX_TEST_HPORT WX_BIND=127.0.0.1 \"WX_TRUSTED_PROXIES=127.0.0.1 ::1\" WX_ADMIN=unix//run/workout-explorer-caddy/admin.sock HOME=/run/workout-explorer-caddy" ;;
+"show -p ExecMainCode -p ExecMainStatus workout-explorer-regenerate.service")
+	printf 'ExecMainCode=%s\nExecMainStatus=%s\n' "${WX_TEST_REGEN_CODE:-1}" "${WX_TEST_REGEN_STATUS:-0}" ;;
+"--no-ask-password start workout-explorer-regenerate.service") exit "${WX_TEST_REGEN:-0}" ;;
+esac
+exit 0
+"""
+# The installed Caddy: its version, and validate (records its environment; refuses REJECT_ME).
+FAKE_CADDY = """#!/bin/sh
+case $1 in
+version) echo "v%s h1:test" ;;
+validate) env | sort >%s; ! grep -q REJECT_ME "$3" ;;
+*) exit 2 ;;
+esac
+"""
 
 class Test(unittest.TestCase):
     @classmethod
@@ -785,6 +806,218 @@ class Test(unittest.TestCase):
         self.assertEqual([c.split()[0] for c in calls], ["install", "restart", "regenerate"])
         for n in ("update.sh", "updater/user/workout-explorer-update.timer"):
             self.assertTrue(os.path.isfile(os.path.join(self.srv, n)), n)
+
+
+    # --- F-60: bare metal ------------------------------------------------------------------------
+    def bare_layout(self, caddy="2.11.7"):
+        """BAREMETAL.md's layout under a fake host root: our root-only files as the repository has
+        them, a fake systemctl (polkit's three actions, the Caddy unit's environment) and a fake
+        Caddy; the program directory holds an older install."""
+        repo = os.path.join(HERE, "..")
+        os.remove(os.path.join(self.srv, "compose.yaml"))
+        self.root = r = os.path.join(self.d, "root")
+        units = os.path.join(r, "etc/systemd/system")
+        for d in (units, os.path.join(r, "usr/local/sbin"), os.path.join(r, "etc/apt/preferences.d"), os.path.join(r, "usr/bin")):
+            os.makedirs(d)
+        for n in os.listdir(os.path.join(repo, "systemd")):
+            if n.endswith((".service", ".slice", ".path")):
+                shutil.copy(os.path.join(repo, "systemd", n), units)
+        shutil.copy(os.path.join(repo, "systemd/workout-explorer-run"), os.path.join(r, "usr/local/sbin"))
+        shutil.copy(os.path.join(repo, "systemd/caddy.pref"), os.path.join(r, "etc/apt/preferences.d/workout-explorer-caddy.pref"))
+        self.caddy_log = os.path.join(self.d, "caddy")
+        with open(os.path.join(r, "usr/bin/caddy"), "w") as f:
+            f.write(FAKE_CADDY % (caddy, self.caddy_log))
+        os.chmod(os.path.join(r, "usr/bin/caddy"), 0o755)
+        self.bare_fakes = os.path.join(self.d, "fakes")
+        os.mkdir(self.bare_fakes)
+        with open(os.path.join(self.bare_fakes, "systemctl"), "w") as f:
+            f.write(FAKE_SYSTEMCTL)
+        os.chmod(os.path.join(self.bare_fakes, "systemctl"), 0o755)
+        self.systemctl_log = os.path.join(self.d, "systemctl")
+        for n, b in (("bin/workout-explorer", b"old-bin"), ("web/index.html", b"old"), ("web/assets/old.js", b"old"),
+                     ("conf/Caddyfile", open(os.path.join(repo, "Caddyfile"), "rb").read())):
+            os.makedirs(os.path.dirname(os.path.join(self.srv, n)), exist_ok=True)
+            open(os.path.join(self.srv, n), "wb").write(b)
+
+    def bare_env(self, **kw):
+        e = {"PATH": self.bare_fakes + ":" + self.shim + ":" + os.environ["PATH"], "WX_HOST_ROOT": self.root,
+             "WX_TEST_SYSTEMCTL": self.systemctl_log, "WX_TEST_HPORT": str(self.host.hport)}
+        e.update(kw)
+        return e
+
+    def bare_release(self, tag, caddyfile=None, tarball=None):
+        """A release with the repository's deploy files (real deploy.sh) and a tarball of new program files."""
+        repo = os.path.join(HERE, "..")
+        f = lambda rel: open(os.path.join(repo, rel), "rb").read()
+        members = [("./", "dir", b""), ("./COMMIT", "file", b"0" * 40 + b"\n"), ("./systemd/", "dir", b""), ("./updater/", "dir", b"")]
+        members += [("./" + n, "file", f(n)) for n in ("deploy.sh", "update.sh")]
+        members += [("./Caddyfile", "file", caddyfile if caddyfile is not None else f("Caddyfile"))]
+        members += [("./systemd/" + n, "file", f("systemd/" + n)) for n in sorted(os.listdir(os.path.join(repo, "systemd")))]
+        for p in ("system", "user"):
+            members += [("./updater/%s/" % p, "dir", b"")]
+            members += [("./updater/%s/%s" % (p, n), "file", f("updater/%s/%s" % (p, n))) for n in sorted(os.listdir(os.path.join(repo, "updater", p)))]
+        tarball = tarball or [("workout-explorer", "file", b"new-bin"), ("web/", "dir", b""), ("web/index.html", "file", b"new"),
+                              ("web/assets/", "dir", b""), ("web/assets/new.js", "file", b"new"), ("COMMIT", "file", b"0" * 40 + b"\n")]
+        files = {"workout-explorer-%s-deploy.tar.gz" % tag: tgz(members), "workout-explorer-%s-linux-amd64.tar.gz" % tag: tgz(tarball)}
+        return self.release(tag, files=files)
+
+    def program_files(self):
+        out = {}
+        for top in ("bin", "web", "conf"):
+            for dp, _, fs in os.walk(os.path.join(self.srv, top)):
+                for n in fs:
+                    p = os.path.join(dp, n)
+                    out[os.path.relpath(p, self.srv)] = open(p, "rb").read()
+        return out
+
+    def systemctl_calls(self):
+        return open(self.systemctl_log).read().splitlines() if os.path.exists(self.systemctl_log) else []
+
+    def changing_calls(self):
+        return [c for c in self.systemctl_calls() if c.split()[:2] != ["show", "-p"] and not c.startswith("is-active")]
+
+    def test_bare_metal_applies(self):
+        self.bare_layout()
+        # A killed run's leftovers are cleared first (BM-6 step 2).
+        os.makedirs(os.path.join(self.srv, "web.new"))
+        open(os.path.join(self.srv, "bin/.workout-explorer.new"), "w").close()
+        self.bare_release("v1.5.0")
+        self.host.health_version = "v1.5.0"
+        _, out, _ = self.expect(args=("v1.5.0",), action="applied", reason="-", env=self.bare_env())
+        self.assertIn("deploy: v1.5.0 done (see: sudo journalctl -u workout-explorer-regenerate", out)
+        files = self.program_files()
+        self.assertEqual((files["bin/workout-explorer"], files["web/index.html"]), (b"new-bin", b"new"))
+        self.assertNotIn("web/assets/old.js", files, "web/ is replaced whole")
+        self.assertEqual(os.stat(os.path.join(self.srv, "bin/workout-explorer")).st_mode & 0o777, 0o755)
+        for n in ("web.new", "web.old", "bin/.workout-explorer.new", "conf/.Caddyfile.new"):
+            self.assertFalse(os.path.exists(os.path.join(self.srv, n)), n)
+        for n in ("update.sh", "updater/system/workout-explorer-update.timer"):
+            self.assertTrue(os.path.isfile(os.path.join(self.srv, n)), n)
+        # Unchanged Caddyfile: only the app restarts; then the fixed regenerate unit; nothing else.
+        self.assertEqual(self.changing_calls(), ["--no-ask-password restart workout-explorer.service",
+                                                 "--no-ask-password start workout-explorer-regenerate.service"])
+        # The Caddyfile was checked as this user with the unit's values and a throwaway home.
+        v = open(self.caddy_log).read()
+        self.assertIn("WX_DATA=/srv/workouts\n", v)
+        self.assertIn("WX_TRUSTED_PROXIES=127.0.0.1 ::1\n", v)
+        self.assertRegex(v, r"HOME=/.*/a/\.caddy-home\n")
+        self.assertIn("/workout-explorer-v1.5.0-linux-amd64.tar.gz", " ".join(self.host.requests))
+
+    def test_bare_metal_changed_caddyfile_restarts_caddy(self):
+        self.bare_layout()
+        new = open(os.path.join(HERE, "..", "Caddyfile"), "rb").read() + b"# changed\n"
+        self.bare_release("v1.5.0", caddyfile=new)
+        self.host.health_version = "v1.5.0"
+        self.expect(args=("v1.5.0",), action="applied", reason="-", env=self.bare_env())
+        self.assertEqual(self.program_files()["conf/Caddyfile"], new)
+        self.assertIn("--no-ask-password restart workout-explorer-caddy.service", self.changing_calls())
+
+    def test_bare_metal_root_only_change_stops_before_anything_changes(self):
+        units = lambda n: os.path.join(self.root, "etc/systemd/system", n)
+        cases = { # the notify drop-in last: removing it below lets the release apply
+            "caddy minor": None,
+            "unit edited": lambda: open(units("workout-explorer.slice"), "a").write("# hand edit\n"),
+            "new unit missing": lambda: os.remove(units("workout-explorer-regenerate.service")),
+            "run wrapper": lambda: open(os.path.join(self.root, "usr/local/sbin/workout-explorer-run"), "a").write("#\n"),
+            "apt pin": lambda: open(os.path.join(self.root, "etc/apt/preferences.d/workout-explorer-caddy.pref"), "a").write("#\n"),
+            "notify drop-in": lambda: (os.makedirs(units("workout-explorer.service.d")), open(units("workout-explorer.service.d/notify.conf"), "w").write("[Service]\n")),
+        }
+        for name, change in cases.items():
+            with self.subTest(change=name):
+                self.setUp()
+                self.pushover_on()
+                self.bare_layout(caddy="2.10.2" if change is None else "2.11.7")
+                change and change()
+                self.bare_release("v1.5.0")
+                self.host.health_version = "v1.5.0"
+                before = self.program_files()
+                _, _, err = self.expect(args=("v1.5.0",), action="failed", reason="root", rc=5, env=self.bare_env())
+                self.assertEqual(self.program_files(), before, "a program file changed")
+                self.assertEqual(self.changing_calls(), [], "a unit was restarted or started")
+                self.assertIn("As root, install these files", err)
+                self.assertIn("reason=root", self.state())
+                self.assert_stopped("failed", "v1.5.0", 5)
+                self.assertEqual(len(self.host.pushover), 1)
+                self.assertIn("root%20must%20install%20changed%20system%20files", self.host.pushover[0])
+        # After root installs the release's files, the manual run applies and clears the state (AC 30).
+        os.remove(os.path.join(self.root, "etc/systemd/system/workout-explorer.service.d/notify.conf"))
+        self.expect(args=("v1.5.0",), action="applied", reason="-", env=self.bare_env())
+        self.assertIsNone(self.state())
+
+    def test_bare_metal_caddyfile_rejected_changes_nothing(self):
+        self.pushover_on()
+        self.bare_layout()
+        self.bare_release("v1.5.0", caddyfile=b"REJECT_ME\n")
+        self.host.health_version = "v1.5.0"
+        before = self.program_files()
+        _, _, err = self.expect(args=("v1.5.0",), action="failed", reason="deploy", rc=1, env=self.bare_env())
+        self.assertIn("the installed Caddy rejects the release's Caddyfile; nothing changed", err)
+        self.assertEqual(self.program_files(), before)
+        self.assertEqual(self.changing_calls(), [])
+        self.assert_stopped("failed", "v1.5.0", 1)
+
+    def test_bare_metal_tarball_refused(self):
+        bad = {
+            "checksum": None,
+            "archive": [("workout-explorer", "file", b"x"), ("web/", "dir", b""), ("web/index.html", "symlink", "/etc/passwd")],
+            "archive ": [("workout-explorer", "file", b"x"), ("web/", "dir", b""), ("web/other.html", "file", b"x")],
+            "archive  ": [("workout-explorer", "dir", b""), ("web/", "dir", b""), ("web/index.html", "file", b"x")],
+        }
+        for reason, tarball in bad.items():
+            with self.subTest(case=reason, tarball=tarball):
+                self.setUp()
+                self.bare_layout()
+                self.bare_release("v1.5.0", tarball=tarball)
+                if tarball is None: # served bytes differ from the signed manifest
+                    self.host.files["v1.5.0/workout-explorer-v1.5.0-linux-amd64.tar.gz"] = tgz([("workout-explorer", "file", b"evil")])
+                before = self.program_files()
+                self.expect(args=("v1.5.0",), action="refused", reason=reason.strip(), rc=1, env=self.bare_env())
+                self.assertEqual(self.program_files(), before)
+                self.assertEqual(self.systemctl_calls(), ["show -p Environment workout-explorer-caddy.service"], "deploy.sh ran")
+                self.assert_stopped("refused", "v1.5.0", 1)
+
+    def test_bare_metal_regenerate_exit_mapping(self):
+        # The fixed unit's status read back: 0 done, 4 clean-up failed, anything else (or killed) unfinished.
+        # (start's exit, ExecMainCode, ExecMainStatus, expected): code 1 = exited, 2 = killed; a refused start leaves 0 0.
+        for start, code, main, rc in (("0", "1", "0", 0), ("1", "1", "4", 4), ("1", "1", "1", 3), ("1", "1", "2", 3),
+                                      ("1", "2", "4", 3), ("1", "0", "0", 3), ("1", "1", "0", 3)):
+            with self.subTest(start=start, code=code, status=main):
+                self.setUp()
+                self.bare_layout()
+                self.bare_release("v1.5.0")
+                self.host.health_version = "v1.5.0"
+                env = self.bare_env(WX_TEST_REGEN=start, WX_TEST_REGEN_CODE=code, WX_TEST_REGEN_STATUS=main)
+                if rc == 0:
+                    self.expect(args=("v1.5.0",), action="applied", reason="-", env=env)
+                else:
+                    self.expect(args=("v1.5.0",), action="failed", reason="deploy", rc=rc, env=env)
+
+    def test_path_detection_needs_exactly_one_marker(self):
+        self.bare_layout()
+        self.release("v1.5.0")
+        self.host.latest = "v1.5.0"
+        podman = os.path.join(self.home, ".config/containers/systemd/workout-explorer-app.container")
+        for compose, quadlet in ((True, False), (False, True), (True, True)):
+            with self.subTest(compose=compose, podman=quadlet):
+                open(os.path.join(self.srv, "compose.yaml"), "w").close() if compose else None
+                if quadlet:
+                    os.makedirs(os.path.dirname(podman), exist_ok=True)
+                    open(podman, "w").close()
+                self.expect(action="none", reason="config", rc=2, env=self.bare_env())
+                self.expect(args=("v1.5.0",), action="none", reason="config", rc=2, env=self.bare_env())
+                for p in (os.path.join(self.srv, "compose.yaml"), podman):
+                    os.path.exists(p) and os.remove(p)
+        self.assertEqual(self.host.requests, [])
+        # Bare metal alone: the running version comes from Caddy's address in its unit (a drop-in's port).
+        self.host.health_version = "v1.5.0"
+        self.expect(action="none", reason="current", env=self.bare_env()) # "health" if the address were wrong
+        self.expect(action="none", reason="health", env=self.bare_env(WX_TEST_HPORT="1"))
+
+    def test_container_paths_never_fetch_the_tarball(self):
+        self.release("v1.5.0")
+        self.host.latest = "v1.5.0"
+        self.expect(action="applied", reason="-")
+        self.assertNotIn("linux-amd64", " ".join(self.host.requests))
 
 
 if __name__ == "__main__":

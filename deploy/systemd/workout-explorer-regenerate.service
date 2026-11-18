@@ -1,0 +1,26 @@
+# `regenerate` on bare metal as one fixed unit (F-60 BM-4, OQ-267, ADR-055): the deploy user may
+# start it through the polkit rule, never pass arguments, so `delete` and `parse` stay root's
+# (workout-explorer-run). As the app user, with its .env, slice and sandbox: the lines of
+# workout-explorer-run, kept in step. Install as /etc/systemd/system/workout-explorer-regenerate.service.
+# Exit 0 done; 1 stopped early, nothing removed; 4 the clean-up failed. Its report: journalctl -u workout-explorer-regenerate
+[Unit]
+Description=Workout Explorer regenerate (rebuild every workout, remove unused bundles)
+After=workout-explorer.service
+
+[Service]
+Type=oneshot
+User=workout-explorer
+Group=workout-explorer
+Slice=workout-explorer.slice
+EnvironmentFile=/srv/workout-explorer/.env
+ExecStart=/srv/workout-explorer/bin/workout-explorer regenerate -data /srv/workouts -web /srv/workout-explorer/web
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+ProtectSystem=strict
+ReadWritePaths=/srv/workouts
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost

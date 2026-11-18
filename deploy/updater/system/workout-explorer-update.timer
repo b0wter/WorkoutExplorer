@@ -1,4 +1,4 @@
-# Docker Compose: once a day in the hour the hoster sets, at a random but fixed minute; no
+# Docker Compose and bare metal: once a day in the hour the hoster sets, at a random but fixed minute; no
 # catch-up after downtime (F-52 AU-13, OQ-213). Change the hour with `systemctl edit`:
 #   [Timer]
 #   OnCalendar=

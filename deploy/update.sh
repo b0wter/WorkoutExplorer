@@ -1,8 +1,8 @@
 #!/bin/sh
-# Workout Explorer updater: the one entry for every deploy on Docker Compose and rootless Podman
-# (F-52 AU-1 to AU-16, INF-8; ADR-050, ADR-051, ADR-054). Lives at {deploy dir}/update.sh and runs
-# as the path's deploy user (Compose: owner of the deploy directory, docker group; Podman: the
-# service user), never as root.
+# Workout Explorer updater: the one entry for every deploy on Docker Compose, rootless Podman and
+# bare metal (F-52 AU-1 to AU-16, F-60 BM-1 to BM-12, INF-8; ADR-050, ADR-051, ADR-054, ADR-055).
+# Lives at {deploy dir}/update.sh and runs as the path's deploy user (Compose: owner of the deploy
+# directory, docker group; Podman: the service user; bare metal: the user "deploy"), never as root.
 #   update.sh           scheduled run: acts only with WORKOUT_EXPLORER_AUTO_UPDATE=on, installs the
 #                       latest release if it is newer than the running one
 #   update.sh vX.Y.Z    manual deploy of that tag, whatever the switch, the stopped state or the
@@ -13,10 +13,11 @@
 #   update: running=<v|-> latest=<v|-> action=<none|applied|refused|failed> reason=<class> exit=<n>
 # Exit: 0 nothing to do or applied; 1 refused, busy (manual), network (manual); 2 configuration or
 # usage; 128 + signal when killed; otherwise deploy.sh's status (1 refused or not healthy,
-# 3 regenerate unfinished, 4 clean-up).
-# DEPLOY_DIR (default /srv/workout-explorer) is the deploy directory. WX_UPDATE_RELEASES and
-# WX_UPDATE_PUSHOVER replace the release host and the Pushover endpoint for tests only; neither
-# weakens the check, which trusts only the pinned key.
+# 3 regenerate unfinished, 4 clean-up, 5 bare metal: root must install changed files first).
+# DEPLOY_DIR (default /srv/workout-explorer) is the deploy directory. WX_UPDATE_RELEASES,
+# WX_UPDATE_PUSHOVER and WX_HOST_ROOT (a prefix for /etc, /usr) replace the release host, the
+# Pushover endpoint and the host's root for tests only; none weakens the check, which trusts only
+# the pinned key.
 set -u
 dir=${DEPLOY_DIR:-/srv/workout-explorer}
 releases=${WX_UPDATE_RELEASES:-https://github.com/b0wter/WorkoutExplorer/releases}
@@ -57,14 +58,26 @@ switch=$(envval WORKOUT_EXPLORER_AUTO_UPDATE)
 case $switch in "" | on) ;; *) say "WORKOUT_EXPLORER_AUTO_UPDATE must be unset or on"; done_ none config 2 ;; esac
 key=$(envval WX_UPDATE_PUBLIC_KEY)
 printf '%s' "$key" | grep -Eqx 'RW[A-Za-z0-9+/]{54}' || { say "WX_UPDATE_PUBLIC_KEY is missing or not a minisign public key"; done_ none config 2; }
-# The install path (AU-16): exactly one of Compose and our Podman app unit.
-compose=no podman=no
+# The install path (AU-16, BM-1): exactly one of Compose, our Podman app unit and our bare-metal app unit.
+compose=no podman=no bare=no
 [ ! -e "$dir/compose.yaml" ] || compose=yes
 [ ! -e "$HOME/.config/containers/systemd/workout-explorer-app.container" ] || podman=yes
-case $compose$podman in
-yesno) l=$(envval WX_LISTEN); health=http://${l:-127.0.0.1:8088}/api/health ;;
-noyes) health=http://127.0.0.1:8080/api/health ;; # the Caddy unit's PublishPort
-*) say "found $([ $compose = yes ] && echo both || echo neither) of $dir/compose.yaml and our Podman app unit"; done_ none config 2 ;;
+[ ! -e "${WX_HOST_ROOT:-}/etc/systemd/system/workout-explorer.service" ] || bare=yes
+case $compose$podman$bare in
+yesnono) l=$(envval WX_LISTEN); health=http://${l:-127.0.0.1:8088}/api/health ;;
+noyesno) health=http://127.0.0.1:8080/api/health ;; # the Caddy unit's PublishPort
+nonoyes)
+	command -v systemctl >/dev/null 2>&1 || { say "systemctl is not installed"; done_ none config 2; }
+	# Caddy's address from its unit's effective environment, so a drop-in that moves it is followed (BM-1).
+	cenv=$(systemctl show -p Environment workout-explorer-caddy.service 2>/dev/null)
+	unitenv() { printf ' %s\n' "${cenv#Environment=}" | sed -n "s/.* \"$1=\([^\"]*\)\".*/\1/p; t; s/.* $1=\([^ ]*\).*/\1/p"; }
+	b=$(unitenv WX_BIND) p=$(unitenv WX_SITE)
+	b=${b%% *} p=${p##*:}
+	case $b in "" | 0.0.0.0) b=127.0.0.1 ;; ::) b='[::1]' ;; *:*) b="[$b]" ;; esac
+	case $p in "") p=8088 ;; *[!0-9]*) p=80 ;; esac # unset: the Caddyfile's default
+	health=http://$b:$p/api/health
+	;;
+*) say "found $(printf '%s' "$compose$podman$bare" | grep -o yes | wc -l | tr -d ' ') of $dir/compose.yaml, our Podman app unit and /etc/systemd/system/workout-explorer.service; need exactly one"; done_ none config 2 ;;
 esac
 [ -n "$manual" ] || [ "$switch" = on ] || done_ none off 0
 
@@ -92,7 +105,7 @@ stop_() {
 	[ -z "$manual" ] || [ "$switch" = on ] || say "set $state: if you turn automatic updates on, they stay stopped until a manual deploy succeeds"
 	if [ -z "$manual" ] || [ "$switch" = on ]; then
 		[ -z "$manual" ] || say "automatic updates are now stopped until a manual deploy succeeds"
-		case $1 in refused) what="refused ($2)" ;; *) what="failed (exit $3)" ;; esac
+		case $1:$2 in refused:*) what="refused ($2)" ;; *:root) what="stopped before any change (exit 5): root must install changed system files" ;; *) what="failed (exit $3)" ;; esac
 		alert "$latest $what. Automatic updates are stopped until a manual deploy succeeds."
 	fi
 	done_ "$@"
@@ -156,23 +169,40 @@ esc=$(printf '%s' "$tag" | sed 's/\./\\./g')
 grep -Evq "^[0-9a-f]{64}  workout-explorer-$esc-[A-Za-z0-9._-]+\$" "$work/SHA256SUMS" && stop_ refused manifest 1
 [ "$(grep -c "  workout-explorer-$esc-deploy\.tar\.gz\$" "$work/SHA256SUMS")" = 1 ] &&
 	[ "$(grep -c "  workout-explorer-$esc-linux-amd64\.tar\.gz\$" "$work/SHA256SUMS")" = 1 ] || stop_ refused manifest 1
-want=$(sed -n "s/^\([0-9a-f]\{64\}\)  $(printf '%s' "$archive" | sed 's/\./\\./g')\$/\1/p" "$work/SHA256SUMS")
-fetch "$dl/$archive" "$work/deploy.tar.gz" 10485760 || { [ -n "$manual" ] && done_ none network 1; done_ none network 0; }
-[ "$(sha256sum "$work/deploy.tar.gz" | cut -d' ' -f1)" = "$want" ] || stop_ refused checksum 1
-# Members: regular files and directories only, relative names of plain characters without "..".
-# -P lists names as stored (a leading / kept).
-list=$(tar -tPzf "$work/deploy.tar.gz" 2>/dev/null) && types=$(tar -tvPzf "$work/deploy.tar.gz" 2>/dev/null | cut -c1) || stop_ refused archive 1
-[ -n "$list" ] && [ "$(printf '%s\n' "$list" | wc -l)" = "$(printf '%s\n' "$types" | wc -l)" ] || stop_ refused archive 1
-printf '%s\n' "$types" | grep -qv '^[-d]$' && stop_ refused archive 1
-printf '%s\n' "$list" | grep -Evq '^(\./)?([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$' && stop_ refused archive 1
-printf '%s\n' "$list" | grep -Eq '(^|/)\.\.(/|$)' && stop_ refused archive 1
-mkdir "$work/a" && tar -xzf "$work/deploy.tar.gz" -C "$work/a" --no-same-owner --no-same-permissions 2>/dev/null || stop_ refused archive 1
-[ -z "$(find "$work/a" ! -type f ! -type d)" ] && [ -f "$work/a/deploy.sh" ] || stop_ refused archive 1
+# get <name> <file> <max bytes>: fetch a file the verified manifest names and check its SHA-256.
+get() {
+	want=$(sed -n "s/^\([0-9a-f]\{64\}\)  $(printf '%s' "$1" | sed 's/\./\\./g')\$/\1/p" "$work/SHA256SUMS")
+	fetch "$dl/$1" "$2" "$3" || { [ -n "$manual" ] && done_ none network 1; done_ none network 0; }
+	[ "$(sha256sum "$2" | cut -d' ' -f1)" = "$want" ] || stop_ refused checksum 1
+}
+# unpack <archive> <empty dir>: members regular files and directories only, relative names of plain
+# characters without ".." (-P lists names as stored, a leading / kept); unpacked without owners.
+unpack() {
+	list=$(tar -tPzf "$1" 2>/dev/null) && types=$(tar -tvPzf "$1" 2>/dev/null | cut -c1) || stop_ refused archive 1
+	[ -n "$list" ] && [ "$(printf '%s\n' "$list" | wc -l)" = "$(printf '%s\n' "$types" | wc -l)" ] || stop_ refused archive 1
+	printf '%s\n' "$types" | grep -qv '^[-d]$' && stop_ refused archive 1
+	printf '%s\n' "$list" | grep -Evq '^(\./)?([A-Za-z0-9._-]+/)*[A-Za-z0-9._-]*$' && stop_ refused archive 1
+	printf '%s\n' "$list" | grep -Eq '(^|/)\.\.(/|$)' && stop_ refused archive 1
+	mkdir "$2" && tar -xzf "$1" -C "$2" --no-same-owner --no-same-permissions 2>/dev/null || stop_ refused archive 1
+	[ -z "$(find "$2" ! -type f ! -type d)" ] || stop_ refused archive 1
+}
+get "$archive" "$work/deploy.tar.gz" 10485760
+unpack "$work/deploy.tar.gz" "$work/a"
+[ -f "$work/a/deploy.sh" ] || stop_ refused archive 1
+# Bare metal: the program files come from the release tarball, checked the same way (BM-7).
+# Container paths never fetch it (AU-3).
+if [ "$bare" = yes ]; then
+	get "workout-explorer-$tag-linux-amd64.tar.gz" "$work/app.tar.gz" 209715200
+	unpack "$work/app.tar.gz" "$work/t"
+	[ -f "$work/t/workout-explorer" ] && [ -f "$work/t/web/index.html" ] || stop_ refused archive 1
+	export WX_DEPLOY_APP="$work/t"
+fi
 
 # 5. Apply: the verified archive's deploy.sh (AU-16); its lines come before ours.
 applying=yes
 WX_DEPLOY_FROM_UPDATE=1 DEPLOY_DIR=$dir sh "$work/a/deploy.sh" "$tag" </dev/null 9>&- # the lock stays with this process
 rc=$?
+[ "$rc" != 5 ] || stop_ failed root 5 # bare metal: root-only files differ, nothing changed (BM-5)
 [ "$rc" = 0 ] || stop_ failed deploy "$rc"
 rm -f "$state"
 done_ applied - 0

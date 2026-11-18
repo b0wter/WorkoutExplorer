@@ -1,7 +1,8 @@
-# Docker Compose: the nightly run of update.sh (F-52 AU-13). Installed once by root into
-# /etc/systemd/system, never changed by a release (DOCKER.md, "Automatic updates"). Runs as the
-# deploy user (owner of the deploy directory, docker group); root runs no code of ours. A user
-# other than "deploy" or another deploy directory: `systemctl edit` a drop-in.
+# Docker Compose and bare metal: the nightly run of update.sh (F-52 AU-13, F-60 BM-3). Installed
+# once by root into /etc/systemd/system, never changed by a release (DOCKER.md, "Automatic updates";
+# BAREMETAL.md section 6). Runs as the deploy user (Compose: owner of the deploy directory, docker
+# group; bare metal: owner of the program directory, restarts through the polkit rule); root runs no
+# code of ours. A user other than "deploy" or another deploy directory: `systemctl edit` a drop-in.
 [Unit]
 Description=Workout Explorer automatic update
 Wants=network-online.target
