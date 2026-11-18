@@ -1,7 +1,7 @@
 # F-60 Automatic updates for bare-metal installs: architecture
 
 - **Version:** 0.1 (18 Nov 2026)
-- **Status:** accepted. Critical lane. Built on the user decisions OQ-262, OQ-263 (15 Nov 2026) and those of 18 Nov 2026 (no Caddy updates; `workout-explorer-run` and drop-ins count as unit files; manual updates through `update.sh`; OQ-267 accepted). P-10 open (runbook only, does not block the build)
+- **Status:** accepted. Critical lane. Built on the user decisions OQ-262, OQ-263 (15 Nov 2026) and those of 18 Nov 2026 (no Caddy updates; `workout-explorer-run` and drop-ins count as unit files; manual updates through `update.sh`; OQ-267 accepted). P-10 decided 18 Nov 2026 as suggested, plus a full bare-metal removal in BAREMETAL.md (AC 35)
 - **Feature:** [`features/F-60-bare-metal-auto-update.md`](../features/F-60-bare-metal-auto-update.md); "AC n" is the n-th acceptance criterion there
 - **Requirements:** INF-8, INF-9, INF-4, INF-1, NFR Privacy, NFR Security
 - **Builds on:** [F-52](F-52-auto-update.md) AU-1 to AU-17 (all apply unless changed here), [F-59](F-59-container-image-and-install-paths.md) IP-8, IP-13 to IP-16, ADR-019, ADR-050, ADR-051, ADR-053, ADR-054. **Own:** [ADR-055](ADR-055-bare-metal-updater-rights-polkit-rule.md)
@@ -63,7 +63,7 @@ ADR-055 new. Notes: ADR-050 item 3, F-52 AU-17, F-59 IP-13 and IP-16, TD Hosting
 | T-2 | A failed oneshot's exit status stays readable after `systemctl start` returns (unit not collected) | BM-4 | Ask the architect; no `RemainAfterExit` (a second `start` would do nothing) |
 | T-3 | `caddy validate` as `deploy` with the unit's environment needs neither the data directory nor the admin socket | BM-6 (1) | Ask the architect; never a `systemd-run` right for the deploy user |
 
-## Open point for the user
+## Decided point (user, 18 Nov 2026; decision log of `features/README.md`)
 
 | # | Point | Suggestion |
 | --- | --- | --- |
