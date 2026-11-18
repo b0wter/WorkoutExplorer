@@ -46,12 +46,13 @@ minisign -V -P "$key" -m SHA256SUMS             # must print: Signature and comm
 grep -c "  workout-explorer-$v-" SHA256SUMS     # must print 2: both names carry the tag you chose
 sha256sum -c --ignore-missing SHA256SUMS        # the deploy archive: OK
 tar -xzf workout-explorer-$v-deploy.tar.gz
-grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$w"/systemd/workout-explorer.service || { echo "release too old for this guide: stop"; exit 1; }
+grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$w"/systemd/workout-explorer.service && {
 sudo install -m 0644 "$w"/systemd/*.service "$w"/systemd/*.slice "$w"/systemd/*.path /etc/systemd/system/
 sudo install -m 0755 "$w"/systemd/workout-explorer-run /usr/local/sbin/workout-explorer-run
 sudo install -m 0644 "$w"/systemd/50-workout-explorer.rules /etc/polkit-1/rules.d/50-workout-explorer.rules
 sudo install -m 0755 "$w"/update.sh /srv/workout-explorer/update.sh
 sudo chown -R deploy:deploy /srv/workout-explorer   # last: from now on root writes nothing there
+} || echo "release too old for this guide: stop"
 ```
 
 (Then the Caddy pin and `apt install caddy`, section 1.)
@@ -106,10 +107,10 @@ What it checks, its exit codes, the log line and the stopped state: RUNBOOK.md, 
 
 Then it replaces the binary, `web/` and `update.sh`, and the Caddyfile when it changed; restarts the app (and Caddy only for a new Caddyfile: a moment without pages); waits up to 60 s for `/api/health` to show the new version; and starts `workout-explorer-regenerate.service`, which rebuilds every stored workout and removes the web files no page needs. Its counts are in `journalctl -u workout-explorer-regenerate` (`deploy` cannot read the journal). After a failure, fix the cause and run the same command again.
 
-**When an update stops with exit 5** (`reason=root` in the log line and the stopped state): the release changes a file only root may install. Take the version from the [Releases page](https://github.com/b0wter/WorkoutExplorer/releases) (the newest release), never from `update.stopped`, the log line or the alert: `deploy` writes those, and a genuine but older release would bring back units that read `.env` from its directory. If that version is older than the running one (`curl -fsS http://127.0.0.1:8088/api/health`), stop. As root, download and check that release as in section 2 (a new `w=$(mktemp -d)`, all checks, `tar`, the layout check), install the files `update.sh` named, then run `update.sh` again, all in that one shell:
+**When an update stops with exit 5** (`reason=root` in the log line and the stopped state): the release changes a file only root may install. Choose the version yourself from the [Releases page](https://github.com/b0wter/WorkoutExplorer/releases) (normally the newest), never from `update.stopped`, the log line or the alert: `deploy` writes those, and a genuine but older release could bring back units that read `.env` from its directory. Optional prompt: if it is older than the running one (`curl -fsS http://127.0.0.1:8088/api/health`), stop unless you mean to roll back; the layout check is the guard. To roll back on purpose across a root-file change, choose the older release the same way; it must still pass the layout check (v0.9.1 and older do not). In your own login, download and check that release as in section 2 (a new `w=$(mktemp -d)`, all checks, `tar`, the layout check), install the files `update.sh` named, then run `update.sh` again, all in that one shell:
 
 ```sh
-grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$w"/systemd/workout-explorer.service || { echo "release too old for this guide: stop"; exit 1; }
+grep -qx 'EnvironmentFile=/etc/workout-explorer/.env' "$w"/systemd/workout-explorer.service && {
 sudo install -m 0644 "$w"/systemd/*.service "$w"/systemd/*.slice "$w"/systemd/*.path /etc/systemd/system/
 sudo install -m 0755 "$w"/systemd/workout-explorer-run /usr/local/sbin/workout-explorer-run
 sudo install -m 0644 "$w"/systemd/notify.conf /etc/systemd/system/workout-explorer.service.d/notify.conf   # only if you use notifications
@@ -117,6 +118,7 @@ sudo install -m 0644 "$w"/systemd/caddy.pref /etc/apt/preferences.d/workout-expl
 sudo systemctl daemon-reload
 sudo systemctl try-restart workout-explorer-caddy.service workout-explorer-caddy-upgrade.path   # their new definitions take effect (update.sh restarts the app)
 sudo -u deploy /srv/workout-explorer/update.sh $v         # applies the release and clears the stopped state
+} || echo "release too old for this guide: stop"
 ```
 
 A hand edit of our unit files stops every update the same way: put your changes in drop-ins (`sudo systemctl edit ...`) and install the release's file again.
@@ -197,7 +199,7 @@ This removes everything this guide installed. **Removing the data directory dele
    ```
 
    The package's own leftovers, if any: `sudo rm -rf /etc/caddy /var/lib/caddy`, `sudo userdel caddy` and `sudo groupdel caddy`.
-7. Packages section 1 installed that were not there before (`~/wx-new-packages.txt` from section 1), if nothing else on the host uses them: `sudo apt purge` some of `polkitd minisign sqlite3 gnupg debian-keyring apt-transport-https` (never `debian-archive-keyring`); apt lists what would go before it asks. Not sure: keep it.
+7. Packages section 1 installed that were not there before (`~/wx-new-packages.txt` from section 1; then `rm ~/wx-new-packages.txt`), if nothing else on the host uses them: `sudo apt purge` some of `polkitd minisign sqlite3 gnupg debian-keyring apt-transport-https` (never `debian-archive-keyring`); apt lists what would go before it asks. Not sure: keep it.
 8. The journal keeps our services' lines until its retention removes them (section 5). To drop them now: `sudo journalctl --rotate && sudo journalctl --vacuum-time=1s`, which empties the journal of the whole host.
 
 Check that nothing is left; each command must print nothing (or only "No such file or directory" / "not installed"):
@@ -209,5 +211,6 @@ ls -d /etc/systemd/system/*workout-explorer* /etc/systemd/system/*/*workout-expl
 getent passwd workout-explorer workout-explorer-caddy deploy; getent group workout-explorer workout-explorer-caddy deploy
 ls -d /etc/apt/sources.list.d/caddy* /usr/share/keyrings/caddy* /etc/caddy /var/lib/caddy; getent passwd caddy; getent group caddy  # unless your proxy is Caddy
 dpkg -l caddy polkitd minisign sqlite3 gnupg debian-keyring apt-transport-https 2>/dev/null | grep '^ii'  # only what you kept on purpose
+ls ~/wx-new-packages.txt
 sudo find / -xdev \( -nouser -o -nogroup \) -print   # files of a deleted user; repeat with /srv etc. for each other file system
 ```
