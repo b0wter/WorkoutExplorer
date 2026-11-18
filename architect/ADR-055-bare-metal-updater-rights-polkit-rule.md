@@ -1,9 +1,9 @@
 # ADR-055 Bare-metal updater rights: one polkit rule for three unit actions; root-only files never installed by the updater
 
-- **Status:** accepted (18 Nov 2026), with the F-60 design v0.1
+- **Status:** accepted (18 Nov 2026), with the F-60 design v0.1; consequences revised with v0.2 (18 Nov 2026)
 - **Date:** 18 Nov 2026
 - **Features:** F-60 (introduces it), F-59 (bare-metal program files change owner)
-- **Supersedes:** F-59 IP-13 "Program files root-owned" for the program directory (`.env` and `operator/` stay root's); F-52's "never calls sudo" stays true (no sudo either)
+- **Supersedes:** F-59 IP-13 "Program files root-owned" for the program directory (`.env` and `operator/` stay root's and move to `/etc/workout-explorer/`, F-60 v0.2 BM-2); F-52's "never calls sudo" stays true (no sudo either)
 - **Depends on:** [ADR-050](ADR-050-deploys-run-on-the-server-from-a-signed-release.md), [ADR-054](ADR-054-rootless-podman-deploy-files-owned-by-the-service-user.md) (same rule: root never runs a file the updater's user can write)
 - **Requirements:** INF-8 ("no more rights than a manual deploy needs"), INF-9, NFR Security; OQ-262, OQ-263, OQ-267
 
@@ -28,7 +28,7 @@ On bare metal the app and Caddy are system services. An update must replace prog
 - Needs the `polkitd` package (not on every minimal Debian 13 host); one more root daemon.
 - No `NoNewPrivileges` exception; the Compose and bare-metal timers share one unit file.
 - Every release that touches a unit, the run wrapper or the Caddy pin needs a root step on bare metal; releases should batch such changes and name them in the notes.
-- The deploy user is app-equivalent (it owns the binary the app unit runs), never root-equivalent.
+- The deploy user is app-equivalent (it owns the binary the app unit runs), never root-equivalent. This holds only while root (PID 1, polkit, `sudo` steps) never follows a path the deploy user can change (F-60 BM-10): the restarts this rule grants make PID 1 re-read `EnvironmentFile=`, so a root-read input inside the deploy-owned tree turns the grant into a read of any root-only file (QA-60-r1-1, fixed in F-60 v0.2).
 
 ## Reversibility
 
