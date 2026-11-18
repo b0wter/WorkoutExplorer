@@ -36,20 +36,20 @@ key=RW...                            # the line you pinned
 v=v1.4.0                             # the release you chose
 base=https://github.com/b0wter/WorkoutExplorer/releases/download/$v
 sudo install -d -o "$USER" -m 0755 /srv/workout-explorer /srv/workout-explorer/conf
-mkdir -p /tmp/wx-$v && cd /tmp/wx-$v
+w=$(mktemp -d) && cd "$w"           # a new folder only you can write; keep this shell open to the last cp
 curl -fLO $base/workout-explorer-$v-deploy.tar.gz -O $base/SHA256SUMS -O $base/SHA256SUMS.minisig
 minisign -V -P "$key" -m SHA256SUMS                 # must print: Signature and comment signature verified
 grep -c "  workout-explorer-$v-" SHA256SUMS         # must print 2: both names carry the tag you chose
 sha256sum -c --ignore-missing SHA256SUMS            # must print: ...deploy.tar.gz: OK
 mkdir d && tar -xzf workout-explorer-$v-deploy.tar.gz -C d
 cd /srv/workout-explorer
-cp /tmp/wx-$v/d/compose.yaml /tmp/wx-$v/d/compose.notify.yaml /tmp/wx-$v/d/example.env /tmp/wx-$v/d/*.example.txt .
-install -m 0755 /tmp/wx-$v/d/update.sh update.sh
-cp -r /tmp/wx-$v/d/updater .                        # the timer units (section 8); every update refreshes them
-cp /tmp/wx-$v/d/Caddyfile conf/Caddyfile
+cp "$w"/d/compose.yaml "$w"/d/compose.notify.yaml "$w"/d/example.env "$w"/d/*.example.txt .
+install -m 0755 "$w"/d/update.sh update.sh
+cp -r "$w"/d/updater .                              # the timer units (section 8); every update refreshes them
+cp "$w"/d/Caddyfile conf/Caddyfile
 ```
 
-If `minisign` says anything else, stop: the files are not the operator's. All following commands run in `/srv/workout-explorer` unless stated otherwise. The image tag `latest` exists for a quick `docker pull` look only; never put it into `compose.yaml` (a newer app with older deploy files can break pages).
+If `minisign` says anything else, stop: the files are not the operator's. In a new shell, download and check again (`$w` is gone with the shell). All following commands run in `/srv/workout-explorer` unless stated otherwise. The image tag `latest` exists for a quick `docker pull` look only; never put it into `compose.yaml` (a newer app with older deploy files can break pages).
 
 ## 3. Create the data directory
 
@@ -228,7 +228,7 @@ With automatic updates, remove the timer first (section 8, "Turn off").
 
 Installs from before the image (the operator's server, and "use a public release" of earlier runbooks) have `bin/`, `web/`, `bundles/` and `clean-assets.sh` in `/srv/workout-explorer` and `WX_WEB` in `.env`. The move changes program files only: the data directory stays in place with its owner, so every workout, draft, report, edit link, preview image and published page keeps its links and expiry. Pages and API are down for a minute. The Podman setup has its own steps (PODMAN.md section 9).
 
-1. Get the new release's deploy files to `/tmp/wx-$v/d` and check them (section 2, without copying yet); add `WX_UPDATE_PUBLIC_KEY` to `.env`.
+1. Get the new release's deploy files to `"$w"/d` and check them (section 2, without copying yet; keep that shell for step 4); add `WX_UPDATE_PUBLIC_KEY` to `.env`.
 2. Stop: `docker compose down` in `/srv/workout-explorer`.
 3. Copy the old web files into the data directory as the server's user, so pages published under the old release keep their scripts and styles until `regenerate` has rebuilt them:
    ```sh

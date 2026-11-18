@@ -13,6 +13,8 @@ Every release publishes our app image (`ghcr.io/b0wter/workout-explorer:vX.Y.Z`:
 | For | Anyone with Docker. **Pick this if unsure** | Hosts with Podman and systemd, no Docker daemon | Hosts without containers |
 | Runs | Our image and the official Caddy image | The same two images, as systemd user units (Quadlet) | The binary from the tarball and Caddy's apt package, as two systemd services |
 | Updates | `update.sh vX.Y.Z`, or automatically every night (DOCKER.md section 8) | The same (PODMAN.md section 9) | The same (BAREMETAL.md section 6) |
+| Program files, `update.sh`, state | `/srv/workout-explorer` | `/srv/workout-explorer` | `/srv/workout-explorer` (owned by `deploy`) |
+| Settings `.env`, operator file, Impressum | `/srv/workout-explorer/.env`, `/srv/workout-explorer/operator/` | The same | `/etc/workout-explorer/.env`, `/etc/workout-explorer/operator/` (root's, BAREMETAL.md section 2) |
 
 Also in DOCKER.md: building the image yourself from a clone, moving an existing tarball install to the image. The project operator's own deploy and releasing are at the end of this file.
 
@@ -29,7 +31,7 @@ browser --HTTPS--> your reverse proxy --HTTP--> 127.0.0.1:8088 (Caddy)
 
 ## The About page: operator file
 
-The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` reads the folder `/srv/workout-explorer/operator` read-only (`deploy.sh` never writes there). Create it once (`deploy.sh` also creates the empty folder on the operator server, so an upgrade does not stop `app`), then write the file:
+The About page has a fixed part (what the app does with data) and a part only you can write: who runs this site, how to reach you, your hosting, what your web server logs, backups, legal basis, complaints. It lives in a plain text file that is **public**: every visitor reads it. `app` reads the folder `/srv/workout-explorer/operator` (bare metal: `/etc/workout-explorer/operator`, BAREMETAL.md section 2; use that path below) read-only (`deploy.sh` never writes there). Create it once (`deploy.sh` also creates the empty folder on the operator server, so an upgrade does not stop `app`), then write the file:
 
 ```sh
 sudo install -d -o "$USER" -m 0755 /srv/workout-explorer/operator
@@ -75,10 +77,10 @@ Each path's guide says where `.env` lives and how to create it. Edit `.env`. Uns
 | `WORKOUT_EXPLORER_IMPRESSUM_FILE` | unset (no Impressum) | Absolute path of your Impressum text, see "Impressum (optional)" above. Set but missing or invalid stops the server at start |
 | `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section) | `https://` link to your iPhone upload Shortcut, shown on the About page, "iPhone upload Shortcut". Anything that is not an absolute `https://` link stops the server at start |
 | `COMPOSE_FILE` | unset | With notifications: `compose.yaml:compose.notify.yaml` (DOCKER.md section 5). Self-builders: DOCKER.md section 9 |
-| `WX_UPDATE_PUBLIC_KEY` | none, **required by `update.sh`** | The release signing key you pinned ("Updates", step 1). Docker Compose and rootless Podman: every release is installed by `update.sh`, which refuses to run without it. Read by `update.sh` only; no deploy ever writes it |
+| `WX_UPDATE_PUBLIC_KEY` | none, **required by `update.sh`** | The release signing key you pinned ("Updates", step 1). Every release is installed by `update.sh`, which refuses to run without it. Read by `update.sh` only; no deploy ever writes it |
 | `WORKOUT_EXPLORER_AUTO_UPDATE` | unset (off) | `on`: the nightly timer installs every newer signed release ("Updates"). Anything else stops the server at start (exit code 2) and `update.sh` refuses to run. When on, the About page says that this server downloads updates from GitHub |
 
-`WX_*` and `COMPOSE_FILE` are read by Docker Compose only (the other paths ignore them), except `WX_UPDATE_PUBLIC_KEY`, which `update.sh` reads on both container paths. `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`. There is no setting for the images: the release's `compose.yaml` fixes ours by digest and Caddy's by minor version.
+`WX_*` and `COMPOSE_FILE` are read by Docker Compose only (the other paths ignore them), except `WX_UPDATE_PUBLIC_KEY`, which `update.sh` reads on every path. `WORKOUT_EXPLORER_TRUSTED_PROXY` (singular) is set by `compose.yaml` itself. Do not put it in `.env`. There is no setting for the images: the release's `compose.yaml` fixes ours by digest and Caddy's by minor version.
 
 With notifications on, the file holds two secrets. Keep it mode `0600` and never commit it.
 

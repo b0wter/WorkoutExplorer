@@ -9,8 +9,8 @@ Type=exec
 User=workout-explorer
 Group=workout-explorer
 Slice=workout-explorer.slice
-# Root-owned 0600; systemd reads it, Caddy's unit never does.
-EnvironmentFile=/srv/workout-explorer/.env
+# root:deploy 0640 in root's /etc/workout-explorer (F-60 BM-2, BM-10); systemd reads it, Caddy's unit never does.
+EnvironmentFile=/etc/workout-explorer/.env
 ExecStart=/srv/workout-explorer/bin/workout-explorer serve -addr 127.0.0.1:8080 -data /srv/workouts -web /srv/workout-explorer/web
 Restart=always
 RestartSec=2s

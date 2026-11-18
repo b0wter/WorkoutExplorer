@@ -181,9 +181,15 @@ printf '%s\n' "$*" >>"$WX_TEST_SYSTEMCTL"
 case "$*" in
 "show -p Environment workout-explorer-caddy.service")
 	echo "Environment=WX_DATA=/srv/workouts WX_API=127.0.0.1:8080 WX_SITE=http://:$WX_TEST_HPORT WX_BIND=127.0.0.1 \"WX_TRUSTED_PROXIES=127.0.0.1 ::1\" WX_ADMIN=unix//run/workout-explorer-caddy/admin.sock HOME=/run/workout-explorer-caddy" ;;
-"show -p ExecMainCode -p ExecMainStatus workout-explorer-regenerate.service")
-	printf 'ExecMainCode=%s\nExecMainStatus=%s\n' "${WX_TEST_REGEN_CODE:-1}" "${WX_TEST_REGEN_STATUS:-0}" ;;
-"--no-ask-password start workout-explorer-regenerate.service") exit "${WX_TEST_REGEN:-0}" ;;
+"show -p InvocationID workout-explorer-regenerate.service")
+	echo "InvocationID=$(cat "$WX_TEST_SYSTEMCTL.inv" 2>/dev/null)" ;;
+"show -p InvocationID -p ExecMainCode -p ExecMainStatus workout-explorer-regenerate.service")
+	printf 'InvocationID=%s\nExecMainCode=%s\nExecMainStatus=%s\n' "$(cat "$WX_TEST_SYSTEMCTL.inv" 2>/dev/null)" "${WX_TEST_REGEN_CODE:-1}" "${WX_TEST_REGEN_STATUS:-0}" ;;
+"--no-ask-password start workout-explorer-regenerate.service") # "refused": polkit says no, the unit does not run
+	[ "${WX_TEST_REGEN:-0}" != refused ] || exit 1
+	printf x >>"$WX_TEST_SYSTEMCTL.inv" # a new invocation ID
+	exit "${WX_TEST_REGEN:-0}" ;;
+"is-active -q workout-explorer-caddy.service") exit "${WX_TEST_CADDY_ACTIVE:-0}" ;;
 esac
 exit 0
 """
@@ -232,11 +238,12 @@ class Test(unittest.TestCase):
         os.makedirs(self.home)
         open(os.path.join(self.srv, "compose.yaml"), "w").close() # the Compose path
         self.env = {"WORKOUT_EXPLORER_AUTO_UPDATE": "on", "WX_UPDATE_PUBLIC_KEY": self.key, "WX_LISTEN": "127.0.0.1:%d" % self.host.hport}
+        self.envfile = os.path.join(self.srv, ".env")
         self.write_env()
         self.host.health_version = "v1.4.0"
 
     def write_env(self):
-        with open(os.path.join(self.srv, ".env"), "w") as f:
+        with open(self.envfile, "w") as f:
             f.write("# test\nWORKOUT_EXPLORER_BASE_URL=https://workouts.example.org\n")
             for k, v in self.env.items():
                 f.write("%s=%s\n" % (k, v))
@@ -834,6 +841,10 @@ class Test(unittest.TestCase):
             f.write(FAKE_SYSTEMCTL)
         os.chmod(os.path.join(self.bare_fakes, "systemctl"), 0o755)
         self.systemctl_log = os.path.join(self.d, "systemctl")
+        # Root's .env lives outside the program directory (BM-2).
+        os.makedirs(os.path.join(r, "etc/workout-explorer"))
+        self.envfile = os.path.join(r, "etc/workout-explorer/.env")
+        os.rename(os.path.join(self.srv, ".env"), self.envfile)
         for n, b in (("bin/workout-explorer", b"old-bin"), ("web/index.html", b"old"), ("web/assets/old.js", b"old"),
                      ("conf/Caddyfile", open(os.path.join(repo, "Caddyfile"), "rb").read())):
             os.makedirs(os.path.dirname(os.path.join(self.srv, n)), exist_ok=True)
@@ -919,6 +930,7 @@ class Test(unittest.TestCase):
             "unit edited": lambda: open(units("workout-explorer.slice"), "a").write("# hand edit\n"),
             "new unit missing": lambda: os.remove(units("workout-explorer-regenerate.service")),
             "run wrapper": lambda: open(os.path.join(self.root, "usr/local/sbin/workout-explorer-run"), "a").write("#\n"),
+            "path unit edited": lambda: open(units("workout-explorer-caddy-upgrade.path"), "a").write("# hand edit\n"),
             "apt pin": lambda: open(os.path.join(self.root, "etc/apt/preferences.d/workout-explorer-caddy.pref"), "a").write("#\n"),
             "notify drop-in": lambda: (os.makedirs(units("workout-explorer.service.d")), open(units("workout-explorer.service.d/notify.conf"), "w").write("[Service]\n")),
         }
@@ -979,8 +991,10 @@ class Test(unittest.TestCase):
     def test_bare_metal_regenerate_exit_mapping(self):
         # The fixed unit's status read back: 0 done, 4 clean-up failed, anything else (or killed) unfinished.
         # (start's exit, ExecMainCode, ExecMainStatus, expected): code 1 = exited, 2 = killed; a refused start leaves 0 0.
+        # "refused": polkit refused the start, so an older run's 1 4 still shows (QA-60-r1-3).
         for start, code, main, rc in (("0", "1", "0", 0), ("1", "1", "4", 4), ("1", "1", "1", 3), ("1", "1", "2", 3),
-                                      ("1", "2", "4", 3), ("1", "0", "0", 3), ("1", "1", "0", 3)):
+                                      ("1", "2", "4", 3), ("1", "0", "0", 3), ("1", "1", "0", 3), ("refused", "1", "4", 3),
+                                      ("refused", "0", "0", 3)):
             with self.subTest(start=start, code=code, status=main):
                 self.setUp()
                 self.bare_layout()
@@ -991,6 +1005,84 @@ class Test(unittest.TestCase):
                     self.expect(args=("v1.5.0",), action="applied", reason="-", env=env)
                 else:
                     self.expect(args=("v1.5.0",), action="failed", reason="deploy", rc=rc, env=env)
+
+    def test_bare_metal_restores_web_old_after_a_killed_swap(self):
+        # A run killed between the two renames left web.old and no web/; the next run restores it
+        # first, so a failed staging still leaves the old web files in place (BM-6 step 2).
+        self.bare_layout()
+        os.rename(os.path.join(self.srv, "web"), os.path.join(self.srv, "web.old"))
+        self.bare_release("v1.5.0")
+        os.chmod(os.path.join(self.srv, "bin"), 0o555) # staging the binary fails
+        try:
+            _, _, err = self.expect(args=("v1.5.0",), action="failed", reason="deploy", rc=1, env=self.bare_env())
+        finally:
+            os.chmod(os.path.join(self.srv, "bin"), 0o755)
+        self.assertIn("staging the new files failed", err)
+        self.assertEqual(self.program_files()["web/index.html"], b"old")
+        self.assertFalse(os.path.exists(os.path.join(self.srv, "web.old")))
+        self.assertEqual(self.changing_calls(), [])
+
+    def test_bare_metal_starts_inactive_caddy(self):
+        # Fresh install (BM-11): Caddy is not running yet, so it is started even with an unchanged Caddyfile.
+        self.bare_layout()
+        self.bare_release("v1.5.0")
+        self.host.health_version = "v1.5.0"
+        self.expect(args=("v1.5.0",), action="applied", reason="-", env=self.bare_env(WX_TEST_CADDY_ACTIVE="3"))
+        self.assertEqual(self.changing_calls(), ["--no-ask-password restart workout-explorer.service",
+                                                 "--no-ask-password restart workout-explorer-caddy.service",
+                                                 "--no-ask-password start workout-explorer-regenerate.service"])
+
+    def test_bare_metal_validate_leaves_keys_the_unit_does_not_set_unset(self):
+        # QA-60-r1-6: Caddy treats set-but-empty differently from unset ({$K:default}).
+        self.bare_layout()
+        new = open(os.path.join(HERE, "..", "Caddyfile"), "rb").read() + b"# {$WX_NOT_IN_UNIT:x}\n"
+        self.bare_release("v1.5.0", caddyfile=new)
+        self.host.health_version = "v1.5.0"
+        self.expect(args=("v1.5.0",), action="applied", reason="-", env=self.bare_env())
+        v = open(self.caddy_log).read()
+        self.assertNotIn("WX_NOT_IN_UNIT", v)
+        self.assertIn("WX_BIND=127.0.0.1\n", v)
+
+    def test_bare_metal_env_or_operator_in_program_directory_is_a_config_error(self):
+        # BM-2: root's files live in /etc/workout-explorer; a copy left in the deploy user's
+        # directory (even a symlink) stops every run before any request (QA-60-r1-1).
+        for name, make in (("env", lambda p: open(os.path.join(p, ".env"), "w").close()),
+                           ("env symlink", lambda p: os.symlink("/nonexistent", os.path.join(p, ".env"))),
+                           ("operator", lambda p: os.mkdir(os.path.join(p, "operator")))):
+            with self.subTest(case=name):
+                self.setUp()
+                self.bare_layout()
+                self.bare_release("v1.5.0")
+                self.host.latest = "v1.5.0"
+                make(self.srv)
+                before = self.program_files()
+                for args in ((), ("v1.5.0",)):
+                    _, _, err = self.expect(args=args, action="none", reason="config", rc=2, env=self.bare_env())
+                    self.assertIn("/etc/workout-explorer", err)
+                self.assertEqual(self.host.requests, [])
+                self.assertEqual(self.program_files(), before)
+                self.assertIsNone(self.state())
+        # The settings are read from /etc/workout-explorer/.env only (here: the switch is off there).
+        self.setUp()
+        self.bare_layout()
+        self.env.pop("WORKOUT_EXPLORER_AUTO_UPDATE")
+        self.write_env()
+        self.expect(action="none", reason="off", env=self.bare_env())
+
+    def test_bare_metal_units_read_root_files_from_etc(self):
+        # BM-2, BM-10: every EnvironmentFile= PID 1 opens is root's, under /etc; none in the program directory.
+        repo = os.path.join(HERE, "..")
+        for n in ("workout-explorer.service", "workout-explorer-regenerate.service", "workout-explorer-run"):
+            with self.subTest(file=n):
+                text = open(os.path.join(repo, "systemd", n)).read()
+                self.assertIn("EnvironmentFile=/etc/workout-explorer/.env", text)
+                self.assertNotIn("/srv/workout-explorer/.env", text)
+                self.assertNotIn("/srv/workout-explorer/operator", text)
+        for n in sorted(os.listdir(os.path.join(repo, "systemd"))):
+            text = open(os.path.join(repo, "systemd", n)).read()
+            for line in text.splitlines():
+                if "EnvironmentFile=" in line or "LoadCredential" in line:
+                    self.assertNotIn("/srv/", line, "%s: %s" % (n, line))
 
     def test_path_detection_needs_exactly_one_marker(self):
         self.bare_layout()

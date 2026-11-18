@@ -64,7 +64,7 @@ Pin the release signing key as in RUNBOOK.md, "Updates", step 1 (compare GitHub 
 key=RW...                                       # the line you pinned
 v=v1.4.0
 base=https://github.com/b0wter/WorkoutExplorer/releases/download/$v
-mkdir -p /tmp/wx-$v && cd /tmp/wx-$v
+w=$(mktemp -d) && chmod 0755 "$w" && cd "$w"    # a new folder only you can write (workouts may read it); keep this shell open
 curl -fLO $base/workout-explorer-$v-deploy.tar.gz -O $base/SHA256SUMS -O $base/SHA256SUMS.minisig
 minisign -V -P "$key" -m SHA256SUMS             # must print: Signature and comment signature verified
 grep -c "  workout-explorer-$v-" SHA256SUMS     # must print 2: both names carry the tag you chose
@@ -85,7 +85,7 @@ sudo chown root:workouts /srv/workout-explorer/.env && sudo chmod 0640 /srv/work
 ## 4. Install and start
 
 ```sh
-sudo -u workouts sh /tmp/wx-$v/d/podman/workout-explorer-ctl install /tmp/wx-$v/d   # pulls both images, validates the Caddyfile, installs units, Caddyfile and itself
+sudo -u workouts sh "$w"/d/podman/workout-explorer-ctl install "$w"/d   # pulls both images, validates the Caddyfile, installs units, Caddyfile and itself; $w: section 3's shell, else download and check again
 wx start
 curl -s http://127.0.0.1:8080/api/health        # {"status":"ok","version":"v1.4.0"}
 ```

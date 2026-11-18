@@ -20,7 +20,7 @@ io=--pipe
 [ -t 0 ] && [ -t 1 ] && io=--pty # delete asks Delete? [y/N]
 exec systemd-run --quiet --wait --collect "$io" --service-type=exec \
 	-p User=workout-explorer -p Group=workout-explorer -p Slice=workout-explorer.slice \
-	-p EnvironmentFile=/srv/workout-explorer/.env \
+	-p EnvironmentFile=/etc/workout-explorer/.env \
 	-p NoNewPrivileges=yes -p CapabilityBoundingSet= -p ProtectSystem=strict -p ReadWritePaths=/srv/workouts \
 	-p ProtectHome=yes -p PrivateTmp=yes -p PrivateDevices=yes -p RestrictAddressFamilies="AF_INET AF_INET6 AF_UNIX" \
 	-p IPAddressDeny=any -p IPAddressAllow=localhost \

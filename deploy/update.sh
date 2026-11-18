@@ -7,7 +7,8 @@
 #                       latest release if it is newer than the running one
 #   update.sh vX.Y.Z    manual deploy of that tag, whatever the switch, the stopped state or the
 #                       running version; exit 0 clears the stopped state
-# It verifies the release's SHA256SUMS with minisign against WX_UPDATE_PUBLIC_KEY (.env) before
+# It verifies the release's SHA256SUMS with minisign against WX_UPDATE_PUBLIC_KEY (.env; bare
+# metal: /etc/workout-explorer/.env) before
 # anything is unpacked or run, then runs the verified deploy archive's deploy.sh under one lock.
 # Last line of every run (AU-14):
 #   update: running=<v|-> latest=<v|-> action=<none|applied|refused|failed> reason=<class> exit=<n>
@@ -36,7 +37,7 @@ done_() {
 	exit "$3"
 }
 # envval <key>: the last value of <key> in .env, read as data (never sourced, AU-12).
-envval() { sed -n "s/^$1=//p" "$dir/.env" | tail -n 1; }
+envval() { sed -n "s/^$1=//p" "$envf" | tail -n 1; }
 
 case $# in
 0) ;;
@@ -53,20 +54,22 @@ esac
 for t in curl tar sha256sum flock minisign sed grep; do
 	command -v "$t" >/dev/null 2>&1 || { say "$t is not installed"; done_ none config 2; }
 done
-[ -r "$dir/.env" ] || { say "$dir/.env is missing or unreadable"; done_ none config 2; }
-switch=$(envval WORKOUT_EXPLORER_AUTO_UPDATE)
-case $switch in "" | on) ;; *) say "WORKOUT_EXPLORER_AUTO_UPDATE must be unset or on"; done_ none config 2 ;; esac
-key=$(envval WX_UPDATE_PUBLIC_KEY)
-printf '%s' "$key" | grep -Eqx 'RW[A-Za-z0-9+/]{54}' || { say "WX_UPDATE_PUBLIC_KEY is missing or not a minisign public key"; done_ none config 2; }
-# The install path (AU-16, BM-1): exactly one of Compose, our Podman app unit and our bare-metal app unit.
+# The install path (AU-16, BM-1), before the first .env read: exactly one of Compose, our Podman
+# app unit and our bare-metal app unit. Bare metal keeps root's .env and operator/ in
+# /etc/workout-explorer, outside the deploy user's directory (BM-2, BM-10).
 compose=no podman=no bare=no
 [ ! -e "$dir/compose.yaml" ] || compose=yes
 [ ! -e "$HOME/.config/containers/systemd/workout-explorer-app.container" ] || podman=yes
 [ ! -e "${WX_HOST_ROOT:-}/etc/systemd/system/workout-explorer.service" ] || bare=yes
+envf=$dir/.env
 case $compose$podman$bare in
-yesnono) l=$(envval WX_LISTEN); health=http://${l:-127.0.0.1:8088}/api/health ;;
+yesnono) ;;
 noyesno) health=http://127.0.0.1:8080/api/health ;; # the Caddy unit's PublishPort
 nonoyes)
+	envf=${WX_HOST_ROOT:-}/etc/workout-explorer/.env
+	for f in .env operator; do
+		[ ! -e "$dir/$f" ] && [ ! -L "$dir/$f" ] || { say "$dir/$f must not be in the program directory; move it to /etc/workout-explorer (BAREMETAL.md section 7)"; done_ none config 2; }
+	done
 	command -v systemctl >/dev/null 2>&1 || { say "systemctl is not installed"; done_ none config 2; }
 	# Caddy's address from its unit's effective environment, so a drop-in that moves it is followed (BM-1).
 	cenv=$(systemctl show -p Environment workout-explorer-caddy.service 2>/dev/null)
@@ -79,6 +82,12 @@ nonoyes)
 	;;
 *) say "found $(printf '%s' "$compose$podman$bare" | grep -o yes | wc -l | tr -d ' ') of $dir/compose.yaml, our Podman app unit and /etc/systemd/system/workout-explorer.service; need exactly one"; done_ none config 2 ;;
 esac
+[ -r "$envf" ] || { say "$envf is missing or unreadable"; done_ none config 2; }
+switch=$(envval WORKOUT_EXPLORER_AUTO_UPDATE)
+case $switch in "" | on) ;; *) say "WORKOUT_EXPLORER_AUTO_UPDATE must be unset or on"; done_ none config 2 ;; esac
+key=$(envval WX_UPDATE_PUBLIC_KEY)
+printf '%s' "$key" | grep -Eqx 'RW[A-Za-z0-9+/]{54}' || { say "WX_UPDATE_PUBLIC_KEY is missing or not a minisign public key"; done_ none config 2; }
+[ "$compose" = no ] || { l=$(envval WX_LISTEN); health=http://${l:-127.0.0.1:8088}/api/health; }
 [ -n "$manual" ] || [ "$switch" = on ] || done_ none off 0
 
 # 2. One deploy at a time (AU-10): the kernel drops the lock when this process ends.

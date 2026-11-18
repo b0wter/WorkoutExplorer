@@ -41,8 +41,9 @@ esac
 # No check of the data directory here: it is 0750 and owned by the containers' user, so the deploy
 # user cannot see into it (QA-52-r1-1). A missing site/ fails visibly when Caddy starts (bind mounts
 # are never created).
-d=$(envval WX_DATA) # Compose only; Podman's units fix the data directory
-! grep -q "^WX_WEB=" .env || { echo "deploy: .env still sets WX_WEB: the host is on the old tarball layout; migrate it first (DOCKER.md section 12)" >&2; exit 1; }
+# Containers only: bare metal keeps root's .env in /etc/workout-explorer (BM-2), never read here.
+[ "$path" = bare ] || d=$(envval WX_DATA) # Compose only; Podman's units fix the data directory
+[ "$path" = bare ] || ! grep -q "^WX_WEB=" .env || { echo "deploy: .env still sets WX_WEB: the host is on the old tarball layout; migrate it first (DOCKER.md section 12)" >&2; exit 1; }
 
 # put <file> <deploy dir relative path> <mode>: temporary name, then rename (AU-15: a running
 # update.sh keeps reading its old copy).
@@ -79,7 +80,10 @@ if [ "$path" = bare ]; then
 	h=$a/.caddy-home
 	mkdir -p "$h"
 	set -- PATH=/usr/bin:/bin HOME="$h" XDG_CONFIG_HOME="$h" XDG_DATA_HOME="$h"
-	for k in $(grep -o '{\$WX_[A-Z_]*' "$a/Caddyfile" | sed 's/^{\$//' | sort -u); do set -- "$@" "$k=$(unitenv "$k")"; done
+	# A key the unit does not set stays unset (Caddy treats set-but-empty differently, QA-60-r1-6).
+	for k in $(grep -o '{\$WX_[A-Z_]*' "$a/Caddyfile" | sed 's/^{\$//' | sort -u); do
+		case " ${cenv#Environment=}" in *" $k="* | *" \"$k="*) set -- "$@" "$k=$(unitenv "$k")" ;; esac
+	done
 	env -i "$@" "$r/usr/bin/caddy" validate --config "$a/Caddyfile" --adapter caddyfile >/dev/null 2>&1 ||
 		{ echo "deploy: the installed Caddy rejects the release's Caddyfile; nothing changed" >&2; exit 1; }
 
@@ -182,11 +186,14 @@ fi
 echo "deploy: regenerating workouts"
 if [ "$path" = bare ]; then
 	# A fixed oneshot unit as the app user (BM-4, OQ-267); its report goes to that unit's journal,
-	# which this user cannot read. A failed oneshot keeps its exit status until the next start (T-2).
+	# which this user cannot read. A failed oneshot keeps its exit status until the next start (T-2);
+	# an unchanged invocation ID means this start never ran it, so an older run's status is not ours.
+	inv=$(systemctl show -p InvocationID workout-explorer-regenerate.service 2>/dev/null || true)
 	if systemctl --no-ask-password start workout-explorer-regenerate.service; then rc=0; else
-		st=$(systemctl show -p ExecMainCode -p ExecMainStatus workout-explorer-regenerate.service 2>/dev/null || true)
+		st=$(systemctl show -p InvocationID -p ExecMainCode -p ExecMainStatus workout-explorer-regenerate.service 2>/dev/null || true)
 		case $st in *ExecMainCode=1*) rc=$(printf '%s\n' "$st" | sed -n 's/^ExecMainStatus=//p') ;; *) rc=1 ;; esac
-		[ "$rc" != 0 ] || rc=1 # start refused or the unit never ran
+		[ "$rc" != 0 ] || rc=1 # the unit never ran
+		[ "$(printf '%s\n' "$st" | grep '^InvocationID=')" != "$inv" ] || rc=1 # start refused: not this run
 	fi
 	report="see: sudo journalctl -u workout-explorer-regenerate -n 20"
 elif [ "$path" = podman ]; then
