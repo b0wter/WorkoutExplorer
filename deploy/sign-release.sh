@@ -14,7 +14,6 @@
 # verifies the signature with deploy/minisign.pub, uploads SHA256SUMS.minisig, and publishes the
 # release as latest (which moves the image's `latest` through CI's latest workflow).
 set -eu
-umask 022 # the rebuilt archive's modes must not depend on the operator's umask (CI: 022)
 tag=${1:?usage: deploy/sign-release.sh vX.Y.Z [secret key]}
 key=${2:-$HOME/.minisign/workout-explorer.key}
 printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "sign: '$tag' is not a vX.Y.Z tag" >&2; exit 1; }
@@ -32,7 +31,9 @@ if [ -n "$cur" ]; then
 fi
 
 tmp=$(mktemp -d)
-trap 'git -C "$top" worktree remove --force "$tmp/wt" >/dev/null 2>&1; rm -rf "$tmp"' EXIT
+# No failing command may end the clean-up (set -e); signals exit so that dash runs the EXIT trap too.
+trap '[ ! -d "$tmp/wt" ] || git -C "$top" worktree remove --force "$tmp/wt" >/dev/null 2>&1 || true; rm -rf "$tmp"' EXIT
+trap 'exit 129' HUP; trap 'exit 130' INT; trap 'exit 143' TERM
 gh release download "$tag" --dir "$tmp/r" --pattern '*'
 rm -f "$tmp/r/SHA256SUMS.minisig" # a draft from an interrupted run; signed again below
 cd "$tmp/r"
@@ -59,7 +60,7 @@ mkdir "$tmp/x" "$tmp/y"
 	{ echo "sign: the deploy archive differs from the one $tag builds (members, types, modes or bytes)" >&2; exit 1; }
 # (d)
 [ "$(tar -xOzf "$tarball" COMMIT)" = "$sha" ] || { echo "sign: the tarball was built from another commit than $tag ($sha)" >&2; exit 1; }
-echo "sign: $tag, image $ref: compare the digest with the release job's log before you enter the password"
+echo "sign: $tag, image $ref: compare the digest with the ci job's make deploy-archive line before you enter the password"
 
 minisign -S -s "$key" -m SHA256SUMS
 minisign -V -q -p "$pub" -m SHA256SUMS || { echo "sign: the signature does not verify with deploy/minisign.pub (wrong key?)" >&2; exit 1; }

@@ -139,6 +139,7 @@ image:
 	mkdir -p $(BUILD_DIR) && docker save -o $(IMAGE_ARCHIVE) $(IMAGE_TAG) && docker rmi $(IMAGE_TAG) >/dev/null
 
 # The deploy files of a release (IP-5) with APP_IMAGE written in; CI calls it with the tested digest.
+# Modes are normalised so that CI's archive and sign-release.sh's rebuild match under any umask.
 deploy-archive:
 	rm -rf $(BUILD_DIR)/deploy && mkdir -p $(BUILD_DIR)/deploy
 	cp deploy/compose.yaml deploy/compose.notify.yaml deploy/Caddyfile deploy/deploy.sh deploy/update.sh deploy/example.env \
@@ -148,7 +149,7 @@ deploy-archive:
 	cd $(BUILD_DIR)/deploy && sed -i 's|ghcr\.io/[a-z0-9._-]*/workout-explorer:unreleased|$(APP_IMAGE)|' compose.yaml podman/workout-explorer-app.container && \
 		[ "$$(grep -c 'image: $(APP_IMAGE)$$' compose.yaml)" = 1 ] && [ "$$(grep -c '^Image=$(APP_IMAGE)$$' podman/workout-explorer-app.container)" = 1 ] && \
 		! grep -q ':unreleased' compose.yaml podman/workout-explorer-app.container || { echo "deploy-archive: our image is not written exactly once into compose.yaml and the Podman app unit"; exit 1; }
-	tar -C $(BUILD_DIR)/deploy --sort=name --owner=0 --group=0 --numeric-owner -czf $(DEPLOY_ARCHIVE) .
+	tar -C $(BUILD_DIR)/deploy --sort=name --owner=0 --group=0 --numeric-owner --mode='u=rwX,go=rX' -czf $(DEPLOY_ARCHIVE) .
 
 # Fails, not skips, without Docker (OQ-90). Publishes nothing.
 docker-check: image deploy-archive

@@ -370,7 +370,8 @@ The deploy files are checked against your source; **the image and the tarball's 
 
 - the tag: `git log` and the diff since the previous release are what you mean to ship;
 - the CI run for the tag (Actions): green, started by your tag push, with `.github/workflows/` as you know it (no workflow change you did not make);
-- the digest: the `release` job's log shows the digest it pushed; it must equal the one `sign-release.sh` printed, and the package page shows no image version you did not expect.
+- the digest: the `ci` job's log shows it in the echoed `make deploy-archive APP_IMAGE=...` line (the `release` job pushes that digest and stops if the registry reports another); it must equal the one `sign-release.sh` printed. Both values come from the same CI run, so this only catches an inconsistent run, not a malicious CI (P-9);
+- the package page (from outside the CI run): no image version you did not expect.
 
 Anything unexpected: do not sign (Ctrl-C at the password prompt), delete the draft, find the cause, and ship the next version.
 
