@@ -1,7 +1,7 @@
 # F-52 Optional automatic updates for hosters: architecture
 
 - **Version:** 0.3 (16 Nov 2026; AU-5 signing checks after QA-52-r1-2; old rows in [history](history/F-52-auto-update.md))
-- **Status:** accepted. Critical lane. OQ-210 to OQ-217 and P-1 to P-6 decided by the user (decision log of `features/README.md`, 14 to 16 Nov 2026); open product points at the end
+- **Status:** accepted. Critical lane. OQ-210 to OQ-217 and P-1 to P-9 decided by the user (decision log of `features/README.md`, 14 to 18 Nov 2026)
 - **Feature:** [`features/F-52-auto-update.md`](../features/F-52-auto-update.md); "AC n" is the n-th acceptance criterion there
 - **Requirements:** INF-8, INF-4, INF-1, INF-9, NFR Privacy, NFR Security, UP-7, AC-4; TD Hosting and operations (Deploys), Configuration, Security and privacy
 - **Builds on:** [F-59](F-59-container-image-and-install-paths.md) IP-4, IP-5, IP-7, IP-10, IP-11; [F-31](F-31-server-deploy-and-monitoring.md) DP-10, DP-18; [F-30](F-30-regenerate-command.md); [F-29](F-29-about-page-and-attributions.md) PT-9a; ADR-019, ADR-034, ADR-039, [ADR-052](ADR-052-release-image-built-once-pushed-by-the-release-job.md). **Own:** [ADR-050](ADR-050-deploys-run-on-the-server-from-a-signed-release.md), [ADR-051](ADR-051-updater-as-host-script-verified-by-minisign.md), [ADR-054](ADR-054-rootless-podman-deploy-files-owned-by-the-service-user.md) (new)
@@ -75,9 +75,9 @@ One path for every deploy on both container paths (ADR-050). The installed, alre
 
 Beyond the AC, on Compose **and** rootless Podman: a tamper matrix on a scratch release host or local file server (each AU-7 step failing once, each AU-8 non-failure case once); the Compose units installed as on a real host, writes outside the deploy directory failing; on Podman no process of the update path runs as root (`ps` during a run) and no root-owned file is written; a Caddy image that fails the guard leaves the running stack and the local tag as before; `ps` with Pushover set shows no secret; a manual and a scheduled run started together; the `latest` job moves the tag only on publication and only upwards; the private key and signing absent from CI logs and history.
 
-## Open points (for the user)
-Decided by the user on 16 Nov 2026 as suggested (decision log of `features/README.md`).
-See the report of 16 Nov 2026; recorded in the decision log once answered. Built as suggested unless the user objects.
+## Decided points
+
+P-7, P-8 decided by the user on 16 Nov 2026, P-9 on 18 Nov 2026, all as suggested (decision log of `features/README.md`).
 
 | # | Point | Suggestion |
 | --- | --- | --- |
