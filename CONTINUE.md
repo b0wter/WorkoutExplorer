@@ -1,12 +1,12 @@
-# Continue here (state of 16 Nov 2026)
+# Continue here (state of 18 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (16 Nov 2026): F-59 and F-52 built, not released; next: F-52 QA r2 minors, then v0.9.0
+## Current (18 Nov 2026): F-59 and F-52 built, not released; next: v0.9.0
 
 - **F-59** container image and install paths (INF-9; ADR-052, ADR-053, ADR-034 rev. 5): app image on ghcr.io (CI release job), Caddy from the official image by minor tag (patches float, no capability, start guard on every pull route), web assets served from `{data}/site/assets`, docs split into `deploy/RUNBOOK.md` (shared), `DOCKER.md`, `PODMAN.md`, `BAREMETAL.md`. QA r1 ready with conditions, minors fixed. Waiting on real-host checks (Waiting on column).
-- **F-52** automatic updates (INF-8; ADR-050, ADR-051, ADR-054; design v0.3): `update.sh` (manual `update.sh vX.Y.Z` and nightly timer, Compose and rootless Podman), `sign-release.sh` (checks the draft against the local tag, signs, publishes), CI makes draft releases, `latest.yml` moves `latest` on publication. QA r2 ready with conditions (`qa/F-52-auto-update-r2.md`).
-- **Next:** (1) fix F-52 QA-52-r2-1 to r2-4 in the small lane (backend; r2-3 = `tar --mode` in `deploy-archive`, else the first signing may refuse every draft). (2) Ask the user P-9 (signature vouches for deploy files; image and tarball binary trusted from CI; suggestion accept), still open. (3) First release v0.9.0 (check Caddy minor/major first, CLAUDE.md Releases): tag, CI, `deploy/sign-release.sh v0.9.0` on the user's machine, then migrate the VPS (`DOCKER.md` section on moving a tarball install) and run the F-59/F-52 real-host checks. Every deploy is now `ssh deploy@host /srv/workout-explorer/update.sh vX.Y.Z` (no more `deploy.sh <tag> <host>`).
+- **F-52** automatic updates (INF-8; ADR-050, ADR-051, ADR-054; design v0.3): `update.sh` (manual `update.sh vX.Y.Z` and nightly timer, Compose and rootless Podman), `sign-release.sh` (checks the draft against the local tag, signs, publishes), CI makes draft releases, `latest.yml` moves `latest` on publication. QA r2 ready with conditions (`qa/F-52-auto-update-r2.md`), minors fixed (3d3295a); P-9 accepted 18 Nov.
+- **Next:** first release v0.9.0. Caddy checked 18 Nov (2.11.9 newest, no new minor or major). The user pushes `main`, tags `v0.9.0` and pushes the tag; CI makes the draft and pushes the image; the user runs `deploy/sign-release.sh v0.9.0` (first real check that CI's deploy archive matches the local rebuild); then migrate the VPS (`DOCKER.md` section on moving a tarball install) and run the F-59/F-52 real-host checks. Every deploy is now `ssh deploy@host /srv/workout-explorer/update.sh vX.Y.Z` (no more `deploy.sh <tag> <host>`).
 - Release signing key: created by the user 16 Nov; public key in `deploy/minisign.pub` and DNS TXT `_wx-release-key.workouts.plugman.de` (checked). The secret key stays on the user's machine.
 - After F-52: F-60 bare-metal auto-update (decided, AC to write), then F-53, F-58, F-54, F-57, F-55, F-56.
 - v0.8.0 (15 Nov): F-47 to F-51 and more; data file format version 6.
