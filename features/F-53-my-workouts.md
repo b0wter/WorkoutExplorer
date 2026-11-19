@@ -1,10 +1,10 @@
 # F-53 My workouts on this device
 
-- **Status:** draft; OQ-218 to OQ-222 decided 14 Nov 2026
+- **Status:** draft; OQ-218 to OQ-222 decided 14 Nov 2026; acceptance criteria written 19 Nov 2026; OQ-278, OQ-279 open
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
 - **Lane:** critical (stores edit links, which are secrets, in the browser)
-- **Requirements:** AC-7 (new), UP-1, UP-5, SH-2, AC-1, AC-4, AC-6, UP-7, INF-1, NFR Privacy (no data outlives its workout; no cookie)
+- **Requirements:** AC-7 (new), UP-1, UP-5, UP-11, SH-2, AC-1, AC-4, AC-6, UP-7, INF-1, INF-5, NFR Privacy (no data outlives its workout; no cookie)
 - **Depends on:** F-20 (published page), F-29 (About page)
 
 ## Goal
@@ -12,7 +12,7 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 
 ## Scope
 - After every successful upload, the browser keeps an entry for the workout in its own storage (`localStorage`, no cookie, never sent to the server): title, sport, start date, status (draft or published), expiry and edit link; the viewing link is added once it is published (OQ-218, OQ-219).
-- A dedicated **My workouts** page, linked from the upload page, lists this browser's entries in a table, newest upload first (OQ-220). Proposed columns:
+- A dedicated **My workouts** page, linked from the upload page, lists this browser's entries in a table, newest upload first (OQ-220). Columns:
   - **Workout:** title, or the suggested or default title when empty (UP-5).
   - **Sport.**
   - **Date:** the workout's start date.
@@ -25,17 +25,42 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 - A one-line note on the page and on the published page: "Edit links are saved in this browser. Anyone using this browser can open them." (OQ-218)
 - Broken or unavailable storage: the page says the list is not available in this browser; no error.
 - About page (INF-1): the "In your browser" paragraph names the list and its edit links.
-- The server stores nothing new and gets no new endpoint. Texts in the four languages of F-54 if F-54 is built first; otherwise F-54 translates them.
+- The server stores nothing new and gets no new endpoint. Texts in English; F-54 (built last) translates them.
 
 ## Out of scope
-- Syncing between browsers or devices; export or import of the list.
+- Syncing between browsers or devices; export or import of the list. Deleting a workout from the list (that stays on its edit page). Copy buttons on the list.
+
+## Assumptions
+- One entry per workout (by its public ID); a later update replaces it.
+- No limit on the number of entries; expiry (at most 30 days) keeps the list short.
+- An empty list shows "No workouts uploaded from this browser yet."; the upload page's link is always shown.
+- Edit and View open in the same tab.
+- Without JavaScript the page says that it needs JavaScript.
+- Only the upload, edit, published and My workouts pages read or write the list; the viewing page never touches it.
 
 ## Acceptance criteria
-To be written from the scope.
+- [ ] After a successful upload from the upload page (FIT or zip, UP-11), the browser holds one entry with title, sport, start date, status Draft, expiry and edit link; no cookie is set, and no request to the server carries any of it (checked in the browser's network view).
+- [ ] The upload page links to My workouts; the page lists the entries newest upload first with the columns of Scope; an empty list shows the empty-list line.
+- [ ] Expires shows a relative time; for a draft, the earlier of 48 hours after upload and the chosen lifetime (UP-7).
+- [ ] Publishing on the edit page sets the entry to Published and adds the viewing link; every successful save updates title, status and expiry; deleting the workout removes its entry.
+- [ ] Opening My workouts removes entries past their expiry and makes no request to the server.
+- [ ] An edit page that answers not found (expired, deleted by the operator, INF-3, or unknown) removes the entry for that workout.
+- [ ] Workouts whose edit page is opened without the upload page (iOS Shortcut, INF-5; a pasted edit link) follow OQ-278.
+- [ ] Forget removes one entry and Clear list all, as decided in OQ-279; afterwards the workouts still open on their viewing and edit links.
+- [ ] The note "Edit links are saved in this browser. Anyone using this browser can open them." is on My workouts and on the published page (AC-6).
+- [ ] With browser storage unavailable, blocked, full or holding an unreadable value, My workouts says the list is not available in this browser; upload, edit and publish still work, without an error.
+- [ ] A title with markup or control characters (hostile-text sample) is shown as plain text.
+- [ ] Test: the viewing page's code neither reads nor writes the list, so no edit link is in reach of a viewing page.
+- [ ] The About page's "In your browser" paragraph names the list and its edit links (INF-1).
+- [ ] The server is unchanged: no new endpoint, table, column or log line.
 
 ## Decisions (user, 14 Nov 2026)
 - **OQ-218:** edit links are kept in the browser, with the note and the Forget and Clear list controls.
 - **OQ-219:** changed: every uploaded workout is listed, drafts included.
-- **OQ-220:** changed: a dedicated My workouts page with a table, linked from the upload page; columns as proposed above.
+- **OQ-220:** changed: a dedicated My workouts page with a table, linked from the upload page; columns as in Scope.
 - **OQ-221:** no server request for the list; stored expiry, and not-found on the edit page.
 - **OQ-222:** title, status and expiry updated on save and publish.
+
+## Open questions
+- [ ] **OQ-278 Workouts not uploaded from the upload page.** Uploads through the iOS Shortcut (INF-5) open the edit page directly, and workouts uploaded before F-53 have no entry. Suggested: the edit page adds an entry whenever it opens with a valid token and none exists, so these are listed too (also an edit link opened on someone else's browser; the note covers it). Alternative: only uploads from the upload page. Affects AC-7, the edit page.
+- [ ] **OQ-279 Confirmation.** Losing the only copy of an edit link cannot be undone (AC-1). Suggested: Clear list asks once ("Remove all workouts from this list? They stay online, but without their edit links you cannot change or delete them."); Forget removes at once. Affects the My workouts page.
