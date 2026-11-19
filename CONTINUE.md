@@ -2,11 +2,11 @@
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
-## Current (18 Nov 2026): v0.9.1 released and installed (F-59, F-52); F-60 built (QA r3 ready with conditions), not released
+## Current (19 Nov 2026): v0.10.0 drafted (user signs); F-58 and F-55 built, QA ready with conditions (browser checks); next: F-57
 
 - **F-59** container image and install paths (INF-9; ADR-052, ADR-053, ADR-034 rev. 5): app image on ghcr.io (CI release job), Caddy from the official image by minor tag (patches float, no capability, start guard on every pull route), web assets served from `{data}/site/assets`, docs split into `deploy/RUNBOOK.md` (shared), `DOCKER.md`, `PODMAN.md`, `BAREMETAL.md`. QA r1 ready with conditions, minors fixed. Waiting on real-host checks (Waiting on column).
 - **F-52** automatic updates (INF-8; ADR-050, ADR-051, ADR-054; design v0.3): `update.sh` (manual `update.sh vX.Y.Z` and nightly timer, Compose and rootless Podman), `sign-release.sh` (checks the draft against the local tag, signs, publishes), CI makes draft releases, `latest.yml` moves `latest` on publication. QA r2 ready with conditions (`qa/F-52-auto-update-r2.md`), minors fixed (3d3295a); P-9 accepted 18 Nov.
-- **Next:** v0.9.1 signed, published and installed on the user's VPS (rootless Podman) 18 Nov; automatic updates on there. F-60 bare-metal updater built (design v0.2, ADR-055 polkit rule; root's files in `/etc/workout-explorer/`; QA r3 ready with conditions: real Debian 13 host run). Unreleased on main: F-60, the comparison-chart elevation overlay as gain (AP-23), mktemp work folders in all guides. Next release: Caddy check first (CLAUDE.md Releases). Then (user, 19 Nov) F-58, F-55, F-57, F-56, F-53, F-54.
+- **Next:** v0.10.0 is a CI draft (F-60, elevation-gain overlay); the user runs `deploy/sign-release.sh v0.10.0`. Since then on main, unreleased: F-58 (summary dialog) and F-55 (hiding sliders, schema v9, irreversible migration). Both wait on the user's browser checks (Waiting on); F-55 also on a local migration + regenerate run before release. All product questions up to F-54 are decided (OQ-268 to OQ-281, 19 Nov). Build order: F-57 (design next), F-56, F-53, F-54, each architect → engineer(s) → QA without asking the user unless a P-point matters.
 - Release signing key: created by the user 16 Nov; public key in `deploy/minisign.pub` and DNS TXT `_wx-release-key.workouts.plugman.de` (checked). The secret key stays on the user's machine.
 - After F-52: F-60 bare-metal auto-update (decided, AC to write), then F-53, F-58, F-54, F-57, F-55, F-56.
 - v0.8.0 (15 Nov): F-47 to F-51 and more; data file format version 6.
