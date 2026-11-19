@@ -1,6 +1,6 @@
 # F-58 How the summary is computed
 
-- **Status:** decided (14 Nov 2026); build after F-53, before F-54
+- **Status:** decided (14 Nov 2026); first after F-60 (build order of 19 Nov 2026), before F-54
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
 - **Lane:** critical (privacy): the viewing page now shows this workout's state, and a careless example could reveal how much is hidden, e.g. by comparing the visible route length with the total distance. Keep QA at effort high for that check only.
@@ -51,4 +51,4 @@ A viewer who wonders why a number differs from their watch, or from a selected r
 - **OQ-257:** no button without JavaScript.
 - **OQ-258:** anchored over the summary strip on wide screens; the normal centred dialog on phones.
 - **OQ-259:** lazy, about 3 KB gzip extra at most; the entry bundle gains only the button (under 200 bytes).
-- **OQ-260:** built after F-53 and before F-54, so its texts are translated once.
+- **OQ-260:** built before F-54, so its texts are translated once (after F-53 until the build order of 19 Nov 2026 put F-58 first).
