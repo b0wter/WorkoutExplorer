@@ -425,3 +425,30 @@ func TestTrimKeepsTrimmedLengthsOut(t *testing.T) {
 		t.Errorf("owner summary %s\npublic %s", v.Trimmed.Summary, pub)
 	}
 }
+
+// TestPageViewModelTrim (F-58 SE-2, QA-58-r1-4): the page's data-trim is the
+// ends actually trimmed, from real trimmed rows.
+func TestPageViewModelTrim(t *testing.T) {
+	for _, c := range []struct {
+		name       string
+		start, end bool
+		want       string
+	}{{"none", false, false, ""}, {"start", true, false, "start"}, {"end", false, true, "end"}, {"both", true, true, "both"}} {
+		t.Run(c.name, func(t *testing.T) {
+			w := trimTrack(false)
+			d := draft()
+			if c.start {
+				d.TrimStartAt = instant(w, 100)
+			}
+			if c.end {
+				d.TrimEndAt = instant(w, 700)
+			}
+			fx := newFixtureWith(t, []byte("trk"), fakeParser{"trk": w})
+			fx.change(t, d, published(d))
+			_, page := fx.complete(t)
+			if want := `data-trim="` + c.want + `"`; !bytes.Contains(page, []byte(want)) {
+				t.Errorf("page lacks %s", want)
+			}
+		})
+	}
+}
