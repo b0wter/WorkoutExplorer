@@ -1,6 +1,6 @@
 # F-53 My workouts on this device
 
-- **Status:** draft; OQ-218 to OQ-222 decided 14 Nov 2026; acceptance criteria written 19 Nov 2026; OQ-278, OQ-279 open
+- **Status:** draft; OQ-218 to OQ-222 decided 14 Nov 2026; acceptance criteria written 19 Nov 2026; OQ-278, OQ-279 decided 19 Nov 2026
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
 - **Lane:** critical (stores edit links, which are secrets, in the browser)
@@ -45,8 +45,8 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 - [ ] Publishing on the edit page sets the entry to Published and adds the viewing link; every successful save updates title, status and expiry; deleting the workout removes its entry.
 - [ ] Opening My workouts removes entries past their expiry and makes no request to the server.
 - [ ] An edit page that answers not found (expired, deleted by the operator, INF-3, or unknown) removes the entry for that workout.
-- [ ] Workouts whose edit page is opened without the upload page (iOS Shortcut, INF-5; a pasted edit link) follow OQ-278.
-- [ ] Forget removes one entry and Clear list all, as decided in OQ-279; afterwards the workouts still open on their viewing and edit links.
+- [ ] Whenever the edit page opens with a valid edit link and the list has no entry for it (iOS Shortcut, INF-5; a pasted edit link; a workout uploaded before F-53; someone else's edit link), it adds one (OQ-278).
+- [ ] Forget removes one entry at once; Clear list asks once, "Remove all workouts from this list? They stay online, but without their edit links you cannot change or delete them.", and removes all entries only on confirm (OQ-279); afterwards the workouts still open on their viewing and edit links.
 - [ ] The note "Edit links are saved in this browser. Anyone using this browser can open them." is on My workouts and on the published page (AC-6).
 - [ ] With browser storage unavailable, blocked, full or holding an unreadable value, My workouts says the list is not available in this browser; upload, edit and publish still work, without an error.
 - [ ] A title with markup or control characters (hostile-text sample) is shown as plain text.
@@ -61,6 +61,6 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 - **OQ-221:** no server request for the list; stored expiry, and not-found on the edit page.
 - **OQ-222:** title, status and expiry updated on save and publish.
 
-## Open questions
-- [ ] **OQ-278 Workouts not uploaded from the upload page.** Uploads through the iOS Shortcut (INF-5) open the edit page directly, and workouts uploaded before F-53 have no entry. Suggested: the edit page adds an entry whenever it opens with a valid token and none exists, so these are listed too (also an edit link opened on someone else's browser; the note covers it). Alternative: only uploads from the upload page. Affects AC-7, the edit page.
-- [ ] **OQ-279 Confirmation.** Losing the only copy of an edit link cannot be undone (AC-1). Suggested: Clear list asks once ("Remove all workouts from this list? They stay online, but without their edit links you cannot change or delete them."); Forget removes at once. Affects the My workouts page.
+## Decisions (user, 19 Nov 2026)
+- **OQ-278:** the edit page adds an entry whenever it opens with a valid edit link and none exists.
+- **OQ-279:** Clear list asks once; Forget removes at once.

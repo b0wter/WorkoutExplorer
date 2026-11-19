@@ -1,6 +1,6 @@
 # F-55 Selectable radius for start and end hiding (two sliders)
 
-- **Status:** decided (14 Nov 2026); acceptance criteria written 19 Nov 2026; OQ-268 open
+- **Status:** decided (14 Nov 2026); acceptance criteria written 19 Nov 2026; OQ-268 decided 19 Nov 2026
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** both (backend first)
 - **Lane:** critical (location privacy)
@@ -13,7 +13,7 @@ A sharer chooses how much of the start and of the end of the route is hidden, se
 ## Scope
 - On the edit page, before and after publishing, two sliders replace the single start and end hiding toggle: **Start** and **End**, each 0 to 2,000 m in 50 m steps (0, 50, 100, 150, … 2,000 m). 0 means that end is not hidden, so only the start or only the end can be hidden.
 - Default 0 for both, so nothing is hidden unless the sharer chooses it (as today's default off).
-- While dragging, the value is shown ("Start: hide 500 m", "Start: not hidden" at 0), and the edit page's shading of the hidden sections follows live, before saving.
+- While dragging, the value is shown in the units setting (DS-1; OQ-268): "Start: hide 500 m", with imperial units "Start: hide 0.31 mi", "Start: not hidden" at 0; and the edit page's shading of the hidden sections follows live, before saving.
 - The SH-4 rule is unchanged except for the radius: the start section runs until the route first gets more than the start radius (straight line) from the first position; the end section likewise from the last position with the end radius. After a trim it applies to the trimmed route.
 - Everything that follows hiding today follows the chosen radii: public data file, static page, preview image and its map context, suggested title (first visible point), range links, lap and leg markers, fully hidden route text (AP-3). Built later on the same rule: GPX route download (F-57), pins (PIN-7, F-56).
 - The two radii are stored with the workout's settings for its lifetime and deleted with it (UP-7, AC-4).
@@ -29,7 +29,7 @@ A sharer chooses how much of the start and of the end of the route is hidden, se
 
 ## Acceptance criteria
 - [ ] The edit page, on a draft and on a published workout, has two sliders, Start and End, in place of the toggle; each moves from 0 to 2,000 m in 50 m steps and no other value. A new upload starts at 0 for both; nothing about them is kept in browser storage (OQ-248).
-- [ ] While a slider is dragged, its label shows the value ("Start: hide 500 m", "Start: not hidden" at 0; unit per OQ-268), and the shaded start or end section on the map and charts follows at once, before saving. The public page does not change until Save (OQ-249).
+- [ ] While a slider is dragged, its label shows the value ("Start: hide 500 m", "Start: not hidden" at 0). With imperial units the label and the edit-page dialog's radius text (F-58) show feet below 0.1 mi, rounded to 10 ft, and miles with two decimals from 0.1 mi up (50 m "160 ft", 150 m "490 ft", 500 m "0.31 mi", 2,000 m "1.24 mi"); the steps, the stored value and the owner API stay metric (OQ-268), and the shaded start or end section on the map and charts follows at once, before saving. The public page does not change until Save (OQ-249).
 - [ ] The owner API refuses a radius below 0, above 2,000 m or not a multiple of 50 with the edit page's ordinary error, and stores nothing.
 - [ ] Test, for start and end radii of 0, 50, 300 and 2,000 m in every combination: the hidden sections follow the SH-4 rule with each end's own radius; with start 0 and end 500 m, only the end is hidden. No position from a hidden section appears in any file under `public/{public_id}/` (data file, metadata JSON, `index.html`, preview image), extending F-16's privacy test.
 - [ ] With a trim set, both sections are measured from the first and last remaining positions (F-47).
@@ -47,6 +47,4 @@ A sharer chooses how much of the start and of the end of the route is hidden, se
 - **OQ-246 (14 Nov 2026):** raising either radius on a published workout (including from 0) is a hides-more change (SH-10, removed within 60 s); lowering one is an ordinary change.
 - **OQ-248 (14 Nov 2026):** not remembered; every upload starts at 0 for both ends; nothing is stored in the browser.
 - **OQ-249 (14 Nov 2026):** the shading follows the sliders at once, before saving; the public page changes only after Save.
-
-## Open questions
-- [ ] **OQ-268 Radius on imperial pages.** The steps are metric. Suggested: the label always shows metres ("Start: hide 1,500 m"), also with imperial units, as split presets stay metric (AP-20). Affects the slider labels and the F-58 edit-page example.
+- **OQ-268 (19 Nov 2026):** changed: with imperial units the start and end values are shown in imperial units too. Assumed (main session; user may change): the stored value and the 50 m steps stay metric (0 to 2,000 m); only the slider labels and the edit-page dialog's radius text are converted, in feet below 0.1 mi (rounded to 10 ft) and in miles with two decimals from 0.1 mi up. F-58 hand-off: F-58's edit-page radius text already follows the units setting.

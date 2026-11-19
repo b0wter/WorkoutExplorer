@@ -1,6 +1,6 @@
 # F-56 Map pins
 
-- **Status:** draft; OQ-234 to OQ-240 decided 14 Nov 2026; acceptance criteria written 19 Nov 2026; OQ-272 to OQ-277 open
+- **Status:** draft; OQ-234 to OQ-240 decided 14 Nov 2026; acceptance criteria written 19 Nov 2026; OQ-272 to OQ-277 decided 19 Nov 2026
 - **Category:** Planned (backlog scheme of 14 Nov 2026; requirement priorities kept, within this feature)
 - **Owner:** both (backend first)
 - **Lane:** normal (critical only for the hidden-section check, PIN-7)
@@ -30,16 +30,16 @@ The owner marks dangers, points of interest and difficult sections on the route;
 - Without JavaScript there are no pins.
 
 ## Acceptance criteria
-- [ ] On the edit page, the owner places a point pin by tapping the map or a chart (as decided in OQ-272); it lands on the nearest point of the visible route (OQ-234); type (six, PIN-2), title (OQ-277) and optional note are set in its form; saved as decided in OQ-274.
-- [ ] The owner creates a section pin (OQ-273); both ends lie on the visible route; it is highlighted on the map and shaded on the charts.
+- [ ] On the edit page, the owner chooses "Add pin", and the next tap on the map or a chart places a point pin and opens its form; Cancel or Esc leaves without a pin; without "Add pin" a tap only moves the cursor (AP-6, OQ-272); it lands on the nearest point of the visible route (OQ-234); type (six, PIN-2), title and optional note are set in its form; an empty title is allowed and the pin then shows its type's name, e.g. "Danger" (OQ-277). Pin changes show on the edit page at once and on the public page only after the edit page's Save (OQ-274).
+- [ ] With a range selected (AP-7), the pin form offers "Section"; while editing a section pin, selecting a new range moves its ends (OQ-273); both ends lie on the visible route; it is highlighted on the map and shaded on the charts.
 - [ ] A point pin inside a hidden start or end, or a section that touches one, is refused with a one-line message on the edit page, at each end's own radius (PIN-7, OQ-235). The server refuses it too; a test sends such a pin to the owner API directly.
 - [ ] After raising a radius or changing the trim, pins now inside a hidden or trimmed part are removed and the edit page shows a one-line notice (OQ-236, OQ-237); no public file ever contains them.
-- [ ] On the viewing page, pins show on the map, as markers on the charts' x axis and in the list (OQ-276); selecting a pin in one view selects it in all and moves the cursor there.
+- [ ] On the viewing page, pins show on the map, as markers on the charts' x axis and in the list: one column: directly under the map; two columns: in the right column under the charts, above the range panel and laps; each row: type icon, title, distance from start in the units setting (a section: from–to), the note when the row is selected; no list without pins (OQ-276); selecting a pin in one view selects it in all and moves the cursor there.
 - [ ] The legend shows or hides each type in every view; every visit starts with all types shown (OQ-239).
 - [ ] In the fullscreen map, pins and the legend stay visible, and tapping a pin opens its card over the map (AP-15).
 - [ ] After publishing, editing, moving and deleting a pin shows on the public page without re-uploading (PIN-8); a removed or moved pin's old place is no longer served after 60 s (SH-10).
 - [ ] At most 50 pins per workout: the 51st cannot be added; title (60) and note (500) limits and text rules are enforced on the server as well (OQ-238). A hostile title or note is shown as plain text.
-- [ ] Workouts without a visible route follow OQ-275.
+- [ ] A workout without a visible route (indoor, pool, entirely hidden or trimmed away) has no pins and no "Add pin" button (OQ-275).
 - [ ] The preview image shows no pins (OQ-240).
 - [ ] Test: after delete or expiry, nothing of the pins remains (database rows and public pins file; UP-7, AC-4).
 - [ ] A workout without pins loads no pin code, icons or pins file for viewers; the entry bundle stays within budget and LCP is unchanged; with 50 pins on the synthetic 12-hour ride, cursor scrubbing keeps 60 fps.
@@ -55,10 +55,11 @@ OQ-234 to OQ-240 accepted as suggested. Privacy zones were discarded on 14 Nov 2
 - **OQ-239:** the legend choice is not remembered; all types shown on every visit.
 - **OQ-240:** no pins in the preview image (SH-5, SH-12).
 
-## Open questions
-- [ ] **OQ-272 Placing a pin.** A tap on the map or a chart moves the cursor today (AP-6). Suggested: an "Add pin" button on the edit page; the next tap on the map or a chart places the pin and opens its form; Cancel or Esc leaves without a pin. Affects the edit page.
-- [ ] **OQ-273 Section pins.** Suggested: made from a selected range (AP-7): with a range selected, the pin form offers "Section"; its ends are moved by selecting a new range while editing it. Affects PIN-4, the edit page.
-- [ ] **OQ-274 Saving.** Suggested: pin changes are saved with the edit page's Save, like every other setting; the edit page shows them at once, the public page after Save. Alternative: each pin saved on its own at once. Affects PIN-8, the owner API.
-- [ ] **OQ-275 Workouts without a visible route** (indoor, pool, entirely hidden or trimmed away). Suggested: no pins; the Add pin button is hidden, as every pin sits on a visible route point. Affects PIN-1, PIN-5.
-- [ ] **OQ-276 Pin list: place and rows.** The left column of the two-column layout holds only the map (AP-17). Suggested: one column: directly under the map; two columns: in the right column under the charts, above the range panel and laps; each row: type icon, title, distance from start in the units setting (a section: from–to); the note shows when the row is selected; no list without pins. Affects PIN-5, AP-17, the module order.
-- [ ] **OQ-277 Empty title.** Suggested: allowed; the pin then shows its type's name ("Danger"). Alternative: title required. Affects PIN-3.
+## Decisions (user, 19 Nov 2026)
+OQ-272 to OQ-277 accepted as suggested.
+- **OQ-272:** an "Add pin" button; the next tap on the map or a chart places the pin and opens its form; Cancel or Esc leaves without a pin.
+- **OQ-273:** section pins are made from a selected range; a new range moves their ends while editing.
+- **OQ-274:** pin changes are saved with the edit page's Save; the public page changes after Save.
+- **OQ-275:** no pins without a visible route; the Add pin button is hidden.
+- **OQ-276:** list under the map (one column) or in the right column under the charts, above the range panel and laps (two columns); rows: type icon, title, distance from start (a section: from–to); note on selection; no list without pins.
+- **OQ-277:** an empty title is allowed; the pin shows its type's name.
