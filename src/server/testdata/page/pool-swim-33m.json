@@ -85,6 +85,7 @@
       "Max": "32"
     }
   ],
+  "Trim": "",
   "Device": "Recorded with corpusgen",
   "Route": {
     "Map": "",

@@ -428,6 +428,7 @@ func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
 	s := page.Settings{
 		Title: r.Title, Description: r.Description, ExpiresAt: r.ExpiresAt,
 		PublicID: r.PublicID, DataFile: name, RouteHidden: routeHidden, BaseURL: a.d.BaseURL,
+		Trim: page.TrimOf(r.TrimStartAt != nil, r.TrimEndAt != nil),
 	}
 	// The town comes from the public file only, after the transform (F-45
 	// ST-4); the page uses it only while the title is empty. Never logged.

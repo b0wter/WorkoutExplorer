@@ -75,6 +75,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
       ExpiresText: expiryEstimate(settings.expiresAt, offset),
     },
     Summary: summaryItems(meta.sport, meta.summary),
+    Trim: settings.trim ?? '',
     Device: deviceLine(meta.device),
     Route: {
       Map: presence === 'route' ? 'yes' : '',

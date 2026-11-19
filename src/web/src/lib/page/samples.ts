@@ -17,6 +17,8 @@ export interface SampleSpec {
   readonly routeHidden?: boolean;
   /** F-45: the server's suggested title. */
   readonly suggestedTitle?: string;
+  /** F-58: the trim string. */
+  readonly trim?: string;
   /** Derives a file the corpus has no instance of (a workout without heart rate). */
   readonly transform?: (data: WorkoutData) => WorkoutData;
 }
@@ -89,6 +91,7 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'indoor-unknown-zone', golden: 'indoor-no-distance-no-gps', title: '', description: '' },
   { name: 'route-hidden', golden: 'indoor-no-gps', title: '', description: '', routeHidden: true },
   { name: 'ride-suggested', golden: 'ride-30min', title: '', description: '', suggestedTitle: 'Morning ride near Köln' },
+  { name: 'ride-trimmed', golden: 'ride-30min', title: '', description: '', trim: 'both' },
   { name: 'triathlon', golden: 'triathlon', title: '', description: '' },
   { name: 'triathlon-lap-crossing', golden: 'triathlon', title: '', description: '', transform: lapCrossing },
   { name: 'triathlon-leg-without-laps', golden: 'triathlon', title: '', description: '', transform: legWithoutLaps },
@@ -128,6 +131,7 @@ export function buildSample(spec: SampleSpec): PageViewModel & { readonly Card: 
     dataFile: `data.${fileHash(golden.bin)}.bin`,
     routeHidden: spec.routeHidden,
     suggestedTitle: spec.suggestedTitle,
+    trim: spec.trim,
   });
   return { ...vm, Card: SAMPLE_CARD };
 }

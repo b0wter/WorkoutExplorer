@@ -43,6 +43,7 @@
       "Max": "153"
     }
   ],
+  "Trim": "",
   "Device": "Sensors: heart-rate monitor",
   "Route": {
     "Map": "",

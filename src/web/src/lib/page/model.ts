@@ -55,6 +55,8 @@ export interface PageViewModel {
   readonly Header: HeaderGroup;
   /** AP-2 order; metrics the workout lacks are absent. */
   readonly Summary: readonly SummaryItem[];
+  /** F-58 SE-2: '', 'start', 'end' or 'both'; the ⓘ button's data attribute. */
+  readonly Trim: string;
   /** F-43 DI-7: 'Recorded with {name} · {sensors}', 'Recorded with {name}', 'Sensors: {sensors}' or ''
    *  (no line). Plain text. */
   readonly Device: string;
@@ -87,4 +89,6 @@ export interface PageSettings {
   readonly routeHidden?: boolean;
   /** F-45 ST-7: the server's UP-5 suggestion, shown while the title is empty; '' or absent = none. */
   readonly suggestedTitle?: string;
+  /** F-58 SE-2: '', 'start', 'end' or 'both'; absent = ''. */
+  readonly trim?: string;
 }

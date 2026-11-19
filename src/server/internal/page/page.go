@@ -20,6 +20,7 @@ type ViewModel struct {
 	Page        Group
 	Header      Header
 	Summary     []SummaryItem
+	Trim        string // F-58 SE-2: "", "start", "end" or "both"; the ⓘ button's data attribute
 	Device      string // F-43 DI-7: the device line, "" = none
 	Route       Route
 	ChartsClass string
@@ -74,6 +75,22 @@ type Settings struct {
 	// Suggested is the UP-5 title shown while Title is empty ("" = none:
 	// sport and date); worked out by the caller from the public file (F-45 ST-5).
 	Suggested string
+	// Trim is F-58 SE-2: TrimOf of the row; independent of hiding.
+	Trim string
+}
+
+// TrimOf is the F-58 SE-2 string from whether each end is trimmed (the row's
+// trim_start_at / trim_end_at non-null, F-47 TR-3).
+func TrimOf(start, end bool) string {
+	switch {
+	case start && end:
+		return "both"
+	case start:
+		return "start"
+	case end:
+		return "end"
+	}
+	return ""
 }
 
 // totals is a set of metadata totals as numbers; absent keys are missing.
@@ -149,6 +166,7 @@ func Build(f datafile.File, s Settings) ViewModel {
 			ExpiresText: "Expires around " + formatDate(expires, offset),
 		},
 		Summary:     summaryItems(m.Sport, totalsOf(numbersOf(m.Summary)), m.Summary.Stroke),
+		Trim:        s.Trim,
 		Device:      deviceLine(m.Device),
 		Route:       route,
 		ChartsClass: chartsClass(f),

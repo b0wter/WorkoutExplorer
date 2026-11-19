@@ -25,6 +25,7 @@ type sampleSpec struct {
 	transform                        func(*datafile.File)
 	routeHidden                      bool   // F-16
 	suggested                        string // F-45
+	trim                             string // F-58 SE-2
 }
 
 // withoutHeartRate mirrors samples.ts withoutHeartRate: the stream and every
@@ -73,30 +74,31 @@ func withoutLengths(f *datafile.File) { f.Meta.Summary.Lengths = "" }
 func hostileDevice(f *datafile.File) { f.Meta.Device.Name = `<i>Dev</i> &amp; "x"` }
 
 var samples = []sampleSpec{
-	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false, ""},
-	{"ride-12h", "ride-12h", "", "", nil, false, ""},
-	{"run-30min", "run-30min", "", "", nil, false, ""},
-	{"ride-no-hr", "ride-30min", "", "", withoutHeartRate, false, ""},
-	{"indoor-ride", "indoor-no-gps", "Trainer", "", nil, false, ""},
-	{"indoor-unknown-zone", "indoor-no-distance-no-gps", "", "", nil, false, ""},
-	{"route-hidden", "indoor-no-gps", "", "", nil, true, ""},
-	{"ride-suggested", "ride-30min", "", "", nil, false, "Morning ride near Köln"},
-	{"triathlon", "triathlon", "", "", nil, false, ""},
-	{"triathlon-lap-crossing", "triathlon", "", "", lapCrossing, false, ""},
-	{"triathlon-leg-without-laps", "triathlon", "", "", legWithoutLaps, false, ""},
-	{"triathlon-triggers", "triathlon", "", "", withTriggers, false, ""},
-	{"triathlon-cut", "triathlon-cut-90", "", "", nil, false, ""},
-	{"two-rides", "chained-ride-ride", "", "", nil, false, ""},
-	{"pool-swim", "pool-swim", "", "", nil, false, ""},
-	{"pool-swim-25yd", "pool-swim-25yd", "", "", nil, false, ""},
-	{"pool-swim-no-lengths", "pool-swim", "", "", withoutLengths, false, ""},
-	{"ride-no-laps", "ride-no-laps", "", "", nil, false, ""},
-	{"ride-lap-triggers", "ride-lap-triggers", "", "", nil, false, ""},
-	{"pool-swim-33m", "pool-swim-33m", "", "", nil, false, ""},
-	{"pool-swim-mixed", "pool-swim-mixed", "", "", nil, false, ""}, // F-48 PL-7: mixed strokes, a lap without one
-	{"zones-ride", "zones-wahoo-ride", "", "", nil, false, ""},     // F-49: zones are client-owned (ZN-8)
+	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false, "", ""},
+	{"ride-12h", "ride-12h", "", "", nil, false, "", ""},
+	{"run-30min", "run-30min", "", "", nil, false, "", ""},
+	{"ride-no-hr", "ride-30min", "", "", withoutHeartRate, false, "", ""},
+	{"indoor-ride", "indoor-no-gps", "Trainer", "", nil, false, "", ""},
+	{"indoor-unknown-zone", "indoor-no-distance-no-gps", "", "", nil, false, "", ""},
+	{"route-hidden", "indoor-no-gps", "", "", nil, true, "", ""},
+	{"ride-suggested", "ride-30min", "", "", nil, false, "Morning ride near Köln", ""},
+	{"ride-trimmed", "ride-30min", "", "", nil, false, "", "both"}, // F-58 SE-2
+	{"triathlon", "triathlon", "", "", nil, false, "", ""},
+	{"triathlon-lap-crossing", "triathlon", "", "", lapCrossing, false, "", ""},
+	{"triathlon-leg-without-laps", "triathlon", "", "", legWithoutLaps, false, "", ""},
+	{"triathlon-triggers", "triathlon", "", "", withTriggers, false, "", ""},
+	{"triathlon-cut", "triathlon-cut-90", "", "", nil, false, "", ""},
+	{"two-rides", "chained-ride-ride", "", "", nil, false, "", ""},
+	{"pool-swim", "pool-swim", "", "", nil, false, "", ""},
+	{"pool-swim-25yd", "pool-swim-25yd", "", "", nil, false, "", ""},
+	{"pool-swim-no-lengths", "pool-swim", "", "", withoutLengths, false, "", ""},
+	{"ride-no-laps", "ride-no-laps", "", "", nil, false, "", ""},
+	{"ride-lap-triggers", "ride-lap-triggers", "", "", nil, false, "", ""},
+	{"pool-swim-33m", "pool-swim-33m", "", "", nil, false, "", ""},
+	{"pool-swim-mixed", "pool-swim-mixed", "", "", nil, false, "", ""}, // F-48 PL-7: mixed strokes, a lap without one
+	{"zones-ride", "zones-wahoo-ride", "", "", nil, false, "", ""},     // F-49: zones are client-owned (ZN-8)
 	{"hostile-text", "ride-30min", `<b>Bold</b> & "quoted" <script>alert(1)</script>`,
-		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", hostileDevice, false, ""},
+		"<script>alert(2)</script>\n<img src=x onerror=alert(3)> &amp; done", hostileDevice, false, "", ""},
 }
 
 const (
@@ -133,7 +135,7 @@ func TestSamples(t *testing.T) {
 			sum := sha256.Sum256(bin)
 			vm := Build(f, Settings{
 				Title: sp.title, Description: sp.description, ExpiresAt: expiresAt,
-				PublicID: sp.name, DataFile: "data." + hex.EncodeToString(sum[:8]) + ".bin", RouteHidden: sp.routeHidden, Suggested: sp.suggested,
+				PublicID: sp.name, DataFile: "data." + hex.EncodeToString(sum[:8]) + ".bin", RouteHidden: sp.routeHidden, Suggested: sp.suggested, Trim: sp.trim,
 			})
 			got, err := json.Marshal(vm)
 			if err != nil {
