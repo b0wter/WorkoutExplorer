@@ -6,6 +6,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 	_ "modernc.org/sqlite" // pure-Go driver "sqlite"
 
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/workout"
 )
 
 // DB is the open database. One connection serialises every statement
@@ -118,14 +120,13 @@ func intPtr(p *int) any {
 func (d *DB) InsertWorkout(ctx context.Context, r lifecycle.Record) error {
 	_, err := d.db.ExecContext(ctx, `INSERT INTO workouts
 		(id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
-		 visibility, hide_ends, summary_json, data_end_s, created_at, published_at, expires_at,
-		 hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at,
-		 zones_max_heart_rate, zones_threshold_power)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		append([]any{r.ID, r.PublicID, r.EditTokenHash[:], r.Title, r.Description, r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
-			string(r.Visibility), r.HideEnds, r.SummaryJSON, intPtr(r.DataEndS),
-			unix(r.CreatedAt), unixPtr(r.PublishedAt), unix(r.ExpiresAt)}, append(rangeColumns(r.HiddenRanges), unixPtr(r.TrimStartAt), unixPtr(r.TrimEndAt),
-			intPtr(r.ZonesMaxHeartRate), intPtr(r.ZonesThresholdPower))...)...)
+		 visibility, hide_start_m, hide_end_m, summary_json, data_end_s, created_at, published_at, expires_at,
+		 hiding_steps, trim_start_at, trim_end_at, zones_max_heart_rate, zones_threshold_power)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		r.ID, r.PublicID, r.EditTokenHash[:], r.Title, r.Description, r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
+		string(r.Visibility), r.HideStartM, r.HideEndM, r.SummaryJSON, intPtr(r.DataEndS),
+		unix(r.CreatedAt), unixPtr(r.PublishedAt), unix(r.ExpiresAt), stepsColumn(r.HidingSteps), unixPtr(r.TrimStartAt), unixPtr(r.TrimEndAt),
+		intPtr(r.ZonesMaxHeartRate), intPtr(r.ZonesThresholdPower))
 	if err != nil {
 		return fmt.Errorf("store: insert workout: %w", err)
 	}
@@ -231,19 +232,19 @@ func (d *DB) DeleteWorkout(ctx context.Context, id string) (deleted bool, err er
 }
 
 const columns = `id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
-	visibility, hide_ends, summary_json, data_end_s, created_at, published_at, expires_at,
-	hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_start_at, trim_end_at,
-	zones_max_heart_rate, zones_threshold_power`
+	visibility, hide_start_m, hide_end_m, summary_json, data_end_s, created_at, published_at, expires_at,
+	hiding_steps, trim_start_at, trim_end_at, zones_max_heart_rate, zones_threshold_power`
 
-// rangeColumns maps up to two ranges to the four hidden* columns (ADR-030);
-// unused pairs are NULL. More than two ranges cannot come from
-// workout.HiddenRanges; the CHECKs refuse anything malformed.
-func rangeColumns(r [][2]int) []any {
-	out := []any{nil, nil, nil, nil}
-	for i := 0; i < len(r) && i < 2; i++ {
-		out[2*i], out[2*i+1] = int64(r[i][0]), int64(r[i][1])
+// stepsColumn is the hiding_steps column (ADR-056 item 2): JSON, NULL for nil.
+func stepsColumn(h *workout.HidingSteps) any {
+	if h == nil {
+		return nil
 	}
-	return out
+	b, err := json.Marshal(h)
+	if err != nil { // two int slices always marshal
+		panic(err)
+	}
+	return string(b)
 }
 
 func nullInt(n sql.NullInt64) *int {
@@ -263,17 +264,22 @@ func scanRecord(sc scanner) (lifecycle.Record, error) {
 		vis                string
 		start, off, end, p sql.NullInt64
 		created, expires   int64
-		h                  [4]sql.NullInt64
+		steps              sql.NullString
 		trimA, trimB       sql.NullInt64
 		zoneHR, zonePower  sql.NullInt64
 	)
 	if err := sc.Scan(&r.ID, &r.PublicID, &hash, &r.Title, &r.Description, &r.Sport, &start, &off,
-		&vis, &r.HideEnds, &r.SummaryJSON, &end, &created, &p, &expires,
-		&h[0], &h[1], &h[2], &h[3], &trimA, &trimB, &zoneHR, &zonePower); err != nil {
+		&vis, &r.HideStartM, &r.HideEndM, &r.SummaryJSON, &end, &created, &p, &expires,
+		&steps, &trimA, &trimB, &zoneHR, &zonePower); err != nil {
 		return lifecycle.Record{}, err
 	}
-	for i := 0; i < 4 && h[i].Valid && h[i+1].Valid; i += 2 {
-		r.HiddenRanges = append(r.HiddenRanges, [2]int{int(h[i].Int64), int(h[i+1].Int64)})
+	if steps.Valid {
+		// A value of another step count (an older rule) reads as not computed
+		// yet, which fails toward no shading and no town; regenerate rewrites it.
+		var h workout.HidingSteps
+		if json.Unmarshal([]byte(steps.String), &h) == nil && len(h.Start) == workout.HideStepCount && len(h.End) == workout.HideStepCount {
+			r.HidingSteps = &h
+		}
 	}
 	if len(hash) != len(r.EditTokenHash) {
 		return lifecycle.Record{}, errors.New("edit token hash has the wrong length")
@@ -343,9 +349,9 @@ func (d *DB) UpdateWorkout(ctx context.Context, id string, apply func(lifecycle.
 		return lifecycle.Record{}, false, err
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE workouts SET title = ?, description = ?, visibility = ?,
-		hide_ends = ?, published_at = ?, expires_at = ?,
+		hide_start_m = ?, hide_end_m = ?, published_at = ?, expires_at = ?,
 		trim_start_at = ?, trim_end_at = ?, zones_max_heart_rate = ?, zones_threshold_power = ? WHERE id = ?`,
-		next.Title, next.Description, string(next.Visibility), next.HideEnds,
+		next.Title, next.Description, string(next.Visibility), next.HideStartM, next.HideEndM,
 		unixPtr(next.PublishedAt), unix(next.ExpiresAt), unixPtr(next.TrimStartAt), unixPtr(next.TrimEndAt),
 		intPtr(next.ZonesMaxHeartRate), intPtr(next.ZonesThresholdPower), id); err != nil {
 		return lifecycle.Record{}, false, fmt.Errorf("store: update workout: %w", err)
@@ -384,16 +390,16 @@ func (d *DB) LiveWorkouts(ctx context.Context, now time.Time) ([]lifecycle.Recor
 }
 
 // UpdateDerived writes the columns derived from the original (sport,
-// start_time, time_zone_offset_s, summary_json, data_end_s, the hidden
-// ranges) from r, in one statement that changes nothing when the row is gone
+// start_time, time_zone_offset_s, summary_json, data_end_s, hiding_steps)
+// from r, in one statement that changes nothing when the row is gone
 // or not Live at now, and returns the row as it is afterwards (F-30 RG-4
 // (b)). Settings columns are never written.
 func (d *DB) UpdateDerived(ctx context.Context, id string, r lifecycle.Record, now time.Time) (lifecycle.Record, bool, error) {
 	got, err := scanRecord(d.db.QueryRowContext(ctx, `UPDATE workouts SET sport = ?3, start_time = ?4, time_zone_offset_s = ?5,
-		summary_json = ?6, data_end_s = ?7, hidden1_first = ?8, hidden1_last = ?9, hidden2_first = ?10, hidden2_last = ?11
-		WHERE id = ?12 AND `+liveWhere+` RETURNING `+columns,
-		append([]any{unix(now), int64(lifecycle.DraftLifetime / time.Second), r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
-			r.SummaryJSON, intPtr(r.DataEndS)}, append(rangeColumns(r.HiddenRanges), id)...)...))
+		summary_json = ?6, data_end_s = ?7, hiding_steps = ?8
+		WHERE id = ?9 AND `+liveWhere+` RETURNING `+columns,
+		unix(now), int64(lifecycle.DraftLifetime/time.Second), r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
+		r.SummaryJSON, intPtr(r.DataEndS), stepsColumn(r.HidingSteps), id))
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return lifecycle.Record{}, false, nil

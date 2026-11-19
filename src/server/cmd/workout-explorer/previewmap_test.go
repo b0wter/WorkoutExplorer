@@ -154,7 +154,7 @@ func TestPreviewMapEndToEnd(t *testing.T) {
 	}
 
 	// Hiding on (AC 2, 42): F-23's card in the same build; a new frame.
-	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"hide_ends":true}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"hide_start_m":300,"hide_end_m":300}`); rec.Code != 200 {
 		t.Fatal(rec.Code)
 	}
 	if paletted(t, a.served(pub)) {
@@ -288,7 +288,7 @@ func TestRegeneratePreviewMap(t *testing.T) {
 	if !bytes.Equal(a.served(pub), card) {
 		t.Error("regenerate dropped a matching map")
 	}
-	a.sql("UPDATE workouts SET hide_ends = 1")
+	a.sql("UPDATE workouts SET hide_start_m = 300, hide_end_m = 300")
 	runRegen(t, context.Background(), dir, testWeb, nil).want(t, 0, "1", "0", "0", "0")
 	if paletted(t, a.served(pub)) {
 		t.Error("regenerate kept a map for another frame")

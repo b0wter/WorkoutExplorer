@@ -13,6 +13,7 @@ import (
 
 	"workout-explorer/internal/lifecycle"
 	"workout-explorer/internal/preview"
+	"workout-explorer/internal/workout"
 )
 
 // The owner endpoints of F-12 (architect/F-12-owner-api.md, ADR-025). The
@@ -61,17 +62,20 @@ func writeNotFound(w http.ResponseWriter) {
 
 // settingsBody is the settings object (F-12 design, Settings object).
 type settingsBody struct {
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	HideEnds     bool   `json:"hide_ends"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	// HideStartM and HideEndM are F-55 HR-4's radii in metres, 0 = not cut.
+	HideStartM   int    `json:"hide_start_m"`
+	HideEndM     int    `json:"hide_end_m"`
 	Visibility   string `json:"visibility"`
 	LifetimeDays int    `json:"lifetime_days"`
 	CreatedAt    string `json:"created_at"`
 	ExpiresAt    string `json:"expires_at"`
 	DataEndS     *int   `json:"data_end_s"`
 	ViewURL      string `json:"view_url"`
-	// HideEndsRanges is read-only (ADR-030): never nil, so it encodes as [].
-	HideEndsRanges [][2]int `json:"hide_ends_ranges"`
+	// HidingSteps is read-only (ADR-056): null without positions or before
+	// regenerate filled a migrated row.
+	HidingSteps *workout.HidingSteps `json:"hiding_steps"`
 	// SuggestedTitle is read-only (F-45 ST-6): the UP-5 suggestion whatever the title, "" = none.
 	SuggestedTitle string `json:"suggested_title"`
 	// TrimStartAt and TrimEndAt are F-47 TR-3: RFC 3339 UTC, null = that end is not trimmed.
@@ -96,11 +100,11 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed,
 		TrimStartAt: at(r.TrimStartAt), TrimEndAt: at(r.TrimEndAt),
 		ZonesMaxHeartRate: r.ZonesMaxHeartRate, ZonesThresholdPower: r.ZonesThresholdPower,
-		Title: r.Title, Description: r.Description, HideEnds: r.HideEnds,
+		Title: r.Title, Description: r.Description, HideStartM: r.HideStartM, HideEndM: r.HideEndM,
 		Visibility: string(r.Visibility), LifetimeDays: r.LifetimeDays(),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339), ExpiresAt: r.ExpiresAt.UTC().Format(time.RFC3339),
 		DataEndS: r.DataEndS, ViewURL: lifecycle.ViewPath(r.PublicID),
-		HideEndsRanges: append([][2]int{}, v.Ranges...),
+		HidingSteps: v.Steps,
 	}
 }
 
@@ -302,7 +306,7 @@ const (
 	msgBadBody = "The request must be one JSON object with only the settings that can be changed."
 	msgBadTrim = "trim_start_at and trim_end_at must be a time in RFC 3339 form with whole seconds, or null."
 	msgBadZone = "zones_max_heart_rate and zones_threshold_power must be a whole number, or null."
-	msgBadType = "The title and description must be text, hide_ends true or false, and lifetime_days a whole number."
+	msgBadType = "The title and description must be text and lifetime_days a whole number."
 )
 
 func (h *ownerHandler) patch(w http.ResponseWriter, r *http.Request) {
@@ -357,9 +361,17 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 		case "description":
 			p.Description = new(string)
 			dst = p.Description
-		case "hide_ends":
-			p.HideEnds = new(bool)
-			dst = p.HideEnds
+		case "hide_start_m", "hide_end_m":
+			// The range is lifecycle's (F-55 HR-4); a wrong type gets the same sentence.
+			o := &p.HideStartM
+			if k == "hide_end_m" {
+				o = &p.HideEndM
+			}
+			*o = new(int)
+			if bytes.Equal(bytes.TrimSpace(v), []byte("null")) || json.Unmarshal(v, *o) != nil {
+				return p, lifecycle.MsgBadHiding
+			}
+			continue
 		case "lifetime_days":
 			p.LifetimeDays = new(int)
 			dst = p.LifetimeDays

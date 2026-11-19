@@ -96,7 +96,6 @@ func owned(t *testing.T, hook ChangeHook) (*Service, *fakeRepo, *fakeFiles, *lin
 
 func sp(s string) *string { return &s }
 func ip(i int) *int       { return &i }
-func bp(b bool) *bool     { return &b }
 
 // ---- pure rules ------------------------------------------------------------------
 
@@ -147,11 +146,16 @@ func TestApplyPatch(t *testing.T) {
 		}},
 		{"description with CR", base, SettingsPatch{Description: sp("a\r\nb")}, false, nil},
 		{"description with tab", base, SettingsPatch{Description: sp("a\tb")}, false, nil},
-		{"flags", base, SettingsPatch{HideEnds: bp(true)}, true, func(t *testing.T, r Record) {
-			if !r.HideEnds {
+		{"radii", base, SettingsPatch{HideStartM: ip(50), HideEndM: ip(2000)}, true, func(t *testing.T, r Record) {
+			if r.HideStartM != 50 || r.HideEndM != 2000 {
 				t.Errorf("%+v", r)
 			}
 		}},
+		{"one radius", base, SettingsPatch{HideEndM: ip(0)}, true, nil},
+		{"radius -50 (AC 33)", base, SettingsPatch{HideStartM: ip(-50)}, false, nil},
+		{"radius 2050", base, SettingsPatch{HideEndM: ip(2050)}, false, nil},
+		{"radius 120", base, SettingsPatch{HideStartM: ip(120)}, false, nil},
+		{"valid start, invalid end: nothing applied", base, SettingsPatch{HideStartM: ip(300), HideEndM: ip(25)}, false, nil},
 		{"lifetime 30 days after upload (AC 2)", base, SettingsPatch{LifetimeDays: ip(30)}, true, func(t *testing.T, r Record) {
 			if want := created.Add(30 * 24 * time.Hour); !r.ExpiresAt.Equal(want) || r.LifetimeDays() != 30 {
 				t.Errorf("expires %v", r.ExpiresAt)
@@ -519,7 +523,7 @@ func TestOwnerWritesAreSerialised(t *testing.T) {
 				mu.Unlock()
 				return
 			}
-			_, err := s.Update(context.Background(), c.PublicID, c.EditToken, SettingsPatch{HideEnds: bp(i%2 == 0)})
+			_, err := s.Update(context.Background(), c.PublicID, c.EditToken, SettingsPatch{HideStartM: ip(300 * (i % 2))})
 			if err != nil && err != ErrNotFound {
 				t.Error(err)
 			}

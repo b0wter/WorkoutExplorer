@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"workout-explorer/internal/workout"
 )
 
 // F-47 TR-3, TR-4, TR-8 at the service.
@@ -69,16 +71,16 @@ func TestUpdateTrim(t *testing.T) {
 func TestViewFailsSafe(t *testing.T) {
 	s, _, _, _, _, _ := owned(t, nil)
 	at := t0
-	rec := Record{ID: "x", TrimEndAt: &at, HiddenRanges: [][2]int{{0, 1}}}
+	rec := Record{ID: "x", TrimEndAt: &at, HidingSteps: &workout.HidingSteps{Start: []int{0}, End: []int{1}}}
 	s.d.Trimmer = &fakeTrimmer{err: errors.New("boom")}
-	if v := s.View(context.Background(), rec); v.Trimmed != nil || v.Ranges != nil || v.Suggested != "" {
+	if v := s.View(context.Background(), rec); v.Trimmed != nil || v.Steps != nil || v.Suggested != "" {
 		t.Errorf("%+v", v)
 	}
-	s.d.Trimmer = &fakeTrimmer{view: OwnerView{Suggested: "s", Ranges: [][2]int{{3, 4}}, Trimmed: &TrimmedView{Sport: "running"}}}
-	if v := s.View(context.Background(), rec); v.Trimmed == nil || v.Suggested != "s" || v.Ranges[0][0] != 3 {
+	s.d.Trimmer = &fakeTrimmer{view: OwnerView{Suggested: "s", Steps: &workout.HidingSteps{Start: []int{3}, End: []int{4}}, Trimmed: &TrimmedView{Sport: "running"}}}
+	if v := s.View(context.Background(), rec); v.Trimmed == nil || v.Suggested != "s" || v.Steps.Start[0] != 3 {
 		t.Errorf("%+v", v)
 	}
-	if v := s.View(context.Background(), Record{ID: "y", HiddenRanges: [][2]int{{0, 1}}}); v.Trimmed != nil || len(v.Ranges) != 1 {
+	if v := s.View(context.Background(), Record{ID: "y", HidingSteps: &workout.HidingSteps{Start: []int{0}, End: []int{1}}}); v.Trimmed != nil || v.Steps == nil || v.Steps.End[0] != 1 {
 		t.Errorf("untrimmed: %+v", v)
 	}
 }

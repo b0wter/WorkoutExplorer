@@ -48,15 +48,18 @@ type Record struct {
 	StartTime       *time.Time
 	TimeZoneOffsetS *int
 	Visibility      Visibility
-	HideEnds        bool
-	SummaryJSON     string
-	DataEndS        *int
-	CreatedAt       time.Time
-	PublishedAt     *time.Time
-	ExpiresAt       time.Time
-	// HiddenRanges is workout.HiddenRanges of the upload (ADR-030): display
-	// only, never read by the public build.
-	HiddenRanges [][2]int
+	// HideStartM and HideEndM are the start and end hiding radii in metres
+	// (SH-4, F-55 HR-1); 0 = that end is not cut. Never logged, never public.
+	HideStartM, HideEndM int
+	SummaryJSON          string
+	DataEndS             *int
+	CreatedAt            time.Time
+	PublishedAt          *time.Time
+	ExpiresAt            time.Time
+	// HidingSteps is workout.StepsOf the upload (ADR-056): display only,
+	// never read by the public build; nil without positions or until
+	// regenerate fills a migrated row.
+	HidingSteps *workout.HidingSteps
 	// TrimStartAt and TrimEndAt are the instants of the first and last
 	// remaining sample (F-47 TR-3); nil: that end is not trimmed.
 	TrimStartAt, TrimEndAt *time.Time
@@ -65,7 +68,7 @@ type Record struct {
 	ZonesMaxHeartRate, ZonesThresholdPower *int
 }
 
-// NewDraft is the row of a fresh upload: a draft with hiding and download off
+// NewDraft is the row of a fresh upload: a draft with no hiding (both radii 0) and download off
 // that expires DefaultLifetime after now (SH-2, SH-4, SH-8, UP-7). It is pure.
 // summary is datafile.SummaryJSON of w.
 func NewDraft(w workout.Workout, summary []byte, id Identity, now time.Time) Record {
@@ -79,7 +82,7 @@ func NewDraft(w workout.Workout, summary []byte, id Identity, now time.Time) Rec
 		SummaryJSON:   string(summary),
 		CreatedAt:     created,
 		ExpiresAt:     created.Add(DefaultLifetime),
-		HiddenRanges:  workout.HiddenRanges(w),
+		HidingSteps:   workout.StepsOf(w),
 	}
 	if !w.StartTime.IsZero() {
 		st := w.StartTime.UTC()

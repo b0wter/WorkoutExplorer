@@ -27,8 +27,9 @@ func (d draftFiles) Read(id, name string) (io.ReadCloser, int64, error) {
 	return f, st.Size(), nil
 }
 
-// F-45 ST-6: with hide_ends on the owner's suggestion skips the stored
-// hidden ranges, so the town of a hidden start is never named.
+// F-45 ST-6, F-55 HR-7: the owner's suggestion skips the hidden sections at
+// the stored radii, from the stored steps, so the town of a hidden start is
+// never named.
 func TestSuggestedTitle(t *testing.T) {
 	t0 := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
 	n := 2150
@@ -48,19 +49,28 @@ func TestSuggestedTitle(t *testing.T) {
 	}
 	ix, _ := places.Parse("Aville\t50\t8\nBville\t50.003597\t8\n")
 	s := New(Deps{Files: draftFiles{dir: dir}, Places: ix})
-	rec := Record{ID: "x", HiddenRanges: workout.HiddenRanges(w)}
+	rec := Record{ID: "x", HidingSteps: workout.StepsOf(w)}
 	for _, c := range []struct {
-		hide bool
-		want string
-	}{{false, "Morning workout near Aville"}, {true, "Morning workout near Bville"}} {
-		rec.HideEnds = c.hide
+		start, end int
+		want       string
+	}{
+		{0, 0, "Morning workout near Aville"}, {0, 2000, "Morning workout near Aville"},
+		{300, 0, "Morning workout near Bville"}, {300, 300, "Morning workout near Bville"},
+		{2000, 0, "Morning workout near Bville"},
+	} {
+		rec.HideStartM, rec.HideEndM = c.start, c.end
 		if got := s.SuggestedTitle(rec); got != c.want {
-			t.Errorf("hide %v: %q, want %q", c.hide, got, c.want)
+			t.Errorf("(%d, %d): %q, want %q", c.start, c.end, got, c.want)
 		}
 	}
-	rec.HideEnds, rec.HiddenRanges = true, [][2]int{{0, n - 1}}
+	rec.HideStartM, rec.HideEndM = 1550, 1550 // 2 × 1550 m > the 3 km route: fully hidden
 	if got := s.SuggestedTitle(rec); got != "Morning workout" {
 		t.Errorf("fully hidden: %q", got)
+	}
+	// HR-7: a radius above 0 and no steps yet (migrated row): no town.
+	rec.HideStartM, rec.HideEndM, rec.HidingSteps = 0, 50, nil
+	if got := s.SuggestedTitle(rec); got != "Morning workout" {
+		t.Errorf("no steps: %q", got)
 	}
 	if got := New(Deps{Files: draftFiles{dir: dir}}).SuggestedTitle(rec); got != "" {
 		t.Errorf("no places: %q", got)

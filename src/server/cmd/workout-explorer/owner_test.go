@@ -190,18 +190,27 @@ func TestOwnerSettings(t *testing.T) {
 	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil {
 		t.Fatal(rec.Code, rec.Body)
 	}
-	if s["visibility"] != "draft" || s["lifetime_days"] != float64(7) || s["hide_ends"] != false ||
-		s["view_url"] != "/w/"+pub || s["title"] != "" || len(s) != 16 || s["hide_ends_ranges"] == nil || s["suggested_title"] != "Morning ride near Luzern" {
+	if s["visibility"] != "draft" || s["lifetime_days"] != float64(7) || s["hide_start_m"] != float64(0) || s["hide_end_m"] != float64(0) ||
+		s["view_url"] != "/w/"+pub || s["title"] != "" || len(s) != 17 || s["hiding_steps"] == nil || s["suggested_title"] != "Morning ride near Luzern" {
 		t.Errorf("%v", s)
 	}
 	if _, err := time.Parse(time.RFC3339, s["expires_at"].(string)); err != nil {
 		t.Error(err)
 	}
-	if rec := a.owner("PATCH", url, token, `{"hide_ends":true}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", url, token, `{"hide_start_m":300,"hide_end_m":0}`); rec.Code != 200 {
 		t.Fatal(rec.Body)
 	}
-	if row := a.rows()[0]; row["hide_ends"] != int64(1) {
+	if row := a.rows()[0]; row["hide_start_m"] != int64(300) || row["hide_end_m"] != int64(0) {
 		t.Errorf("%v", row)
+	}
+	// F-55 AC 33: refusals store nothing.
+	for _, b := range []string{`{"hide_start_m":-50}`, `{"hide_end_m":2050}`, `{"hide_start_m":120}`, `{"hide_start_m":300.5}`, `{"hide_start_m":"300"}`, `{"hide_ends":true}`, `{"hide_start_m":0,"hide_end_m":25}`} {
+		if rec := a.owner("PATCH", url, token, b); rec.Code != 400 || !strings.Contains(rec.Body.String(), `"invalid_settings"`) {
+			t.Errorf("%s: %d %s", b, rec.Code, rec.Body)
+		}
+		if row := a.rows()[0]; row["hide_start_m"] != int64(300) || row["hide_end_m"] != int64(0) {
+			t.Errorf("%s: stored %v", b, row)
+		}
 	}
 	// Visibility is read-only (O-6): only publish changes it.
 	for _, st := range []string{"draft", "unlisted"} {

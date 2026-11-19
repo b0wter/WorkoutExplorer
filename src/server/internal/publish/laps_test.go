@@ -166,7 +166,7 @@ func TestSectionsHidden(t *testing.T) {
 	w.Samples.Lat, w.Samples.Lon = lat, lon
 	fx := newFixtureWith(t, orig, fakeParser{string(orig): w})
 	d := draft()
-	d.HideEnds = true
+	d.HideStartM, d.HideEndM = 300, 300
 	fx.change(t, d, published(d))
 	o := fx.read(t)
 	if n := strings.Count(lapsSection(o.page), `<tr class="laps-section">`); n != 5 {

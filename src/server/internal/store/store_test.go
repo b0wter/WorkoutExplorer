@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/workout"
 )
 
 var ctx = context.Background()
@@ -39,7 +40,7 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 8 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 9 {
 		t.Errorf("user_version = %d, want 8", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
@@ -75,7 +76,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 8 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 9 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -96,7 +97,7 @@ func TestOpenPathNeedsEscaping(t *testing.T) {
 	}
 }
 
-// TestSchema (AC 5): the exact columns (16 of v1, 4 of v2: ADR-030) and no other table.
+// TestSchema (AC 5): the exact columns and no other table.
 func TestSchema(t *testing.T) {
 	db, _ := openTemp(t)
 	want := []struct {
@@ -106,13 +107,12 @@ func TestSchema(t *testing.T) {
 		{"id", "TEXT", true}, {"public_id", "TEXT", true}, {"edit_token_hash", "BLOB", true},
 		{"title", "TEXT", true}, {"description", "TEXT", true}, {"sport", "TEXT", true},
 		{"start_time", "INTEGER", false}, {"time_zone_offset_s", "INTEGER", false},
-		{"visibility", "TEXT", true}, {"hide_ends", "INTEGER", true},
+		{"visibility", "TEXT", true},
 		{"summary_json", "TEXT", true}, {"data_end_s", "INTEGER", false}, {"created_at", "INTEGER", true},
 		{"published_at", "INTEGER", false}, {"expires_at", "INTEGER", true},
-		{"hidden1_first", "INTEGER", false}, {"hidden1_last", "INTEGER", false},
-		{"hidden2_first", "INTEGER", false}, {"hidden2_last", "INTEGER", false},
 		{"trim_start_at", "INTEGER", false}, {"trim_end_at", "INTEGER", false},
 		{"zones_max_heart_rate", "INTEGER", false}, {"zones_threshold_power", "INTEGER", false},
+		{"hide_start_m", "INTEGER", true}, {"hide_end_m", "INTEGER", true}, {"hiding_steps", "TEXT", false},
 	}
 	rows, err := db.db.QueryContext(ctx, "PRAGMA table_info(workouts)")
 	if err != nil {
@@ -269,7 +269,7 @@ func TestInsertWorkout(t *testing.T) {
 		he, ca, ea                            int64
 	)
 	err := db.db.QueryRowContext(ctx, `SELECT id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
-		visibility, hide_ends, summary_json, data_end_s, created_at, published_at, expires_at FROM workouts`).
+		visibility, hide_start_m + hide_end_m, summary_json, data_end_s, created_at, published_at, expires_at FROM workouts`).
 		Scan(&id, &pub, &hash, &title, &desc, &sport, &st, &tz, &vis, &he, &sum, &de, &ca, &pa, &ea)
 	if err != nil {
 		t.Fatal(err)
@@ -483,7 +483,7 @@ func TestUpdateWorkout(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, found, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) {
-		c.Title, c.HideEnds = "T", true
+		c.Title, c.HideStartM, c.HideEndM = "T", 50, 2000
 		c.ExpiresAt = c.CreatedAt.Add(30 * 24 * time.Hour)
 		return c, nil
 	})
@@ -491,7 +491,7 @@ func TestUpdateWorkout(t *testing.T) {
 		t.Fatal(got, found, err)
 	}
 	back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID)
-	if back.Title != "T" || !back.HideEnds || !back.ExpiresAt.Equal(r.CreatedAt.Add(30*24*time.Hour)) || back.Sport != r.Sport {
+	if back.Title != "T" || back.HideStartM != 50 || back.HideEndM != 2000 || !back.ExpiresAt.Equal(r.CreatedAt.Add(30*24*time.Hour)) || back.Sport != r.Sport {
 		t.Errorf("stored %+v", back)
 	}
 	// An error from apply stores nothing and is returned unchanged.
@@ -562,13 +562,13 @@ func TestZoneColumns(t *testing.T) {
 func TestUpdateDerived(t *testing.T) {
 	db, _ := openTemp(t)
 	r := published(3)
-	r.Title, r.HideEnds = "kept", true
+	r.Title, r.HideStartM, r.HideEndM = "kept", 300, 0
 	ts, te := r.CreatedAt.Add(-50*time.Minute).Truncate(time.Second), r.CreatedAt.Add(-20*time.Minute).Truncate(time.Second)
 	r.TrimStartAt, r.TrimEndAt = &ts, &te // F-47: UpdateDerived never writes them
 	if err := db.InsertWorkout(ctx, r); err != nil {
 		t.Fatal(err)
 	}
-	d := lifecycle.Record{Title: "ignored", Sport: "running", SummaryJSON: `{"n":2}`, HiddenRanges: [][2]int{{1, 2}, {8, 9}}}
+	d := lifecycle.Record{Title: "ignored", Sport: "running", SummaryJSON: `{"n":2}`, HidingSteps: steps(1, 9)}
 	st, off, end := r.CreatedAt.Add(-time.Hour), 3600, 42
 	d.StartTime, d.TimeZoneOffsetS, d.DataEndS = &st, &off, &end
 	got, found, err := db.UpdateDerived(ctx, r.ID, d, r.CreatedAt)
@@ -576,14 +576,14 @@ func TestUpdateDerived(t *testing.T) {
 		t.Fatal(found, err)
 	}
 	want := r
-	want.Sport, want.SummaryJSON, want.HiddenRanges = d.Sport, d.SummaryJSON, d.HiddenRanges
+	want.Sport, want.SummaryJSON, want.HidingSteps = d.Sport, d.SummaryJSON, d.HidingSteps
 	want.StartTime, want.TimeZoneOffsetS, want.DataEndS = &st, &off, &end
 	back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID)
 	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(back, want) {
 		t.Errorf("got\n%+v\nstored\n%+v\nwant\n%+v", got, back, want)
 	}
 	// Back to no start time and no ranges: NULLs.
-	if got, _, err = db.UpdateDerived(ctx, r.ID, lifecycle.Record{Sport: "x", SummaryJSON: "{}"}, r.CreatedAt); err != nil || got.StartTime != nil || got.HiddenRanges != nil || got.DataEndS != nil || got.TrimStartAt == nil || got.TrimEndAt == nil {
+	if got, _, err = db.UpdateDerived(ctx, r.ID, lifecycle.Record{Sport: "x", SummaryJSON: "{}"}, r.CreatedAt); err != nil || got.StartTime != nil || got.HidingSteps != nil || got.HideStartM != 300 || got.DataEndS != nil || got.TrimStartAt == nil || got.TrimEndAt == nil {
 		t.Errorf("%+v %v", got, err)
 	}
 	if _, found, err := db.UpdateDerived(ctx, "missing", d, r.CreatedAt); found || err != nil {
@@ -591,42 +591,120 @@ func TestUpdateDerived(t *testing.T) {
 	}
 }
 
-// TestHiddenRanges (ADR-030): the ranges round-trip, are kept by
-// UpdateWorkout, and malformed column values are refused.
-func TestHiddenRanges(t *testing.T) {
+// steps is a full hiding_steps value with the given first entries.
+func steps(start, end int) *workout.HidingSteps {
+	h := &workout.HidingSteps{Start: make([]int, workout.HideStepCount), End: make([]int, workout.HideStepCount)}
+	for k := range h.Start {
+		h.Start[k], h.End[k] = start+k, end-k
+	}
+	return h
+}
+
+// TestHidingColumns (F-55 HR-1, ADR-056): radii and steps round-trip, steps
+// are kept by UpdateWorkout, and the CHECKs refuse radii off the steps and
+// malformed steps.
+func TestHidingColumns(t *testing.T) {
 	db, _ := openTemp(t)
-	for i, want := range [][][2]int{nil, {{0, 99}}, {{0, 9}, {40, 99}}} {
+	for i, want := range []*workout.HidingSteps{nil, steps(0, 99)} {
 		r := record(100 + i)
-		r.HiddenRanges = want
+		r.HidingSteps, r.HideStartM, r.HideEndM = want, 0, 2000
 		if err := db.InsertWorkout(ctx, r); err != nil {
 			t.Fatal(want, err)
 		}
 		got, _, err := db.WorkoutByPublicID(ctx, r.PublicID)
-		if err != nil || !reflect.DeepEqual(got.HiddenRanges, want) {
-			t.Errorf("%v: got %v, %v", want, got.HiddenRanges, err)
+		if err != nil || !reflect.DeepEqual(got.HidingSteps, want) || got.HideStartM != 0 || got.HideEndM != 2000 {
+			t.Errorf("%v: got %+v, %v", want, got, err)
 		}
 		up, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) {
-			c.Title, c.HiddenRanges = "T", [][2]int{{1, 2}} // UpdateWorkout never writes the ranges
+			c.Title, c.HidingSteps = "T", steps(5, 5) // UpdateWorkout never writes the steps
 			return c, nil
 		})
 		if err != nil || up.Title != "T" {
 			t.Fatal(err)
 		}
-		if got, _, _ = db.WorkoutByPublicID(ctx, r.PublicID); !reflect.DeepEqual(got.HiddenRanges, want) {
-			t.Errorf("%v after update: %v", want, got.HiddenRanges)
+		if got, _, _ = db.WorkoutByPublicID(ctx, r.PublicID); !reflect.DeepEqual(got.HidingSteps, want) {
+			t.Errorf("%v after update: %v", want, got.HidingSteps)
 		}
 	}
-	for i, bad := range [][4]any{
-		{-1, 5, nil, nil}, {5, nil, nil, nil}, {nil, 5, nil, nil}, {5, 4, nil, nil},
-		{nil, nil, 3, 4}, {0, 5, 6, 9}, {0, 5, 3, 9}, {0, 5, 8, nil}, {0, 5, 8, 7},
-	} {
-		r := record(200 + i)
+	for _, c := range []struct{ start, end any }{{-50, 0}, {0, 2050}, {120, 0}, {0, 25}, {nil, 0}} {
+		r := record(300)
 		_, err := db.db.ExecContext(ctx, `INSERT INTO workouts (id, public_id, edit_token_hash, sport, visibility, summary_json,
-			created_at, expires_at, hidden1_first, hidden1_last, hidden2_first, hidden2_last)
-			VALUES (?, ?, ?, 'x', 'draft', '{}', 1, 2, ?, ?, ?, ?)`, r.ID, r.PublicID, r.EditTokenHash[:], bad[0], bad[1], bad[2], bad[3])
+			created_at, expires_at, hide_start_m, hide_end_m) VALUES (?, ?, ?, 'x', 'draft', '{}', 1, 2, ?, ?)`,
+			r.ID, r.PublicID, r.EditTokenHash[:], c.start, c.end)
 		if err == nil {
-			t.Errorf("%v accepted", bad)
+			t.Errorf("%v accepted", c)
 		}
+	}
+	r := record(301)
+	if _, err := db.db.ExecContext(ctx, `INSERT INTO workouts (id, public_id, edit_token_hash, sport, visibility, summary_json,
+		created_at, expires_at, hiding_steps) VALUES (?, ?, ?, 'x', 'draft', '{}', 1, 2, 'not json')`,
+		r.ID, r.PublicID, r.EditTokenHash[:]); err == nil {
+		t.Error("malformed hiding_steps accepted")
+	}
+	// Another step count reads as not computed, never as an unreadable row.
+	if _, err := db.db.ExecContext(ctx, `INSERT INTO workouts (id, public_id, edit_token_hash, sport, visibility, summary_json,
+		created_at, expires_at, hiding_steps) VALUES (?, ?, ?, 'x', 'draft', '{}', 1, 2, '{"start":[0],"end":[5]}')`,
+		r.ID, r.PublicID, r.EditTokenHash[:]); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID); err != nil || !ok || got.HidingSteps != nil {
+		t.Errorf("short steps: %v %v %v", got.HidingSteps, ok, err)
+	}
+}
+
+// TestMigrateRadii (F-55 HR-1, AC 41): a v8 database with hiding on and off
+// is migrated to v9: on is 300/300, off 0/0, no steps until regenerate, the
+// old columns are gone and every other column is unchanged.
+func TestMigrateRadii(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "workouts.db")
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ms, err := migrations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range ms[:8] {
+		if _, err := raw.Exec(m.sql); err != nil {
+			t.Fatal(m.name, err)
+		}
+	}
+	for _, q := range []string{"PRAGMA user_version = 8", "PRAGMA journal_mode = WAL"} {
+		if _, err := raw.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ins := `INSERT INTO workouts (id, public_id, edit_token_hash, title, sport, visibility, summary_json, created_at, published_at, expires_at,
+		hide_ends, hidden1_first, hidden1_last, hidden2_first, hidden2_last, trim_end_at, zones_max_heart_rate)
+		VALUES (?, ?, ?, 'T', 'cycling', 'unlisted', '{"a":1}', 10, 11, 20, ?, ?, ?, ?, ?, 15, 180)`
+	for i, c := range [][]any{{1, 0, 4, 9, 12}, {0, 0, 4, 9, 12}, {1, nil, nil, nil, nil}, {0, nil, nil, nil, nil}} {
+		r := record(i + 1)
+		if _, err := raw.Exec(ins, append([]any{r.ID, r.PublicID, r.EditTokenHash[:]}, c...)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw.Close()
+	db, err := Open(ctx, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	for i, want := range []int{300, 0, 300, 0} {
+		got, ok, err := db.WorkoutByPublicID(ctx, record(i+1).PublicID)
+		if err != nil || !ok || got.HideStartM != want || got.HideEndM != want || got.HidingSteps != nil ||
+			got.Title != "T" || got.TrimEndAt == nil || got.TrimEndAt.Unix() != 15 || *got.ZonesMaxHeartRate != 180 || got.SummaryJSON != `{"a":1}` {
+			t.Errorf("row %d: %+v %v %v", i+1, got, ok, err)
+		}
+	}
+	if n := scalar[int](t, db, "SELECT count(*) FROM pragma_table_info('workouts') WHERE name = 'hide_ends' OR name LIKE 'hidden%'"); n != 0 {
+		t.Errorf("%d old columns left", n)
+	}
+	if n := scalar[int](t, db, "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name = 'workouts_expires_at'"); n != 1 {
+		t.Error("expiry index missing")
 	}
 }
 
@@ -661,12 +739,12 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 8 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 9 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
-	if err != nil || !ok || got.HiddenRanges != nil {
-		t.Errorf("%v %v %v", got.HiddenRanges, ok, err)
+	if err != nil || !ok || got.HidingSteps != nil || got.HideStartM != 0 {
+		t.Errorf("%+v %v %v", got, ok, err)
 	}
 }
 
@@ -726,21 +804,17 @@ func TestMigrateNoPrivate(t *testing.T) {
 		return out
 	}
 	want := dump(raw, "WHERE visibility <> 'private'")
-	raw.Close()
-
-	db, err := Open(ctx, path)
-	if err != nil {
+	// Only migration 3: its columns are gone in later versions (F-55).
+	if _, err := raw.Exec(ms[2].sql); err != nil {
 		t.Fatal(err)
 	}
+	db := &DB{raw}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 8 {
-		t.Errorf("user_version = %d", v)
-	}
 	if got := dump(db.db, ""); len(want) != 3 || fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("rows after migration:\n%v\nwant\n%v", got, want)
 	}
-	if _, ok, err := db.WorkoutByPublicID(ctx, record(3).PublicID); ok || err != nil {
-		t.Errorf("private row kept: %v %v", ok, err)
+	if n := scalar[int](t, db, "SELECT count(*) FROM workouts WHERE visibility = 'private'"); n != 0 {
+		t.Errorf("private row kept: %d", n)
 	}
 	if n := scalar[int](t, db, "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name = 'workouts_expires_at'"); n != 1 {
 		t.Error("expiry index missing")
@@ -969,14 +1043,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 9} {
+	for _, v := range []int{4, 10} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (8)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (9)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}

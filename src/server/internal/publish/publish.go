@@ -152,7 +152,8 @@ func (a *Area) locked(f func() error) error {
 }
 
 // publicTransform applies the record's settings that remove data before
-// anything public exists (I-3): start and end hiding (F-16 H-4). Nothing
+// anything public exists (I-3): start and end hiding at the record's radii
+// (F-16 H-4, F-55 HR-2, HR-6), which are inputs of this function only. Nothing
 // about the cut is stored or logged; every build computes it again. It also
 // applies the sharer's zone values, step 1 of F-49 ZN-3.
 func publicTransform(w workout.Workout, r lifecycle.Record) (workout.Workout, bool) {
@@ -162,10 +163,7 @@ func publicTransform(w workout.Workout, r lifecycle.Record) (workout.Workout, bo
 	if r.ZonesThresholdPower != nil {
 		w.Zones.Power = workout.ZoneValues{Basis: *r.ZonesThresholdPower}
 	}
-	if !r.HideEnds {
-		return w, false
-	}
-	return workout.HideEnds(w)
+	return workout.Hide(w, r.HideStartM, r.HideEndM)
 }
 
 // trimmed is the trim of F-47 TR-2, which runs before the public transform
@@ -316,13 +314,17 @@ func HidesMore(before, after lifecycle.Record) bool {
 		// The fields below are derived from the original, never read by the
 		// public build (F-30 RG-6); a build that starts reading one must take
 		// it off this list.
-		case "Sport", "StartTime", "TimeZoneOffsetS", "SummaryJSON", "DataEndS", "HiddenRanges":
+		case "Sport", "StartTime", "TimeZoneOffsetS", "SummaryJSON", "DataEndS", "HidingSteps":
 		case "Visibility":
 			if before.Visibility != lifecycle.Draft || after.Visibility != lifecycle.Unlisted { // only draft → unlisted
 				return true
 			}
-		case "HideEnds":
-			if after.HideEnds { // off → on hides more
+		case "HideStartM":
+			if after.HideStartM > before.HideStartM { // a raise hides more (F-55 HR-5, OQ-246)
+				return true
+			}
+		case "HideEndM":
+			if after.HideEndM > before.HideEndM {
 				return true
 			}
 		default:
@@ -882,10 +884,7 @@ func (a *Area) TrimmedView(ctx context.Context, r lifecycle.Record) (lifecycle.O
 	if err != nil {
 		return lifecycle.OwnerView{}, err
 	}
-	v := lifecycle.OwnerView{Trimmed: &lifecycle.TrimmedView{Sport: wt.Sport, Summary: sum}, Ranges: [][2]int{}}
-	for _, p := range workout.HiddenRanges(wt) {
-		v.Ranges = append(v.Ranges, [2]int{p[0] + first, p[1] + first})
-	}
+	v := lifecycle.OwnerView{Trimmed: &lifecycle.TrimmedView{Sport: wt.Sport, Summary: sum}, Steps: workout.StepsOf(wt).Shift(first)}
 	_, f, _, err := a.encode(wt, r)
 	if err != nil {
 		return lifecycle.OwnerView{}, err

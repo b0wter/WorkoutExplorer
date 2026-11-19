@@ -483,7 +483,7 @@ func TestCaddy(t *testing.T) {
 		// Hiding on: remove first, the old data URL is gone and the page names a new one.
 		since := time.Now()
 		oldPreview := previewName(t, string(r.get("/w/"+pub).body))
-		if got := r.do("PATCH", "/api/workouts/"+pub, strings.NewReader(`{"hide_ends":true}`), append(auth, "Content-Type", "application/json")...); got.code != 200 {
+		if got := r.do("PATCH", "/api/workouts/"+pub, strings.NewReader(`{"hide_start_m":300,"hide_end_m":300}`), append(auth, "Content-Type", "application/json")...); got.code != 200 {
 			t.Fatalf("hiding on: %d %s", got.code, got.body)
 		}
 		r.gone("hiding on", pub, data, since)

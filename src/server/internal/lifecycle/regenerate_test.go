@@ -24,8 +24,8 @@ func (r *fakeRepo) UpdateDerived(_ context.Context, id string, d Record, now tim
 	if !ok || !cur.Live(now) {
 		return Record{}, false, nil
 	}
-	cur.Sport, cur.StartTime, cur.TimeZoneOffsetS, cur.SummaryJSON, cur.DataEndS, cur.HiddenRanges =
-		d.Sport, d.StartTime, d.TimeZoneOffsetS, d.SummaryJSON, d.DataEndS, d.HiddenRanges
+	cur.Sport, cur.StartTime, cur.TimeZoneOffsetS, cur.SummaryJSON, cur.DataEndS, cur.HidingSteps =
+		d.Sport, d.StartTime, d.TimeZoneOffsetS, d.SummaryJSON, d.DataEndS, d.HidingSteps
 	r.rows[id] = cur
 	return cur, true, nil
 }
@@ -56,7 +56,7 @@ func regenFixture(t *testing.T, vis Visibility) (*Service, *fakeParser, *fakeRep
 	p := &fakeParser{acc: ingest.Accepted{Workout: smallWorkout(), Original: []byte("ORIGINAL")}}
 	r, f, l, h, pub := newRepo(), newFiles(), &lines{}, &fakeHook{}, &fakePublic{}
 	rec := Record{ID: "w1", PublicID: "P1", Title: "kept title", Sport: "old", SummaryJSON: "old summary", Visibility: vis,
-		HideEnds: true, CreatedAt: t0.Add(-time.Hour), ExpiresAt: t0.Add(24 * time.Hour)}
+		HideStartM: 300, HideEndM: 300, CreatedAt: t0.Add(-time.Hour), ExpiresAt: t0.Add(24 * time.Hour)}
 	r.rows["w1"] = rec
 	f.dirs["w1"] = []File{{OriginalName, []byte("ORIGINAL")}, {DraftName, []byte("old draft")}}
 	s := New(Deps{Parser: p, Repo: r, Files: f, Hook: h, Public: pub, Logger: slog.New(slog.NewJSONHandler(l, nil)), Now: func() time.Time { return t0 }})
@@ -209,7 +209,7 @@ func TestRegenerateKeeps(t *testing.T) {
 			if got := r.rows["w1"].Sport != "old"; got != c.rowNew {
 				t.Errorf("row %+v", r.rows["w1"])
 			}
-			if r.rows["w1"].Title != "kept title" || !r.rows["w1"].HideEnds {
+			if r.rows["w1"].Title != "kept title" || r.rows["w1"].HideStartM != 300 || r.rows["w1"].HideEndM != 300 {
 				t.Errorf("settings changed: %+v", r.rows["w1"])
 			}
 			if got := len(h.calls) > 0; got != c.hookCalled {
@@ -238,7 +238,7 @@ func TestRegenerateRebuilds(t *testing.T) {
 	got := r.rows["w1"]
 	want := rec
 	want.Sport, want.SummaryJSON = "cycling", got.SummaryJSON
-	want.StartTime, want.TimeZoneOffsetS, want.HiddenRanges = got.StartTime, got.TimeZoneOffsetS, got.HiddenRanges
+	want.StartTime, want.TimeZoneOffsetS, want.HidingSteps = got.StartTime, got.TimeZoneOffsetS, got.HidingSteps
 	if !reflect.DeepEqual(got, want) || got.SummaryJSON == "old summary" || got.StartTime == nil || *got.TimeZoneOffsetS != 7200 {
 		t.Errorf("row\n%+v\nwant\n%+v", got, want)
 	}

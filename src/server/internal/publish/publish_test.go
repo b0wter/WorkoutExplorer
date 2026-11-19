@@ -325,7 +325,10 @@ func TestHidesMore(t *testing.T) {
 	d := draft()
 	p := published(d)
 	with := func(r lifecycle.Record, edit func(*lifecycle.Record)) lifecycle.Record { edit(&r); return r }
-	hidden := with(p, func(r *lifecycle.Record) { r.HideEnds = true })
+	hidden := with(p, func(r *lifecycle.Record) { r.HideStartM, r.HideEndM = 300, 300 })
+	radii := func(a, b int) func(*lifecycle.Record) {
+		return func(r *lifecycle.Record) { r.HideStartM, r.HideEndM = a, b }
+	}
 	for _, c := range []struct {
 		name          string
 		before, after lifecycle.Record
@@ -345,7 +348,18 @@ func TestHidesMore(t *testing.T) {
 		{"start", p, with(p, func(r *lifecycle.Record) { t := r.CreatedAt; r.StartTime = &t }), false},
 		{"time zone", p, with(p, func(r *lifecycle.Record) { o := 3600; r.TimeZoneOffsetS = &o }), false},
 		{"data end", p, with(p, func(r *lifecycle.Record) { e := 60; r.DataEndS = &e }), false},
-		{"hidden ranges", p, with(p, func(r *lifecycle.Record) { r.HiddenRanges = [][2]int{{0, 5}} }), false},
+		{"hiding steps", p, with(p, func(r *lifecycle.Record) { r.HidingSteps = &workout.HidingSteps{Start: []int{0}, End: []int{5}} }), false},
+		// F-55 HR-5, OQ-246: a raise of either end hides more, from 0 too;
+		// equal or lower is in place; a raise with a lower other end hides more.
+		{"start raised from 0", p, with(p, radii(50, 0)), true},
+		{"end raised from 0", p, with(p, radii(0, 2000)), true},
+		{"start raised", with(p, radii(300, 300)), with(p, radii(350, 300)), true},
+		{"end raised", with(p, radii(300, 300)), with(p, radii(300, 350)), true},
+		{"start lowered", with(p, radii(300, 300)), with(p, radii(250, 300)), false},
+		{"end lowered", with(p, radii(300, 300)), with(p, radii(300, 0)), false},
+		{"both lowered", with(p, radii(300, 300)), with(p, radii(0, 0)), false},
+		{"start raised, end lowered", with(p, radii(300, 300)), with(p, radii(350, 0)), true},
+		{"start lowered, end raised", with(p, radii(300, 300)), with(p, radii(0, 2000)), true},
 		{"derived and hiding on", p, with(hidden, func(r *lifecycle.Record) { r.SummaryJSON = "{}" }), true},
 		{"created (unclassified)", p, with(p, func(r *lifecycle.Record) { r.CreatedAt = r.CreatedAt.Add(time.Second) }), true},
 		{"token (unclassified)", p, with(p, func(r *lifecycle.Record) { r.EditTokenHash[0] ^= 1 }), true},
@@ -368,7 +382,7 @@ func TestRemoveFirst(t *testing.T) {
 	p := published(d)
 	fx.change(t, d, p)
 	q := p
-	q.HideEnds = true
+	q.HideStartM, q.HideEndM = 300, 300
 	fx.steps = nil
 	fx.change(t, p, q)
 	if len(fx.steps) < 3 || fx.steps[0] != "remove index.html" || fx.steps[1] != "remove folder" || fx.steps[2] != "create folder" {
@@ -390,7 +404,7 @@ func TestKill(t *testing.T) {
 	titled := p
 	titled.Title = "Renamed"
 	hidden := p
-	hidden.HideEnds = true
+	hidden.HideStartM, hidden.HideEndM = 300, 300
 	changeData := func(a *Area) {
 		a.transform = func(w workout.Workout, _ lifecycle.Record) (workout.Workout, bool) {
 			w.Samples.Power = nil
@@ -482,7 +496,7 @@ func TestSweepAfterStoppedRemoveFirst(t *testing.T) {
 	fx.change(t, d, p)
 	old, _ := fx.complete(t)
 	hidden := p
-	hidden.HideEnds = true
+	hidden.HideStartM, hidden.HideEndM = 300, 300
 	fx.a.step = func(s string) error {
 		if s == "remove folder" {
 			return syscall.EACCES
@@ -567,7 +581,7 @@ func TestErrorsCarryNoPublicPath(t *testing.T) {
 	d := draft()
 	p := published(d)
 	hidden := p
-	hidden.HideEnds = true
+	hidden.HideStartM, hidden.HideEndM = 300, 300
 	for _, c := range []struct {
 		name          string
 		before, after lifecycle.Record
@@ -830,11 +844,11 @@ func TestQAR2SweepDuringOtherBuild(t *testing.T) {
 	}
 	d := draft()
 	hidden := published(d)
-	hidden.HideEnds = true
+	hidden.HideStartM, hidden.HideEndM = 300, 300
 	fx.change(t, d, hidden)
 	old, _ := fx.complete(t)
 	shown := hidden
-	shown.HideEnds = false // shows more: in place, with a new data file
+	shown.HideStartM, shown.HideEndM = 0, 0 // shows more: in place, with a new data file
 
 	keep := map[string]struct{}{publicID: {}}
 	var swept chan error
@@ -909,7 +923,7 @@ func TestRemoveFirstHoldsLock(t *testing.T) {
 	p := published(d)
 	fx.change(t, d, p)
 	q := p
-	q.HideEnds = true
+	q.HideStartM, q.HideEndM = 300, 300
 	var swept chan error
 	fx.a.step = func(s string) error {
 		if s != "remove folder" || swept != nil {

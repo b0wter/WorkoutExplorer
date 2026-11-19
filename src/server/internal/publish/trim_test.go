@@ -91,13 +91,13 @@ func instant(w workout.Workout, i int) *time.Time {
 }
 
 // TestTrimKeepsTheTrimmedPartOutOfEveryPublicFile (AC 3, 7, 10, 38): end and
-// start trims, hiding off and on.
+// start trims, hiding off and at several radii per end.
 func TestTrimKeepsTheTrimmedPartOutOfEveryPublicFile(t *testing.T) {
 	for _, driveFirst := range []bool{false, true} {
-		for _, hide := range []bool{false, true} {
+		for _, rr := range [][2]int{{0, 0}, {300, 300}, {0, 500}, {50, 0}} { // F-55 AC 35: per-end radii after the trim
 			w := trimTrack(driveFirst)
 			d := draft()
-			d.HideEnds = hide
+			d.HideStartM, d.HideEndM = rr[0], rr[1]
 			runFrom, runTo := 0, 599
 			if driveFirst {
 				runFrom, runTo = 300, 899
@@ -111,7 +111,7 @@ func TestTrimKeepsTheTrimmedPartOutOfEveryPublicFile(t *testing.T) {
 			out := fx.read(t) // also: .br equals the data file, the preview is the render of it
 
 			if hr, _ := stream(out.file, "heart_rate"); slices.ContainsFunc(hr.Ints, func(v int64) bool { return v == markerHR }) {
-				t.Errorf("drive %v hide %v: marker heart rate in the data file", driveFirst, hide)
+				t.Errorf("drive %v radii %v: marker heart rate in the data file", driveFirst, rr)
 			}
 			if lat, ok := stream(out.file, "latitude"); ok {
 				for k, v := range lat.Ints {
@@ -158,8 +158,23 @@ func TestTrimKeepsTheTrimmedPartOutOfEveryPublicFile(t *testing.T) {
 			if html.UnescapeString(string(m[1])) != v.Suggested {
 				t.Errorf("suggestion %q, public %q", v.Suggested, m[1])
 			}
-			if hide && (len(v.Ranges) != 2 || v.Ranges[0][0] != runFrom || v.Ranges[1][1] != runTo) {
-				t.Errorf("ranges %v", v.Ranges)
+			// ADR-056 item 3: steps of the trimmed workout, shifted into
+			// draft.bin indices; the window at the stored radii is exactly the
+			// public positions.
+			if v.Steps == nil || v.Steps.Start[0] != runFrom || v.Steps.End[0] != runTo {
+				t.Fatalf("steps %v", v.Steps)
+			}
+			if lat, ok := stream(out.file, "latitude"); ok {
+				from, to, _ := v.Steps.Window(d.HideStartM, d.HideEndM)
+				first, last := slices.Index(lat.Valid, true), -1
+				for k, ok := range lat.Valid {
+					if ok {
+						last = k
+					}
+				}
+				if first+runFrom != from || last+runFrom != to {
+					t.Errorf("window %d..%d, public positions %d..%d", from, to, first+runFrom, last+runFrom)
+				}
 			}
 		}
 	}
@@ -230,7 +245,7 @@ func TestTrimLeavingNoPositions(t *testing.T) {
 	w := workout.Normalise(workout.Recording{FileType: "activity", Records: recs})
 	for _, hide := range []bool{false, true} {
 		d := draft()
-		d.HideEnds = hide
+		d.HideStartM, d.HideEndM = radius(hide), radius(hide)
 		d.TrimStartAt = instant(w, 250)
 		fx := newFixtureWith(t, []byte("trk"), fakeParser{"trk": w})
 		fx.change(t, d, published(d))

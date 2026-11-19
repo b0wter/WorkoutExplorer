@@ -10,7 +10,6 @@ import (
 
 	"workout-explorer/internal/datafile"
 	"workout-explorer/internal/places"
-	"workout-explorer/internal/workout"
 )
 
 // F-45 ST-4, AC "hidden start gives the town of the first public point".
@@ -30,7 +29,7 @@ func TestSuggestedTitleFollowsHiding(t *testing.T) {
 		fx := newFixtureWith(t, []byte("walk"), p)
 		fx.a.d.Places = ix
 		d := draft()
-		d.HideEnds = c.hide
+		d.HideStartM, d.HideEndM = radius(c.hide), radius(c.hide)
 		fx.change(t, d, published(d))
 		out := fx.read(t)
 		m := ogTitle.FindSubmatch(out.page)
@@ -80,7 +79,7 @@ func TestSuggestedTitleWithoutTown(t *testing.T) {
 		fx := newFixtureWith(t, []byte(c.name), p)
 		fx.a.d.Places = ix
 		d := draft()
-		d.HideEnds = c.hide
+		d.HideStartM, d.HideEndM = radius(c.hide), radius(c.hide)
 		fx.change(t, d, published(d))
 		if m := ogTitle.FindSubmatch(fx.read(t).page); html.UnescapeString(string(m[1])) != c.want {
 			t.Errorf("%s hide %v: %q, want %q", c.name, c.hide, m[1], c.want)
@@ -108,7 +107,7 @@ func TestSuggestedTitleOwnerAgreesAndHidingAfterPublish(t *testing.T) {
 		}
 		var skip [][2]int
 		if hide {
-			skip = workout.HiddenRanges(w)
+			skip = hiddenRanges(w)
 		}
 		_, lat, lon, ok, err := datafile.FirstPositionAt(bytes.NewReader(bin), int64(len(bin)), skip)
 		if err != nil || !ok {
@@ -118,7 +117,7 @@ func TestSuggestedTitleOwnerAgreesAndHidingAfterPublish(t *testing.T) {
 		fx := newFixtureWith(t, []byte("walk"), fakeParser{"walk": w})
 		fx.a.d.Places = ix
 		d := draft()
-		d.HideEnds = hide
+		d.HideStartM, d.HideEndM = radius(hide), radius(hide)
 		fx.change(t, d, published(d))
 		if m := ogTitle.FindSubmatch(fx.read(t).page); html.UnescapeString(string(m[1])) != "Morning workout near "+town {
 			t.Errorf("hide %v: public %q, owner town %q", hide, m[1], town)
@@ -134,7 +133,7 @@ func TestSuggestedTitleOwnerAgreesAndHidingAfterPublish(t *testing.T) {
 		t.Fatalf("before hiding: %s", m[1])
 	}
 	on := pub
-	on.HideEnds = true
+	on.HideStartM, on.HideEndM = 300, 300
 	fx.change(t, pub, on)
 	if m := ogTitle.FindSubmatch(fx.read(t).page); string(m[1]) != "Morning workout near Bville" {
 		t.Errorf("after hiding: %s", m[1])

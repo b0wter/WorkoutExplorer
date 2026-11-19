@@ -142,7 +142,7 @@ func TestMapCardKeyBinding(t *testing.T) {
 
 	// Hiding on: a new frame from the public file only; the old map is not used.
 	on := off
-	on.HideEnds = true
+	on.HideStartM, on.HideEndM = 300, 300
 	frOn, _, _ := fx.a.Frame(ctx, on)
 	fx.change(t, off, on)
 	img, f, title = fx.served(t)

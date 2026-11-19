@@ -14,7 +14,7 @@ import (
 )
 
 func (o *fakeOwner) View(_ context.Context, r lifecycle.Record) lifecycle.OwnerView {
-	return lifecycle.OwnerView{Suggested: "Morning ride near Köln", Ranges: r.HiddenRanges}
+	return lifecycle.OwnerView{Suggested: "Morning ride near Köln", Steps: r.HidingSteps}
 }
 
 type fakeOwner struct {
@@ -139,7 +139,7 @@ func TestOwnerResponses(t *testing.T) {
 		!strings.Contains(rec.Body.String(), `"title":"\u003cb\u003e"`) || !strings.Contains(rec.Body.String(), `"lifetime_days":7`) ||
 		!strings.Contains(rec.Body.String(), `"created_at":"2026-10-01T00:00:00Z"`) || !strings.Contains(rec.Body.String(), `"data_end_s":null`) ||
 		!strings.Contains(rec.Body.String(), `"view_url":"/w/pppppppppppppppppppppp"`) ||
-		!strings.Contains(rec.Body.String(), `"hide_ends_ranges":[]`) || !strings.Contains(rec.Body.String(), `"suggested_title":"Morning ride near Köln"`) {
+		!strings.Contains(rec.Body.String(), `"hiding_steps":null`) || !strings.Contains(rec.Body.String(), `"hide_start_m":0,"hide_end_m":0`) || strings.Contains(rec.Body.String(), `hide_ends`) || !strings.Contains(rec.Body.String(), `"suggested_title":"Morning ride near Köln"`) {
 		t.Errorf("get: %d %s", rec.Code, rec.Body)
 	}
 
@@ -196,7 +196,7 @@ func TestPatchBody(t *testing.T) {
 		``, `[]`, `"x"`, `null`, `{`, `{} {}`, `{}x`,
 		`{"unknown":1}`, `{"created_at":"2026-01-01T00:00:00Z"}`, `{"expires_at":"x"}`, `{"view_url":"/x"}`, `{"data_end_s":1}`,
 		`{"hide_ends_ranges":[]}`, `{"suggested_title":"x"}`, `{"hide_ends_ranges":[[0,1]]}`, `{"title":"x","hide_ends_ranges":null}`,
-		`{"title":null}`, `{"title":null,"title":"x"}`, `{"title":"a","title":"b"}`, `{"title":1}`, `{"hide_ends":"yes"}`, `{"allow_download":false}`, `{"title":"x","allow_download":true}`, `{"lifetime_days":7.5}`,
+		`{"title":null}`, `{"title":null,"title":"x"}`, `{"title":"a","title":"b"}`, `{"title":1}`, `{"hide_ends":true}`, `{"hide_ends":false}`, `{"hiding_steps":null}`, `{"hide_start_m":300.5}`, `{"hide_start_m":"300"}`, `{"hide_end_m":null}`, `{"hide_end_m":true}`, `{"title":"x","hide_end_m":3e2}`, // F-55 HR-4 `{"allow_download":false}`, `{"title":"x","allow_download":true}`, `{"lifetime_days":7.5}`,
 		`{"lifetime_days":"7"}`, `{"visibility":3}`, `{"description":["a"]}`,
 		`{"visibility":"unlisted"}`, `{"visibility":"draft"}`, `{"visibility":"private"}`, `{"title":"x","visibility":"unlisted"}`, // read-only (O-6)
 		`{"trimmed":null}`, `{"trim_start_at":"x"}`, `{"trim_end_at":1}`, `{"trim_start_at":"2026-06-01T06:00:00.5Z"}`, // F-47
@@ -217,14 +217,17 @@ func TestPatchBody(t *testing.T) {
 		}
 	}
 
+	if rec := ownerDo(h, "PATCH", url, auth, `{"hide_start_m":"300"}`); !strings.Contains(rec.Body.String(), lifecycle.MsgBadHiding) {
+		t.Errorf("a string as a radius: %s", rec.Body)
+	}
 	if rec := ownerDo(h, "PATCH", url, auth, `{"trim_start_at":12345}`); !strings.Contains(rec.Body.String(), "trim_start_at") {
 		t.Errorf("a number as a trim time: %s", rec.Body)
 	}
 
 	o.calls = nil
-	rec := ownerDo(h, "PATCH", url, auth, `{"title":"T","description":"D","hide_ends":true,"lifetime_days":30}`)
+	rec := ownerDo(h, "PATCH", url, auth, `{"title":"T","description":"D","hide_start_m":50,"hide_end_m":2000,"lifetime_days":30}`)
 	p := o.patch
-	if rec.Code != 200 || *p.Title != "T" || *p.Description != "D" || !*p.HideEnds || *p.LifetimeDays != 30 {
+	if rec.Code != 200 || *p.Title != "T" || *p.Description != "D" || *p.HideStartM != 50 || *p.HideEndM != 2000 || *p.LifetimeDays != 30 {
 		t.Errorf("full: %d %s", rec.Code, rec.Body)
 	}
 	rec = ownerDo(h, "PATCH", url, auth, `{"trim_start_at":"2026-06-01T08:00:00+02:00","trim_end_at":null}`)

@@ -78,7 +78,7 @@ func TestCorpus(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		cut, _ := workout.HideEnds(w)
+		cut, _ := workout.Hide(w, 300, 300)
 		for _, v := range []workout.Workout{w, cut} {
 			f := public(t, v)
 			start := time.Now()
@@ -126,7 +126,7 @@ func near(c color.Color, want color.RGBA) bool {
 // the image differs.
 func TestHiddenEnds(t *testing.T) {
 	w := parse(t, "ride-30min.fit")
-	cut, fully := workout.HideEnds(w)
+	cut, fully := workout.Hide(w, 300, 300)
 	if fully {
 		t.Fatal("fully hidden")
 	}

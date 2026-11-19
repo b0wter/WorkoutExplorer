@@ -109,7 +109,7 @@ func TestRegenerateFormatBump(t *testing.T) {
 	dir := t.TempDir()
 	a := openStorageApp(t, dir, 0)
 	hidden, token := a.published("ride-30min.fit")
-	if rec := a.owner("PATCH", "/api/workouts/"+hidden, token, `{"hide_ends":true,"title":"T","lifetime_days":12}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", "/api/workouts/"+hidden, token, `{"hide_start_m":300,"hide_end_m":300,"title":"T","lifetime_days":12}`); rec.Code != 200 {
 		t.Fatalf("patch %d", rec.Code)
 	}
 	plain, _ := a.published("run-30min.fit")
@@ -487,5 +487,28 @@ func TestPathless(t *testing.T) {
 		if got := pathless(err); strings.Contains(got, "/srv") || got == "" {
 			t.Errorf("%q", got)
 		}
+	}
+}
+
+// TestRegenerateFillsHidingSteps (F-55 HR-1, HR-7, AC 41): a row as the v9
+// migration leaves it (radii 300/300 from hiding on, hiding_steps NULL) gets
+// its steps from regenerate; the radii stay and the public files keep their
+// names, so the page is unchanged.
+func TestRegenerateFillsHidingSteps(t *testing.T) {
+	dir := t.TempDir()
+	a := openStorageApp(t, dir, 0)
+	pub, token := a.published("ride-30min.fit")
+	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"hide_start_m":300,"hide_end_m":300}`); rec.Code != 200 {
+		t.Fatalf("patch %d", rec.Code)
+	}
+	files := a.publicFiles(pub)
+	a.sql("UPDATE workouts SET hiding_steps = NULL")
+	runRegen(t, context.Background(), dir, testWeb, nil).want(t, 0, "1", "0", "0", "0")
+	r := a.rows()[0]
+	if r["hiding_steps"] == nil || r["hide_start_m"] != int64(300) || r["hide_end_m"] != int64(300) {
+		t.Errorf("row %v", r)
+	}
+	if got := a.publicFiles(pub); !slices.Equal(got, files) {
+		t.Errorf("public files %v, were %v", got, files)
 	}
 }

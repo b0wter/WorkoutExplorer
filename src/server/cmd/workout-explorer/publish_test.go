@@ -85,7 +85,7 @@ func TestPublishEndToEnd(t *testing.T) {
 	}
 	rec := a.owner("POST", "/api/workouts/"+pub+"/publish", token, "")
 	var s map[string]any
-	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 16 {
+	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 17 {
 		t.Fatalf("publish: %d %s", rec.Code, rec.Body)
 	}
 	row := a.rows()[0]
@@ -179,7 +179,7 @@ func TestPublishEndToEnd(t *testing.T) {
 
 	// AC 4 at the API, F-16: turning hiding on is a hides-more change (remove
 	// first); it writes a new data file and the old one is gone.
-	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"hide_ends":true}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"hide_start_m":300,"hide_end_m":300}`); rec.Code != 200 {
 		t.Fatal(rec.Code)
 	}
 	if got := a.publicFiles(pub); len(got) != 4 || !slices.Contains(got, "index.html") || slices.ContainsFunc(got, func(n string) bool {
@@ -327,7 +327,8 @@ func TestMigrationDropsPrivate(t *testing.T) {
 	a.sql("DROP INDEX workouts_expires_at")
 	a.sql("ALTER TABLE workouts RENAME TO v3")
 	a.sql(strings.Join(v2, "\n"))
-	a.sql("INSERT INTO workouts (" + strings.Join(v2cols, ", ") + ") SELECT " + strings.Join(v2cols, ", ") + " FROM v3") // v3 also has the F-47 trim columns; allow_download takes its default
+	from := strings.NewReplacer("hide_ends", "hide_start_m > 0", "hidden1_first", "NULL", "hidden1_last", "NULL", "hidden2_first", "NULL", "hidden2_last", "NULL").Replace(strings.Join(v2cols, ", ")) // v9 has radii, no ranges (F-55)
+	a.sql("INSERT INTO workouts (" + strings.Join(v2cols, ", ") + ") SELECT " + from + " FROM v3")                                                                                                     // v3 also has the F-47 trim columns; allow_download takes its default
 	a.sql("DROP TABLE v3")
 	a.sql("UPDATE workouts SET visibility = 'private', published_at = created_at WHERE public_id = ?", priv)
 	a.sql("PRAGMA user_version = 2")

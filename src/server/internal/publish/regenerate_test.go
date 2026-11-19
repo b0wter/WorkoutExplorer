@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/workout"
 )
 
 // rows is a shared row table, standing in for the database both processes see.
@@ -71,7 +72,7 @@ func TestRecheckUnderLock(t *testing.T) {
 		t.Fatal(err)
 	}
 	hidden := p
-	hidden.HideEnds = true
+	hidden.HideStartM, hidden.HideEndM = 300, 300
 	orig := &hookOriginals{b: fx.orig}
 	orig.before = func() {
 		rs.set(hidden) // serve commits the row, then builds
@@ -130,7 +131,7 @@ func TestRegenerateInPlace(t *testing.T) {
 	rs.set(p)
 	fx.change(t, draft(), p)
 	after := p
-	after.SummaryJSON, after.Sport, after.HiddenRanges = `{"x":1}`, "running", [][2]int{{0, 3}}
+	after.SummaryJSON, after.Sport, after.HidingSteps = `{"x":1}`, "running", &workout.HidingSteps{Start: []int{3}, End: []int{4}}
 	rs.set(after)
 	fx.steps = nil
 	fx.change(t, p, after)
@@ -161,6 +162,8 @@ func TestSameRecord(t *testing.T) {
 			f.SetString(f.String() + "x")
 		case reflect.Bool:
 			f.SetBool(!f.Bool())
+		case reflect.Int:
+			f.SetInt(f.Int() + 50)
 		case reflect.Array:
 			f.Index(0).SetUint(f.Index(0).Uint() + 1)
 		case reflect.Pointer:
@@ -171,8 +174,7 @@ func TestSameRecord(t *testing.T) {
 					n := 1
 					f.Set(reflect.ValueOf(&n))
 				default:
-					tm := time.Now()
-					f.Set(reflect.ValueOf(&tm))
+					f.Set(reflect.New(f.Type().Elem()))
 				}
 			}
 		case reflect.Slice:

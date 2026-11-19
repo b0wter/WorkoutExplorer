@@ -122,10 +122,18 @@ var (
 // with it on, each in a fresh public area.
 func publishBoth(t *testing.T, orig []byte, parser Parser) (off, on output) {
 	t.Helper()
+	return publishAt(t, orig, parser, 300, 300)
+}
+
+// publishAt is publishBoth with the radii a (start) and b (end) for "on".
+func publishAt(t *testing.T, orig []byte, parser Parser, a, b int) (off, on output) {
+	t.Helper()
 	for _, hide := range []bool{false, true} {
 		fx := newFixtureWith(t, orig, parser)
 		d := draft()
-		d.HideEnds = hide
+		if hide {
+			d.HideStartM, d.HideEndM = a, b
+		}
 		fx.change(t, d, published(d))
 		if hide {
 			on = fx.read(t)
@@ -151,14 +159,21 @@ func metadata(b []byte, f datafile.File) []byte { return b[14 : 14+f.MetadataLen
 // draft has it. It returns whether the route was fully hidden.
 func checkHidden(t *testing.T, name string, orig []byte, parser Parser, w workout.Workout) bool {
 	t.Helper()
-	off, on := publishBoth(t, orig, parser)
+	return checkHiddenAt(t, name, orig, parser, w, 300, 300)
+}
+
+// checkHiddenAt is checkHidden with the radii a (start) and b (end) for "on"
+// (F-55 AC 34 to 37).
+func checkHiddenAt(t *testing.T, name string, orig []byte, parser Parser, w workout.Workout, a, b int) bool {
+	t.Helper()
+	off, on := publishAt(t, orig, parser, a, b)
 
 	// AC 4: hiding off publishes the full track, the draft's data file.
 	if draftBin, err := datafile.Encode(w); err != nil || !bytes.Equal(off.bin, draftBin) {
 		t.Fatalf("%s: hiding off: public data file is not the draft's (%v)", name, err)
 	}
 	// The build used the transform's output, nothing else.
-	cut, fully := workout.HideEnds(w)
+	cut, fully := workout.Hide(w, a, b)
 	if want, _ := datafile.Encode(cut); !bytes.Equal(on.bin, want) {
 		t.Fatalf("%s: hiding on: data file is not the cut workout's", name)
 	}
@@ -201,7 +216,7 @@ func checkHidden(t *testing.T, name string, orig []byte, parser Parser, w workou
 	if hadPos {
 		latOff, _ := stream(off.file, "latitude")
 		lonOff, _ := stream(off.file, "longitude")
-		lo, hi := circleBounds(w)
+		lo, hi := circleBounds(w, a, b)
 		if hasPos {
 			latOn, _ := stream(on.file, "latitude")
 			lonOn, _ := stream(on.file, "longitude")
@@ -249,7 +264,7 @@ func checkHidden(t *testing.T, name string, orig []byte, parser Parser, w workou
 
 	// ADR-030: the ranges the upload stores mark exactly the samples whose
 	// position the public file lacks although the draft has one.
-	ranges := workout.HiddenRanges(w)
+	ranges := hiddenRangesAt(w, a, b)
 	if hadPos {
 		latOff, _ := stream(off.file, "latitude")
 		latOn, _ := stream(on.file, "latitude")
@@ -314,9 +329,10 @@ func dataName(t *testing.T, page []byte) string {
 }
 
 // circleBounds is the first recorded sample (gap-filled ones never count,
-// H-3) more than 300 m from the first position, and the last one more than
-// 300 m from the last.
-func circleBounds(w workout.Workout) (lo, hi int) {
+// H-3) more than a metres from the first position, and the last one more
+// than b metres from the last; a radius 0 leaves its end at the first or
+// last sample (F-55 HR-2).
+func circleBounds(w workout.Workout, a, b int) (lo, hi int) {
 	s := w.Samples
 	first, last := -1, -1
 	for i := range s.Lat {
@@ -328,14 +344,20 @@ func circleBounds(w workout.Workout) (lo, hi int) {
 		}
 	}
 	lo, hi = len(s.Lat), -1
-	for i := first; i <= last; i++ {
-		if !math.IsNaN(s.Lat[i]) && !s.Inserted(i) && dist(s.Lat[first], s.Lon[first], s.Lat[i], s.Lon[i]) > workout.HideRadius {
+	if a == 0 {
+		lo = 0
+	}
+	if b == 0 {
+		hi = len(s.Lat) - 1
+	}
+	for i := first; i <= last && a > 0; i++ {
+		if !math.IsNaN(s.Lat[i]) && !s.Inserted(i) && dist(s.Lat[first], s.Lon[first], s.Lat[i], s.Lon[i]) > float64(a) {
 			lo = i
 			break
 		}
 	}
-	for i := last; i >= first; i-- {
-		if !math.IsNaN(s.Lat[i]) && !s.Inserted(i) && dist(s.Lat[last], s.Lon[last], s.Lat[i], s.Lon[i]) > workout.HideRadius {
+	for i := last; i >= first && b > 0; i-- {
+		if !math.IsNaN(s.Lat[i]) && !s.Inserted(i) && dist(s.Lat[last], s.Lon[last], s.Lat[i], s.Lon[i]) > float64(b) {
 			hi = i
 			break
 		}
@@ -449,7 +471,7 @@ func TestHidingOnAfterPublish(t *testing.T) {
 	fullName := dataName(t, full.page)
 
 	hidden := p
-	hidden.HideEnds = true
+	hidden.HideStartM, hidden.HideEndM = 300, 300
 	fx.steps = nil
 	fx.change(t, p, hidden)
 	if len(fx.steps) < 2 || fx.steps[0] != "remove index.html" || fx.steps[1] != "remove folder" {

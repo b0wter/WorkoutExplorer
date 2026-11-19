@@ -17,6 +17,28 @@ const (
 	mLat = 111195.08 // metres per degree of latitude at earthRadius
 )
 
+// HideRadius is F-16's 300 m, today's "hiding on" at both ends (F-55 HR-2).
+const HideRadius = 300.0
+
+// HideEnds is Hide at 300 m at both ends.
+func HideEnds(w Workout) (Workout, bool) { return Hide(w, HideRadius, HideRadius) }
+
+// HiddenRanges is what Hide at 300 m at both ends removes, from StepsOf and
+// Window, as ADR-030 had it: nil without positions, [[0, n-1]] when fully
+// hidden, else the start and the end section.
+func HiddenRanges(w Workout) [][2]int {
+	h := StepsOf(w)
+	if h == nil {
+		return nil
+	}
+	n := len(w.Samples.Offset)
+	from, to, fully := h.Window(HideRadius, HideRadius)
+	if fully {
+		return [][2]int{{0, n - 1}}
+	}
+	return [][2]int{{0, from - 1}, {to + 1, n - 1}}
+}
+
 // pt returns the position x metres east and y metres north of (lat0, lon0).
 func pt(x, y float64) (lat, lon float64) {
 	return lat0 + y/mLat, lon0 + x/(mLat*math.Cos(lat0*math.Pi/180))
@@ -45,6 +67,12 @@ func normalised(records []RawRecord) Workout {
 // offset that have a position in w. It returns, per sample, whether the
 // position stays public, and whether the route is fully hidden.
 func expectCut(w Workout, records []RawRecord) (keep []bool, fully bool) {
+	return expectCutAt(w, records, HideRadius, HideRadius)
+}
+
+// expectCutAt is expectCut for the radii startM and endM; 0 leaves that end
+// uncut (F-55 HR-2).
+func expectCutAt(w Workout, records []RawRecord, startM, endM float64) (keep []bool, fully bool) {
 	s := w.Samples
 	keep = make([]bool, len(s.Offset))
 	if s.Lat == nil {
@@ -61,17 +89,23 @@ func expectCut(w Workout, records []RawRecord) (keep []bool, fully bool) {
 		}
 	}
 	f, l := fixes[0], fixes[len(fixes)-1]
-	from, to := -1, -1
-	for _, i := range fixes {
-		if haversine(s.Lat[f], s.Lon[f], s.Lat[i], s.Lon[i]) > HideRadius {
-			from = i
-			break
+	from, to := 0, len(s.Offset)-1
+	if startM > 0 {
+		from = -1
+		for _, i := range fixes {
+			if haversine(s.Lat[f], s.Lon[f], s.Lat[i], s.Lon[i]) > startM {
+				from = i
+				break
+			}
 		}
 	}
-	for _, i := range slices.Backward(fixes) {
-		if haversine(s.Lat[l], s.Lon[l], s.Lat[i], s.Lon[i]) > HideRadius {
-			to = i
-			break
+	if endM > 0 {
+		to = -1
+		for _, i := range slices.Backward(fixes) {
+			if haversine(s.Lat[l], s.Lon[l], s.Lat[i], s.Lon[i]) > endM {
+				to = i
+				break
+			}
 		}
 	}
 	if from < 0 || to < 0 || from > to {

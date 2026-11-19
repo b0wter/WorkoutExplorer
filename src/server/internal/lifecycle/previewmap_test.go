@@ -45,7 +45,7 @@ type fakeFrames struct {
 	calls  int
 	gate   chan struct{} // non-nil: Frame waits for it
 	in     chan struct{} // non-nil: Frame signals entry
-	hidKey string        // non-empty: the key while HideEnds is on
+	hidKey string        // non-empty: the key while the start is hidden
 }
 
 func (f *fakeFrames) Frame(_ context.Context, r Record) (preview.Frame, bool, error) {
@@ -59,7 +59,7 @@ func (f *fakeFrames) Frame(_ context.Context, r Record) (preview.Frame, bool, er
 	defer f.mu.Unlock()
 	f.calls++
 	fr := f.fr
-	if f.hidKey != "" && r.HideEnds {
+	if f.hidKey != "" && r.HideStartM > 0 {
 		fr.Key = f.hidKey
 	}
 	return fr, f.ok, nil
@@ -217,7 +217,7 @@ func TestPutPreviewMapStores(t *testing.T) {
 }
 
 func sameRec(a, b Record) bool {
-	return a.ID == b.ID && a.HideEnds == b.HideEnds && a.Title == b.Title && a.Visibility == b.Visibility
+	return a.ID == b.ID && a.HideStartM == b.HideStartM && a.HideEndM == b.HideEndM && a.Title == b.Title && a.Visibility == b.Visibility
 }
 
 // TestPreviewFrame: no positions answers no frame; a wrong token not found.
@@ -312,7 +312,7 @@ func TestPutPreviewMapRelookup(t *testing.T) {
 		s, _, f, _, c, frames, _ := mapService(t)
 		frames.hidKey = "fedcba9876543210"
 		body := &eofReader{r: bytes.NewReader(mapPNG(t)), at: func() {
-			if _, err := s.Update(ctx, c.PublicID, c.EditToken, SettingsPatch{HideEnds: bp(true)}); err != nil {
+			if _, err := s.Update(ctx, c.PublicID, c.EditToken, SettingsPatch{HideStartM: ip(300)}); err != nil {
 				t.Error(err)
 			}
 		}}

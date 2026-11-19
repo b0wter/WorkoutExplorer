@@ -93,7 +93,7 @@ func TestFrame(t *testing.T) {
 // with hiding on, and that frame is fitted to the public positions only.
 func TestFrameHidingOn(t *testing.T) {
 	w := parse(t, "ride-30min.fit")
-	cut, _ := workout.HideEnds(w)
+	cut, _ := workout.Hide(w, 300, 300)
 	off, _ := FrameOf(public(t, w))
 	on, _ := FrameOf(public(t, cut))
 	if off.Key == on.Key || on.Zoom <= off.Zoom {
@@ -342,7 +342,7 @@ func TestRenderOnMap(t *testing.T) {
 // TestRenderOnMapHidden (AC 2): with hiding on, every route pixel lies at a
 // public position (within the stroke); the hidden ends draw nothing.
 func TestRenderOnMapHidden(t *testing.T) {
-	cut, _ := workout.HideEnds(parse(t, "ride-30min.fit"))
+	cut, _ := workout.Hide(parse(t, "ride-30min.fit"), 300, 300)
 	on := public(t, cut)
 	fr, _ := FrameOf(on)
 	b, err := mapCard(t, on, "", synthMap(4))

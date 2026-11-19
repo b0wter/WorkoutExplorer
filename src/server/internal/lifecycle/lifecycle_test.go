@@ -8,7 +8,6 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
-	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -365,7 +364,7 @@ func TestNewDraft(t *testing.T) {
 	id := Identity{ID: strings.Repeat("a", 32), PublicID: strings.Repeat("P", 22), TokenHash: [32]byte{1}}
 	w := smallWorkout()
 	r := NewDraft(w, []byte(`{"a":1}`), id, t0)
-	if r.Visibility != Draft || r.PublishedAt != nil || r.HideEnds || r.Title != "" || r.Description != "" {
+	if r.Visibility != Draft || r.PublishedAt != nil || r.HideStartM != 0 || r.HideEndM != 0 || r.Title != "" || r.Description != "" {
 		t.Errorf("defaults: %+v", r)
 	}
 	if got := r.ExpiresAt.Sub(r.CreatedAt); got != 604_800*time.Second {
@@ -380,17 +379,19 @@ func TestNewDraft(t *testing.T) {
 	if r.SummaryJSON != `{"a":1}` || r.Sport != "cycling" || r.EditTokenHash != id.TokenHash {
 		t.Errorf("fields: %+v", r)
 	}
-	if r.HiddenRanges != nil {
-		t.Errorf("no positions: ranges %v", r.HiddenRanges)
+	if r.HidingSteps != nil {
+		t.Errorf("no positions: steps %v", r.HidingSteps)
 	}
-	// ADR-030: the upload stores what hiding would cut, with hiding off.
-	// About 333 m between fixes: samples 0 and 4 are hidden.
+	// ADR-056: the upload stores the steps, with both radii 0.
+	// About 333 m between fixes: at 300 m samples 0 and 4 are hidden.
 	line := w
 	line.Samples.Offset = []int32{0, 1, 2, 3, 4}
 	line.Samples.Lat = []float64{50, 50.003, 50.006, 50.009, 50.012}
 	line.Samples.Lon = []float64{8, 8, 8, 8, 8}
-	if r := NewDraft(line, nil, id, t0); !reflect.DeepEqual(r.HiddenRanges, [][2]int{{0, 0}, {4, 4}}) || r.HideEnds {
-		t.Errorf("ranges %v, hide_ends %v", r.HiddenRanges, r.HideEnds)
+	if r := NewDraft(line, nil, id, t0); r.HidingSteps == nil || r.HideStartM != 0 || r.HideEndM != 0 {
+		t.Errorf("steps %v, radii %d %d", r.HidingSteps, r.HideStartM, r.HideEndM)
+	} else if from, to, fully := r.HidingSteps.Window(300, 300); from != 1 || to != 3 || fully {
+		t.Errorf("window %d..%d %v", from, to, fully)
 	}
 	w.Integrity = workout.Integrity{Truncated: true, DataEnd: 321}
 	w.StartTime = time.Time{}

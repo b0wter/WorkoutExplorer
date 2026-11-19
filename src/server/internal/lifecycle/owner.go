@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"math"
 	"strings"
 	"time"
 	"unicode"
@@ -33,6 +34,10 @@ func (e *InvalidSettingsError) Error() string { return "lifecycle: invalid setti
 
 func invalid(msg string) error { return &InvalidSettingsError{Message: msg} }
 
+// MsgBadHiding is the refusal of a hiding radius (F-55 HR-4), also for a
+// value of the wrong type.
+const MsgBadHiding = "The start and end hiding must each be a whole number of metres from 0 to 2,000 in steps of 50."
+
 // Limits of the free text (F-12 design, Settings object), in Unicode code points.
 const (
 	MaxTitleChars       = 100
@@ -47,10 +52,11 @@ type ChangeHook interface {
 
 // SettingsPatch holds the fields a PATCH sent; nil means not sent.
 type SettingsPatch struct {
-	Title        *string
-	Description  *string
-	HideEnds     *bool
-	LifetimeDays *int
+	Title       *string
+	Description *string
+	// HideStartM and HideEndM are F-55 HR-4's radii in metres.
+	HideStartM, HideEndM *int
+	LifetimeDays         *int
 	// TrimStart and TrimEnd are the instants of F-47 TR-3; Set with a nil At
 	// is null: that end is not trimmed.
 	TrimStart, TrimEnd OptTime
@@ -98,8 +104,14 @@ func ApplyPatch(r Record, p SettingsPatch, now time.Time) (Record, error) {
 		}
 		r.Description = d
 	}
-	if p.HideEnds != nil {
-		r.HideEnds = *p.HideEnds
+	for _, h := range []struct{ v, dst *int }{{p.HideStartM, &r.HideStartM}, {p.HideEndM, &r.HideEndM}} {
+		if h.v == nil {
+			continue
+		}
+		if !workout.ValidHideRadius(*h.v) {
+			return r, invalid(MsgBadHiding)
+		}
+		*h.dst = *h.v
 	}
 	if p.TrimStart.Set {
 		r.TrimStartAt = p.TrimStart.At
@@ -432,9 +444,10 @@ func (s *Service) DeleteByOperator(ctx context.Context, r Record) error {
 
 // SuggestedTitle is the UP-5 suggestion for the owner's settings object
 // (F-45 ST-6): read-only, "" when none or on any failure (F-19 E-5). The town
-// comes from the first position of draft.bin outside the stored hiding ranges
-// (ADR-030) when hide_ends is on, so a hidden start never names its town. Never
-// logged (I-5).
+// comes from the first position of draft.bin outside the hidden sections at
+// the stored radii (F-55 HR-7, from HidingSteps), so a hidden start never
+// names its town; with a radius above 0 and no steps yet there is no town.
+// Never logged (I-5).
 func (s *Service) SuggestedTitle(rec Record) string {
 	if s.d.Places == nil {
 		return ""
@@ -448,10 +461,7 @@ func (s *Service) SuggestedTitle(rec Record) string {
 	if !ok {
 		return ""
 	}
-	var skip [][2]int
-	if rec.HideEnds {
-		skip = rec.HiddenRanges
-	}
+	skip := hiddenSkip(rec)
 	m, lat, lon, ok, err := datafile.FirstPositionAt(ra, size, skip)
 	if err != nil {
 		return ""
@@ -461,6 +471,24 @@ func (s *Service) SuggestedTitle(rec Record) string {
 		town, _ = s.d.Places.Nearest(lat, lon)
 	}
 	return page.Suggest(m, town)
+}
+
+// hiddenSkip is the samples of draft.bin hidden at rec's radii, as inclusive
+// ranges for datafile.FirstPositionAt: everything when the route is fully
+// hidden or the steps are missing with a radius above 0.
+func hiddenSkip(rec Record) [][2]int {
+	if rec.HideStartM == 0 && rec.HideEndM == 0 {
+		return nil
+	}
+	all := [][2]int{{0, math.MaxInt32}}
+	if rec.HidingSteps == nil {
+		return all
+	}
+	from, to, fully := rec.HidingSteps.Window(rec.HideStartM, rec.HideEndM)
+	if fully {
+		return all
+	}
+	return [][2]int{{0, from - 1}, {to + 1, math.MaxInt32}}
 }
 
 // resolveTrim checks a trim request against a fresh parse (F-47 TR-4) and
@@ -492,11 +520,11 @@ func (s *Service) resolveTrim(ctx context.Context, rec Record, p SettingsPatch) 
 }
 
 // OwnerView is what the owner's settings object shows beyond the row: the
-// hidden ranges and the suggested title, and with a trim stored the trimmed
+// hiding steps and the suggested title, and with a trim stored the trimmed
 // sport and summary (F-47 TR-8, ADR-047 item 3).
 type OwnerView struct {
 	Trimmed   *TrimmedView
-	Ranges    [][2]int
+	Steps     *workout.HidingSteps
 	Suggested string
 }
 
@@ -507,12 +535,12 @@ type TrimmedView struct {
 }
 
 // View returns the owner view of rec. Without a trim it is the stored
-// ranges and ST-6's suggestion, with no parse. With a trim it is computed
+// steps and ST-6's suggestion, with no parse. With a trim it is computed
 // per read from one parse under the O-7 lock; any failure gives no trimmed
-// values, no ranges and no suggestion, never an error.
+// values, no steps and no suggestion, never an error.
 func (s *Service) View(ctx context.Context, rec Record) OwnerView {
 	if (rec.TrimStartAt == nil && rec.TrimEndAt == nil) || s.d.Trimmer == nil {
-		return OwnerView{Ranges: rec.HiddenRanges, Suggested: s.SuggestedTitle(rec)}
+		return OwnerView{Steps: rec.HidingSteps, Suggested: s.SuggestedTitle(rec)}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
