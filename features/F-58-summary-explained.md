@@ -2,7 +2,7 @@
 
 - **Status:** decided (14 Nov 2026); first after F-60 (build order of 19 Nov 2026), before F-54
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
-- **Owner:** frontend
+- **Owner:** both (backend B-1 first: page view-model `Trim`, architect F-58 SE-2)
 - **Lane:** critical (privacy): the viewing page now shows this workout's state, and a careless example could reveal how much is hidden, e.g. by comparing the visible route length with the total distance. Keep QA at effort high for that check only.
 - **Requirements:** AP-24 (new); explains AP-2, AP-4, AP-12, AP-16, AP-10, UP-6, SH-4, SH-9; reuses the AP-22 dialog
 - **Depends on:** F-39 (how-to dialog), F-13 (summary strip); before F-54 (OQ-260)
