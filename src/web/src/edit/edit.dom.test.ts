@@ -1580,6 +1580,22 @@ describe('F-58 SE-4: the summary dialog on the edit page (AC 36, 40)', () => {
     expect(text).toContain('This workout: start not hidden, end not hidden.');
   });
 
+  it('names the trimmed end, and a trim save refreshes it without a reload (QA-58-r1-5)', async () => {
+    settings = fresh({ trim_start_at: '2026-10-29T10:00:00Z' });
+    await open();
+    const button = $<HTMLButtonElement>('button[data-summary-info]')!;
+    expect(button.dataset.trim).toBe('start');
+    let text = await dialogText();
+    expect(text).toMatch(/trimmed \(now starts \d\d:\d\d\)/);
+    type('trim_a', '0');
+    type('trim_b', String(N - 200));
+    await save();
+    expect(button.dataset.trim).toBe('end');
+    text = await dialogText();
+    expect(text).toMatch(/trimmed \(now ends \d\d:\d\d\)/);
+    expect(text).not.toContain('starts');
+  });
+
   it('untrimmed: no trim line, data-trim empty', async () => {
     await open();
     expect($<HTMLButtonElement>('button[data-summary-info]')!.dataset.trim).toBe('');

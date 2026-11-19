@@ -60,7 +60,7 @@ export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cel
   );
   add(
     'Elapsed time',
-    'From the start to the last record, including pauses' + (transitions ? ', transitions and gaps between legs.' : '.'),
+    'From the start to the last record, including pauses' + (transitions ? ', transitions and gaps between legs.' : f.sessions.length > 1 ? ' and gaps between legs.' : '.'),
     elapsed && transitions ? `${elapsed}, including ${transitions} transition${transitions > 1 ? 's' : ''}` : '',
   );
   const avg = items.find((i) => /^(Avg|Max) /.test(i.Label));
@@ -80,7 +80,8 @@ export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cel
       const utc = o.zone?.known ? '' : ' UTC';
       const at = o.trimAt.map((t, i) => t && (i ? 'ends ' : 'starts ') + formatClock(t, off) + utc).filter(Boolean);
       const kept = new Set(items.map((i) => i.Key));
-      const dropped = cells(f.sport, o.untrimmed, units).filter((i) => !kept.has(i.Key)).map((i) => i.Label.toLowerCase());
+      // An empty strip means the trimmed values are unavailable (TR-9 read failure), not dropped (QA-58-r1-3).
+      const dropped = items.length ? cells(f.sport, o.untrimmed, units).filter((i) => !kept.has(i.Key)).map((i) => i.Label.toLowerCase()) : [];
       example = `trimmed (now ${at.join(', ')})` + (items.length ? `; recomputed: ${items.map((i) => i.Label.toLowerCase()).join(', ')}` : '') + (dropped.length ? `; dropped: ${dropped.join(', ')}` : '');
     }
     add('Trim', 'After a trim, the totals are recomputed for the remaining part; calories are dropped.', example);

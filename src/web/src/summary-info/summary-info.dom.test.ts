@@ -176,6 +176,22 @@ describe('owner facts (AC 40; SE-4) and units (DS-1)', () => {
     expect(open(facts({ owner: { ...owner, zone: { known: false, offset_seconds: 0 }, trimAt: [null, '2026-06-06T05:40:00Z'] } }), 'metric', 'end')).toContain('trimmed (now ends 05:40 UTC)');
   });
 
+  it('a stored trim without trimmed values (empty strip): neither recomputed nor dropped (QA-58-r1-3)', () => {
+    const t = open(facts({ summary: {}, owner: { ...owner, trimAt: ['2026-06-06T05:10:00Z', '2026-06-06T05:40:00Z'] } }), 'metric', 'both');
+    expect(t).toContain('This workout: trimmed (now starts 06:10, ends 06:40).');
+    expect(t).not.toMatch(/recomputed:|dropped:/);
+  });
+
+  it('the viewing page names the trimmed end (QA-58-r1-5)', () => {
+    expect(open(facts({}), 'metric', 'start')).toContain('This workout: trimmed at the start, totals recomputed.');
+    expect(open(facts({}), 'metric', 'end')).toContain('This workout: trimmed at the end, totals recomputed.');
+  });
+
+  it('gaps between legs whenever there is more than one session, with or without transitions', () => {
+    expect(open(facts({ sessions: [{ sport: 'running' }, { sport: 'cycling' }] }))).toContain('including pauses and gaps between legs.');
+    expect(open(facts({ sessions: [{ sport: 'cycling' }] }))).toContain('including pauses.Range panel');
+  });
+
   it('values follow the units setting', () => {
     expect(open(facts({}), 'imperial')).toContain('This workout: 6.21 mi in 30:00.');
     expect(open(facts({}), 'imperial')).toContain('faster than 0.6 mph on a ride or 0.3 mph in other sports');
