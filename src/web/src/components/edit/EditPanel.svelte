@@ -75,6 +75,8 @@
 
   /** The hiding sliders' values in metres, for their labels. */
   let ends = $state<[number, number]>([0, 0]);
+  /** QA-55-r1-3: hiding_steps follow the SAVED trim, so with an unsaved trim the shading is stale. */
+  const stale = $derived(trim !== null && (ends[0] > 0 || ends[1] > 0) && (cut[0] !== trimIndex(trim, startS, settings.trim_start_at, false) || cut[1] !== trimIndex(trim, startS, settings.trim_end_at, true)));
   const hideText = (end: string, m: number): string => end + ': ' + (m ? 'hide ' + formatRadius(m, units) : 'not hidden');
   const setEnds = (f: HTMLFormElement): void => {
     const [a, b] = [Number(field(f, 'hide_start_m').value), Number(field(f, 'hide_end_m').value)];
@@ -178,6 +180,7 @@
     <label class="edit-hide"><span class="edit-value">{hideText('End', ends[1])}</span>
       <input type="range" name="hide_end_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('End', ends[1])} />
     </label>
+    {#if stale}<p class="edit-small edit-stale">Save to update the hidden sections.</p>{/if}
   </div>
   {#if trim}
     <div class="edit-field">Trim start and end

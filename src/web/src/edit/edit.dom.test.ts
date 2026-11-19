@@ -1360,6 +1360,21 @@ describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
     expect(stubLog.routeMap[0].hidden).toEqual([[N - 500, N - 1], ...RANGES]);
   });
 
+  it('QA-55-r1-3: an unsaved trim with hiding on says the shading waits for Save', async () => {
+    settings = fresh({ ...ON, trim_start_at: at(100), trim_end_at: at(N - 300) });
+    await open();
+    const note = () => $('.edit-stale')?.textContent;
+    expect(note()).toBeUndefined();
+    drag('trim_a', 0);
+    expect(note()).toBe('Save to update the hidden sections.');
+    hideAt(0, 0);
+    expect(note()).toBeUndefined(); // nothing hidden, nothing stale
+    hideAt(300, 0);
+    expect(note()).toBe('Save to update the hidden sections.');
+    drag('trim_a', 100);
+    expect(note()).toBeUndefined(); // back on the saved trim
+  });
+
   it('at least 60 s remain (AC 41): the moved handle is held back', async () => {
     await open();
     drag('trim_a', 1000);
