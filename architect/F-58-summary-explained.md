@@ -1,7 +1,7 @@
 # F-58 How the summary is computed: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (19 Nov 2026). Critical lane (privacy): QA at effort high for the hiding check only. P-11 open, not blocking
+- **Status:** accepted (19 Nov 2026). Critical lane (privacy): QA at effort high for the hiding check only. P-11 decided 19 Nov 2026 as suggested
 - **Feature:** [`features/F-58-summary-explained.md`](../features/F-58-summary-explained.md); decisions OQ-251 to OQ-260
 - **Requirements:** AP-24; explains AP-2, AP-4, AP-10, AP-12, AP-13, AP-16, UP-6, SH-4, SH-9; reuses AP-22; DS-1, DS-4, NFR Performance, NFR Privacy
 - **Builds on:** [F-39](F-39-how-to-use.md) HU-6, HU-7 (dialog, lazy chunk), [F-13](F-13-activity-page-layout.md) D-2, D-9, D-10, [F-16](F-16-start-and-end-hiding.md) H-1, H-5, H-6, [F-47](F-47-trim.md) TR-3, TR-7, TR-9, [F-15](F-15-publish-pipeline-and-static-page.md) P-4, ADR-011, ADR-026. No data file format change, no migration, no setting
@@ -50,4 +50,4 @@ Synthetic files only (ADR-004).
 
 | ID | Question | Suggestion | Blocks |
 | --- | --- | --- | --- |
-| P-11 | OQ-256 "which totals were recomputed": read as UP-6's recomputation after a trim (recomputed and dropped totals listed; untrimmed, none). Per-metric "device or computed" without a trim would need a new server flag, since the browser cannot tell (F-08 R-10 combines over legs) | Accept the trim reading (SE-4) | Wording of SE-4's owner example only |
+| P-11 | **Decided (user, 19 Nov 2026): accepted.** OQ-256 "which totals were recomputed": read as UP-6's recomputation after a trim (recomputed and dropped totals listed; untrimmed, none). Per-metric "device or computed" without a trim would need a new server flag, since the browser cannot tell (F-08 R-10 combines over legs) | Accept the trim reading (SE-4) | Wording of SE-4's owner example only |
