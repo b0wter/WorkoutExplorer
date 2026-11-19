@@ -35,7 +35,7 @@ A viewer who wonders why a number differs from their watch, or from a selected r
 - [ ] The summary strip has the ⓘ button on the viewing and edit pages; without JavaScript there is none (OQ-257).
 - [ ] Opening it shows the dialog in the how-to dialog's style, over the summary strip on wide screens and as the same full dialog on a phone; it closes with ×, Esc and a tap outside, and adds no history entry.
 - [ ] Only topics for metrics and features this workout has are listed: no pool line on a ride, no transition line without multisport, no trim line on an untrimmed workout (OQ-254).
-- [ ] The dialog shows each topic's general line and this workout's example; on a trimmed workout the example says so and that the totals were recomputed.
+- [ ] The dialog shows each topic's general line and, where the workout has a value for it, this workout's example; on a trimmed workout the example says so and that the totals were recomputed.
 - [ ] On the viewing page, for workouts with neither, one and both ends hidden at several radii, the dialog's text is identical apart from values that do not depend on hiding: no text or value reveals whether, which end, or how much of the route is hidden, beyond the SH-9 notice (OQ-253).
 - [ ] On the edit page, the example shows the start and end radii (0 shown as not hidden).
 - [ ] The dialog's code and text are not in the entry bundle; the entry bundle stays within its budget and LCP is unchanged.
