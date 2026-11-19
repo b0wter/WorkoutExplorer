@@ -22,34 +22,32 @@ import { enhanceExpiry } from '../page/enhance';
 import { loadErrorText } from '../page/load-error';
 import { startPage } from '../page/start';
 import { basemapJobs } from './basemap-job';
-import { trimIndex } from '../components/edit/fields';
+import { hidingRanges, trimIndex } from '../components/edit/fields';
 import type { ZoneSource } from '../zones';
 
-const NONE: readonly (readonly [number, number])[] = [];
+type Ranges = readonly (readonly [number, number])[];
 
-/** F-47 TR-9: the trimmed parts [0, a] and [b, n−1] shaded in one chart (MS-7's seam); the cut
- *  samples a and b mark the edges. Replaces what it drew before; nothing without a trim. */
-function trimShade(a: number, b: number, n: number): ChartDecorator {
+/** F-47 TR-9, F-55 HR-8: the trimmed and to-be-hidden ranges shaded in one chart (MS-7's seam), as
+ *  on the map. Replaces what it drew before; nothing without a range. */
+function shade(ranges: Ranges): ChartDecorator {
   return (over, x) => {
     over.querySelector('.wx-trim')?.remove();
-    if (a === 0 && b === n - 1) return;
+    if (ranges.length === 0) return;
     const doc = over.ownerDocument;
     const box = doc.createElement('div');
     box.className = 'wx-trim';
-    const add = (i: number, j: number): void => {
+    for (const [i, j] of ranges) {
       const el = box.appendChild(doc.createElement('div'));
       el.style.left = x(i) + 'px';
       el.style.width = x(j) - x(i) + 'px';
-    };
-    if (a > 0) add(0, a);
-    if (b < n - 1) add(b, n - 1);
+    }
     over.prepend(box);
   };
 }
 
-/** F-58 SE-4: the start and end hiding radius in metres, 0 = not hidden; the one source of the
- *  radius text. F-55 swaps in its two values here. */
-const radii = (s: Settings): [number, number] => (s.hide_ends ? [300, 300] : [0, 0]);
+/** F-58 SE-4, F-55 HR-9: the SAVED start and end hiding radius in metres, 0 = not hidden; the one
+ *  source of the dialog's radius text. */
+const radii = (s: Settings): [number, number] => [s.hide_start_m, s.hide_end_m];
 
 /** The generic page's content (generic.html, E-4), in this page's theme. No workout data. */
 export function showGeneric(doc: Document, text = 'This workout has expired or is not available.', upload = ''): void {
@@ -138,7 +136,17 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
 
   let settings = $state.raw(got.value);
   const ui = actions(doc, owner);
-  let hide = $state(got.value.hide_ends);
+  /** F-55 HR-8: the sliders' radii in metres, unsaved too; set at most once per animation frame. */
+  let ends = $state.raw<readonly [number, number]>(radii(got.value));
+  let pending: readonly [number, number] | null = null;
+  const onhide = (startM: number, endM: number): void => {
+    if (pending === null)
+      requestAnimationFrame(() => {
+        ends = pending!;
+        pending = null;
+      });
+    pending = [startM, endM];
+  };
   /** Apart from settings: a restore updates it without refilling the form (C-2). */
   let visibility = $state(got.value.visibility);
   const build = (s: Settings) =>
@@ -199,7 +207,6 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     settings = r.value;
     zones();
     void effortsRefresh?.then((refresh) => refresh?.());
-    hide = r.value.hide_ends;
     visibility = r.value.visibility;
     const next = build(r.value);
     if (next && model) {
@@ -224,7 +231,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       if (!apply(await owner.save(patch))) return;
       ui.status = 'Saved';
       // MC-8(b): hiding or trim changed on a published workout; in the background, nothing awaited or shown.
-      if (('hide_ends' in patch || 'trim_start_at' in patch || 'trim_end_at' in patch) && visibility !== 'draft') void basemap();
+      if (('hide_start_m' in patch || 'hide_end_m' in patch || 'trim_start_at' in patch || 'trim_end_at' in patch) && visibility !== 'draft') void basemap();
     });
   };
 
@@ -311,7 +318,10 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       ondelete: () => void ui.remove(),
       ondownload: () => void download(),
       onlinks: () => owner.toPublished(),
-      onhide: (on: boolean) => (hide = on),
+      onhide,
+      get units() {
+        return look?.units ?? 'metric';
+      },
       onedit: () => (ui.status = ''),
       time: data?.time ?? null,
       startTime: data?.meta.start_time ?? '',
@@ -331,14 +341,18 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       }
     });
   });
+  /** E-9's marks from the sliders (F-55 HR-8) plus the trimmed parts (F-47 TR-9), greyed alike on
+   *  the map and the charts: neither will be public. */
+  const hidden = (): Ranges => {
+    const [a, b] = cut;
+    const marks = hidingRanges(settings.hiding_steps, ends[0], ends[1], last);
+    return [...(a > 0 ? [[0, a] as const] : []), ...(b < last ? [[b, last] as const] : []), ...marks];
+  };
   if (result.ok) {
     await startPage(doc, win, {
       data: result,
-      // E-9's marks plus the trimmed parts (F-47 TR-9), greyed alike: neither will be public.
       get hidden() {
-        const [a, b] = cut;
-        const marks = hide ? settings.hide_ends_ranges : NONE;
-        return a === 0 && b === last ? marks : [...(a > 0 ? [[0, a] as const] : []), ...(b < last ? [[b, last] as const] : []), ...marks];
+        return hidden();
       },
       onzones: (start) => {
         startZones = start;
@@ -364,7 +378,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
         let legs = $state.raw<ChartDecorator>();
         Object.defineProperty(l, 'decorate', {
           get: (): ChartDecorator => {
-            const t = trimShade(cut[0], cut[1], last + 1);
+            const t = shade(hidden());
             const g = legs;
             return g ? (over, x) => (g(over, x), t(over, x)) : t;
           },

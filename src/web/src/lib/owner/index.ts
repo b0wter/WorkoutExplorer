@@ -8,7 +8,9 @@
 export interface Settings {
   readonly title: string;
   readonly description: string;
-  readonly hide_ends: boolean;
+  /** F-55 HR-1: start and end hiding radius in metres, 0 to 2,000 in 50 m steps; 0 = not hidden. */
+  readonly hide_start_m: number;
+  readonly hide_end_m: number;
   /** Read-only (SH-2, F-20 C-11): publishing is the only change. */
   readonly visibility: 'draft' | 'unlisted';
   readonly lifetime_days: number;
@@ -18,8 +20,9 @@ export interface Settings {
   /** UP-3: seconds since the start after which data is missing; null for a complete file. */
   readonly data_end_s: number | null;
   readonly view_url: string;
-  /** ADR-030: inclusive [first, last] sample ranges into draft.bin that hiding removes. */
-  readonly hide_ends_ranges: readonly (readonly [number, number])[];
+  /** Read-only, ADR-056 (F-55 HR-4): per end, entry k for radius 50·k m, the first (start) or last
+   *  (end) draft.bin sample that stays public, -1 when none does; null without positions. */
+  readonly hiding_steps: { readonly start: readonly number[]; readonly end: readonly number[] } | null;
   /** Read-only, F-45 ST-6: the UP-5 suggestion for an empty title; '' = none. */
   readonly suggested_title: string;
   /** F-47 TR-3: RFC 3339 UTC instants of the first and last remaining sample; null = that end not trimmed. */
@@ -39,7 +42,7 @@ export type PreviewFrame =
   | { readonly frame: { readonly lon: number; readonly lat: number; readonly zoom: number }; readonly key: string; readonly current: boolean };
 
 /** The fields a PATCH may carry (F-12). */
-export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_ends' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power'>>;
+export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_start_m' | 'hide_end_m' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power'>>;
 
 /** 'not-found' is ADR-025's single answer (the generic page, E-4); 'error' carries the server's
  *  message or UP-10's sentence. */

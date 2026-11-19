@@ -2,19 +2,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Settings } from '../../lib/owner';
 import { cleanText } from '../../lib/text';
-import { expiryText, formOf, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex } from './fields';
+import { expiryText, formOf, hidingRanges, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex } from './fields';
 
 const STORED: Settings = {
   title: 'Morning loop',
   description: 'Easy.\nSecond line.',
-  hide_ends: false,
+  hide_start_m: 0,
+  hide_end_m: 0,
   visibility: 'draft',
   lifetime_days: 30,
   created_at: '2026-10-01T10:00:00Z',
   expires_at: '2026-10-31T10:00:00Z',
   data_end_s: null,
   view_url: '/w/x',
-  hide_ends_ranges: [],
+  hiding_steps: null,
   suggested_title: '',
   trim_start_at: null,
   trim_end_at: null,
@@ -44,7 +45,7 @@ describe('patchOf (E-6: only what changed; E-7: never what the server refuses)',
     expect(patchOf(STORED, formOf(STORED))).toEqual({});
   });
   it('sends only the changed fields', () => {
-    expect(patchOf(STORED, { ...formOf(STORED), title: 'New', hide_ends: true, lifetime_days: 7 })).toEqual({ title: 'New', hide_ends: true, lifetime_days: 7 });
+    expect(patchOf(STORED, { ...formOf(STORED), title: 'New', hide_end_m: 500, lifetime_days: 7 })).toEqual({ title: 'New', hide_end_m: 500, lifetime_days: 7 });
   });
   it('a pasted tab becomes a space; the rest of the text stays', () => {
     expect(patchOf(STORED, { ...formOf(STORED), description: 'one\ttwo\nthree' })).toEqual({ description: 'one two\nthree' });
@@ -141,5 +142,22 @@ describe('trim window (F-47 TR-3, TR-4: the display mirror of the server rule)',
     const trimmed: Settings = { ...STORED, trim_end_at: at(60) };
     expect(patchOf(trimmed, formOf(trimmed))).toEqual({});
     expect(patchOf(trimmed, { ...formOf(trimmed), trim_end_at: null })).toEqual({ trim_end_at: null });
+  });
+});
+
+describe('hidingRanges (F-55 HR-3, HR-8: the display mirror of the server cut)', () => {
+  const N = 100;
+  const steps = { start: Array.from({ length: 41 }, (_, k) => 2 * k), end: Array.from({ length: 41 }, (_, k) => N - 1 - k) };
+  it('radius 0 hides nothing at that end; each end uses its own radius and step k = m / 50', () => {
+    expect(hidingRanges(steps, 0, 0, N - 1)).toEqual([]);
+    expect(hidingRanges(steps, 50, 0, N - 1)).toEqual([[0, 1]]);
+    expect(hidingRanges(steps, 0, 500, N - 1)).toEqual([[N - 10, N - 1]]);
+    expect(hidingRanges(steps, 300, 2000, N - 1)).toEqual([[0, 11], [N - 40, N - 1]]);
+  });
+  it('fully hidden when either entry is -1 or the start passes the end; nothing without steps', () => {
+    expect(hidingRanges({ start: steps.start.map((v, k) => (k > 3 ? -1 : v)), end: steps.end }, 200, 0, N - 1)).toEqual([[0, N - 1]]);
+    expect(hidingRanges({ start: steps.start, end: steps.end.map(() => -1) }, 0, 50, N - 1)).toEqual([[0, N - 1]]);
+    expect(hidingRanges({ start: steps.start.map(() => 60), end: steps.end.map(() => 40) }, 50, 50, N - 1)).toEqual([[0, N - 1]]);
+    expect(hidingRanges(null, 300, 300, N - 1)).toEqual([]);
   });
 });

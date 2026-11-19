@@ -35,6 +35,9 @@ const RANGES: [number, number][] = [
   [0, 41],
   [N - 30, N - 1],
 ];
+/** ADR-056's table: at 300 m (k = 6) the start keeps 42 on and the end N − 31 back, i.e. RANGES. */
+const STEPS = { start: Array.from({ length: 41 }, (_, k) => 7 * k), end: Array.from({ length: 41 }, (_, k) => N - 1 - 5 * k) };
+const ON = { hide_start_m: 300, hide_end_m: 300 };
 
 const NOW = Date.parse('2026-10-29T12:00:00Z');
 const FIT = new Uint8Array([14, 16, 0x98, 0, 0xff, 0x2e, 0x46, 0x49, 0x54]);
@@ -43,14 +46,15 @@ const VIEW_LINK = () => window.location.origin + '/w/' + ID;
 const fresh = (over: Partial<Settings> = {}): Settings => ({
   title: '',
   description: '',
-  hide_ends: false,
+  hide_start_m: 0,
+  hide_end_m: 0,
   visibility: 'draft',
   lifetime_days: 30,
   created_at: '2026-10-29T11:00:00Z',
   expires_at: '2026-11-28T11:00:00Z',
   data_end_s: null,
   view_url: '/w/' + ID,
-  hide_ends_ranges: RANGES,
+  hiding_steps: STEPS,
   suggested_title: '',
   trim_start_at: null,
   trim_end_at: null,
@@ -75,6 +79,8 @@ let original: () => Response;
 let onFrame: () => Response;
 let onPut: () => Response;
 let consoleOut: unknown[][];
+/** requestAnimationFrame's queue; nothing runs unless a test runs it. */
+let frames: FrameRequestCallback[];
 let host: HTMLElement;
 /** Navigations through lib/owner: 'assign <url>', 'replace <url>'. */
 let navs: string[];
@@ -109,7 +115,8 @@ beforeEach(() => {
     if (init.method === 'DELETE') return onDelete();
     return init.method === 'PATCH' ? onPatch(JSON.parse(init.body as string)) : onGet();
   }));
-  vi.stubGlobal('requestAnimationFrame', () => 1);
+  frames = [];
+  vi.stubGlobal('requestAnimationFrame', (f: FrameRequestCallback) => frames.push(f));
   const add = window.addEventListener.bind(window);
   vi.spyOn(window, 'addEventListener').mockImplementation((type: string, fn: EventListenerOrEventListenerObject, o?: boolean | AddEventListenerOptions) => {
     if (type === 'pageshow') shows.push(fn);
@@ -209,9 +216,16 @@ function type(name: string, value: string): void {
   field(name).dispatchEvent(new Event('input', { bubbles: true }));
   flushSync();
 }
-function toggle(name: string): void {
-  field(name).checked = !field(name).checked;
-  field(name).dispatchEvent(new Event('change', { bubbles: true }));
+/** F-55: moves the hiding sliders as a drag does, then runs the frames that queued. */
+function hideAt(startM: number, endM: number): void {
+  const queued = frames.length;
+  for (const [name, m] of [['hide_start_m', startM], ['hide_end_m', endM]] as const) {
+    if (field(name).value === String(m)) continue;
+    field(name).value = String(m);
+    field(name).dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  for (const f of frames.splice(queued)) f(0);
+  flushSync();
 }
 async function save(): Promise<void> {
   $<HTMLFormElement>('form.edit-panel')!.dispatchEvent(new Event('submit', { cancelable: true }));
@@ -282,7 +296,7 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
 
   it('AC 4: hiding is off on a new upload; no download toggle (F-24 discarded); visibility is "Draft" with no control', async () => {
     await open();
-    expect(field('hide_ends').checked).toBe(false);
+    expect([field('hide_start_m').value, field('hide_end_m').value]).toEqual(['0', '0']);
     expect(field('allow_download')).toBeNull();
     expect(field('visibility')).toBeNull();
     expect($('.edit-panel')?.textContent).toContain('Draft');
@@ -292,17 +306,17 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
 describe('AC 2, E-6: saving', () => {
   it('F-45 ST-7: the suggestion is header, tab and placeholder while the title is empty; it follows the save response and is never sent', async () => {
     settings = fresh({ suggested_title: 'Morning ride near Köln' });
-    onPatch = (body) => Response.json((settings = { ...settings, ...body, suggested_title: body.hide_ends ? 'Morning ride near Bonn' : settings.suggested_title } as Settings));
+    onPatch = (body) => Response.json((settings = { ...settings, ...body, suggested_title: body.hide_start_m ? 'Morning ride near Bonn' : settings.suggested_title } as Settings));
     await open();
     expect($('h1')?.textContent).toBe('Morning ride near Köln');
     expect(document.title).toBe('Morning ride near Köln');
     expect(field('title').placeholder).toBe('Morning ride near Köln');
     expect(field('title').value).toBe('');
-    toggle('hide_ends');
+    hideAt(300, 300);
     flushSync();
     expect(field('title').placeholder).toBe('Morning ride near Köln'); // not from an unsaved toggle
     await save();
-    expect(patches()).toEqual([{ hide_ends: true }]);
+    expect(patches()).toEqual([{ ...ON }]);
     expect($('h1')?.textContent).toBe('Morning ride near Bonn');
     expect(document.title).toBe('Morning ride near Bonn');
     expect(field('title').placeholder).toBe('Morning ride near Bonn');
@@ -422,7 +436,7 @@ describe('AC 3: lifetime', () => {
 describe('AC 5: the incomplete-file notice', () => {
   it('a truncated file shows the time of the last intact record', async () => {
     draft = () => new Response(golden('ride-30min-cut-60').slice(0), { status: 200 });
-    settings = fresh({ data_end_s: 1800, hide_ends_ranges: [] });
+    settings = fresh({ data_end_s: 1800, hiding_steps: null });
     await open();
     expect($('.edit-notice')?.textContent).toBe('The file was incomplete; data after 00:30:00 is missing.');
   });
@@ -494,47 +508,102 @@ describe('AC 6, E-4: not found and errors', () => {
   });
 });
 
-describe('E-9, AC 8: to-be-hidden marks', () => {
-  it('the map gets the stored ranges while the checkbox is on, saved or not', async () => {
+describe('E-9, AC 8; F-55 HR-8: to-be-hidden marks from the sliders', () => {
+  const shaded = (): number[][] => {
+    const over = document.createElement('div');
+    (stubLog.chartStack[0].decorate as (o: HTMLElement, x: (i: number) => number) => void)(over, (i) => i);
+    return [...over.querySelectorAll<HTMLElement>('.wx-trim > div')].map((d) => [parseFloat(d.style.left), parseFloat(d.style.left) + parseFloat(d.style.width)]);
+  };
+  const label = (name: string) => field(name).closest('label')!.textContent!.trim();
+  beforeEach(() => localStorage.setItem('wx.units', 'metric')); // jsdom's en-US would default to imperial
+
+  it('map and charts follow the unsaved slider values through hiding_steps, once per frame; saved, they stay', async () => {
     await open();
     const map = stubLog.routeMap[0];
     expect(map.hidden).toEqual([]);
-    toggle('hide_ends');
+    expect(shaded()).toEqual([]);
+    // A drag: the value is in the label at once, the shading waits for the frame.
+    field('hide_start_m').value = '500';
+    field('hide_start_m').dispatchEvent(new Event('input', { bubbles: true }));
+    field('hide_start_m').value = '300';
+    field('hide_start_m').dispatchEvent(new Event('input', { bubbles: true }));
     flushSync();
-    expect(map.hidden).toEqual(RANGES);
-    toggle('hide_ends');
-    flushSync();
+    expect(label('hide_start_m')).toBe('Start: hide 300 m');
+    expect(frames).toHaveLength(1); // one frame for two moves
     expect(map.hidden).toEqual([]);
-    toggle('hide_ends');
+    frames.splice(0).forEach((f) => f(0));
+    flushSync();
+    expect(map.hidden).toEqual([RANGES[0]]); // start only: 300 m → steps.start[6]
+    expect(shaded()).toEqual([RANGES[0]]);
+    hideAt(0, 500);
+    expect(map.hidden).toEqual([[STEPS.end[10] + 1, N - 1]]); // end only: 500 m → steps.end[10]
+    expect(label('hide_start_m')).toBe('Start: not hidden');
+    expect(label('hide_end_m')).toBe('End: hide 500 m');
+    hideAt(300, 300);
+    expect(map.hidden).toEqual(RANGES);
+    expect(shaded()).toEqual(RANGES);
     await save();
-    expect(patches()).toEqual([{ hide_ends: true }]);
+    expect(patches()).toEqual([{ ...ON }]);
     expect(map.hidden).toEqual(RANGES);
     expect(stubLog.routeMap).toHaveLength(1); // never remounted
   });
 
+  it('sliders: 0 to 2,000 m in 50 m steps, labelled, filled from the saved radii; only changed radii sent', async () => {
+    settings = fresh({ hide_start_m: 2000, hide_end_m: 150 });
+    await open();
+    for (const name of ['hide_start_m', 'hide_end_m']) expect([field(name).type, field(name).min, field(name).max, field(name).step]).toEqual(['range', '0', '2000', '50']);
+    expect([field('hide_start_m').value, field('hide_end_m').value]).toEqual(['2000', '150']);
+    expect(label('hide_start_m')).toBe('Start: hide 2000 m');
+    expect(field('hide_end_m').getAttribute('aria-valuetext')).toBe('End: hide 150 m');
+    hideAt(2000, 0);
+    await save();
+    expect(patches()).toEqual([{ hide_end_m: 0 }]);
+    expect(Object.keys(localStorage).filter((k) => k !== 'wx.units')).toEqual([]); // OQ-248
+  });
+
+  it('OQ-268: imperial labels; the value sent stays metric', async () => {
+    localStorage.setItem('wx.units', 'imperial');
+    await open();
+    hideAt(50, 150);
+    expect([label('hide_start_m'), label('hide_end_m')]).toEqual(['Start: hide 160 ft', 'End: hide 490 ft']);
+    hideAt(500, 2000);
+    expect([label('hide_start_m'), label('hide_end_m')]).toEqual(['Start: hide 0.31 mi', 'End: hide 1.24 mi']);
+    await save();
+    expect(patches()).toEqual([{ hide_start_m: 500, hide_end_m: 2000 }]);
+  });
+
+  it('hiding_steps null (not yet regenerated): nothing shaded, no error', async () => {
+    settings = fresh({ hiding_steps: null });
+    await open();
+    hideAt(300, 300);
+    expect(stubLog.routeMap[0].hidden).toEqual([]);
+    expect(shaded()).toEqual([]);
+    expect(consoleOut).toEqual([]);
+  });
+
   it('a fully hidden route marks the whole track', async () => {
-    settings = fresh({ hide_ends: true, hide_ends_ranges: [[0, N - 1]] });
+    settings = fresh({ ...ON, hiding_steps: { start: STEPS.start, end: STEPS.end.map(() => -1) } });
     await open();
     expect(stubLog.routeMap[0].hidden).toEqual([[0, N - 1]]);
   });
 
   it('indoor: one column, no map, the toggle has no effect and no error', async () => {
     draft = () => new Response(golden('indoor-no-gps').slice(0), { status: 200 });
-    settings = fresh({ hide_ends_ranges: [] });
+    settings = fresh({ hiding_steps: null });
     await open();
     expect($('.page')?.classList.contains('has-map')).toBe(false);
     expect($('#map-slot')).toBeNull();
     expect($('.hint')?.textContent).toBe('No location data in this workout.');
-    toggle('hide_ends');
+    hideAt(300, 300);
     await save();
-    expect(patches()).toEqual([{ hide_ends: true }]);
+    expect(patches()).toEqual([{ ...ON }]);
     expect(stubLog.routeMap).toEqual([]);
     expect(consoleOut.filter((a) => a.some((x) => x instanceof Error))).toEqual([]);
     expectNoTokenOutsideTheFragment();
   });
 });
 
-const FIELDS = ['title', 'description', 'hide_ends', 'lifetime'];
+const FIELDS = ['title', 'description', 'hide_start_m', 'hide_end_m', 'lifetime'];
 const btn = (act: string) => $<HTMLButtonElement>(`[data-act="${act}"]`);
 async function click(act: string): Promise<void> {
   btn(act)!.click();
@@ -595,11 +664,11 @@ describe('F-20 C-2, C-3, AC 3, 4: publish', () => {
 
   it('OQ-85: unsaved changes are saved first (PATCH before POST), then published', async () => {
     await open();
-    toggle('hide_ends');
+    hideAt(300, 300);
     type('title', 'Loop');
     await click('publish');
     expect(methods()).toEqual(['PATCH ', 'POST /publish']);
-    expect(patches()).toEqual([{ title: 'Loop', hide_ends: true }]);
+    expect(patches()).toEqual([{ title: 'Loop', ...ON }]);
     expect(navs).toEqual([PUBLISHED_PAGE()]);
   });
 
@@ -689,7 +758,7 @@ describe('F-36 MC-8, OQ-112: the preview basemap job', () => {
   it('publish: GET the frame after the save, render it, PUT under its key, then the published page', async () => {
     withFrame();
     await open();
-    toggle('hide_ends');
+    hideAt(300, 300);
     await click('publish');
     expect(methods()).toEqual(['PATCH ', 'POST /publish', 'PUT /preview-map/' + KEY]);
     const order = calls.map((c) => c.url.replace('/api/workouts/' + ID, ''));
@@ -776,7 +845,7 @@ describe('F-36 MC-8, OQ-112: the preview basemap job', () => {
     settings = fresh({ visibility: 'unlisted' });
     withFrame();
     await open();
-    toggle('hide_ends');
+    hideAt(300, 300);
     await save();
     expect($('.edit-status')?.textContent).toBe('Saved');
     expect(frameGets()).toBe(1);
@@ -798,7 +867,7 @@ describe('F-36 MC-8, OQ-112: the preview basemap job', () => {
   it('MC-8(b): no job for a save of a draft', async () => {
     withFrame();
     await open();
-    toggle('hide_ends');
+    hideAt(300, 300);
     await save();
     expect(frameGets()).toBe(0);
   });
@@ -1285,7 +1354,7 @@ describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
   });
 
   it('with hiding on, the trim marks come first, then the stored hidden ranges', async () => {
-    settings = fresh({ hide_ends: true });
+    settings = fresh({ ...ON });
     await open();
     drag('trim_b', N - 500);
     expect(stubLog.routeMap[0].hidden).toEqual([[N - 500, N - 1], ...RANGES]);
@@ -1364,7 +1433,7 @@ describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
 
   it('multisport: the leg lines and the trim shading are both drawn', async () => {
     draft = () => new Response(golden('triathlon').slice(0), { status: 200 });
-    settings = fresh({ hide_ends_ranges: [] });
+    settings = fresh({ hiding_steps: null });
     await open();
     const charts = stubLog.chartStack[0];
     charts.onready?.();
@@ -1381,7 +1450,7 @@ describe('F-47 TR-9: the trim slider (AC 31, 32, 41)', () => {
 
   it('indoor: the slider works without a map; no error', async () => {
     draft = () => new Response(golden('indoor-no-gps').slice(0), { status: 200 });
-    settings = fresh({ hide_ends_ranges: [] });
+    settings = fresh({ hiding_steps: null });
     await open();
     drag('trim_a', 50);
     await save();
@@ -1567,14 +1636,16 @@ describe('F-58 SE-4: the summary dialog on the edit page (AC 36, 40)', () => {
 
   it('radii, trim ends and the recomputed and dropped totals from the saved settings; rebuilt on every open', async () => {
     expect(calories).toBeGreaterThan(0);
-    settings = fresh({ hide_ends: true, trim_start_at: '2026-10-29T10:00:00Z', trim_end_at: '2026-10-29T11:00:00Z', trimmed: { sport: decoded.data.meta.sport, summary: rest } });
+    settings = fresh({ ...ON, trim_start_at: '2026-10-29T10:00:00Z', trim_end_at: '2026-10-29T11:00:00Z', trimmed: { sport: decoded.data.meta.sport, summary: rest } });
     await open();
     const button = $<HTMLButtonElement>('button[data-summary-info]')!;
     expect([button.hidden, button.dataset.trim]).toEqual([false, 'both']);
     let text = await dialogText();
     expect(text).toContain('This workout: start hidden within 300 m, end hidden within 300 m.');
     expect(text).toMatch(/This workout: trimmed \(now starts \d\d:\d\d, ends \d\d:\d\d\); recomputed: distance, [^;]*; dropped: calories\./);
-    toggle('hide_ends');
+    hideAt(0, 0);
+    text = await dialogText();
+    expect(text).toContain('This workout: start hidden within 300 m, end hidden within 300 m.'); // the saved radii, not the sliders
     await save();
     text = await dialogText();
     expect(text).toContain('This workout: start not hidden, end not hidden.');

@@ -8,8 +8,8 @@
 
 import { line, openDialog } from '../dialog';
 import type { SummaryItem, summaryItems } from '../lib/page';
-import { elevationUnit, formatFixed, toElevation, toSpeed, type Units } from '../lib/format';
-import { formatClock } from '../lib/format/dates';
+import { formatFixed, toSpeed, type Units } from '../lib/format';
+import { formatClock, formatRadius } from '../lib/format/dates';
 import type { Summary, TimeZone } from '../lib/datafile';
 
 /** The public facts (SE-1): the metadata's sport, summary, sessions' sports and lengths, and
@@ -87,7 +87,7 @@ export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cel
     add('Trim', 'After a trim, the totals are recomputed for the remaining part; calories are dropped.', example);
   }
   // Every workout, both pages (SE-3); the example only with the owner's facts (OQ-253).
-  const radius = (m: number, end: string): string => (m ? `${end} hidden within ${formatFixed(toElevation(m, units), 0)} ${elevationUnit(units)}` : `${end} not hidden`);
+  const radius = (m: number, end: string): string => (m ? `${end} hidden within ${formatRadius(m, units)}` : `${end} not hidden`);
   add('Hidden start and end', 'The sharer may hide the route near the start and end; that changes the map, never the totals.', o ? radius(o.radii[0], 'start') + ', ' + radius(o.radii[1], 'end') : '');
   if (get('pool') || get('lengths') || f.lengths.length)
     add('Pool swims', 'Lengths count the active lengths only; rests are not lengths.', [get('lengths') && cell(get('lengths')) + ' lengths', get('pool') && 'in a ' + cell(get('pool')) + ' pool'].filter(Boolean).join(' '));

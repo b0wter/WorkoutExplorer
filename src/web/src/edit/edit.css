@@ -213,6 +213,15 @@
 
 /* F-47 TR-9: the trim slider, two native ranges on one track; only the thumbs take pointers, so
    either handle can be dragged. */
+/* F-55 HR-8: the two hiding sliders, each under its value. */
+.edit-hide {
+  display: flex;
+  flex-direction: column;
+}
+.edit-hide input {
+  width: 100%;
+  margin: 0;
+}
 .edit-trim {
   position: relative;
   height: 24px;

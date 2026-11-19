@@ -167,7 +167,7 @@ describe('owner facts (AC 40; SE-4) and units (DS-1)', () => {
   it('radii, 0 as not hidden; in the units setting', () => {
     expect(open(facts({ owner }))).toContain('This workout: start not hidden, end not hidden.');
     expect(open(facts({ owner: { ...owner, radii: [300, 300] } }))).toContain('This workout: start hidden within 300 m, end hidden within 300 m.');
-    expect(open(facts({ owner: { ...owner, radii: [300, 0] } }), 'imperial')).toContain('This workout: start hidden within 984 ft, end not hidden.');
+    expect(open(facts({ owner: { ...owner, radii: [300, 0] } }), 'imperial')).toContain('This workout: start hidden within 0.19 mi, end not hidden.');
   });
 
   it('trim ends in local time, recomputed and dropped totals', () => {

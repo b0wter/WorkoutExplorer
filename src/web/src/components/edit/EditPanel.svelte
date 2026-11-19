@@ -10,8 +10,9 @@
   import type { Settings, SettingsPatch } from '../../lib/owner';
   import { enhanceCopyLink } from '../../page/enhance';
   import DeleteControl from './DeleteControl.svelte';
-  import { formatElapsed } from '../../lib/format';
-  import { DESCRIPTION_MAX, TITLE_MAX, TRIM_MIN_S, ZONE_FIELDS, expiryText, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex, zoneError, type Form } from './fields';
+  import { formatElapsed, type Units } from '../../lib/format';
+  import { formatRadius } from '../../lib/format/dates';
+  import { DESCRIPTION_MAX, HIDE_MAX_M, HIDE_STEP_M, TITLE_MAX, TRIM_MIN_S, ZONE_FIELDS, expiryText, incompleteNotice, lifetimeOptions, patchOf, trimAt, trimClamp, trimIndex, zoneError, type Form } from './fields';
 
   interface Props {
     settings: Settings;
@@ -34,8 +35,10 @@
     ondownload: () => void;
     /** "Show links": the published page (OQ-86). */
     onlinks: () => void;
-    /** The hiding checkbox changed, saved or not (E-9: the map marks follow it). */
-    onhide: (on: boolean) => void;
+    /** F-55 HR-8: a hiding slider moved or was filled, saved or not (the shading follows). */
+    onhide: (startM: number, endM: number) => void;
+    /** The page's units setting, for the radius labels (OQ-268). */
+    units: Units;
     /** The owner changed a field after a save or an error. */
     onedit: () => void;
     /** F-47 TR-9: draft.bin's time offsets and start_time for the trim slider; null without a
@@ -47,7 +50,7 @@
     /** F-49 ZN-10: draft.bin's zone values; each kind's file basis is its field's placeholder. */
     zones: Zones;
   }
-  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, onedit, time, startTime, ontrim, zones }: Props = $props();
+  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, units, onedit, time, startTime, ontrim, zones }: Props = $props();
 
   let share = $state(false);
   /** A zone field the server would refuse (OQ-195): its sentence, until the next edit. */
@@ -70,6 +73,15 @@
   let cut = $state<[number, number]>([0, 0]);
   const elapsed = (t: Float64Array, i: number): string => formatElapsed(t[i] - t[0]);
 
+  /** The hiding sliders' values in metres, for their labels. */
+  let ends = $state<[number, number]>([0, 0]);
+  const hideText = (end: string, m: number): string => end + ': ' + (m ? 'hide ' + formatRadius(m, units) : 'not hidden');
+  const setEnds = (f: HTMLFormElement): void => {
+    const [a, b] = [Number(field(f, 'hide_start_m').value), Number(field(f, 'hide_end_m').value)];
+    ends = [a, b]; // never read here: the fill attachment would re-run on it
+    onhide(a, b);
+  };
+
   type Field = HTMLInputElement & HTMLTextAreaElement & HTMLSelectElement;
   const field = (f: HTMLFormElement, name: string): Field => f.elements.namedItem(name) as Field;
 
@@ -86,7 +98,9 @@
     const s = settings;
     field(f, 'title').value = s.title;
     field(f, 'description').value = s.description;
-    field(f, 'hide_ends').checked = s.hide_ends;
+    field(f, 'hide_start_m').value = String(s.hide_start_m);
+    field(f, 'hide_end_m').value = String(s.hide_end_m);
+    setEnds(f);
     field(f, 'lifetime').value = String(s.lifetime_days);
     for (const [k] of ZONE_FIELDS) field(f, k).value = s[k] === null ? '' : String(s[k]);
     lifetime = s.lifetime_days;
@@ -96,7 +110,8 @@
   const read = (f: HTMLFormElement): Form => ({
     title: field(f, 'title').value,
     description: field(f, 'description').value,
-    hide_ends: field(f, 'hide_ends').checked,
+    hide_start_m: Number(field(f, 'hide_start_m').value),
+    hide_end_m: Number(field(f, 'hide_end_m').value),
     // '' when the stored lifetime is not offered (a browser clock ahead of the server's): keep it.
     lifetime_days: Number(field(f, 'lifetime').value) || settings.lifetime_days,
     trim_start_at: trim ? trimAt(trim, startS, Number(field(f, 'trim_a').value), false) : settings.trim_start_at,
@@ -126,6 +141,7 @@
       onedit();
       invalid = '';
       const t = e.target as Field;
+      if (t.name.startsWith('hide_')) setEnds(f);
       if (trim && t.name.startsWith('trim_')) setCut(f, ...trimClamp(trim, Number(field(f, 'trim_a').value), Number(field(f, 'trim_b').value), t.name === 'trim_b'));
     });
     f.addEventListener('click', (e) => {
@@ -139,7 +155,6 @@
     });
     f.addEventListener('change', (e) => {
       const t = e.target as Field;
-      if (t.name === 'hide_ends') onhide(t.checked);
       if (t.name === 'lifetime') lifetime = Number(t.value);
     });
   };
@@ -156,7 +171,14 @@
   <label class="edit-field">Description
     <textarea name="description" maxlength={DESCRIPTION_MAX} rows="3"></textarea>
   </label>
-  <label class="edit-check"><input type="checkbox" name="hide_ends" /> Hide start and end</label>
+  <div class="edit-field">Hide start and end
+    <label class="edit-hide"><span class="edit-value">{hideText('Start', ends[0])}</span>
+      <input type="range" name="hide_start_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('Start', ends[0])} />
+    </label>
+    <label class="edit-hide"><span class="edit-value">{hideText('End', ends[1])}</span>
+      <input type="range" name="hide_end_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('End', ends[1])} />
+    </label>
+  </div>
   {#if trim}
     <div class="edit-field">Trim start and end
       <div class="edit-trim">

@@ -16,13 +16,28 @@ export function formOf(s: Settings): Form {
   return {
     title: s.title,
     description: s.description,
-    hide_ends: s.hide_ends,
+    hide_start_m: s.hide_start_m,
+    hide_end_m: s.hide_end_m,
     lifetime_days: s.lifetime_days,
     trim_start_at: s.trim_start_at,
     trim_end_at: s.trim_end_at,
     zones_max_heart_rate: s.zones_max_heart_rate,
     zones_threshold_power: s.zones_threshold_power,
   };
+}
+
+/** F-55 HR-1: the hiding radius slider's step and maximum in metres. */
+export const HIDE_STEP_M = 50;
+export const HIDE_MAX_M = 2000;
+
+/** F-55 HR-8: the samples the radii hide, as inclusive ranges, from the server's steps (ADR-056)
+ *  and HR-3's one comparison; a display mirror, never a measure. Nothing without steps. */
+export function hidingRanges(steps: Settings['hiding_steps'], startM: number, endM: number, last: number): (readonly [number, number])[] {
+  if (!steps) return [];
+  const from = steps.start[startM / HIDE_STEP_M];
+  const to = steps.end[endM / HIDE_STEP_M];
+  if (from < 0 || to < 0 || from > to) return [[0, last]];
+  return [...(from > 0 ? [[0, from - 1] as const] : []), ...(to < last ? [[to + 1, last] as const] : [])];
 }
 
 /** F-49 OQ-195: the zone fields, their whole-number ranges and the server's sentences (F-12). */

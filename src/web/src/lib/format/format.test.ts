@@ -5,7 +5,7 @@ import {
   formatSpeedOrPace, formatTimeLeft, isPaceSport, paceSeconds, speedOrPaceUnit, toSpeed,
   temperatureUnit, toElevation, toTemperature,
 } from './index';
-import { formatClock, formatDate, formatLocalStart, sportIcon, sportName } from './dates';
+import { formatClock, formatDate, formatLocalStart, formatRadius, sportIcon, sportName } from './dates';
 
 describe('speed and pace (DS-2)', () => {
   it.each([
@@ -137,5 +137,17 @@ describe('rounding ties, held equal with the Go page builder', () => {
     [299.5, '5:00'], [298.5, '4:59'], [250, '4:10'],
   ])('formatPace(%s) → %s', (s, text) => {
     expect(formatPace(s)).toBe(text);
+  });
+});
+
+describe('hiding radius (F-55 HR-8, OQ-268)', () => {
+  it('metric in metres; imperial in feet below 0.1 mi (to 10 ft), miles with two decimals from 0.1 mi', () => {
+    expect(formatRadius(500, 'metric')).toBe('500 m');
+    expect(formatRadius(2000, 'metric')).toBe('2000 m');
+    expect(formatRadius(50, 'imperial')).toBe('160 ft');
+    expect(formatRadius(150, 'imperial')).toBe('490 ft');
+    expect(formatRadius(200, 'imperial')).toBe('0.12 mi');
+    expect(formatRadius(500, 'imperial')).toBe('0.31 mi');
+    expect(formatRadius(2000, 'imperial')).toBe('1.24 mi');
   });
 });

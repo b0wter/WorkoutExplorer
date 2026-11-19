@@ -1,6 +1,8 @@
-// Part of lib/format (F-13 design D-6): sport names and dates, imported by path ('lib/format/dates').
+// Part of lib/format (F-13 design D-6): sport names, dates and the hiding radius (F-55), imported by path ('lib/format/dates').
 // Not re-exported by index.ts, so that the activity entry does not carry them: in the bundle only
 // the edit page's owner chunk uses them (F-19 bundle share). Same rules as index.ts: fixed English, never Intl.
+
+import { M_PER_MILE, formatFixed, toElevation, type Units } from './index';
 
 function pad2(n: number): string {
   return n < 10 ? '0' + n : '' + n;
@@ -51,4 +53,12 @@ export function formatClock(rfc3339: string, offsetSeconds: number): string {
 export function formatLocalStart(rfc3339: string, zone: { known: boolean; offset_seconds: number }): string {
   const offset = zone.known ? zone.offset_seconds : 0;
   return formatDate(rfc3339, offset) + ', ' + formatClock(rfc3339, offset) + (zone.known ? '' : ' UTC');
+}
+
+/** F-55 HR-8, HR-9, OQ-268: a hiding radius in metres as text, '500 m'; imperial in feet below
+ *  0.1 mi, rounded to 10 ft ('160 ft'), else miles with two decimals ('0.31 mi'). The value stays metric. */
+export function formatRadius(metres: number, units: Units): string {
+  if (units === 'metric') return metres + ' m';
+  if (metres < M_PER_MILE / 10) return Math.round(toElevation(metres, units) / 10) * 10 + ' ft';
+  return formatFixed(metres / M_PER_MILE, 2) + ' mi';
 }
