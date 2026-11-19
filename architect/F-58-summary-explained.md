@@ -23,7 +23,7 @@
 
 | What | Limit |
 | --- | --- |
-| Entry (static) | Enhancer, `import()` call site, corner CSS: ceiling **200 bytes gzip** from the ADR-011 reserve (2,824). The engineer records the measured figure in ADR-011 item 4; above 200: stop and report |
+| Entry (static) | Enhancer, `import()` call site, corner CSS: ceiling **200 bytes gzip** from the ADR-011 reserve (2,824). The engineer records the measured figure in ADR-011 item 4; above 200: stop and report. Note (19 Nov 2026, main session): measured +251; the 51-byte overrun is accepted from the reserve (2,544 left) rather than a different loading scheme |
 | Lazy chunk | About 3,000 bytes gzip JS and CSS, shared shell not counted (OQ-259); above: report |
 | HTML, LCP | Button markup and one attribute; LCP unchanged (nothing new on the first-paint path) |
 

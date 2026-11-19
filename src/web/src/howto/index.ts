@@ -1,9 +1,8 @@
 // The How to use dialog (F-39 HU-7; AP-22). LAZY: reached only through enhanceHowto's import().
-// Plain DOM, one native modal <dialog>, built on first open and reused. Both wordings are in the
-// markup; CSS picks one by the primary pointer, as the range hint does. showModal adds no history
-// entry; Esc and the Android back gesture close it natively.
+// The frame is the shared shell (src/dialog, F-58 SE-6). Both wordings are in the markup; CSS picks
+// one by the primary pointer, as the range hint does.
 
-import './howto.css';
+import { line, openDialog } from '../dialog';
 
 /** [section, touch, mouse]; the same lines for every workout (OQ-126). */
 const LINES: [string, string, string][] = [
@@ -38,45 +37,14 @@ const LINES: [string, string, string][] = [
     'Select a range, then tap "Copy link to this selection" to share it.',
     'Select a range, then click "Copy link to this selection" to share it.',
   ], // F-40 SR-8
+  [
+    'Summary numbers',
+    'Tap ⓘ on the summary to see how its numbers are computed.',
+    'Click ⓘ on the summary to see how its numbers are computed.',
+  ], // F-58 OQ-252
 ];
 
 export function openHowto(doc: Document): void {
-  (doc.querySelector<HTMLDialogElement>('dialog.howto-dlg') ?? build(doc)).showModal();
-}
-
-function build(doc: Document): HTMLDialogElement {
-  const d = doc.createElement('dialog');
-  d.className = 'howto-dlg';
-  d.setAttribute('aria-labelledby', 'howto-title');
-  const body = doc.createElement('div');
-  body.className = 'howto-body';
-  const title = doc.createElement('h2');
-  title.id = 'howto-title';
-  title.textContent = 'How to use this page';
   // One line per section: its name, then the touch and the mouse wording.
-  const lines = LINES.map(([name, touch, mouse]) => {
-    const p = doc.createElement('p');
-    for (const [tag, cls, text] of [['b', '', name + '. '], ['span', 'coarse', touch], ['span', 'fine', mouse]]) {
-      const el = doc.createElement(tag);
-      el.className = cls;
-      el.textContent = text;
-      p.appendChild(el);
-    }
-    return p;
-  });
-  const close = doc.createElement('button');
-  close.type = 'button';
-  close.textContent = 'Close';
-  close.addEventListener('click', () => d.close());
-  const actions = doc.createElement('p');
-  actions.className = 'howto-actions';
-  actions.appendChild(close);
-  body.append(title, ...lines, actions);
-  d.appendChild(body);
-  // The dialog has no padding, so a click on the dialog itself is a click on the backdrop.
-  d.addEventListener('click', (e) => {
-    if (e.target === d) d.close();
-  });
-  doc.body.appendChild(d);
-  return d;
+  openDialog(doc, 'howto-dlg', 'How to use this page', LINES.map(([name, touch, mouse]) => line(doc, name, ['coarse', touch], ['fine', mouse])));
 }

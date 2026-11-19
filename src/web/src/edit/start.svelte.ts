@@ -47,6 +47,10 @@ function trimShade(a: number, b: number, n: number): ChartDecorator {
   };
 }
 
+/** F-58 SE-4: the start and end hiding radius in metres, 0 = not hidden; the one source of the
+ *  radius text. F-55 swaps in its two values here. */
+const radii = (s: Settings): [number, number] => (s.hide_ends ? [300, 300] : [0, 0]);
+
 /** The generic page's content (generic.html, E-4), in this page's theme. No workout data. */
 export function showGeneric(doc: Document, text = 'This workout has expired or is not available.', upload = ''): void {
   doc.title = 'Workout Explorer';
@@ -138,7 +142,17 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   /** Apart from settings: a restore updates it without refilling the form (C-2). */
   let visibility = $state(got.value.visibility);
   const build = (s: Settings) =>
-    data && buildPageViewModel(data, { title: s.title, description: s.description, expiresAt: s.expires_at, publicId: owner.publicId, dataFile: '', suggestedTitle: s.suggested_title });
+    data &&
+    buildPageViewModel(data, {
+      title: s.title,
+      description: s.description,
+      expiresAt: s.expires_at,
+      publicId: owner.publicId,
+      dataFile: '',
+      suggestedTitle: s.suggested_title,
+      // F-58 SE-2: from the saved ends, as the Go builder does (non-null = trimmed).
+      trim: s.trim_start_at !== null ? (s.trim_end_at !== null ? 'both' : 'start') : s.trim_end_at !== null ? 'end' : '',
+    });
   const first = build(got.value);
   let model = $state.raw(first);
   /** F-47 TR-9: the trim handles [a, b] as sample indices, live, unsaved too. */
@@ -189,7 +203,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     visibility = r.value.visibility;
     const next = build(r.value);
     if (next && model) {
-      model = { ...model, Page: next.Page, Header: next.Header };
+      model = { ...model, Page: next.Page, Header: next.Header, Trim: next.Trim };
       doc.title = next.Page.Title;
       // After Svelte's update: the re-render put the server's estimate back (F-13 D-7).
       setTimeout(() => enhanceExpiry(doc, Date.now()));
@@ -331,6 +345,19 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
         zones();
       },
       onefforts: (start) => (effortsRefresh = start(zoneSource.window)),
+      // F-58 SE-4: the saved settings' facts; sessions, lengths and zones as the rest of the page.
+      explain: () => {
+        const s = strip(settings, result.data.meta);
+        const meta = result.data.meta;
+        return {
+          sport: s.sport,
+          summary: s.summary,
+          sessions: meta.sessions,
+          lengths: meta.lengths,
+          zones: Object.keys(zoneSource.zones()).some((k) => result.data.metrics[k as keyof Zones]),
+          owner: { radii: radii(settings), trimAt: [settings.trim_start_at, settings.trim_end_at], zone: meta.time_zone, untrimmed: meta.summary },
+        };
+      },
       onlook: (l: Look) => {
         look = l;
         // The sections chunk sets its leg decorator later; the charts get both (MS-7 has one seam).

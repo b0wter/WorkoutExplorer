@@ -7,6 +7,7 @@ import { formatTimeLeft, type Units } from '../lib/format';
 import { lapsGroup, summaryItems } from '../lib/page';
 import type { UnitsStore } from '../lib/units';
 import type { ThemeChoice } from '../lib/prefs';
+import type { Facts } from '../summary-info';
 
 /** Rewrites the summary and laps text of the server markup (metric) into the store's units (F-14
  *  D-5, ADR-027): the page builders run over the data file's metadata and write strings into the
@@ -167,22 +168,24 @@ export function enhanceReport(root: ParentNode, load = () => import('../report/f
   const id = root.querySelector('a[data-copy-link]')?.getAttribute('href')?.split('/').pop();
   if (!button || !id || !/^[0-9A-Za-z]{22}$/.test(id)) return;
   button.hidden = false;
+  lazyClick(button, load, (m) => m.openReport(button.ownerDocument, id), 'The report form could not be loaded. Reload the page and try again.');
+}
+
+/** A click loads the lazy chunk and opens; on a failed load, one line after `at` (F-28, F-39, F-58),
+ *  never a second one. */
+function lazyClick<M>(button: HTMLElement, load: () => Promise<M>, open: (m: M) => void, text: string, at = button): void {
   button.addEventListener('click', () => {
-    load().then(
-      (m) => m.openReport(button.ownerDocument, id),
-      () => loadFailed(button, 'The report form could not be loaded. Reload the page and try again.'),
-    );
+    load().then(open, () => {
+      if (at.nextElementSibling?.className === 'report-fail') return;
+      const p = at.ownerDocument.createElement('span');
+      p.className = 'report-fail';
+      p.textContent = text;
+      at.after(p);
+    });
   });
 }
 
-/** One line after a button whose lazy chunk failed to load (F-28, F-39), never a second one. */
-function loadFailed(button: HTMLElement, text: string): void {
-  if (button.nextElementSibling?.className === 'report-fail') return;
-  const p = button.ownerDocument.createElement('span');
-  p.className = 'report-fail';
-  p.textContent = text;
-  button.after(p);
-}
+const HELP_FAILED = 'The help could not be loaded. Reload the page and try again.';
 
 /** How to use (F-39 HU-6, HU-7; AP-22): reveals the template's button, emphasised until the dialog
  *  has been shown on this device (`opened`); the dialog is a lazy chunk (ADR-011). */
@@ -191,16 +194,26 @@ export function enhanceHowto(root: ParentNode, opened: boolean, onopen: () => vo
   if (!button) return;
   button.classList.add('ready');
   button.classList.toggle('fresh', !opened);
-  button.addEventListener('click', () => {
-    load().then(
-      (m) => {
-        m.openHowto(button.ownerDocument);
-        button.classList.remove('fresh');
-        onopen();
-      },
-      () => loadFailed(button, 'The help could not be loaded. Reload the page and try again.'),
-    );
-  });
+  lazyClick(
+    button,
+    load,
+    (m) => {
+      m.openHowto(button.ownerDocument);
+      button.classList.remove('fresh');
+      onopen();
+    },
+    HELP_FAILED,
+  );
+}
+
+/** "About these numbers" (F-58 SE-5, SE-6; AP-24): reveals the strip's ⓘ (the data file is decoded);
+ *  the dialog is a lazy chunk, which reads the trim string from the button (SE-2). `facts` is read
+ *  on every open. */
+export function enhanceSummaryInfo(root: ParentNode, units: UnitsStore, facts: () => Facts, load = () => import('../summary-info')): void {
+  const button = root.querySelector<HTMLButtonElement>('button[data-summary-info]');
+  if (!button) return;
+  button.hidden = false;
+  lazyClick(button, load, (m) => m.openSummaryInfo(button, facts(), units.get(), summaryItems), HELP_FAILED, button.parentElement!);
 }
 
 const PIN_LABEL = 'Pin map';

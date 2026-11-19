@@ -1543,3 +1543,46 @@ describe('F-50 EF-1: the Best efforts section over the saved trim window (AC 5)'
     await vi.waitFor(() => expect(names()).toEqual(['5 s', '1 min', '5 min', '20 min', '60 min']));
   });
 });
+
+describe('F-58 SE-4: the summary dialog on the edit page (AC 36, 40)', () => {
+  const decoded = decodeDataFile(RIDE.slice(0));
+  if (!decoded.ok) throw new Error('ride-4h does not decode');
+  const { calories, ...rest } = decoded.data.meta.summary;
+  const dialogText = async (): Promise<string> => {
+    $<HTMLButtonElement>('button[data-summary-info]')!.click();
+    await vi.waitFor(() => expect($<HTMLDialogElement>('dialog.summary-dlg')?.open).toBe(true));
+    const d = $<HTMLDialogElement>('dialog.summary-dlg')!;
+    d.close();
+    return d.textContent!;
+  };
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+      this.open = false;
+    };
+    localStorage.setItem('wx.units', 'metric');
+  });
+
+  it('radii, trim ends and the recomputed and dropped totals from the saved settings; rebuilt on every open', async () => {
+    expect(calories).toBeGreaterThan(0);
+    settings = fresh({ hide_ends: true, trim_start_at: '2026-10-29T10:00:00Z', trim_end_at: '2026-10-29T11:00:00Z', trimmed: { sport: decoded.data.meta.sport, summary: rest } });
+    await open();
+    const button = $<HTMLButtonElement>('button[data-summary-info]')!;
+    expect([button.hidden, button.dataset.trim]).toEqual([false, 'both']);
+    let text = await dialogText();
+    expect(text).toContain('This workout: start hidden within 300 m, end hidden within 300 m.');
+    expect(text).toMatch(/This workout: trimmed \(now starts \d\d:\d\d, ends \d\d:\d\d\); recomputed: distance, [^;]*; dropped: calories\./);
+    toggle('hide_ends');
+    await save();
+    text = await dialogText();
+    expect(text).toContain('This workout: start not hidden, end not hidden.');
+  });
+
+  it('untrimmed: no trim line, data-trim empty', async () => {
+    await open();
+    expect($<HTMLButtonElement>('button[data-summary-info]')!.dataset.trim).toBe('');
+    expect(await dialogText()).not.toMatch(/Trim\.|recomputed/);
+  });
+});

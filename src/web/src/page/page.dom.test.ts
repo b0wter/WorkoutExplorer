@@ -182,6 +182,8 @@ describe('adoption, not hydration (D-8, ADR-026 item 4)', () => {
     expect(after).toEqual(nodes);
     const strip = (h: string): string =>
       h.replace(/Expires in [^<]+/, 'X').replace(/<select.*?<\/select>/g, '').replace(/<span class="laps-switch">.*?<\/span>/, '').replace('class="laps live"', 'class="laps"');
+    // F-58 SE-5: the ⓘ is revealed once the data file is decoded.
+    html[1] = html[1].replace(' hidden=""', '');
     expect(after.map((n) => strip(n.outerHTML))).toEqual(html.map((h) => h.replace(/Expires around [^<]+/, 'X')));
   });
 });
@@ -554,7 +556,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
   async function openAt(path: string, seam?: boolean): Promise<void> {
     window.history.replaceState({ fs: 1 }, '', path);
     page = renderSample('ride-30min');
-    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {}, onzones() {}, onefforts() {} } : undefined);
+    await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {}, onzones() {}, onefforts() {}, explain: () => ({ sport: 'cycling', summary: {}, sessions: [], lengths: [], zones: false }) } : undefined);
     await settle();
     stubLog.chartStack[0].onready?.();
     flushSync();

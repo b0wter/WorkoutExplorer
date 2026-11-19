@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 const dialog = (): HTMLDialogElement => document.querySelector('dialog.howto-dlg')!;
-const texts = (cls: string): string[] => [...dialog().querySelectorAll('.howto-body > p:not(.howto-actions)')].map((p) => p.querySelector('b')!.textContent + p.querySelector('.' + cls)!.textContent);
+const texts = (cls: string): string[] => [...dialog().querySelectorAll('.dlg-body > p:not(.dlg-actions)')].map((p) => p.querySelector('b')!.textContent + p.querySelector('.' + cls)!.textContent);
 
 describe('openHowto', () => {
   it('shows the title and one line per section in both wordings', () => {
@@ -33,6 +33,7 @@ describe('openHowto', () => {
       'Units and theme. Change units and theme at the top of the page; this device remembers your choice.',
       'Zones. Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
       'Share a range. Select a range, then tap "Copy link to this selection" to share it.',
+      'Summary numbers. Tap ⓘ on the summary to see how its numbers are computed.',
     ]);
     expect(texts('fine')).toEqual([
       'Values at a point. Point at a chart to see the values at that point; on workouts with GPS, you can also point along the route on the map.',
@@ -42,12 +43,13 @@ describe('openHowto', () => {
       'Units and theme. Change units and theme at the top of the page; this device remembers your choice.',
       'Zones. Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
       'Share a range. Select a range, then click "Copy link to this selection" to share it.',
+      'Summary numbers. Click ⓘ on the summary to see how its numbers are computed.',
     ]);
   });
 
   it('closes with its button and a click on the backdrop, not inside; one dialog, reused', () => {
     openHowto(document);
-    dialog().querySelector<HTMLElement>('.howto-body p')!.click();
+    dialog().querySelector<HTMLElement>('.dlg-body p')!.click();
     expect(dialog().open).toBe(true);
     dialog().click(); // the dialog has no padding: its own box is the backdrop
     expect(dialog().open).toBe(false);
@@ -60,9 +62,9 @@ describe('openHowto', () => {
 });
 
 // jsdom lays nothing out: check the rules that keep a tall dialog scrolling inside itself, not the page.
-describe('dialog scrolling (How to use, Report)', () => {
+describe('dialog scrolling (info dialogs, Report)', () => {
   it.each([
-    ['./howto.css', 'howto-dlg'],
+    ['../dialog/dialog.css', 'dlg'],
     ['../report/report.css', 'report'],
   ])('%s scrolls inside the dialog and locks the page', (file, cls) => {
     const css = (readFileSync(new URL(file, import.meta.url), 'utf8') as string).replace(/\/\*[\s\S]*?\*\//g, '');

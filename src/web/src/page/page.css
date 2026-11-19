@@ -367,6 +367,20 @@ body > .page .charts {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 8px;
   margin: 8px 0;
+  /* F-58 SE-5: the ⓘ's corner, reserved with and without JavaScript (no shift). */
+  position: relative;
+  padding-right: 24px;
+}
+.summary-info {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
 }
 .metric {
   padding: 8px 10px;

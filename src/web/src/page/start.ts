@@ -18,7 +18,7 @@ import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
 import { parseRangeLink, rangeFragment } from '../lib/rangelink';
-import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceHowto, enhanceReport, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
 import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
@@ -29,6 +29,7 @@ import { mountStrip } from './strip';
 import type { DataFileResult, WorkoutData } from '../lib/datafile';
 import type { ZoneSource } from '../zones';
 import type { EffortWindow } from '../efforts';
+import type { Facts } from '../summary-info';
 
 type RecorderModule = typeof import('../measure/recorder');
 
@@ -106,6 +107,8 @@ export interface EditSeam {
   onzones(start: (src: ZoneSource) => Promise<(() => void) | void>): void;
   /** F-50 EF-1, EF-7: the efforts chunk's starter, likewise with the window; resolves to the refresh. */
   onefforts(start: (src: EffortWindow) => Promise<(() => void) | void>): void;
+  /** F-58 SE-4: the summary dialog's facts, owner extras included, read on every open. */
+  explain(): Facts;
 }
 
 /** Enhances the server markup, then loads and mounts. Never rejects. */
@@ -180,6 +183,10 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const data = result.data;
   enhanceUnits(root, data.meta, units, !edit);
   addUnitsSelect(root, units, prefs.setUnits);
+  // F-58 SE-1: the viewing page's dialog gets these public metadata fields only, never streams,
+  // positions, route state or the title (AC 39); owner facts come only through the edit seam.
+  const { sport, summary, sessions, lengths, zones } = data.meta;
+  enhanceSummaryInfo(root, units, edit ? edit.explain : () => ({ sport, summary, sessions, lengths, zones: Object.keys(zones).length > 0 }));
   const cursor = createCursorStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
   // F-40 SR-4: the viewing page only (no edit seam) reads the range link, once, before the charts mount.
