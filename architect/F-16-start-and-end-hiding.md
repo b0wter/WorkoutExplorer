@@ -8,6 +8,7 @@
 - **Requirements:** SH-4, AP-2, AP-3, AP-17, SH-9, SH-10, UP-4; TD Security and privacy (Hidden sections), invariant I-3
 - **Builds on:** [F-15](F-15-publish-pipeline-and-static-page.md) P-4, P-7 and its F-16 hand-off; [ADR-028](ADR-028-public-files-rebuilt-whole-page-as-commit-point.md); [ADR-005](ADR-005-workout-data-file-format-v1.md) items 6, 7; [ADR-026](ADR-026-activity-page-template-adopted-not-hydrated.md) items 2, 3; [F-13](F-13-activity-page-layout.md) D-2, D-3, D-17; [F-06](F-06-route-map-linked-to-cursor.md) route presence and markers; [F-12](F-12-owner-api.md) O-11. No new ADR, no migration, no setting, no format change
 - **Owner:** backend, plus one frontend step (FE-1) that lands first, because the Go builder reproduces its sample
+- **Note (19 Nov 2026, [F-55](F-55-start-end-hiding-radius.md)):** the 300 m constant and the `hide_ends` switch are replaced by a radius per end, 0 = that end not cut (HR-1, HR-2); "hiding on" reads "either radius above 0", "off → on" reads "a radius rises" (HR-5). H-1, H-3, H-6 to H-8 are unchanged
 
 ## Decisions
 

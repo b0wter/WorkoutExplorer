@@ -31,16 +31,16 @@ Every endpoint takes `Authorization: Bearer <token>` and no query string. On any
 | --- | --- | --- | --- |
 | `title` | string | yes | Leading and trailing white space is trimmed. At most 100 code points after trimming. No control characters (Unicode Cc) |
 | `description` | string | yes | At most 1,000 code points. No control characters except line feed |
-| `hide_ends` | bool | yes | Stored. Takes effect at publish or regeneration (F-16) |
+| `hide_start_m`, `hide_end_m` | integer | yes, 0 to 2,000, multiples of 50 | Start and end hiding radius in metres, 0 = that end not hidden ([F-55](F-55-start-end-hiding-radius.md) HR-1, HR-4; replaces `hide_ends`, 19 Nov 2026). Takes effect at publish or regeneration |
 | `visibility` | `draft` \| `unlisted` | no | O-6 |
 | `lifetime_days` | integer | yes, 1 to 30 | O-5. In `GET`: (`expires_at` − `created_at`) / 86,400, always whole |
 | `created_at`, `expires_at` | RFC 3339 UTC, whole seconds | no | The edit page shows the resulting date for a chosen lifetime (F-19 AC 3) |
 | `data_end_s` | integer or `null` | no | The UP-3 notice's time (F-09 hand-off) |
 | `view_url` | string | no | `lifecycle.ViewPath`. Only `lifecycle` builds links (ADR-020 item 10) |
-| `hide_ends_ranges` | array of `[first, last]` | no | What hiding would remove, computed at upload ([ADR-030](ADR-030-to-be-hidden-ranges-computed-at-upload.md)); `[]` without positions |
+| `hiding_steps` | object or `null` | no | Per end, the boundary of the hidden section for every radius step ([ADR-056](ADR-056-hiding-steps-for-every-radius.md), F-55 HR-4; replaces `hide_ends_ranges`); `null` without positions |
 | `suggested_title` | string | no | UP-5 suggestion for the stored settings, `""` = none; computed per request, never stored ([F-45](F-45-suggested-title.md) ST-6) |
 | `trim_start_at`, `trim_end_at` | RFC 3339 UTC, whole seconds, or `null` | yes, `null` allowed | Trim (UP-6): [F-47](F-47-trim.md) TR-3, TR-4 |
-| `trimmed` | object or `null` | no | The trimmed `sport` and `summary`, with `hide_ends_ranges` and `suggested_title` then also trimmed: [F-47](F-47-trim.md) TR-8 |
+| `trimmed` | object or `null` | no | The trimmed `sport` and `summary`, with `hiding_steps` and `suggested_title` then also trimmed: [F-47](F-47-trim.md) TR-8 |
 | `zones_max_heart_rate`, `zones_threshold_power` | integer or `null` | yes, `null` allowed | The sharer's zone values (AP-10): 100–250 bpm, 50–1,000 W; `null` = the file's values ([F-49](F-49-zones.md) ZN-4) |
 
 A `PATCH` body with an unknown field, a read-only field, a `null`, a wrong type, or anything that is not one JSON object gets `400`. An empty object `{}` is valid and changes nothing.

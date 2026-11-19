@@ -1,6 +1,6 @@
 # ADR-030 To-be-hidden sections on the edit page: computed at upload by the publish rule, stored as sample ranges, returned by the owner API
 
-- **Status:** accepted (29 Oct 2026, with the F-19 design)
+- **Status:** accepted (29 Oct 2026, with the F-19 design); items 2 and 3 superseded by [ADR-056](ADR-056-hiding-steps-for-every-radius.md) (19 Nov 2026, F-55): one `hiding_steps` column and field for every radius step instead of four range columns and `hide_ends_ranges`. Items 1 and 4 still hold
 - **Date:** 29 Oct 2026
 - **Features:** F-19 (introduces it); F-09 (upload computes the ranges), F-12 (settings object), F-16 (the rule), F-30 (regeneration recomputes them)
 - **Supersedes:** none. Extends the F-12 settings object (read-only field) and the schema of [ADR-019](ADR-019-sqlite-store-schema-and-migrations.md) (migration to v2)
