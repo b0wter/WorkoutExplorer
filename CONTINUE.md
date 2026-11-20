@@ -66,3 +66,8 @@ Open user checks are in the Waiting on column of `features/README.md` (moved the
 - F-23/F-24 artefacts must be linked from `index.html` by a plain path ending in the file name, or the public sweep deletes them (ADR-028 item 5).
 - The frontend engineer runs on Opus at effort high from F-17 on (memory `frontend-model-per-feature`).
 - Real FIT files are never committed. Before every commit, check that nothing under `corpus/real/`, `expected/real/` or `build/`, and no `.br`/`.zip`/`.png`/`.fit` file, is staged.
+
+## Paused 20 Nov 2026 (usage limit)
+- F-56: design v0.2, backend (6317245), TD and F-12/F-15 notes committed. Frontend build was running at pause (uncommitted work may be in src/web/); on resume review `git status`, run `make ci`, commit, then QA at effort high.
+- F-61 (satellite) decided, no open questions; build after F-54. F-62 (my location) decided; acceptance criteria still to write; no build-order slot.
+- Then: F-53, F-54, F-61.
