@@ -1,0 +1,23 @@
+{
+  "_": "Contract with the browser (F-54 LG-6, ADR-059 item 5): every `error` code the /api answers with. `messages` are the English sentences the server sends for the code (checked by internal/httpapi/errorcodes_test.go); `general` codes carry developer-facing sentences that vary, which the browser replaces by one general text (P-14), so their messages are not listed.",
+  "codes": {
+    "bad_request":      {"general": true},
+    "busy":             {"messages": ["Too many uploads right now. Please try again in a minute.", "Another preview image is being processed. Please try again."]},
+    "canceled":         {"messages": ["The upload was interrupted."]},
+    "internal":         {"messages": ["This file could not be read."]},
+    "invalid_image":    {"general": true},
+    "invalid_report":   {"general": true},
+    "invalid_settings": {"general": true},
+    "limit":            {"messages": ["This file is too large or too complex to read."]},
+    "no_data":          {"messages": ["This file contains no readable workout data."]},
+    "not_fit":          {"messages": ["This file is not a FIT file."]},
+    "not_found":        {"messages": ["This workout has expired or is not available.", "This delete link is no longer valid: it was already used, has expired, or the workout is gone."]},
+    "rate_limited":     {"messages": ["Too many uploads. Please try again later.", "Too many requests. Please try again later.", "Too many reports. Please try again later."]},
+    "server_error":     {"messages": ["Something went wrong on the server. Please try again later."]},
+    "stale":            {"general": true},
+    "storage_full":     {"messages": ["Uploads are paused because storage is full. Please try again later."]},
+    "too_large":        {"messages": ["This file is larger than 20 MB.", "The preview image was refused."]},
+    "unreadable":       {"messages": ["This file could not be read."]},
+    "unsupported_type": {"messages": ["Unsupported FIT file type."]}
+  }
+}

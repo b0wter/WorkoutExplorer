@@ -355,6 +355,11 @@ func TestCaddy(t *testing.T) {
 			t.Fatal(err)
 		}
 		r.check("older release's asset", r.get("/assets/old-00000000.js"), 200, ccAsset)
+		// F-54 LG-9: a language file (JSON, content-hashed) is public and immutable like any asset.
+		if err := os.WriteFile(filepath.Join(r.a.dir, "site", "assets", "lang-de-00000000.json"), []byte(`{}`), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		r.check("language file", r.get("/assets/lang-de-00000000.json"), 200, ccAsset)
 		r.check("bundle lists", r.get("/bundles/"), 404, ccNoCache)
 		r.check("unknown path", r.get("/about-nothing"), 404, ccNoCache)
 		r.check("template", r.get("/index.html"), 404, ccNoCache)
