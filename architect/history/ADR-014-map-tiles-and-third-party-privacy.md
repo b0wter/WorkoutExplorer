@@ -9,3 +9,9 @@ History of [architect/ADR-014-map-tiles-and-third-party-privacy.md](../ADR-014-m
 ## Revision 3 (24 Oct 2026, F-14 design): text replaced
 
 - Decision 1: "F-14 uses OpenFreeMap's dark style if one exists (decision 28). The URL is one constant in `map-style.ts`."
+
+## Revision 4 (20 Nov 2026, F-61 design): text replaced
+
+- Title: "ADR-014 Map tiles: OpenFreeMap liberty, the tile host as the only third party, no referrer, no credentials"
+- Decision 2: "**The tile host is the only third party the viewer's browser contacts** (TD invariant I-6). No fonts, scripts, analytics or images from anywhere else. MapLibre has no telemetry; its logo stays off."
+- Decision 6 table: `connect-src 'self' https://tiles.openfreemap.org`; `img-src 'self' data: blob: https://tiles.openfreemap.org`

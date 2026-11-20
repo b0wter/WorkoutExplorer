@@ -1,0 +1,49 @@
+# F-61 Satellite map layer: architecture
+
+- **Version:** 0.1
+- **Status:** accepted (20 Nov 2026). Normal lane, QA at effort high (privacy rule change). No open points
+- **Feature:** [`features/F-61-satellite-map-layer.md`](../features/F-61-satellite-map-layer.md); decisions of 20 Nov 2026, OQ-282 to OQ-284
+- **Requirements:** DS-7, AP-3, AP-9, AP-15, SH-4, SH-12, PIN-6, DS-4, DS-6, INF-1, NFR Privacy, NFR Performance, TD I-6
+- **Builds on:** [ADR-013](ADR-013-maplibre-behind-a-lazy-adapter.md) item 2 (base style plus merge), [ADR-014](ADR-014-map-tiles-and-third-party-privacy.md) **rev. 4** (second tile host; changed by this feature), [ADR-011](ADR-011-activity-page-bundle-allocation.md) item 4 (F-61 row), [ADR-038](ADR-038-fullscreen-map-as-css-overlay-with-a-history-entry.md), [ADR-041](ADR-041-preview-basemap-from-the-browser-composed-on-the-server.md), [ADR-059](ADR-059-interface-language-applied-in-the-browser.md), [F-54](F-54-translated-interface.md) LG-3, LG-8, [F-29](F-29-about-page-and-attributions.md) AB-2, AB-6, [F-22](F-22-caching-and-security-headers.md) H-3. No new ADR; no format, schema, endpoint or server change
+- **Owner:** frontend; backend only for the CSP line in `deploy/Caddyfile` and its pinned test (same commit as the frontend, or before it)
+
+## Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| SL-1 | **Satellite lives in the lazy map chunk, not in its own chunk.** The toggle, the style composition (SL-3) and the Esri constants are in `components/map/` (pure parts in a module with `import type` only, like `map-style.ts`). The entry gains only the `lib/prefs` accessor and handing the stored choice to the map. Read of the feature's "no satellite code before the toggle is used": no satellite code in the **entry** and no Esri request with Map; the map chunk already loads after the charts on every page with a route | A second `import()` would add a round trip on the first tap and a second failure path for about 1 KB in a 280 KB chunk. **Would choose differently if** the satellite part of the map chunk grows past about 3 KB gzip |
+| SL-2 | **Preference.** One `localStorage` key `wx.map` through `lib/prefs`, values `map` and `satellite`, written only by the toggle (either value); any other value or a storage failure reads as nothing stored, which means Map. Read once when the map mounts. Not read by the head script (the map starts after first paint), not synced across tabs, never sent anywhere. `basemap.ts` (SH-12 preview, ADR-041) never reads it | DS-4 pattern; AC 2, 4, 5, 11 |
+| SL-3 | **Satellite style = a pure function of the current OpenFreeMap style.** From the remote style of the current scheme (liberty or dark) it keeps the `background` layer (plain colour under missing imagery), the vector source, glyphs and sprite, and **only the symbol layers whose `source-layer` is `transportation_name` or `place`** (street and place names); every other layer and the `ne2_shaded` hillshade go. It adds one raster source (id without the `wx-` prefix) with Esri World Imagery tiles and one raster layer directly above the background. Label paint is fixed for both schemes: light text, dark halo; the imagery is the same in both themes. The result goes through the existing `applyRemote` path and `mergeStyle`, so every `wx-` source and layer sits on top and is re-applied on `style.load` exactly as for a scheme change | One mechanism for scheme and layer switches keeps viewport, route colouring, range, hidden-end shading, pin marks and legend (AC 3). Cursor marker and pin markers are DOM markers and are not touched. Labels under the route, as on Map |
+| SL-4 | **Switching** is one `setStyle` of the composed style (the effective style is a function of remote style, scheme and layer). A scheme change while on Satellite recomposes from the new scheme's style; Esri requests continue only for the new viewport. Back to Map removes the raster source, so Esri is contacted only while Satellite is shown. The map's zoom range is unchanged; the raster source's `maxzoom` is set so MapLibre overzooms instead of requesting Esri's "not yet available" placeholder tiles (engineer's call, checked on the phone, OQ-284) | AC 3, 6, 9 |
+| SL-5 | **Failure.** Imagery blocked, offline, erroring or missing at a zoom: the background colour shows under the labels and the route, no message, the choice stays Satellite, errors swallowed by the existing `error` listener (no tile URLs in the console). **Known limit, accepted:** if the OpenFreeMap style never arrives, both layers show the base style (route on a plain background); Satellite does not start without it | AC 9; the OpenFreeMap-blocked case is already the F-06 fallback |
+| SL-6 | **Toggle.** An icon button in its own control group in MapLibre's top-right stack, **last**: zoom, fullscreen, pin (AP-18, phone only), then satellite; the order holds although the pin is appended later by the entry. Created by the map chunk once the map exists, so never without a map (AC 1); it lives inside the map container and therefore also in the fullscreen map (ADR-038). One accessible name, state by `aria-pressed`, title and label from the map text group, relabelled on a language change, as the pin toggle (`page/enhance.ts`) | OQ-282 |
+| SL-7 | **Third parties (ADR-014 rev. 4).** Hosts: `tiles.openfreemap.org` (style, vector tiles, glyphs, sprite; also the labels on Satellite) and `server.arcgisonline.com`, path `/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` (y before x, 256 px JPEG), only while Satellite is shown. No other Esri host or service: no reference or label layers, no service-metadata request at run time, no `services.arcgisonline.com`. No `transformRequest`, no `credentials: 'include'`; the site-wide `Referrer-Policy: no-referrer` covers main-thread and worker requests. CSP: Esri's origin added to `connect-src` and `img-src` only, in the one site-wide policy (F-22 H-3); every other directive and every script hash unchanged | AC 6, 7 |
+| SL-8 | **Attribution.** On the raster source: "Powered by Esri" and Esri's data line, taken from the service's `copyrightText` ("Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community" on 20 Nov 2026; verify at build time and keep as one constant), linked to esri.com. OpenFreeMap's attribution stays because its vector source stays in the Satellite style. Attribution text is source data and not translated (as OpenFreeMap's) | AC 8 |
+| SL-9 | **About page and attribution list.** Template text (AB-2: the user owns the wording; the engineer drafts): "In your browser" names the Map / Satellite choice; the map-tiles section says that after a viewer chooses Satellite, Esri, a US company, sees the IP address and the map area viewed, with a link to Esri's privacy statement and no claim about its practices (as PT-8). The sentence about the preview image stays OpenFreeMap-only. `src/server/tools/attributions/sources.json` gains an Esri World Imagery entry naming its sources and claiming the origin `https://server.arcgisonline.com`; AB-6 fails the build without it. New and changed `data-t` keys need de/es/fr (LG-8) | AC 10, INF-1 |
+| SL-10 | **Colours on imagery.** Route, markers, range, shading and pin colours stay theme tokens read by `mapColours` from the map container. If a token is not clearly visible on imagery, the container carries a Satellite attribute while it is shown and `page.css` overrides that token there; the layer switch then recolours like a scheme change. No colour literals in code | AC 12; one home for colours |
+| SL-11 | **Texts.** The toggle's name and title are in the map text group (`components/map/map-texts.ts`), so in the lazy map chunk and its language files (LG-3, R-2); the four language files stay within 5 KB gzip | AC 13, ADR-011 decision 6 |
+
+## Cost
+
+| What | Limit |
+| --- | --- |
+| Activity entry (static) | **Ceiling 100 bytes gzip** from the ADR-011 reserve (1,786 → 1,686): the `wx.map` accessor and passing the choice to the map. Above it: stop and report |
+| Lazy map chunk | Not counted (ADR-011 item 2); report the delta. SL-1's trigger at about 3 KB gzip |
+| Scrubbing | 60 fps on the 12-hour ride with Satellite (NFR Performance): the cursor is a DOM marker, so imagery adds no work per frame; raster decoding happens on pan and zoom only |
+| LCP with Map | Unchanged: no new request, no entry change beyond the ceiling |
+
+## Verification (besides the acceptance criteria)
+
+| What | Check |
+| --- | --- |
+| Esri behaviour | Before building on it: the tile URL answers with CORS (`Access-Control-Allow-Origin`), without a redirect to another host, and without needing a key. If CORS or the host fails, **stop and report**: the decision changes, not the CSP |
+| Network | Map: no request to any Esri host on viewing, edit, published, upload and About pages, and none from the preview basemap with `wx.map=satellite` stored. Satellite: only `server.arcgisonline.com` tile paths and `tiles.openfreemap.org`; no `Referer`, no cookie |
+| Mutants | Each must fail a check: the raster source left in the Map style; a label layer from another `source-layer` kept; `basemap.ts` reading `wx.map`; a second Esri origin in the CSP; the sources entry without its origin |
+
+## Hand-offs
+
+| To | What |
+| --- | --- |
+| Backend | CSP string in `deploy/Caddyfile` and its pinned Caddy test (SL-7); `deploy/DOCKER.md` Location row names Esri after a viewer chooses Satellite |
+| Requirements (TD) | I-6: "The viewer's browser contacts no third-party host except the map's tile hosts (OpenFreeMap; Esri World Imagery only after the viewer chose Satellite), and sends them no referrer and no credentials." Glossary "Tile host" → "Tile hosts" (both, ADR-014 rev. 4); Security and privacy CSP line; Tech stack map tiles row; storage keys (`wx.map`) |
+| Noted in place | ADR-014 rev. 4, ADR-011 item 4 (F-61 row), ADR-013 note |
