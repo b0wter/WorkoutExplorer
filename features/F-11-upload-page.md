@@ -30,4 +30,4 @@ The start page where a sharer drops or picks a FIT file and lands on the draft o
 - [ ] When the rate limit is hit, the page shows "Too many uploads. Please try again later."; when too many uploads are being processed at once, "Too many uploads right now. Please try again in a minute." The drop zone stays usable in both cases.
 - [ ] A file of exactly 20,000,000 bytes is sent; one of 20,000,001 bytes is refused in the browser with "This file is larger than 20 MB."
 - [ ] While an upload is running, the drop zone and the file picker are disabled, and dropping another file starts no second upload; after an error both are usable again.
-- [ ] The page sets no cookies and stores nothing in browser storage.
+- [ ] The page sets no cookies and stores nothing in browser storage, except the language choice `wx.lang` (F-54; user, 20 Nov 2026).
