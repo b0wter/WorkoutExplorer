@@ -24,6 +24,7 @@ AC-7 keeps every edit link uploaded from a browser in that browser's storage (OQ
 - AC 54 holds by construction; the only stored text that reaches the screen is `title`, always as text.
 - `lib/mine` is a second storage module next to `lib/prefs`; `lib/owner` hands the token to `src/edit` for the list write (its second exit after the published page's edit link).
 - Anyone using the browser, or a script running on this origin, can read the tokens. Accepted by OQ-218 and stated in the page note; the CSP (ADR-032) allows only our own scripts.
+- The My workouts page renders edit links as `href="/edit/{id}#{token}"`, unlike the published page's button ([F-20](F-20-publish-share-delete-controls.md) C-5, which stays): the fragment never goes to the server or into a `Referer`, the page is `no-referrer` with no third-party content, and the status-bar hover shows the link only to the device owner, who holds it in storage anyway.
 - Lost-update race between two owner tabs writing in the same moment: one update may be lost until that page's next save. Accepted.
 
 ## Rejected
