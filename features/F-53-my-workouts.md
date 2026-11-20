@@ -1,6 +1,6 @@
 # F-53 My workouts on this device
 
-- **Status:** decided (OQ-218 to OQ-222 on 14 Nov 2026, OQ-278, OQ-279 on 19 Nov 2026); acceptance criteria written (19 and 20 Nov 2026)
+- **Status:** decided (OQ-218 to OQ-222 on 14 Nov 2026, OQ-278, OQ-279 on 19 Nov 2026, P-12, P-13 on 20 Nov 2026); acceptance criteria written (19 and 20 Nov 2026)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
 - **Lane:** critical (stores edit links, which are secrets, in the browser)
@@ -11,7 +11,7 @@
 A sharer finds the workouts they uploaded from this browser again, drafts included, without accounts and without keeping the edit links somewhere else.
 
 ## Scope
-- After every successful upload, the browser keeps an entry for the workout in its own storage (`localStorage`, no cookie, never sent to the server): title, sport, start date, status (draft or published), expiry and edit link; the viewing link is added once it is published (OQ-218, OQ-219).
+- After every successful upload, the browser keeps an entry for the workout in its own storage, written by the edit page once it has loaded, not by the upload page (P-13) (`localStorage`, no cookie, never sent to the server): title, sport, start date, status (draft or published), expiry and edit link; the viewing link is added once it is published (OQ-218, OQ-219).
 - A dedicated **My workouts** page, linked from the upload page, lists this browser's entries in a table, newest upload first (OQ-220). Columns:
   - **Workout:** title, or the suggested or default title when empty (UP-5).
   - **Sport.**
@@ -20,7 +20,7 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
   - **Expires:** relative ("in 3 days"); for a draft, the 48-hour draft deadline when it comes first.
   - **Links:** Edit, and View once published.
   - **Forget:** removes the entry only.
-- Entries past their expiry are removed when the page is shown. A workout the server no longer has is removed when its edit page answers not found; no server request just for the list (OQ-221).
+- Entries past their expiry are removed when the page is shown. A workout the server no longer has is removed when its edit page answers not found, only if the entry's stored edit token matches the one in the address (P-12); no server request just for the list (OQ-221).
 - The edit page updates the stored title, status and expiry on every successful save and on publish (OQ-222). Deleting a workout from its edit page (AC-4) removes its entry. "Clear list" removes all entries; nothing on the server is deleted.
 - A one-line note on the page and on the published page: "Edit links are saved in this browser. Anyone using this browser can open them." (OQ-218)
 - Broken or unavailable storage: the page says the list is not available in this browser; no error.
@@ -36,16 +36,16 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 - An empty list shows "No workouts uploaded from this browser yet."; the upload page's link is always shown.
 - Edit and View open in the same tab.
 - Without JavaScript the page says that it needs JavaScript.
-- Only the upload, edit, published and My workouts pages read or write the list; the viewing page never touches it.
+- Only the edit, published and My workouts pages read or write the list (the upload page only links to it, P-13); the viewing page never touches it.
 
 ## Acceptance criteria
-- [ ] After a successful upload from the upload page (FIT or zip, UP-11), the browser holds one entry with title, sport, start date, status Draft, expiry and edit link; no cookie is set, and no request to the server carries any of it (checked in the browser's network view).
+- [ ] After a successful upload from the upload page (FIT or zip, UP-11) and once the edit page has loaded, the browser holds one entry with title, sport, start date, status Draft, expiry and edit link; no cookie is set, and no request to the server carries any of it (checked in the browser's network view).
 - [ ] The upload page links to My workouts; the page lists the entries newest upload first with the columns of Scope; an empty title shows the suggested or default title (UP-5); Edit and View open in the same tab; an empty list shows "No workouts uploaded from this browser yet."
 - [ ] One entry per workout: uploading, saving, publishing or reopening the edit page of a listed workout replaces its entry, never adds a second one.
 - [ ] Expires shows a relative time; for a draft, the earlier of 48 hours after upload and the chosen lifetime (UP-7).
 - [ ] Publishing on the edit page sets the entry to Published and adds the viewing link; every successful save updates title, status and expiry; deleting the workout removes its entry.
 - [ ] Opening My workouts removes entries past their expiry and makes no request to the server.
-- [ ] An edit page that answers not found (expired, deleted by the operator, INF-3, or unknown) removes the entry for that workout.
+- [ ] An edit page that answers not found (expired, deleted by the operator, INF-3, or unknown) removes the entry for that workout only when the entry's stored edit token matches the one in the address; an entry with a different token stays (P-12).
 - [ ] Whenever the edit page opens with a valid edit link and the list has no entry for it (iOS Shortcut, INF-5; a pasted edit link; a workout uploaded before F-53; someone else's edit link), it adds one (OQ-278).
 - [ ] Forget removes one entry at once; Clear list asks once, "Remove all workouts from this list? They stay online, but without their edit links you cannot change or delete them.", and removes all entries only on confirm (OQ-279); afterwards the workouts still open on their viewing and edit links.
 - [ ] The note "Edit links are saved in this browser. Anyone using this browser can open them." is on My workouts and on the published page (AC-6).
@@ -68,3 +68,7 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 ## Decisions (user, 19 Nov 2026)
 - **OQ-278:** the edit page adds an entry whenever it opens with a valid edit link and none exists.
 - **OQ-279:** Clear list asks once; Forget removes at once.
+
+## Decisions (user, 20 Nov 2026)
+- **P-12:** a not-found answer removes an entry only when its stored token matches the one in the address.
+- **P-13:** the entry is written by the edit page after it loads, not by the upload page; QA checks AC 42 after the edit page has loaded.

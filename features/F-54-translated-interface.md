@@ -1,6 +1,6 @@
 # F-54 Translated interface: German, Spanish, French
 
-- **Status:** decided (OQ-223 to OQ-228 on 14 Nov 2026, OQ-280, OQ-281 on 19 Nov 2026); acceptance criteria written (19 and 20 Nov 2026)
+- **Status:** decided (OQ-223 to OQ-228 on 14 Nov 2026, OQ-280, OQ-281 on 19 Nov 2026, language-file trace on 20 Nov 2026); acceptance criteria written (19 and 20 Nov 2026)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** both (backend first, for server-made pages and messages)
 - **Lane:** normal
@@ -12,7 +12,7 @@ Viewers and sharers use the app in English, German, Spanish or French.
 
 ## Scope
 - Every text of the interface in four languages: upload page, viewing, edit and published pages, How to use and How these numbers are computed dialogs (AP-22, AP-24), My workouts (AC-7), About page (app part), Report form, error and "expired or not available" pages, upload and server messages (UP-2, UP-3, UP-10, UP-11), labels, units and number and date formats.
-- The language comes from the browser's preferred languages, English when none of the four matches; a drop-down next to units and theme switches it on the viewing, edit and upload pages (OQ-280); the choice is remembered in this browser like the units (DS-1), never sent to the server. The About page's "In your browser" paragraph (INF-1) lists it.
+- The language comes from the browser's preferred languages, English when none of the four matches; a drop-down next to units and theme switches it on the viewing, edit and upload pages (OQ-280); the choice is remembered in this browser like the units (DS-1); no cookie, link or request parameter carries it. The About page's "In your browser" paragraph (INF-1) lists it.
 - Only the chosen language is loaded (lazy), so the entry bundle and LCP budgets hold (OQ-226).
 - Not translated: what people wrote (title, description, pin titles and notes, report message), the operator file and the Impressum, operator-only texts (Pushover notifications, command output, logs), the preview cards (SH-5, SH-11) and the suggested title (OQ-224), pages without JavaScript (OQ-223).
 
@@ -28,13 +28,13 @@ Viewers and sharers use the app in English, German, Spanish or French.
 - Switching language redraws the page without reloading data; cursor, selected range and settings are kept.
 - The GPX download (F-57) is not translated: file name `route-YYYY-MM-DD.gpx` and file contents stay as they are.
 - Pins store their type, not its name, so a pin with an empty title shows its type's name in each viewer's language (F-56, OQ-277).
-- The only trace of the language choice on the server is which language file the browser fetches; like every request, it is not logged (TD I-7).
+- Fetching only the chosen language's file tells the server which language was chosen (accepted 20 Nov 2026); like every request, it is not logged (TD I-7).
 
 ## Acceptance criteria
 Language choice
 - [ ] A first visit with browser languages `de-AT, en` shows German; `it, fr` French; `it` English.
 - [ ] The language drop-down is on the viewing, edit and upload pages, next to units and theme, naming each language in itself; the published, My workouts, About, Report and error pages follow the remembered choice without one (OQ-280). A choice applies at once, without reloading data (cursor, range and settings kept), and to every page later opened in this browser, and wins over the browser languages.
-- [ ] The choice is never sent to the server: no cookie, and no link, header or request parameter carries it; the only trace is the fetch of the chosen language's file.
+- [ ] No cookie, link, header or request parameter carries the choice; the only trace on the server is the fetch of the chosen language's file, which is not logged (TD I-7).
 - [ ] With browser storage unavailable, blocked or unreadable, the browser's languages decide, without a message, and switching still works for that page.
 
 Coverage
@@ -67,3 +67,6 @@ Not translated
 ## Decisions (user, 19 Nov 2026)
 - **OQ-280:** the drop-down is on the viewing, edit and upload pages; the other pages follow the remembered choice.
 - **OQ-281:** no visible switch on published pages: text shown once the language file arrives, English after at most 500 ms.
+
+## Decisions (user, 20 Nov 2026)
+- Fetching only the chosen language's file tells the server which language was chosen; accepted (request not logged, TD I-7). DS-6 reworded accordingly.
