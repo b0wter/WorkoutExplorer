@@ -19,6 +19,7 @@ A viewer standing on or near the route sees where they are on the map, for examp
 - The map centres on the position only when location is turned on and when the viewer taps follow; never automatically otherwise.
 - `Permissions-Policy: geolocation=(self)` on every response, no other feature listed, so the clipboard and everything else behave as today.
 - The position stays in the browser: never sent to our server, never stored (no `lib/prefs`, no storage of any kind), never in the URL or a range link (AP-19), never in the preview image (SH-5, SH-12), never logged.
+- Texts in English, German, Spanish and French (DS-6, OQ-228; F-62 is built after F-54).
 - About page (INF-1): one sentence that the own position, if a viewer turns it on, is shown only in their browser and never sent to the server, and that turning it on or tapping follow centres the map there, so the map's tile host(s) see that area. No hint on the page itself (screenshots, OQ-290).
 
 ## Out of scope

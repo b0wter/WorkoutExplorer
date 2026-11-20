@@ -1,6 +1,6 @@
 # F-53 My workouts on this device
 
-- **Status:** draft; OQ-218 to OQ-222 decided 14 Nov 2026; acceptance criteria written 19 Nov 2026; OQ-278, OQ-279 decided 19 Nov 2026
+- **Status:** decided (OQ-218 to OQ-222 on 14 Nov 2026, OQ-278, OQ-279 on 19 Nov 2026); acceptance criteria written (19 and 20 Nov 2026)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend
 - **Lane:** critical (stores edit links, which are secrets, in the browser)
@@ -40,7 +40,8 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 
 ## Acceptance criteria
 - [ ] After a successful upload from the upload page (FIT or zip, UP-11), the browser holds one entry with title, sport, start date, status Draft, expiry and edit link; no cookie is set, and no request to the server carries any of it (checked in the browser's network view).
-- [ ] The upload page links to My workouts; the page lists the entries newest upload first with the columns of Scope; an empty list shows the empty-list line.
+- [ ] The upload page links to My workouts; the page lists the entries newest upload first with the columns of Scope; an empty title shows the suggested or default title (UP-5); Edit and View open in the same tab; an empty list shows "No workouts uploaded from this browser yet."
+- [ ] One entry per workout: uploading, saving, publishing or reopening the edit page of a listed workout replaces its entry, never adds a second one.
 - [ ] Expires shows a relative time; for a draft, the earlier of 48 hours after upload and the chosen lifetime (UP-7).
 - [ ] Publishing on the edit page sets the entry to Published and adds the viewing link; every successful save updates title, status and expiry; deleting the workout removes its entry.
 - [ ] Opening My workouts removes entries past their expiry and makes no request to the server.
@@ -50,6 +51,9 @@ A sharer finds the workouts they uploaded from this browser again, drafts includ
 - [ ] The note "Edit links are saved in this browser. Anyone using this browser can open them." is on My workouts and on the published page (AC-6).
 - [ ] With browser storage unavailable, blocked, full or holding an unreadable value, My workouts says the list is not available in this browser; upload, edit and publish still work, without an error.
 - [ ] A title with markup or control characters (hostile-text sample) is shown as plain text.
+- [ ] An entry whose stored edit or viewing link is not a link to this site's own edit or viewing page (e.g. a `javascript:` or another site's address written into storage by hand) is shown without that link and is never opened.
+- [ ] On a phone in portrait the page has no horizontal page scroll (the table may scroll inside its own box), and Edit, View and Forget can be tapped.
+- [ ] Without JavaScript, My workouts says that it needs JavaScript.
 - [ ] Test: the viewing page's code neither reads nor writes the list, so no edit link is in reach of a viewing page.
 - [ ] The About page's "In your browser" paragraph names the list and its edit links (INF-1).
 - [ ] The server is unchanged: no new endpoint, table, column or log line.
