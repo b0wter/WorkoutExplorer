@@ -27,5 +27,5 @@ In a multi-entry Vite build, every module that both entries import moves into a 
 
 ## Would choose differently if
 
-- The upload page grows into a real view, for example the "remember my uploads" list (Later). Then use Svelte, measure the shared-chunk cost against ADR-011's reserve at that time, and record it in a superseding ADR.
+- The upload page grows into a real view, for example the "remember my uploads" list (Later). Then use Svelte, measure the shared-chunk cost against ADR-011's reserve at that time, and record it in a superseding ADR. *(Note 20 Nov 2026: F-53 put that list on its own page on the activity entry, F-53 MW-1; the upload page gains only a static link, so this ADR stands.)*
 - The activity page gets clear budget slack (a superseded ADR-002 measuring brotli, or a raised budget). Then consistency may be worth the shared chunk.
