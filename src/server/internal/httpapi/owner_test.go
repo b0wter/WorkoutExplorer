@@ -2,10 +2,12 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -200,6 +202,14 @@ func TestPatchBody(t *testing.T) {
 		`{"lifetime_days":"7"}`, `{"visibility":3}`, `{"description":["a"]}`,
 		`{"visibility":"unlisted"}`, `{"visibility":"draft"}`, `{"visibility":"private"}`, `{"title":"x","visibility":"unlisted"}`, // read-only (O-6)
 		`{"trimmed":null}`, `{"trim_start_at":"x"}`, `{"trim_end_at":1}`, `{"trim_start_at":"2026-06-01T06:00:00.5Z"}`, // F-47
+		`{"pins":null}`, `{"pins":{}}`, `{"pins":[null]}`, `{"pins":[{}]}`, `{"pins":[1]}`, // F-56 PN-2
+		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00Z"}]}`, // end_at missing
+		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00Z","end_at":null,"x":1}]}`,
+		`{"pins":[{"type":1,"title":"t","note":"","start_at":"2026-06-01T06:00:00Z","end_at":null}]}`,
+		`{"pins":[{"type":"danger","title":null,"note":"","start_at":"2026-06-01T06:00:00Z","end_at":null}]}`,
+		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00.5Z","end_at":null}]}`,
+		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"x","end_at":null}]}`,
+		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00Z","end_at":5}]}`,
 		`{"zones_max_heart_rate":190.5}`, `{"zones_max_heart_rate":"190"}`, `{"zones_threshold_power":1e2}`, `{"zones_threshold_power":true}`, // F-49
 		`{"title":"` + strings.Repeat("a", maxPatchBytes) + `"}`,
 	}
@@ -239,7 +249,7 @@ func TestPatchBody(t *testing.T) {
 		t.Errorf("zones: %d %s %+v", rec.Code, rec.Body, o.patch)
 	}
 	rec = ownerDo(h, "PATCH", url, auth, ` {} `)
-	if rec.Code != 200 || o.patch != (lifecycle.SettingsPatch{}) {
+	if rec.Code != 200 || !reflect.DeepEqual(o.patch, lifecycle.SettingsPatch{}) {
 		t.Errorf("empty: %d", rec.Code)
 	}
 
@@ -286,5 +296,43 @@ func TestPublishEndpoint(t *testing.T) {
 	o.err = &lifecycle.ServerError{Stage: "hook", Err: errors.New("boom")}
 	if rec := ownerDo(h, "POST", url, auth, ""); rec.Code != 500 || strings.Contains(rec.Body.String(), "boom") {
 		t.Errorf("500: %d %s", rec.Code, rec.Body)
+	}
+}
+
+// TestPatchPins (F-56 PN-2): a valid set parses with every field; [] is a
+// clear; the settings object answers with the whole stored set; the body cap
+// holds the largest valid body.
+func TestPatchPins(t *testing.T) {
+	p, msg := parsePatch([]byte(`{"pins":[{"type":"danger","title":"<b>","note":"a\nb","start_at":"2026-06-01T08:00:00+02:00","end_at":null},
+		{"type":"difficult_section","title":"","note":"","start_at":"2026-06-01T06:00:00Z","end_at":"2026-06-01T06:05:00Z"}]}`))
+	if msg != "" || !p.Pins.Set || len(p.Pins.V) != 2 || p.Pins.V[0].Title != "<b>" || p.Pins.V[0].Note != "a\nb" ||
+		!p.Pins.V[0].StartAt.Equal(time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)) || p.Pins.V[0].EndAt != nil || p.Pins.V[1].EndAt == nil {
+		t.Fatalf("%q %+v", msg, p.Pins)
+	}
+	if p, msg = parsePatch([]byte(`{"pins":[]}`)); msg != "" || !p.Pins.Set || len(p.Pins.V) != 0 {
+		t.Fatalf("%q %+v", msg, p.Pins)
+	}
+	e := time.Date(2026, 6, 1, 6, 5, 0, 0, time.UTC)
+	r := (&fakeOwner{}).rec()
+	r.Pins = []lifecycle.Pin{{Type: "note", Title: "x", StartAt: e.Add(-time.Minute)}, {Type: "danger", StartAt: e.Add(-time.Hour), EndAt: &e}}
+	out, _ := json.Marshal(settingsOf(r, lifecycle.OwnerView{}))
+	if !strings.Contains(string(out), `"pins":[{"type":"note","title":"x","note":"","start_at":"2026-06-01T06:04:00Z","end_at":null},{"type":"danger","title":"","note":"","start_at":"2026-06-01T05:05:00Z","end_at":"2026-06-01T06:05:00Z"}]`) {
+		t.Errorf("%s", out)
+	}
+	r.Pins = nil
+	if out, _ = json.Marshal(settingsOf(r, lifecycle.OwnerView{})); !strings.Contains(string(out), `"pins":[]`) {
+		t.Errorf("no pins is not []: %s", out)
+	}
+	// 50 pins of 60 + 500 code points, each a surrogate pair escaped (12 bytes).
+	pair := strings.Repeat(`😀`, 1)
+	one := `{"type":"difficult_section","title":"` + strings.Repeat(pair, 60) + `","note":"` + strings.Repeat(pair, 500) + `","start_at":"2026-06-01T06:00:00Z","end_at":"2026-06-01T06:05:00Z"}`
+	body := `{"title":"` + strings.Repeat(pair, 100) + `","description":"` + strings.Repeat(pair, 1000) + `","pins":[` + strings.TrimSuffix(strings.Repeat(one+",", 50), ",") + `]}`
+	if len(body) > maxPatchBytes {
+		t.Fatalf("largest valid body %d exceeds the cap %d", len(body), maxPatchBytes)
+	}
+	o := &fakeOwner{}
+	h := NewHandler(Config{MaxConcurrentUploads: 1, Owner: o})
+	if rec := ownerDo(h, "PATCH", "/api/workouts/"+pid, "Bearer "+strings.Repeat("t", 22), body); rec.Code != 200 || len(o.patch.Pins.V) != 50 {
+		t.Errorf("%d %.200s", rec.Code, rec.Body)
 	}
 }

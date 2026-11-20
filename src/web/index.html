@@ -48,6 +48,7 @@
       {{if .Device}}<p class="device">{{.Device}}</p>{{end}}
       <p class="notice">Parts of the route, such as the start and end, may be hidden for privacy. Totals include them.</p>
       {{if .Route.Map}}<div id="map-slot" class="map-slot"></div>{{end}}
+      {{if .Pins.URL}}<div class="pins-slot" data-url="{{.Pins.URL}}" data-count="{{.Pins.Count}}" hidden></div>{{end}}
       {{if .Route.NoLocation}}<p class="hint">No location data in this workout.</p>{{end}}
       {{if .Route.Hidden}}<p class="hint">The entire route has been hidden by the uploader.</p>{{end}}
       {{if .ChartsClass}}<div id="charts-slot" class="charts {{.ChartsClass}}"></div>{{end}}

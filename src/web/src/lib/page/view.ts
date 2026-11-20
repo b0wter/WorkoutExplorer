@@ -83,6 +83,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
       Hidden: presence === 'no-location-data' && settings.routeHidden ? 'yes' : '',
       Gpx: presence === 'route' && meta.sport !== 'multisport' ? 'yes' : '',
     },
+    Pins: settings.pinsFile && (settings.pinCount ?? 0) > 0 ? { URL: base + '/' + settings.pinsFile, Count: String(settings.pinCount) } : { URL: '', Count: '' },
     ChartsClass: chartsClass(data),
     Laps: laps
       ? { ...laps, Sections: lapSections(sections(meta), meta.laps, laps.Rows, laps.Columns.length) }

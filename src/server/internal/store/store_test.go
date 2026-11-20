@@ -40,8 +40,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 9 {
-		t.Errorf("user_version = %d, want 8", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 10 {
+		t.Errorf("user_version = %d, want 10", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -76,7 +76,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 9 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 10 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -112,7 +112,7 @@ func TestSchema(t *testing.T) {
 		{"published_at", "INTEGER", false}, {"expires_at", "INTEGER", true},
 		{"trim_start_at", "INTEGER", false}, {"trim_end_at", "INTEGER", false},
 		{"zones_max_heart_rate", "INTEGER", false}, {"zones_threshold_power", "INTEGER", false},
-		{"hide_start_m", "INTEGER", true}, {"hide_end_m", "INTEGER", true}, {"hiding_steps", "TEXT", false},
+		{"hide_start_m", "INTEGER", true}, {"hide_end_m", "INTEGER", true}, {"hiding_steps", "TEXT", false}, {"pins", "TEXT", false},
 	}
 	rows, err := db.db.QueryContext(ctx, "PRAGMA table_info(workouts)")
 	if err != nil {
@@ -739,7 +739,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 9 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 10 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -1043,14 +1043,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 10} {
+	for _, v := range []int{4, 11} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (9)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (10)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}
@@ -1174,5 +1174,53 @@ func TestDeleteKeys(t *testing.T) {
 	}
 	if c, err := db.ClearDeleteKeys(ctx); err != nil || c != 0 {
 		t.Errorf("cleared again %d: %v", c, err)
+	}
+}
+
+// TestPinsColumn (F-56 PN-1): the set round-trips through insert and update,
+// no pins is NULL, and the column refuses text that is not JSON.
+func TestPinsColumn(t *testing.T) {
+	db, _ := openTemp(t)
+	r := record(7)
+	if err := db.InsertWorkout(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	if n := scalar[int](t, db, "SELECT pins IS NULL FROM workouts"); n != 1 {
+		t.Error("no pins is not NULL")
+	}
+	e := time.Date(2026, 6, 1, 6, 5, 0, 0, time.UTC)
+	pins := []lifecycle.Pin{
+		{Type: "danger", Title: "Gravel \"<b>\"", Note: "a\nb", StartAt: time.Date(2026, 6, 1, 6, 1, 0, 0, time.UTC)},
+		{Type: "difficult_section", StartAt: time.Date(2026, 6, 1, 6, 2, 0, 0, time.UTC), EndAt: &e},
+	}
+	if _, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) { c.Pins = pins; return c, nil }); err != nil {
+		t.Fatal(err)
+	}
+	back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID)
+	if len(back.Pins) != 2 || back.Pins[0].Title != pins[0].Title || back.Pins[0].Note != "a\nb" || !back.Pins[1].EndAt.Equal(e) || back.Pins[0].EndAt != nil {
+		t.Fatalf("%+v", back.Pins)
+	}
+	if _, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) { c.Pins = nil; return c, nil }); err != nil {
+		t.Fatal(err)
+	}
+	if n := scalar[int](t, db, "SELECT pins IS NULL FROM workouts"); n != 1 {
+		t.Error("cleared pins are not NULL")
+	}
+	if _, err := db.db.ExecContext(ctx, "UPDATE workouts SET pins = 'not json'"); err == nil {
+		t.Error("accepted")
+	}
+	// Derived-column writes (regenerate) never touch pins.
+	r2 := record(8)
+	r2.Pins = pins
+	if err := db.InsertWorkout(ctx, r2); err != nil {
+		t.Fatal(err)
+	}
+	r2.Pins = nil
+	if _, _, err := db.UpdateDerived(ctx, r2.ID, r2, r2.CreatedAt); err != nil {
+		t.Fatal(err)
+	}
+	back, _, _ = db.WorkoutByPublicID(ctx, r2.PublicID)
+	if len(back.Pins) != 2 {
+		t.Error("UpdateDerived wrote pins")
 	}
 }

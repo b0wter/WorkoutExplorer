@@ -23,6 +23,7 @@ type ViewModel struct {
 	Trim        string // F-58 SE-2: "", "start", "end" or "both"; the ⓘ button's data attribute
 	Device      string // F-43 DI-7: the device line, "" = none
 	Route       Route
+	Pins        PinsGroup
 	ChartsClass string
 	Laps        *Laps
 	Card        Card
@@ -45,6 +46,10 @@ type SummaryItem struct{ Key, Label, Value, Unit, Max string }
 
 // Route is the route presence as strings the template only tests.
 type Route struct{ Map, NoLocation, Hidden, Gpx string }
+
+// PinsGroup is F-56 PN-7: URL is the pins file ("" = no public pin, nothing
+// loads) and Count the public pins as a decimal string; both "" on the edit page.
+type PinsGroup struct{ URL, Count string }
 
 // Column is one laps column.
 type Column struct{ Key, Label string }
@@ -77,6 +82,10 @@ type Settings struct {
 	Suggested string
 	// Trim is F-58 SE-2: TrimOf of the row; independent of hiding.
 	Trim string
+	// PinsFile is "pins.{hash}.json" ("" = no public pin) and PinCount the
+	// number of public pins in it (F-56 PN-6, PN-7).
+	PinsFile string
+	PinCount int
 }
 
 // TrimOf is the F-58 SE-2 string from whether each end is trimmed (the row's
@@ -172,6 +181,7 @@ func Build(f datafile.File, s Settings) ViewModel {
 		Trim:        s.Trim,
 		Device:      deviceLine(m.Device),
 		Route:       route,
+		Pins:        pinsGroup(base, s),
 		ChartsClass: chartsClass(f),
 		Laps:        lapsOrNone(f),
 	}
@@ -502,4 +512,11 @@ func chartsClass(f datafile.File) string {
 		class += " has-distance"
 	}
 	return class
+}
+
+func pinsGroup(base string, s Settings) PinsGroup {
+	if s.PinsFile == "" || s.PinCount <= 0 {
+		return PinsGroup{}
+	}
+	return PinsGroup{URL: base + "/" + s.PinsFile, Count: strconv.Itoa(s.PinCount)}
 }

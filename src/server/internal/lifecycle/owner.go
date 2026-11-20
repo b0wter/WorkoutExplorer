@@ -63,6 +63,8 @@ type SettingsPatch struct {
 	// ZonesMaxHeartRate and ZonesThresholdPower are F-49 ZN-4; Set with a nil
 	// V is null: use the file's values.
 	ZonesMaxHeartRate, ZonesThresholdPower OptInt
+	// Pins replaces the whole set (F-56 PN-2).
+	Pins OptPins
 }
 
 // OptInt is an optional integer that may be sent as null.
@@ -259,6 +261,15 @@ func (s *Service) Update(ctx context.Context, publicID, token string, p Settings
 			return Record{}, err
 		}
 	}
+	// PN-5: pins are judged against the settings the patch produces.
+	eff, err := ApplyPatch(rec, p, s.d.Now())
+	if err != nil {
+		return Record{}, err
+	}
+	pins, err := s.resolvePins(sctx, rec, eff, p)
+	if err != nil {
+		return Record{}, err
+	}
 	var before Record
 	after, found, err := s.d.Repo.UpdateWorkout(sctx, rec.ID, func(cur Record) (Record, error) {
 		before = cur
@@ -266,7 +277,9 @@ func (s *Service) Update(ctx context.Context, publicID, token string, p Settings
 		if !cur.Live(now) { // the deadline passed after the lookup (QA-21-r1-2)
 			return Record{}, ErrNotFound
 		}
-		return ApplyPatch(cur, p, now)
+		next, err := ApplyPatch(cur, p, now)
+		next.Pins = pins
+		return next, err
 	})
 	var ie *InvalidSettingsError
 	switch {

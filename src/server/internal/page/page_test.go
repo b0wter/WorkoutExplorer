@@ -73,6 +73,12 @@ func withoutLengths(f *datafile.File) { f.Meta.Summary.Lengths = "" }
 // hostileDevice mirrors samples.ts hostileDevice (QA-43-r1-3): markup in a recorded device name.
 func hostileDevice(f *datafile.File) { f.Meta.Device.Name = `<i>Dev</i> &amp; "x"` }
 
+// samplePins are the samples with a pins file: 3 public pins (F-56 PN-7).
+const (
+	samplePinsName = "ride-pins"
+	samplePinsFile = "pins.0123456789abcdef.json"
+)
+
 var samples = []sampleSpec{
 	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false, "", ""},
 	{"ride-12h", "ride-12h", "", "", nil, false, "", ""},
@@ -83,6 +89,7 @@ var samples = []sampleSpec{
 	{"route-hidden", "indoor-no-gps", "", "", nil, true, "", ""},
 	{"ride-suggested", "ride-30min", "", "", nil, false, "Morning ride near Köln", ""},
 	{"ride-trimmed", "ride-30min", "", "", nil, false, "", "both"}, // F-58 SE-2
+	{"ride-pins", "ride-30min", "", "", nil, false, "", ""},        // F-56 PN-7: samplePins
 	{"triathlon", "triathlon", "", "", nil, false, "", ""},
 	{"triathlon-lap-crossing", "triathlon", "", "", lapCrossing, false, "", ""},
 	{"triathlon-leg-without-laps", "triathlon", "", "", legWithoutLaps, false, "", ""},
@@ -136,6 +143,7 @@ func TestSamples(t *testing.T) {
 			vm := Build(f, Settings{
 				Title: sp.title, Description: sp.description, ExpiresAt: expiresAt,
 				PublicID: sp.name, DataFile: "data." + hex.EncodeToString(sum[:8]) + ".bin", RouteHidden: sp.routeHidden, Suggested: sp.suggested, Trim: sp.trim,
+				PinsFile: pinsFileFor(sp.name), PinCount: pinCountFor(sp.name),
 			})
 			got, err := json.Marshal(vm)
 			if err != nil {
@@ -485,4 +493,18 @@ func TestLengthsWithoutLaps(t *testing.T) {
 	if lapsOrNone(f) != nil {
 		t.Error("module without laps, splits or lengths")
 	}
+}
+
+func pinsFileFor(name string) string {
+	if name == samplePinsName {
+		return samplePinsFile
+	}
+	return ""
+}
+
+func pinCountFor(name string) int {
+	if name == samplePinsName {
+		return 3
+	}
+	return 0
 }

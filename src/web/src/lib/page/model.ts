@@ -62,6 +62,8 @@ export interface PageViewModel {
   readonly Device: string;
   /** AP-3, as strings the template only tests: Map 'yes' reserves the map box, NoLocation 'yes' shows the hint, Hidden 'yes' shows the fully-hidden notice (F-16 FE-1). At most one is set. */
   readonly Route: { readonly Map: string; readonly NoLocation: string; readonly Hidden: string; /** F-57 GX-5: 'yes' exactly when Map is 'yes' and the sport is not multisport. */ readonly Gpx: string };
+  /** F-56 PN-7: URL is the pins file ('' = no public pin: nothing loads), Count the public pins as a decimal string; both '' on the edit page. */
+  readonly Pins: { readonly URL: string; readonly Count: string };
   /** Reserved-size classes of the chart slot: 'charts-4 cells-6' (D-10), plus ' has-distance' with a
    *  distance stream (F-17 R-8), or '' with no charts. */
   readonly ChartsClass: string;
@@ -91,4 +93,7 @@ export interface PageSettings {
   readonly suggestedTitle?: string;
   /** F-58 SE-2: '', 'start', 'end' or 'both'; absent = ''. */
   readonly trim?: string;
+  /** F-56 PN-6: 'pins.{hash}.json' and the number of public pins in it; absent or 0 = none. */
+  readonly pinsFile?: string;
+  readonly pinCount?: number;
 }

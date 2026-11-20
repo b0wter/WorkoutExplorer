@@ -370,4 +370,6 @@ type Trimmer interface {
 	ResolveTrim(ctx context.Context, r Record, start, end *time.Time) (s, e *time.Time, err error)
 	// TrimmedView is the owner view of a row with a trim.
 	TrimmedView(ctx context.Context, r Record) (OwnerView, error)
+	// CheckPins judges pins against r's trim and hiding from one parse (F-56 PN-4).
+	CheckPins(ctx context.Context, r Record, pins []Pin) ([]PinCheck, error)
 }

@@ -37,9 +37,11 @@ const (
 	ownerTimeout = 30 * time.Second
 	// A 20 MB file on a slow phone: about 33 kB/s.
 	ownerDownloadTimeout = 10 * time.Minute
-	// The largest valid body is 1,100 code points, each at most 12 bytes
-	// escaped (a surrogate pair), plus the other fields: far below 32 KiB.
-	maxPatchBytes = 32 << 10
+	// The largest valid body: the title and description (1,100 code points)
+	// plus 50 pins of 560 code points each (F-56 PN-2), every code point at
+	// most 12 bytes escaped (a surrogate pair), plus keys and instants of
+	// at most 200 bytes a pin and 1 KiB of other fields: 357,900 bytes.
+	maxPatchBytes = 360 << 10
 	codeInvalid   = "invalid_settings"
 	// F-36 MC-4 refusals.
 	codeStale        = "stale"
@@ -87,6 +89,82 @@ type settingsBody struct {
 	// F-49 ZN-4: the sharer's zone values; null = the file's values.
 	ZonesMaxHeartRate   *int `json:"zones_max_heart_rate"`
 	ZonesThresholdPower *int `json:"zones_threshold_power"`
+	// Pins is F-56 PN-2: the whole stored set, dimmed pins included, in
+	// canonical order; [] without pins. The browser counts the pins a Save
+	// removed (trim) from this.
+	Pins []pinBody `json:"pins"`
+}
+
+// pinBody is one pin (F-56 PN-2); instants are RFC 3339 UTC whole seconds.
+type pinBody struct {
+	Type    string  `json:"type"`
+	Title   string  `json:"title"`
+	Note    string  `json:"note"`
+	StartAt string  `json:"start_at"`
+	EndAt   *string `json:"end_at"`
+}
+
+func pinsOf(ps []lifecycle.Pin) []pinBody {
+	out := make([]pinBody, len(ps))
+	for i, p := range ps {
+		out[i] = pinBody{Type: p.Type, Title: p.Title, Note: p.Note, StartAt: p.StartAt.UTC().Format(time.RFC3339)}
+		if p.EndAt != nil {
+			s := p.EndAt.UTC().Format(time.RFC3339)
+			out[i].EndAt = &s
+		}
+	}
+	return out
+}
+
+// parsePins reads the pins of a PATCH: an array of objects with exactly the
+// five keys of PN-2 and the right types; ok is false otherwise. Texts are
+// kept as sent (escaped on output, O-4); the rules are lifecycle's.
+func parsePins(v json.RawMessage) (pins []lifecycle.Pin, ok bool) {
+	var raw []map[string]json.RawMessage
+	if json.Unmarshal(v, &raw) != nil || raw == nil || len(raw) > lifecycle.MaxPins {
+		return nil, false
+	}
+	pins = make([]lifecycle.Pin, 0, len(raw))
+	for _, m := range raw {
+		if len(m) != 5 {
+			return nil, false
+		}
+		var (
+			p        lifecycle.Pin
+			start    string
+			end      *string
+			okFields = true
+		)
+		get := func(k string, dst any) {
+			b, present := m[k]
+			// null is only for end_at: for a string it would silently unmarshal as "".
+			_, isEnd := dst.(**string)
+			okFields = okFields && present && (isEnd || string(bytes.TrimSpace(b)) != "null") && json.Unmarshal(b, dst) == nil
+		}
+		get("type", &p.Type)
+		get("title", &p.Title)
+		get("note", &p.Note)
+		get("start_at", &start)
+		get("end_at", &end)
+		if !okFields {
+			return nil, false
+		}
+		t, err := time.Parse(time.RFC3339, start)
+		if err != nil || t.Nanosecond() != 0 {
+			return nil, false
+		}
+		p.StartAt = t.UTC()
+		if end != nil {
+			e, err := time.Parse(time.RFC3339, *end)
+			if err != nil || e.Nanosecond() != 0 {
+				return nil, false
+			}
+			e = e.UTC()
+			p.EndAt = &e
+		}
+		pins = append(pins, p)
+	}
+	return pins, true
 }
 
 func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
@@ -104,7 +182,7 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 		Visibility: string(r.Visibility), LifetimeDays: r.LifetimeDays(),
 		CreatedAt: r.CreatedAt.UTC().Format(time.RFC3339), ExpiresAt: r.ExpiresAt.UTC().Format(time.RFC3339),
 		DataEndS: r.DataEndS, ViewURL: lifecycle.ViewPath(r.PublicID),
-		HidingSteps: v.Steps,
+		HidingSteps: v.Steps, Pins: pinsOf(r.Pins),
 	}
 }
 
@@ -410,6 +488,14 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 			if json.Unmarshal(v, o.V) != nil {
 				return p, msgBadZone
 			}
+			continue
+		case "pins":
+			// The whole set; null is refused like any other wrong type.
+			ps, ok := parsePins(v)
+			if !ok {
+				return p, lifecycle.MsgBadPins
+			}
+			p.Pins = lifecycle.OptPins{Set: true, V: ps}
 			continue
 		default:
 			return p, msgBadBody

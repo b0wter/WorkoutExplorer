@@ -86,6 +86,10 @@
     "Hidden": "",
     "Gpx": "yes"
   },
+  "Pins": {
+    "URL": "",
+    "Count": ""
+  },
   "ChartsClass": "charts-5 cells-7 has-distance",
   "Laps": {
     "Columns": [

@@ -224,6 +224,8 @@ func role(name string) string {
 		return "compressed data file"
 	case strings.HasSuffix(name, ".png"):
 		return "preview"
+	case strings.HasSuffix(name, ".json"):
+		return "pins file"
 	case strings.HasPrefix(name, "."):
 		return "temporary file"
 	}
@@ -245,6 +247,9 @@ func (a *Area) WorkoutChanged(ctx context.Context, before, after lifecycle.Recor
 		return errInvalidID
 	}
 	dir := filepath.Join(a.root, after.PublicID)
+	if a.samePublicPins(ctx, before, after) { // PN-8: nothing public changes
+		return nil
+	}
 	if after.Visibility != lifecycle.Unlisted || HidesMore(before, after) {
 		err := a.locked(func() error { _, err := a.removeFolder(dir, true); return err })
 		if err != nil || after.Visibility != lifecycle.Unlisted {
@@ -348,27 +353,50 @@ type built struct {
 
 // front is the build's front half (P-4): parse the original, apply the
 // public transform, encode and decode the data file. It writes nothing.
-func (a *Area) front(ctx context.Context, r lifecycle.Record) (bin []byte, f datafile.File, routeHidden bool, err error) {
+func (a *Area) front(ctx context.Context, r lifecycle.Record) (bin []byte, f datafile.File, routeHidden bool, pg pinGrid, err error) {
 	orig, err := a.d.Originals.Original(r.ID)
 	if err != nil {
-		return nil, f, false, fail("read", "original", err)
+		return nil, f, false, pg, fail("read", "original", err)
 	}
 	w, err := a.d.Parser.Parse(ctx, orig)
 	if err != nil {
 		// A stored original the running binary rejects is a server error,
 		// never a delete (P-14; F-30 owns deletes on rejection).
-		return nil, f, false, fmt.Errorf("publish: parse original: %w", err)
+		return nil, f, false, pg, fmt.Errorf("publish: parse original: %w", err)
 	}
 	orig = nil
-	if w, _, err = trimmed(w, r); err != nil {
-		return nil, f, false, err
+	wt, first, err := trimmed(w, r)
+	if err != nil {
+		return nil, f, false, pg, err
 	}
-	return a.encode(w, r)
+	var off []int32 // all the pin grid keeps of w; nothing without pins (TR-10)
+	var base int64
+	if len(r.Pins) > 0 {
+		off, base = w.Samples.Offset, w.StartTime.Unix()
+	}
+	w = workout.Workout{}
+	var pw workout.Workout
+	var keep *workout.Workout
+	if len(r.Pins) > 0 {
+		keep = &pw
+	}
+	bin, f, routeHidden, err = a.encode(wt, r, keep)
+	if err != nil {
+		return nil, f, false, pg, err
+	}
+	if keep == nil { // no pin to judge: the grid keeps nothing of the workout (TR-10)
+		return bin, f, routeHidden, pinGrid{}, nil
+	}
+	return bin, f, routeHidden, newPinGrid(off, base, first, pw), nil
 }
 
-// encode is the build's front half after the parse and the trim.
-func (a *Area) encode(w workout.Workout, r lifecycle.Record) (bin []byte, f datafile.File, routeHidden bool, err error) {
+// encode is the build's front half after the parse and the trim; a non-nil
+// keep receives the public transform's output (for the pin grid).
+func (a *Area) encode(w workout.Workout, r lifecycle.Record, keep *workout.Workout) (bin []byte, f datafile.File, routeHidden bool, err error) {
 	w, routeHidden = a.transform(w, r)
+	if keep != nil {
+		*keep = w
+	}
 	if bin, err = datafile.Encode(w); err != nil {
 		return nil, f, false, fmt.Errorf("publish: encode: %w", err)
 	}
@@ -383,7 +411,7 @@ func (a *Area) encode(w workout.Workout, r lifecycle.Record) (bin []byte, f data
 // MC-4): the build's front half, nothing written. ok is false without
 // public positions.
 func (a *Area) Frame(ctx context.Context, r lifecycle.Record) (fr preview.Frame, ok bool, err error) {
-	_, f, _, err := a.front(ctx, r)
+	_, f, _, _, err := a.front(ctx, r)
 	if err != nil {
 		return fr, false, err
 	}
@@ -421,7 +449,7 @@ func (a *Area) card(r lifecycle.Record, f datafile.File, vm page.ViewModel) ([]b
 // build is the public build of P-4, in memory. It is deterministic: the same
 // original, settings and stored basemap give the same names and bytes.
 func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
-	bin, f, routeHidden, err := a.front(ctx, r)
+	bin, f, routeHidden, pg, err := a.front(ctx, r)
 	if err != nil {
 		return built{}, err
 	}
@@ -431,6 +459,12 @@ func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
 		Title: r.Title, Description: r.Description, ExpiresAt: r.ExpiresAt,
 		PublicID: r.PublicID, DataFile: name, RouteHidden: routeHidden, BaseURL: a.d.BaseURL,
 		Trim: page.TrimOf(r.TrimStartAt != nil, r.TrimEndAt != nil),
+	}
+	// PN-6: only public pins, as indices into this build's data file.
+	pubs := publicPins(pg, r.Pins)
+	pinsJS := pinsJSON(pubs)
+	if pinsJS != nil {
+		s.PinsFile, s.PinCount = pinsFileName(pinsJS), len(pubs)
 	}
 	// The town comes from the public file only, after the transform (F-45
 	// ST-4); the page uses it only while the title is empty. Never logged.
@@ -454,14 +488,15 @@ func (a *Area) build(ctx context.Context, r lifecycle.Record) (built, error) {
 	if err := a.d.Template.Execute(&buf, vm); err != nil {
 		return built{}, fmt.Errorf("publish: page: %w", err)
 	}
-	return built{
-		artefacts: []artefact{
-			{name, func() ([]byte, error) { return bin, nil }},
-			{name + ".br", func() ([]byte, error) { return precompress.Brotli(bin) }},
-			{s.Preview, func() ([]byte, error) { return img, nil }},
-		},
-		index: buf.Bytes(),
-	}, nil
+	arts := []artefact{
+		{name, func() ([]byte, error) { return bin, nil }},
+		{name + ".br", func() ([]byte, error) { return precompress.Brotli(bin) }},
+		{s.Preview, func() ([]byte, error) { return img, nil }},
+	}
+	if pinsJS != nil {
+		arts = append(arts, artefact{s.PinsFile, func() ([]byte, error) { return pinsJS, nil }})
+	}
+	return built{artefacts: arts, index: buf.Bytes()}, nil
 }
 
 // write puts a build into dir (P-6): new artefacts first, then index.html by
@@ -885,7 +920,7 @@ func (a *Area) TrimmedView(ctx context.Context, r lifecycle.Record) (lifecycle.O
 		return lifecycle.OwnerView{}, err
 	}
 	v := lifecycle.OwnerView{Trimmed: &lifecycle.TrimmedView{Sport: wt.Sport, Summary: sum}, Steps: workout.StepsOf(wt).Shift(first)}
-	_, f, _, err := a.encode(wt, r)
+	_, f, _, err := a.encode(wt, r, nil)
 	if err != nil {
 		return lifecycle.OwnerView{}, err
 	}

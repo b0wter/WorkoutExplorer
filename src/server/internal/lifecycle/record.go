@@ -66,6 +66,9 @@ type Record struct {
 	// ZonesMaxHeartRate and ZonesThresholdPower are the sharer's zone values
 	// (F-49 ZN-4); nil: the file's values apply. Never logged.
 	ZonesMaxHeartRate, ZonesThresholdPower *int
+	// Pins are the map pins (F-56 PN-1), canonical order, never logged. The
+	// set may hold pins no public file shows (dimmed ones, PN-5 b).
+	Pins []Pin
 }
 
 // NewDraft is the row of a fresh upload: a draft with no hiding (both radii 0) and download off

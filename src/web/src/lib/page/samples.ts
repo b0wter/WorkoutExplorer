@@ -19,6 +19,9 @@ export interface SampleSpec {
   readonly suggestedTitle?: string;
   /** F-58: the trim string. */
   readonly trim?: string;
+  /** F-56: the pins file and its count. */
+  readonly pinsFile?: string;
+  readonly pinCount?: number;
   /** Derives a file the corpus has no instance of (a workout without heart rate). */
   readonly transform?: (data: WorkoutData) => WorkoutData;
 }
@@ -92,6 +95,7 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'route-hidden', golden: 'indoor-no-gps', title: '', description: '', routeHidden: true },
   { name: 'ride-suggested', golden: 'ride-30min', title: '', description: '', suggestedTitle: 'Morning ride near Köln' },
   { name: 'ride-trimmed', golden: 'ride-30min', title: '', description: '', trim: 'both' },
+  { name: 'ride-pins', golden: 'ride-30min', title: '', description: '', pinsFile: 'pins.0123456789abcdef.json', pinCount: 3 },
   { name: 'triathlon', golden: 'triathlon', title: '', description: '' },
   { name: 'triathlon-lap-crossing', golden: 'triathlon', title: '', description: '', transform: lapCrossing },
   { name: 'triathlon-leg-without-laps', golden: 'triathlon', title: '', description: '', transform: legWithoutLaps },
@@ -132,6 +136,8 @@ export function buildSample(spec: SampleSpec): PageViewModel & { readonly Card: 
     routeHidden: spec.routeHidden,
     suggestedTitle: spec.suggestedTitle,
     trim: spec.trim,
+    pinsFile: spec.pinsFile,
+    pinCount: spec.pinCount,
   });
   return { ...vm, Card: SAMPLE_CARD };
 }

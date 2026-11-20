@@ -360,8 +360,8 @@ func TestTrimMemoryStopRule(t *testing.T) {
 	trimmedRec.TrimEndAt = instant(w, n-61) // the least that can be cut: the largest trimmed copy
 	var plain, cut uint64
 	for range 3 { // best of three, the sampler is noisy
-		p := peakHeap(func() { _, _, _, _ = fx.a.front(context.Background(), d) })
-		c := peakHeap(func() { _, _, _, _ = fx.a.front(context.Background(), trimmedRec) })
+		p := peakHeap(func() { _, _, _, _, _ = fx.a.front(context.Background(), d) })
+		c := peakHeap(func() { _, _, _, _, _ = fx.a.front(context.Background(), trimmedRec) })
 		if plain == 0 || p < plain {
 			plain = p
 		}
