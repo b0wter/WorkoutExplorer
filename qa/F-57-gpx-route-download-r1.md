@@ -13,7 +13,7 @@
   - jsdom: each Go `index.html` and its data file went through the real `startPage`, the real lazy `src/gpx` chunk and a real button click. **480/480 pass.** The button was present in exactly the 321 cases with a public position and a non-multisport sport, and absent in 159 (indoor, pool, triathlon, brick, ride-transition-ride, fully hidden at any radius). The single-sport chained-ride-ride has the button. In every file the points equal Go's list exactly (order, 6 and 1 decimals, `<ele>` only where altitude is stored). Apart from the point lines, each file is exactly the fixed head and tail. No hidden position occurs anywhere. Two clicks gave byte-equal files. The page fetched only the data file, once, and nothing on click. The blob type is `application/gpx+xml`.
   - File names: the midnight walk with a 2,000 m hidden start has its first visible point at 00:13 local the next day. Its file is `route-2026-06-01.gpx`, the header's date. The UTC-5 walk (01:30 UTC = 20:30 local the previous day) gets the local date.
   - Control: with the call site changed to take the date from the first positioned sample (W4 below), the probe fails on all 8 midnight-walk cases with a 2,000 m start radius.
-- **Schema (AC 2):** the official XSD is not on this machine and I did not download it. I wrote a subset of the GPX 1.1 schema (`gpxType`, `trkType`, `trksegType`, `wptType`, `latitudeType`, `longitudeType`, with element order and required attributes). `xmllint --schema` accepted **321/321** files and rejected a control file with `lat="91"` and a bad `<time>`.
+- **Schema (AC 2):** `xmllint --schema` with the full GPX 1.1 XSD (`gpx.xsd`, 26,665 bytes, sha256 `9e4d1988…34d6`; left in the shared scratchpad by the engineer's session, its text is the topografix schema; I did not download it): **321/321 valid**. A control file with `lat="91"` and a bad `<time>` fails. The same result with a subset I transcribed before finding it.
 - **Mutants** (scratch copy, one at a time; web suites `lib/gpx`, `gpx`, `page`, `lib/page`, `edit.dom`; Go `internal/page`, `tools/protoserve`, `internal/publish`): 21 of 23 killed. Killed: builder writes `<time>`; NaN altitude as 0; `String(x)` coordinates; new segment per gap; call site also on the edit path; TS `Route.Gpx` for multisport; TS `Route.Gpx` for a fully hidden route; whole `WorkoutData` spread into the input; revoke in the click task; `Math.trunc` instead of rounding; offset applied with an unknown zone; `data:` URL; button never revealed; edit line removed; `<ele>` with 2 decimals; last chunk dropped; Go `Route.Gpx` for multisport; Go `Route.Gpx` for fully hidden; template row on `Route.Map`; template row always printed. **Survived:** W4, the date taken from the first positioned sample at the call site (QA-57-r1-2), and W11, a static import of the chunk (QA-57-r1-3).
 
 ## Findings
@@ -49,7 +49,7 @@
 - **Route:** frontend
 - **Where:** `src/web/src/lib/gpx/gpx.test.ts`
 - **Relates to:** AC 2, AC 4; design Verification table ("over published synthetic samples", "schema-valid")
-- **Evidence:** No repo test validates against the GPX 1.1 schema. The AC 4 and AC 5 tests apply hiding and trim through a TypeScript re-implementation (`publicOf`: symmetric trim, its own distance rule), not through files the server publishes. The code is correct: this round's 480 Go-published builds and the schema subset check show it. The repo, however, does not keep that proof.
+- **Evidence:** No repo test validates against the GPX 1.1 schema. The AC 4 and AC 5 tests apply hiding and trim through a TypeScript re-implementation (`publicOf`: symmetric trim, its own distance rule), not through files the server publishes. The code is correct: this round's 480 Go-published builds and the XSD check show it. The repo, however, does not keep that proof.
 - **Consequence:** Little risk today, because the builder is a pure function of the public file and Go's hiding has its own tests. `publicOf` does suggest that the server's hiding is covered here when it is not. Suggested fix: either a test-time schema check, or a note in the test that the exact-shape assertion stands in for the schema; and either rename `publicOf` as a stand-in or use a committed Go-published golden.
 
 - **ID:** QA-57-r1-5
@@ -99,7 +99,7 @@ None (first round).
 | AC | Code | Test / check |
 | --- | --- | --- |
 | 1 Button where shown, absent elsewhere | `index.html:44`, `page.go:151`, `view.ts:84`, `start.ts:215`, `enhance.ts:223` | `samples_test.go`, `page_test.go` (Go = TS samples), `hygiene.test.ts`, `page.dom.test.ts` (edit seam, failed load, no positions), `edit.dom.test.ts`; probe 321 shown / 159 absent; mutants W6-W8, G1, G2, T1, T2 killed. The published page does not run `startPage` (`edit.html` has no row) |
-| 2 Valid GPX 1.1, loads on a device | `lib/gpx/index.ts` | Exact-shape test; this round: 321 files valid against a transcribed schema subset (not the official file). Device load: by hand (1) |
+| 2 Valid GPX 1.1, loads on a device | `lib/gpx/index.ts` | Exact-shape test; this round: 321 files valid against the GPX 1.1 XSD (`xmllint`). Device load: by hand (1) |
 | 3 Exactly the public positions, ele where recorded, nothing else | `gpxParts` | `gpx.test.ts`; probe 480 builds; mutants W1-W3, W12, W17, W18 |
 | 4 Trim + both ends hidden: nothing hidden, first and last visible | public data file (F-16, F-47, F-55) + `gpxParts` | probe (6 radius pairs x 4 trims, hidden-set check); repo test via `publicOf` only (QA-57-r1-4) |
 | 5 One trk/trkseg, joined | `gpxParts` | `gpx.test.ts` gps-dropout, pause-hours; probe; W5 killed |
@@ -109,4 +109,4 @@ None (first round).
 | 9 12-hour ride < 2 s, no freeze | single pass | Node only (`gpx.test.ts` bound 500 ms); phone by hand (3) |
 | 10 Edit line and About sentence | `EditPanel.svelte:184`, `about.html:54` | `edit.dom.test.ts`, `about.test.ts` (exact text); condition QA-57-r1-1 |
 
-Not run: a real browser or device, the official GPX XSD (not available offline, not downloaded), `-race` on `internal/publish`, LCP measurement. The probe and mutant scripts stay in the scratchpad only: `qa57_probe_test.go.keep`, `qa57.dom.test.ts.keep`, `mutants.py`, `gpx11-subset.xsd`.
+Not run: a real browser or device, `-race` on `internal/publish`, LCP measurement. The probe and mutant scripts stay in the scratchpad only: `qa57_probe_test.go.keep`, `qa57.dom.test.ts.keep`, `mutants.py`, `gpx11-subset.xsd`; the XSD used is `gpx/gpx.xsd` there.
