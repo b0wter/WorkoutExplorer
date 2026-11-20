@@ -1,0 +1,60 @@
+# F-54 Translated interface: German, Spanish, French: architecture
+
+- **Version:** 0.1
+- **Status:** accepted (20 Nov 2026). Normal lane, QA at effort medium. One open point (P-14), not blocking
+- **Feature:** [`features/F-54-translated-interface.md`](../features/F-54-translated-interface.md); decisions OQ-223 to OQ-228, OQ-280, OQ-281, language-file trace (20 Nov 2026)
+- **Requirements:** DS-6, DS-3, DS-1, INF-1, INF-9, UP-2, UP-3, UP-8, UP-10, UP-11, AP-22, AP-24, AC-7, NFR Performance, NFR Privacy, TD I-7
+- **Builds on:** [ADR-026](ADR-026-activity-page-template-adopted-not-hydrated.md), [ADR-027](ADR-027-units-rewritten-in-place-one-units-store.md), [ADR-024](ADR-024-upload-page-plain-typescript-entry.md), [ADR-011](ADR-011-activity-page-bundle-allocation.md), [ADR-032](ADR-032-response-headers-in-caddy.md), [ADR-053](ADR-053-web-assets-served-from-the-data-directory.md), [ADR-018](ADR-018-parse-outcomes-messages-and-log.md), [F-53](F-53-my-workouts.md) MW-9. New: [ADR-059](ADR-059-interface-language-applied-in-the-browser.md)
+- **Owner:** both. Backend B-1 (LG-9) first; it changes no page, message or format
+
+## Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| LG-1 | **Where the choice lives.** One `localStorage` key `wx.lang` through `lib/prefs` (`en`, `de`, `es`, `fr`; anything else reads as nothing stored), written only by the drop-down, English included. The **initial language is decided once per page view by the shared head script**: a valid stored value, else the first entry of `navigator.languages` whose primary subtag is one of the four, else `en`. A storage failure skips only the stored step. The result goes to `<html data-lang>`; every entry reads it and never decides itself. One language store per page, created and passed like the units store (ADR-027 item 4); no feature reads the browser languages or storage itself. The units default stays on the browser language (OQ-227, `lib/units` unchanged) | One rule in one place, known before first paint (AC 35, 38) |
+| LG-2 | **Before first paint** (ADR-059 items 2, 3). The build writes into every HTML entry with texts one head element naming its entry group's language-file URLs, before the script. If the language is not `en` and the page names a file for it, the head script sets a hold attribute, which the page's own stylesheet turns into `visibility: hidden` on the body (laid out, not painted, so no shift); starts the request for that one file, which the bundle reuses (no second download); and removes the hold after 500 ms. The bundle applies the language and removes the hold **only if it is still set**; otherwise this page view stays English and the drop-down still works. Pages without the element (Impressum, report delete) never hold. The head script joins the upload, About and generic pages (their CSS ignores `data-theme`). New script bytes: new CSP hash, old hashes kept per ADR-032 item 3 | OQ-281. A page view never changes language by itself, so a late file cannot cause the switch the AC forbids |
+| LG-3 | **Texts and language files.** English stays where it is shown today: one English table per text group in code, and the markup itself for template text. German, Spanish and French: **one JSON file per language and text group**, content-hashed in `assets/`, plain strings only (no HTML, no code), at most 5 KB gzip each (a CI check fails above 5,120 bytes). A text group is an entry or a lazy chunk; a lazy chunk's file is requested together with its `import()`, never after it. A tiny group may join its entry's group while that file stays within 5 KB. Only the current language's files are ever requested. A file that fails to load or to parse leaves that group English, without a message. Files are kept by ADR-053's additive copy and clean-up like every asset, so an older page keeps its own (INF-9) | AC 54 to 57, budget |
+| LG-4 | **Viewing page** (ADR-059 item 4). The served page stays English (no JavaScript, Go knows English only). The bundle rewrites it in place, text only, by ADR-026/027 adoption: fixed template strings carry their key in a `data-t` attribute (attributes such as `title` and `aria-label` likewise); view-model strings (header with default title, start and expiry, summary, device line, laps heading, columns, rows and sections, hints) are rebuilt by `lib/page`'s builders with language and units. The builders take the **metadata from the data file's prefix as it streams** (header, metadata length, JSON; ADR-005 item 1), checked as in the full decode, from the one download. English builder output stays byte-equal to Go; the samples do not change. Owner-written text, the `Card` group and `<meta>` previews stay as served | No format, view-model or backend change; the reveal waits for a few KB, not the whole file |
+| LG-5 | **Other pages.** Edit, published and My workouts pages: activity entry, texts from the tables. Upload page (plain TypeScript, ADR-024): markup keyed by `data-t`, sentences by code (LG-6), the drop-down in its header. About and generic pages: one new small plain-TypeScript **static entry** that applies the markup keys; About's operator part and attributions, the Impressum and the report-delete page (operator only) are untouched. Without JavaScript every page is English as today (OQ-223). The i18n core (store, message formatter, loader, markup applier) is framework-free and **kept per entry**: no chunk shared with the activity entry (ADR-024 item 3), the build mechanism is the engineer's | One core for three kinds of page, no Svelte outside the activity entry |
+| LG-6 | **Server messages** (ADR-059 item 5). Go stays English (iOS Shortcut, curl, no JavaScript; ADR-018 unchanged). The browser shows **its own text chosen by the response's `error` code**, in every language including English; the server's `message` only for a code it does not know. Contract: a committed list of the codes the API sends, with the English sentence of each fixed-sentence code (ADR-018 kinds, `storage_full`, `rate_limited`, `too_large`, `not_found`, `busy`, `server_error`, …). A Go test fails on a code the API can send that is not listed or whose fixed sentence differs; a frontend test fails on a listed code without a text in each language. Codes with several messages that only a broken or outdated client can trigger (`invalid_settings`, `invalid_report`, `bad_request`, `invalid_image`, `stale`) get one general sentence each (P-14). Report reasons: labels translated; the stored code and the notification stay English | Translating by sentence would tie the browser to Go's wording; the code is already the stable key |
+| LG-7 | **Message format.** `{name}` placeholders, filled as text. A text with a count is an object of CLDR plural categories, chosen with `Intl.PluralRules(lang)`; `one` and `other` required in every language, a missing category falls back to `other`. Relative times with `Intl.RelativeTimeFormat` (MW-9: our code picks the unit only). Numbers and dates for German, Spanish and French through `Intl.NumberFormat` and `Intl.DateTimeFormat` with the language, in `lib/format` (charts, readout, range panel, tables, dialogs); English keeps today's formatters (Go equality). Unit symbols are texts; the unit system never follows the language. Library UI strings are texts too: MapLibre's controls and cooperative-gesture overlay through its `locale` option, in the map group. A link or other element inside a translated sentence is kept from the markup and placed by a placeholder; nothing from a language file reaches `innerHTML` | AC 43, 44, 49 |
+| LG-8 | **Completeness** (OQ-228). `make ci` fails when a key of an English source (code tables, `data-t` in templates and shells) lacks a non-empty value in German, Spanish or French; a language file has a key English lacks; a translation's placeholder set differs from English (this also holds AC 43: no translation adds a value to the F-58 example); a count text lacks `one` or `other`; a listed API code lacks a text; or a template or Svelte component carries interface text outside the tables (a scan of text nodes and `title`, `aria-label`, `placeholder`, `alt` values with letters and no key; exceptions in one allow-list with a reason) | F-61, F-62 cannot ship English-only text |
+| LG-9 | **Backend B-1:** the API code list and its Go test (LG-6); a check that Caddy's content-hash rule covers the language files (`public`, immutable) and that nothing logs their requests (I-7). The Caddyfile hash for the new head script lands in the frontend commit that changes the script, with its Caddy test row. No endpoint, view-model, format, schema or setting change; Go never reads a language | "Backend first" is only the contract the frontend tests read |
+| LG-10 | **Not translated** as in the feature's Scope. The default title (sport and date) is interface text and follows the language; a stored title or an accepted suggestion never. GPX: only the button label; file name and contents unchanged | OQ-224 |
+| LG-11 | **Layout** (AC 50). Labels, buttons and slider labels wrap; no fixed text widths; size-reserved slots (ADR-026 item 4) are sized for content, not for English. The drop-down names each language in itself; those four names are not in the language files | Longest language on a phone |
+
+## Cost
+
+| What | Limit |
+| --- | --- |
+| Activity entry (static) | Target 800, **ceiling 1,000 bytes gzip** from the ADR-011 reserve (2,074): core, drop-down, applier, prefix reader, `Intl` paths, hold release. Moving English literals into tables must be net zero. Above the ceiling: stop and report. The reserve then stays at or above 1,074, just over the review trigger; F-61 plans within it |
+| Upload entry | Within ADR-024's 8,000 |
+| Static entry (About, generic) | Ceiling 2,000 bytes gzip |
+| Language files | Each at most 5 KB gzip, checked in CI |
+| Head script | About 250 bytes more on every page, outside the bundle line |
+| LCP | Under 2.5 s on the reference phone in German (AC 55), measured by QA |
+
+## Verification (besides the acceptance criteria)
+
+| What | Check |
+| --- | --- |
+| AC 37, 54, 55 | Network view per page: one language's files only, no query string, no cookie. Throttled first visit in German: no English painted; with the file held back, English at 500 ms and no later switch |
+| AC 38 | Storage blocked or throwing: the browser languages decide |
+| AC 57 | A page built before an update still gets its language files after it |
+| Mutants | Each must fail a check: a missing French key; an extra placeholder in a German F-58 example; literal text in a Svelte component; a language-file string through `innerHTML`; the head script skipping the browser languages when storage throws; a file arriving after the 500 ms applied anyway |
+
+Known limit: a pool swim with thousands of lengths has a large metadata block, so its prefix can miss the 500 ms and the page shows English (LG-2). Accepted.
+
+## Open points
+
+| # | Question | Suggestion | Blocks |
+| --- | --- | --- | --- |
+| P-14 | Codes `invalid_settings`, `invalid_report`, `bad_request`, `invalid_image` and `stale` carry several developer-facing sentences (for example "trim_start_at and trim_end_at must be a time in RFC 3339 form…") that the page's own checks prevent. Translate each, or show one general sentence per code ("The change was not accepted. Please reload the page and try again.")? | One general sentence per code in all four languages, English included; the server keeps its sentences for other clients | Nothing; built so unless the user objects |
+
+## Hand-offs
+
+| To | What |
+| --- | --- |
+| Main session | B-1 first (LG-9); P-14 to the user |
+| Requirements | TD: Load order step 1 (the head script also holds for the language), Implementation notes ("The interface is English only" becomes DS-6), the storage keys (`wx.lang`), Code structure (`lib/i18n`, the static entry, text groups), Published language (the API code list), glossary (Language, Text group, Language file) |
+| Noted in place | ADR-011 item 4 (F-54 share), ADR-024 (static entry, core per entry), ADR-027 (metadata from the prefix, language), F-11 U-8, F-15 P-12, F-29 AB-1 |

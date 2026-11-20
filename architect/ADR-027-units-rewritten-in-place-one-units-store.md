@@ -23,6 +23,7 @@ The summary and laps are server markup, written once at publish and served as on
 - No second contract between Go and TypeScript, no number printed for machines in the HTML, and no change to the view model, the samples or F-15.
 - **Cost:** an imperial viewer sees metric until the data file is decoded, not only until the bundle runs. The file is preloaded and loads in parallel with the bundle, and question 7 accepts a switch after first paint.
 - **Cost:** if the data file fails to load, the page stays metric. Nothing else on the page then shows units, so the page is still consistent.
+- *(Note 20 Nov 2026, F-54 LG-4, ADR-059 item 4: the same rewrite carries the language and covers every view-model string; the metadata may come from the data file's streamed prefix, the same metadata checked the same way.)*
 - The two builders join the counted entry (they were lazy, edit page only); their bytes are in F-14's share.
 
 ## Rejected
