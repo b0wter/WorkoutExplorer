@@ -35,9 +35,9 @@ export function decorator(secs: readonly Section[], n: number): ChartDecorator {
 }
 
 /** The chunk's entry: separator ranges into the laps enhancer (MS-6), the decorator into the charts. */
-export function startSections(data: WorkoutData, look: { decorate?: ChartDecorator }, rows: (pairs: readonly number[]) => void): void {
+export function startSections(data: WorkoutData, look: { decorator(key: string, f: ChartDecorator): void }, rows: (pairs: readonly number[]) => void): void {
   const secs = sections(data.meta);
   if (!secs) return;
   rows(sectionRanges(secs, data.sampleCount));
-  look.decorate = decorator(secs, data.sampleCount);
+  look.decorator('legs', decorator(secs, data.sampleCount));
 }

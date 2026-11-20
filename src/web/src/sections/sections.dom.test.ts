@@ -61,7 +61,7 @@ describe('sections chunk', () => {
 
   it('startSections: separator ranges to the laps, the decorator to the look; nothing without sections', () => {
     const rows = vi.fn();
-    const look: { decorate?: unknown } = {};
+    const look: { decorate?: unknown; decorator(k: string, f: unknown): void } = { decorator: (k, f) => k === 'legs' && (look.decorate = f) };
     startSections(data, look as never, rows);
     expect(rows).toHaveBeenCalledWith(sectionRanges(secs, n));
     expect(typeof look.decorate).toBe('function');

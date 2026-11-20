@@ -25,6 +25,7 @@ const SETTINGS: Settings = {
   trimmed: null,
   zones_max_heart_rate: null,
   zones_threshold_power: null,
+  pins: [],
 };
 
 function setup(hash: string, respond: () => Response | Promise<Response> = () => Response.json(SETTINGS), path = '/edit/' + ID) {

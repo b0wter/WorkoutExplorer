@@ -30,6 +30,8 @@ import type { DataFileResult, WorkoutData } from '../lib/datafile';
 import type { ZoneSource } from '../zones';
 import type { EffortWindow } from '../efforts';
 import type { Facts } from '../summary-info';
+import type { PinsView } from '../pins';
+import type { RouteMapHandle } from '../components/map/map-view';
 
 type RecorderModule = typeof import('../measure/recorder');
 
@@ -109,6 +111,8 @@ export interface EditSeam {
   onefforts(start: (src: EffortWindow) => Promise<(() => void) | void>): void;
   /** F-58 SE-4: the summary dialog's facts, owner extras included, read on every open. */
   explain(): Facts;
+  /** F-56 PN-12: the pins view over the draft, once the chunk is in (after the charts' first paint). */
+  onpins?(view: PinsView): void;
 }
 
 /** Enhances the server markup, then loads and mounts. Never rejects. */
@@ -122,6 +126,14 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   enhanceReport(root); // F-28 RF-2: before any await, so a failing data file still leaves Report working
   enhanceHowto(root, prefs.howtoOpened(), prefs.setHowtoOpened); // F-39 HU-6: likewise; viewing page only (the markup)
   enhanceExpiry(root, Date.now());
+  // F-56 PN-7: the pins list's reserved height, only with JavaScript (the template hides the slot):
+  // Count one-line rows of 32 px, the 32 px heading and 8 px below (src/pins/pins.css).
+  // The viewing page has the slot only with a pins file; the edit page always (ActivityPage).
+  const pinSlot = root.querySelector<HTMLElement>('.pins-slot');
+  if (pinSlot?.dataset.count) {
+    pinSlot.style.minHeight = +pinSlot.dataset.count * 32 + 40 + 'px';
+    pinSlot.hidden = false;
+  }
   // One units store per page (D-3): a remembered drop-down choice, else the browser language (D-4,
   // DS-1). The server markup is metric: swapped once the data file is decoded (D-5).
   const units = createUnitsStore(prefs.units() ?? defaultUnits(win.navigator.languages, win.navigator.language));
@@ -221,8 +233,13 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     ? mod.createRecorder({ cursor, data, name: url.slice(url.lastIndexOf('/') + 1), hasRoute })
     : null;
 
-  const map = hasRoute && mapSlot ? createMapProps(data, cursor, selection, look, () => {
+  // F-56 PN-10: the map's seam for the pins chunk, once the map is ready.
+  let pinMap: RouteMapHandle | null = null;
+  let onPinMap: ((m: RouteMapHandle) => void) | null = null;
+  const map = hasRoute && mapSlot ? createMapProps(data, cursor, selection, look, (h) => {
     performance.mark('wx-page:map-ready');
+    pinMap = h;
+    onPinMap?.(h);
     addPinToggle(root, mapSlot);
     const box = mapSlot.querySelector<HTMLElement>('.route-map');
     if (box) mountStrip(box, data, cursor, units); // F-33 CR-2: the fullscreen box holds it
@@ -231,6 +248,15 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const ready = (): void => {
     laps.taps();
     map?.startLoading();
+    // F-56 PN-9: the pins chunk (it fetches the file), only with a pins file or on the edit page.
+    if (pinSlot)
+      import('../pins').then(
+        (m) => m.startPins({ slot: pinSlot, data, cursor, selection, units, look, edit, map: (cb) => (pinMap ? cb(pinMap) : (onPinMap = cb)) }),
+        () => {
+          pinSlot.hidden = true;
+          console.warn('page: pins chunk failed');
+        },
+      );
     // F-42 MS-1, MS-9: section lines, names and separator ranges are a lazy chunk, for a workout
     // whose sessions hold two or more sports only; failing, the page stays as it is.
     if (new Set(data.meta.sessions.map((s) => s.sport)).size > 1) import('../sections').then((m) => m.startSections(data, look, laps.legs), () => console.warn('page: sections chunk failed'));

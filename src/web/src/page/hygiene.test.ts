@@ -306,3 +306,15 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
     expect(all['./start.ts']).toContain('createViewerPrefs((): KeyValueStore => win.localStorage)');
   });
 });
+
+describe('F-56 PN-11: pin text is text', () => {
+  const pins = import.meta.glob(['../pins/*.ts', '../lib/pins/*.ts', '../edit/pins.ts', '!**/*.test.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+  it('no HTML API in the pins chunk, lib/pins or the pin editor', () => {
+    expect(Object.keys(pins).length).toBe(3);
+    for (const [f, s] of Object.entries(pins)) expect(s, f).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|setHTML|DOMParser|createContextualFragment|document\.write|\{@html/);
+  });
+  it('the template slot: under {{if .Pins.URL}}, hidden, URL and count as data attributes, no inline style', () => {
+    expect(template).toContain('{{if .Pins.URL}}<div class="pins-slot" data-url="{{.Pins.URL}}" data-count="{{.Pins.Count}}" hidden></div>{{end}}');
+    expect(sources['../components/page/ActivityPage.svelte']).toContain('<div class="pins-slot" data-url={model.Pins.URL} data-count={model.Pins.Count} hidden></div>');
+  });
+});

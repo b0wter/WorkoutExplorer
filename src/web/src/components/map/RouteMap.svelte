@@ -14,6 +14,7 @@
   import { routePresence } from '../../lib/route';
   import { createTouchQuiet } from './touch-quiet';
   import type { Scheme } from './map-style';
+  import type { RouteMapHandle } from './map-view';
 
   interface Props {
     /** One map per data value: a new value destroys the old map and builds a new one. */
@@ -35,8 +36,9 @@
     units?: UnitsStore;
     /** Overrides the scheme's remote style URL (tests, bench). */
     styleUrl?: string;
-    /** Called once per data value, after the map exists and the marker follows the cursor. */
-    onmapready?: () => void;
+    /** Called once per data value, after the map exists and the marker follows the cursor; the
+     *  handle is F-56's seam for the pins chunk. */
+    onmapready?: (handle: RouteMapHandle) => void;
     /** Inclusive sample ranges marked as to-be-hidden (F-19 E-9, ADR-030); edit page only. */
     hidden?: readonly (readonly [number, number])[];
   }
@@ -65,7 +67,7 @@
     const quiet = createTouchQuiet(window);
     const abort = new AbortController();
     const signal = abort.signal;
-    let handle: { setScheme(s: Scheme): void; setHidden(r: readonly (readonly [number, number])[]): void; destroy(): void } | null = null;
+    let handle: RouteMapHandle | null = null;
     let started = false;
 
     const start = async (): Promise<void> => {
@@ -94,7 +96,7 @@
         // A scheme change while the map was loading.
         h.setScheme(untrack(() => scheme));
         h.setHidden(untrack(() => hidden) ?? []);
-        untrack(() => onmapready)?.();
+        untrack(() => onmapready)?.(h);
       } catch (error) {
         if (signal.aborted) return;
         // No WebGL2, a failed chunk or a throw during mount: one line in the map's place

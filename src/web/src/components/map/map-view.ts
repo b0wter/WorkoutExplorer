@@ -32,6 +32,7 @@ import { NO_CLASS, classify, colourScale, legend, metricLabel, metricValues, off
 import {
   ROUTE_IDLE,
   TIE_PX,
+  TOUCH_START_RADIUS_PX,
   buildRoute,
   classLines,
   createRouteIndex,
@@ -54,6 +55,7 @@ import {
   COLOUR_SOURCE,
   DIVERGING,
   HIDDEN_SOURCE,
+  MARKS_SOURCE,
   NO_VALUE,
   RANGE_SOURCE,
   baseStyle,
@@ -107,6 +109,15 @@ export interface RouteMapHandle {
   setScheme(scheme: Scheme): void;
   /** Marks these inclusive sample ranges as to-be-hidden (F-19 E-9, ADR-030); [] marks nothing. */
   setHidden(ranges: readonly (readonly [number, number])[]): void;
+  /** F-56 PN-10, the pins chunk's seam (nothing pin-specific here): a DOM marker at sample i's
+   *  position (none without one), returning its removal; */
+  marker(el: HTMLElement, i: number): () => void;
+  /** lines over these inclusive sample ranges, above the hidden marks and below the range; */
+  marks(ranges: readonly (readonly [number, number])[]): void;
+  /** an element in the map box (it stays in fullscreen), bottom left; */
+  control(el: HTMLElement): void;
+  /** the route sample within a touch's radius of a client point, or -1 (PN-12's tap). */
+  sampleAt(x: number, y: number): number;
   destroy(): void;
 }
 
@@ -116,7 +127,7 @@ const WORLD_PX = 512;
 type MutableInput = { -readonly [K in keyof RouteGestureInput]: RouteGestureInput[K] };
 
 const swallow = (): void => {};
-const inertHandle: RouteMapHandle = { setScheme: swallow, setHidden: swallow, destroy: swallow };
+const inertHandle: RouteMapHandle = { setScheme: swallow, setHidden: swallow, marker: () => swallow, marks: swallow, control: swallow, sampleAt: () => -1, destroy: swallow };
 
 export async function mountRouteMap(options: MountOptions): Promise<RouteMapHandle> {
   const { container, data, cursor, selection, whenQuiet, signal } = options;
@@ -260,8 +271,21 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   // The to-be-hidden marks (F-19 E-9): the range geometry of F-17 per range; kept, so a style
   // swap re-applies it on 'style.load' like the range highlight.
   let hidden = linesData({ recorded: [], bridges: [] });
+  let marked = hidden;
   const applyHidden = (): void => {
     (map.getSource(HIDDEN_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(hidden);
+  };
+  const applyMarks = (): void => {
+    (map.getSource(MARKS_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(marked);
+  };
+  const rangesData = (ranges: readonly (readonly [number, number])[]): typeof hidden => {
+    const lines = { recorded: [] as [number, number][][], bridges: [] as [[number, number], [number, number]][] };
+    for (const [a, b] of ranges) {
+      const l = routeLinesIn(data, route, a, b);
+      lines.recorded.push(...l.recorded);
+      lines.bridges.push(...l.bridges);
+    }
+    return linesData(lines);
   };
   let attribTimer: ReturnType<typeof setTimeout> | undefined;
   let rangeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -429,6 +453,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       map.on('style.load', applyRange);
     }
     map.on('style.load', applyHidden);
+    map.on('style.load', applyMarks);
     map.on('style.load', applyColour);
 
     // ---- route colouring (F-25 C-6, C-8): a select and its legend; work only on a selection ----
@@ -681,14 +706,28 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     setScheme: (next) => setScheme(next),
     setHidden(ranges): void {
       if (destroyed) return;
-      const lines = { recorded: [] as [number, number][][], bridges: [] as [[number, number], [number, number]][] };
-      for (const [a, b] of ranges) {
-        const l = routeLinesIn(data, route, a, b);
-        lines.recorded.push(...l.recorded);
-        lines.bridges.push(...l.bridges);
-      }
-      hidden = linesData(lines);
+      hidden = rangesData(ranges);
       applyHidden();
+    },
+    marker(el, i) {
+      if (destroyed || !(lat[i] === lat[i])) return swallow;
+      const m = new Marker({ element: el, anchor: 'center' }).setLngLat([lon[i], lat[i]]).addTo(map);
+      return () => void m.remove();
+    },
+    marks(ranges): void {
+      if (destroyed) return;
+      marked = rangesData(ranges);
+      applyMarks();
+    },
+    control(el): void {
+      if (!destroyed) map.addControl({ onAdd: () => el, onRemove: () => el.remove() }, 'bottom-left');
+    },
+    sampleAt(x, y): number {
+      if (destroyed) return -1;
+      const r = inner.getBoundingClientRect();
+      const ll = map.unproject([x - r.left, y - r.top]);
+      const unit = 1 / (WORLD_PX * 2 ** map.getZoom());
+      return index.nearest(mercatorX(ll.lng), mercatorY(ll.lat), TOUCH_START_RADIUS_PX * unit, TIE_PX * unit);
     },
     destroy(): void {
       if (!destroyed) teardown();

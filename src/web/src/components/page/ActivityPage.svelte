@@ -28,6 +28,8 @@
   <PageHeader page={model.Page} header={model.Header} {copy} />
   <SummaryStrip items={model.Summary} device={model.Device} trim={model.Trim} />
   {#if model.Route.Map}<div id="map-slot" class="map-slot"></div>{/if}
+  {#if model.Pins.URL}<div class="pins-slot" data-url={model.Pins.URL} data-count={model.Pins.Count} hidden></div>{/if}
+  {#if edit}<div class="pins-slot"></div>{/if}
   {#if model.Route.NoLocation}<p class="hint">No location data in this workout.</p>{/if}
   {#if model.Route.Hidden}<p class="hint">The entire route has been hidden by the uploader.</p>{/if}
   {#if model.ChartsClass}<div id="charts-slot" class={'charts ' + model.ChartsClass}></div>{/if}

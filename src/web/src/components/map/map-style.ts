@@ -31,6 +31,9 @@ export const MARKER_SOURCE = 'wx-markers';
 export const RANGE_SOURCE = 'wx-range';
 /** The to-be-hidden start and end on the edit page (F-19 E-9): above the route, below the range. */
 export const HIDDEN_SOURCE = 'wx-hidden';
+/** F-56 PN-10: section pins' lines (the pins chunk sets them through map-view's seam): above the
+ *  hidden marks, below the range. */
+export const MARKS_SOURCE = 'wx-marks';
 /** Route colouring by metric (F-25 C-1, ADR-037): at most one MultiLineString per colour class; empty = plain route. */
 export const COLOUR_SOURCE = 'wx-colour';
 
@@ -54,6 +57,8 @@ export const MAP_COLOURS = {
   range: '#1f6fc5',
   /** To-be-hidden sections (F-19 E-9): a neutral grey over the route, "this part goes". */
   hidden: '#8a8f98',
+  /** Section pins (F-56). */
+  mark: '#e65100',
   lapFill: '#ffffff',
   lapStroke: '#333333',
   lapText: '#222222',
@@ -75,6 +80,7 @@ const COLOUR_PROPERTIES: Readonly<Record<keyof typeof MAP_COLOURS, string>> = {
   route: '--route',
   range: '--range',
   hidden: '--hidden',
+  mark: '--pin-difficult_section',
   lapFill: '--lap-fill',
   lapStroke: '--lap-stroke',
   lapText: '--lap-text',
@@ -130,6 +136,7 @@ const PAINT: readonly [layer: string, property: string, colour: keyof typeof MAP
   ['wx-route-line', 'line-color', 'route'],
   ['wx-hidden-bridge', 'line-color', 'hidden'],
   ['wx-hidden-line', 'line-color', 'hidden'],
+  ['wx-mark-line', 'line-color', 'mark'],
   ['wx-range-casing', 'line-color', 'rangeOutline'],
   ['wx-range-bridge', 'line-color', 'range'],
   ['wx-lap-circle', 'circle-color', 'lapFill'],
@@ -171,7 +178,7 @@ export function emphasise(map: PaintTarget, colours: MapColours, on: boolean): v
 }
 
 /** Bottom → top, as in the design's layer table. */
-export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish'] as const;
+export const WX_LAYER_IDS = ['wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-mark-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish'] as const;
 
 const kindIs = (kind: string): FilterSpecification => ['==', ['get', 'kind'], kind];
 
@@ -261,6 +268,7 @@ export function baseStyle(
   // The colour, hidden and range sources always exist (empty at first), so the map view can setData them.
   sources[COLOUR_SOURCE] = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } };
   sources[HIDDEN_SOURCE] = { type: 'geojson', data: linesData(NO_LINES) };
+  sources[MARKS_SOURCE] = { type: 'geojson', data: linesData(NO_LINES) };
   sources[RANGE_SOURCE] = { type: 'geojson', data: linesData(range) };
   layers.push(
     // F-25 C-1: over the plain route line, at its width; an edge without a class is not in the source.
@@ -286,6 +294,13 @@ export function baseStyle(
       filter: kindIs('recorded'),
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': colours.hidden, 'line-width': 4 },
+    },
+    {
+      id: 'wx-mark-line',
+      type: 'line',
+      source: MARKS_SOURCE,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': colours.mark, 'line-width': 4, 'line-opacity': 0.8 },
     },
     {
       // F-25 C-9: the range's outline, only with colouring on: only rangeData's recorded edges carry a class.

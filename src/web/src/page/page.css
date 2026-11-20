@@ -734,6 +734,11 @@ tbody tr:nth-child(even of :not(.laps-section)) {
   .has-map .charts {
     --r: var(--r4);
   }
+  /* F-56: block flow cannot reorder; only a page with pins is a flex column. */
+  .has-map .layout:has(> .pins-slot) {
+    display: flex;
+    flex-direction: column;
+  }
   .has-map #charts-slot .readout {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -797,6 +802,14 @@ tbody tr:nth-child(even of :not(.laps-section)) {
   display: none;
 }
 @media (min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  /* F-56 OQ-276: two columns, the pins list under the charts, above the range panel. */
+  .has-map .pins-slot {
+    order: 1;
+  }
+  .has-map #range-slot,
+  .has-map #range-slot ~ * {
+    order: 2;
+  }
   .has-map .splitter {
     display: block;
     position: absolute;

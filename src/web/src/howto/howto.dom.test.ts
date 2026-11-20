@@ -33,6 +33,7 @@ describe('openHowto', () => {
       'Units and theme. Change units and theme at the top of the page; this device remembers your choice.',
       'Zones. Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
       'Share a range. Select a range, then tap "Copy link to this selection" to share it.',
+      'Pins. On workouts with pins, tap a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
       'Summary numbers. Tap ⓘ on the summary to see how its numbers are computed.',
     ]);
     expect(texts('fine')).toEqual([
@@ -43,6 +44,7 @@ describe('openHowto', () => {
       'Units and theme. Change units and theme at the top of the page; this device remembers your choice.',
       'Zones. Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
       'Share a range. Select a range, then click "Copy link to this selection" to share it.',
+      'Pins. On workouts with pins, click a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
       'Summary numbers. Click ⓘ on the summary to see how its numbers are computed.',
     ]);
   });

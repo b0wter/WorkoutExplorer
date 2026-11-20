@@ -61,6 +61,7 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   trimmed: null,
   zones_max_heart_rate: null,
   zones_threshold_power: null,
+  pins: [],
   ...over,
 });
 
@@ -1700,5 +1701,70 @@ describe('F-58 SE-4: the summary dialog on the edit page (AC 36, 40)', () => {
     await open();
     expect($<HTMLButtonElement>('button[data-summary-info]')!.dataset.trim).toBe('');
     expect(await dialogText()).not.toMatch(/Trim\.|recomputed/);
+  });
+});
+
+describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
+  const data = (() => {
+    const r = decodeDataFile(RIDE);
+    if (!r.ok) throw new Error('no ride');
+    return r.data;
+  })();
+  const startS = Date.parse(data.meta.start_time) / 1000;
+  const at = (i: number): string => new Date((startS + data.time[i]) * 1000).toISOString().slice(0, 19) + 'Z';
+  const pin = (i: number, title: string) => ({ type: 'danger' as const, title, note: '', start_at: at(i), end_at: null });
+  const rowTexts = (): string[] => [...document.querySelectorAll('.pin-row')].map((r) => r.textContent!);
+  const button = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.pin-tools button, .pin-form button')].find((b) => b.textContent === text)!;
+  async function start(): Promise<void> {
+    await open();
+    stubLog.chartStack[0].onready?.();
+    await vi.waitFor(() => expect(document.querySelector('.pin-tools')).not.toBeNull());
+    await settle();
+  }
+  const tapChart = async (i: number): Promise<void> => {
+    stubLog.chartStack[0].cursor.set(i);
+    const h = document.getElementById('charts-slot')!.appendChild(document.createElement('div'));
+    h.className = 'chart-host';
+    h.click();
+    await settle();
+  };
+
+  it('dimmed reasons; Add pin refuses a hidden sample, places on a visible one; Save sends the whole set, dimmed included', async () => {
+    settings = fresh({ ...ON, pins: [pin(10, 'start'), pin(1000, 'mid'), pin(N - 5, 'end')] });
+    await start();
+    expect(rowTexts()).toEqual(['startHidden by the start radius', expect.stringMatching(/^mid\d/), 'endHidden by the end radius']);
+    button('Add pin').click();
+    expect(button('Add pin').hidden).toBe(true);
+    await tapChart(20);
+    expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe('This pin is in a hidden or trimmed part of the route.');
+    await tapChart(2000);
+    expect(rowTexts()).toHaveLength(4);
+    const title = document.querySelector<HTMLInputElement>('.pin-form input:not([type])')!;
+    expect(document.querySelector<HTMLElement>('.pin-form')!.hidden).toBe(false);
+    title.value = '<b>new</b>';
+    title.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(rowTexts()[2]).toMatch(/^<b>new<\/b>/);
+    expect(document.querySelector('.pin-list b')).toBeNull();
+    await save();
+    expect(patches()).toEqual([{ pins: [pin(10, 'start'), pin(1000, 'mid'), { ...pin(2000, '<b>new</b>'), type: 'point_of_interest' }, pin(N - 5, 'end')] }]);
+    await save();
+    expect(patches()).toHaveLength(1); // unchanged: no pins sent, 'No changes'
+  });
+
+  it('a Save whose response lacks pins says how many were removed (AC 36)', async () => {
+    settings = fresh({ pins: [pin(10, 'a'), pin(1000, 'b')] });
+    onPatch = (body) => Response.json((settings = { ...settings, ...body, pins: [pin(1000, 'b')] } as Settings));
+    await start();
+    $<HTMLInputElement>('input[name="title"]')!.value = 'x';
+    await save();
+    expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe('1 pin in the trimmed part removed.');
+    expect(rowTexts()).toHaveLength(1);
+  });
+
+  it('no visible route: no Add pin, stored pins listed dimmed (OQ-275)', async () => {
+    settings = fresh({ hide_start_m: 2000, hiding_steps: { start: STEPS.start.map(() => -1), end: STEPS.end }, pins: [pin(1000, 'b')] });
+    await start();
+    expect(button('Add pin').hidden).toBe(true);
+    expect(rowTexts()[0]).toMatch(/Hidden by the start/);
   });
 });

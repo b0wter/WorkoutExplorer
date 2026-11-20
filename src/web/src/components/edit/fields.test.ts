@@ -22,6 +22,7 @@ const STORED: Settings = {
   trimmed: null,
   zones_max_heart_rate: null,
   zones_threshold_power: null,
+  pins: [],
 };
 
 afterEach(() => {

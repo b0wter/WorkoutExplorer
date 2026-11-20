@@ -38,6 +38,11 @@ const LINES: [string, string, string][] = [
     'Select a range, then click "Copy link to this selection" to share it.',
   ], // F-40 SR-8
   [
+    'Pins',
+    'On workouts with pins, tap a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
+    'On workouts with pins, click a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
+  ], // F-56 PN-13
+  [
     'Summary numbers',
     'Tap ⓘ on the summary to see how its numbers are computed.',
     'Click ⓘ on the summary to see how its numbers are computed.',

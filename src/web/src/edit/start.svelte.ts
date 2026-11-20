@@ -23,7 +23,8 @@ import { loadErrorText } from '../page/load-error';
 import { startPage } from '../page/start';
 import { routePresence } from '../lib/route';
 import { basemapJobs } from './basemap-job';
-import { hidingRanges, trimIndex } from '../components/edit/fields';
+import { HIDE_STEP_M, hidingRanges, trimIndex } from '../components/edit/fields';
+import { startPinEditor, type PinEditor } from './pins';
 import type { ZoneSource } from '../zones';
 
 type Ranges = readonly (readonly [number, number])[];
@@ -140,11 +141,14 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   /** F-55 HR-8: the sliders' radii in metres, unsaved too; set at most once per animation frame. */
   let ends = $state.raw<readonly [number, number]>(radii(got.value));
   let pending: readonly [number, number] | null = null;
+  /** F-56 PN-12: the pin editor, once the pins chunk is in. */
+  let pinEditor: PinEditor | null = null;
   const onhide = (startM: number, endM: number): void => {
     if (pending === null)
       requestAnimationFrame(() => {
         ends = pending!;
         pending = null;
+        pinEditor?.refresh();
       });
     pending = [startM, endM];
   };
@@ -206,6 +210,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     }
     // The response is the truth (E-6): the panel refills from it, the header re-renders from it.
     settings = r.value;
+    pinEditor?.saved(r.value.pins ?? []);
     zones();
     void effortsRefresh?.then((refresh) => refresh?.());
     visibility = r.value.visibility;
@@ -222,8 +227,11 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   /** F-36 MC-8: the preview basemap job; never on the published page. */
   const basemap = basemapJobs(owner);
 
-  const save = (patch: SettingsPatch): Promise<void> | void => {
+  /** F-56 PN-12: the pins go with every Save, when they changed. */
+  const withPins = (patch: SettingsPatch): SettingsPatch => ({ ...patch, ...pinEditor?.patch(settings.pins ?? []) });
+  const save = (panel: SettingsPatch): Promise<void> | void => {
     if (ui.busy) return;
+    const patch = withPins(panel);
     if (Object.keys(patch).length === 0) {
       ui.status = 'No changes';
       return;
@@ -240,8 +248,9 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   // the published page, with the busy state kept and nothing re-rendered. F-36 MC-8(a), OQ-112: the
   // basemap job starts after the save, so its frame reflects the saved hiding, and runs alongside
   // publish; the published page opens once both ended (the job: at most 10 s).
-  const publish = (patch: SettingsPatch): Promise<void> =>
+  const publish = (panel: SettingsPatch): Promise<void> =>
     ui.run('Publishing…', async () => {
+      const patch = withPins(panel);
       if (Object.keys(patch).length > 0 && !apply(await owner.save(patch))) return;
       const job = basemap();
       const r = await owner.publish();
@@ -326,7 +335,10 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       onedit: () => (ui.status = ''),
       time: data?.time ?? null,
       startTime: data?.meta.start_time ?? '',
-      ontrim: (a: number, b: number) => (cut = [a, b]),
+      ontrim: (a: number, b: number) => {
+        cut = [a, b];
+        queueMicrotask(() => pinEditor?.refresh()); // outside the panel's fill effect, which writes cut
+      },
       zones: data?.meta.zones ?? {},
       gpx: !!data && data.meta.sport !== 'multisport' && routePresence(data) === 'route',
     },
@@ -361,6 +373,24 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
         zones();
       },
       onefforts: (start) => (effortsRefresh = start(zoneSource.window)),
+      // F-56 PN-12: the editor over the pins view; the shading as the map's and charts' (E-9).
+      onpins: (view) => {
+        const steps = (): Settings['hiding_steps'] => settings.hiding_steps;
+        pinEditor = startPinEditor(
+          {
+            slot: view.slot,
+            view,
+            data: result.data,
+            startS,
+            shade: () => {
+              const st = steps();
+              return { a: cut[0], b: cut[1], from: st ? st.start[ends[0] / HIDE_STEP_M] : 0, to: st ? st.end[ends[1] / HIDE_STEP_M] : last };
+            },
+            onedit: () => (ui.status = ''),
+          },
+          settings.pins ?? [],
+        );
+      },
       // F-58 SE-4: the saved settings' facts; sessions, lengths and zones as the rest of the page.
       explain: () => {
         const s = strip(settings, result.data.meta);
@@ -376,15 +406,14 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       },
       onlook: (l: Look) => {
         look = l;
-        // The sections chunk sets its leg decorator later; the charts get both (MS-7 has one seam).
-        let legs = $state.raw<ChartDecorator>();
+        // The chunks' decorators (legs, pins) and the shading; the charts get all (MS-7 has one seam).
+        const chunks = Object.getOwnPropertyDescriptor(l, 'decorate')!.get!;
         Object.defineProperty(l, 'decorate', {
           get: (): ChartDecorator => {
             const t = shade(hidden());
-            const g = legs;
+            const g: ChartDecorator | undefined = chunks();
             return g ? (over, x) => (g(over, x), t(over, x)) : t;
           },
-          set: (d: ChartDecorator) => (legs = d),
         });
       },
     });

@@ -973,7 +973,7 @@ describe('F-42 MS-7: the decoration seam', () => {
     const m = setup(data, { look, selection });
     layout(900);
     const calls: [HTMLElement, number][] = [];
-    look.decorate = (over, x) => calls.push([over, x(100)]);
+    look.decorator('t', (over, x) => calls.push([over, x(100)]));
     flushSync();
     const n = overs(m).length;
     expect(calls.map((c) => c[0])).toEqual(overs(m));

@@ -848,3 +848,31 @@ describe('Download route (GPX) (F-57 GX-2, GX-5; AC 1, AC 7)', () => {
     expect(gpx.calls).toHaveLength(0);
   });
 });
+
+describe('map pins loading (F-56 PN-7, PN-9; AC 45)', () => {
+  const PINS = [{ type: 'danger', title: 'Gravel', note: '', from: 10 }];
+  it('a pins file: the slot reserves its rows before any load, chunk and file only after the charts, then the list', async () => {
+    fetchMock.mockImplementation(async (url: string) => (String(url).includes('/pins.') ? new Response(JSON.stringify(PINS), { status: 200 }) : respond()));
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-pins');
+    const pinSlot = document.querySelector<HTMLElement>('.pins-slot')!;
+    expect(pinSlot.hidden).toBe(true);
+    const started = startPage(document);
+    expect(pinSlot.hidden).toBe(false);
+    expect(pinSlot.style.minHeight).toBe(3 * 32 + 40 + 'px');
+    await started;
+    await settle();
+    expect(fetchMock.mock.calls.map((c) => String(c[0])).some((u) => u.includes('/pins.'))).toBe(false);
+    stubLog.chartStack[0].onready?.();
+    await vi.waitFor(() => expect(document.querySelector('.pin-row')?.textContent).toMatch(/^Gravel/));
+    expect(fetchMock.mock.calls.map((c) => String(c[0]))).toContain(page.model.Pins.URL);
+  });
+
+  it('no pins file: no slot, no pins request, no list', async () => {
+    await open('ride-30min');
+    stubLog.chartStack[0].onready?.();
+    await settle();
+    expect(document.querySelector('.pins-slot')).toBeNull();
+    expect(fetchMock.mock.calls.map((c) => String(c[0])).some((u) => u.includes('pins'))).toBe(false);
+  });
+});

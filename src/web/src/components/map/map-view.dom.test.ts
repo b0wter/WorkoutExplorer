@@ -11,7 +11,7 @@ import { createSelectionStore } from '../../lib/selection';
 import type { WorkoutData } from '../../lib/datafile';
 import { buildRoute, mercatorX } from '../../lib/route';
 import { positioned } from '../../lib/route/testing/fixtures';
-import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MARKS_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
 import { RANGE_SETTLE_MS, mountRouteMap, type RouteMapHandle } from './map-view';
 import { createUnitsStore } from '../../lib/units';
 import { recorder, resetRecorder, type FakeMap, type FakeMarker } from './testing/maplibre-fake';
@@ -1208,13 +1208,34 @@ describe('to-be-hidden marks (F-19 E-9, ADR-030)', () => {
     expect(last()).toEqual([HIDDEN_SOURCE, { type: 'FeatureCollection', features: [] }]);
     handle.setHidden([[0, 1]]);
     const count = map.sourceData.length;
-    map.fire('style.load'); // re-applies the hidden marks (and the plain colouring, F-25 C-7)
-    expect(map.sourceData.length).toBe(count + 2);
+    map.fire('style.load'); // re-applies the hidden marks (and the pin marks, F-56, and the plain colouring, F-25 C-7)
+    expect(map.sourceData.length).toBe(count + 3);
     expect(map.sourceData.find(([id], k) => k >= count && id === HIDDEN_SOURCE)).toEqual(map.sourceData[count - 1]);
 
     handle.destroy();
     handle.setHidden([[0, 7]]);
-    expect(map.sourceData.length).toBe(count + 2);
+    expect(map.sourceData.length).toBe(count + 3);
+  });
+
+  it('F-56 PN-10: marks draws its ranges on its own source; style.load re-applies; markers only at positioned samples; sampleAt off the map is -1', async () => {
+    const s = setup();
+    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, whenQuiet: s.whenQuiet, signal: s.abort.signal });
+    await quietUntilMap(s);
+    const handle = await p;
+    handles.push(handle);
+    const map = recorder.maps[recorder.maps.length - 1];
+    const last = (): [string, Lines] => map.sourceData[map.sourceData.length - 1] as [string, Lines];
+    handle.marks([[0, 1]]);
+    expect(last()[0]).toBe(MARKS_SOURCE);
+    expect(last()[1].features[0].geometry.coordinates).toEqual([[[8.0, 47], [8.01, 47]]]);
+    map.fire('style.load');
+    expect(map.sourceData.filter(([id]) => id === MARKS_SOURCE).at(-1)).toEqual(map.sourceData.filter(([id]) => id === MARKS_SOURCE).at(-2));
+    const el = document.createElement('button');
+    const remove = handle.marker(el, 0);
+    expect(typeof remove).toBe('function');
+    remove();
+    handle.destroy();
+    expect(handle.sampleAt(0, 0)).toBe(-1);
   });
 });
 

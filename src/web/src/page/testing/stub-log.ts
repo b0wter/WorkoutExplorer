@@ -30,7 +30,7 @@ export interface RouteMapStubProps {
   fill?: boolean;
   scheme?: 'light' | 'dark';
   styleUrl?: string;
-  onmapready?: () => void;
+  onmapready?: (handle?: never) => void;
   hidden?: readonly (readonly [number, number])[];
 }
 

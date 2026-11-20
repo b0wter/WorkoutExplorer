@@ -17,6 +17,7 @@ import {
   MAX_MAP_PIXEL_RATIO,
   OPENFREEMAP_STYLE_URL,
   HIDDEN_SOURCE,
+  MARKS_SOURCE,
   NO_VALUE,
   RANGE_SOURCE,
   ROUTE_SOURCE,
@@ -99,10 +100,10 @@ describe('baseStyle', () => {
     expect(s.version).toBe(8);
     expect(s.glyphs).toBe(GLYPHS_URL);
     expect(s.sprite).toBeUndefined();
-    expect(Object.keys(s.sources).sort()).toEqual([COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
+    expect(Object.keys(s.sources).sort()).toEqual([COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, MARKS_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
     expect(ids(s.layers)).toEqual(['background', ...WX_LAYER_IDS]);
     expect(WX_LAYER_IDS).toEqual([
-      'wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish',
+      'wx-route-bridge', 'wx-route-casing', 'wx-route-line', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-mark-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish',
     ]);
   });
 
@@ -191,8 +192,8 @@ describe('baseStyle', () => {
 
   it('neither a recorded segment nor a bridge (one positioned sample): no wx-route source and no route layers', () => {
     const s = baseStyle(none, markers.filter((m) => m.kind !== 'lap'));
-    expect(Object.keys(s.sources)).toEqual([MARKER_SOURCE, COLOUR_SOURCE, HIDDEN_SOURCE, RANGE_SOURCE]);
-    expect(ids(s.layers)).toEqual(['background', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish']);
+    expect(Object.keys(s.sources)).toEqual([MARKER_SOURCE, COLOUR_SOURCE, HIDDEN_SOURCE, MARKS_SOURCE, RANGE_SOURCE]);
+    expect(ids(s.layers)).toEqual(['background', 'wx-colour-line', 'wx-hidden-bridge', 'wx-hidden-line', 'wx-mark-line', 'wx-range-casing', 'wx-range-bridge', 'wx-range-line', 'wx-lap-circle', 'wx-lap-label', 'wx-leg-label', 'wx-start', 'wx-finish']);
   });
 
   it('F-17 R-10: wx-range holds the given range (empty by default), drawn by its own layers in the range colour; its outline only for classed edges (F-25 C-9)', () => {
@@ -304,7 +305,7 @@ describe('mergeStyle', () => {
   it("next's layers first, then every wx- layer of previous in its order; wx- sources added", () => {
     const merged = mergeStyle(previous, remote());
     expect(ids(merged.layers)).toEqual(['background', 'natural_earth', 'water', ...WX_LAYER_IDS]);
-    expect(Object.keys(merged.sources).sort()).toEqual(['ne2_shaded', 'openmaptiles', COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
+    expect(Object.keys(merged.sources).sort()).toEqual(['ne2_shaded', 'openmaptiles', COLOUR_SOURCE, HIDDEN_SOURCE, MARKER_SOURCE, MARKS_SOURCE, RANGE_SOURCE, ROUTE_SOURCE].sort());
     expect(merged.sources[ROUTE_SOURCE]).toBe(previous.sources[ROUTE_SOURCE]);
     // The base background is not carried over; liberty's own is kept.
     expect(merged.layers.filter((l) => l.id === 'background')).toHaveLength(1);

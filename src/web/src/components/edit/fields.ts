@@ -6,7 +6,8 @@ import type { Settings, SettingsPatch } from '../../lib/owner';
 import { cleanText } from '../../lib/text';
 
 /** What the panel edits. */
-export type Form = Required<SettingsPatch>;
+/** Pins are not the panel's (F-56: the pin editor adds them to the patch). */
+export type Form = Required<Omit<SettingsPatch, 'pins'>>;
 
 export const TITLE_MAX = 100;
 export const DESCRIPTION_MAX = 1000;
