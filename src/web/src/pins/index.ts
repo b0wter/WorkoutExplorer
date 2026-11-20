@@ -279,6 +279,7 @@ export function startPins(env: PinsEnv): PinsView {
         const read = readPins(file, data.sampleCount);
         if (!read) throw new Error('invalid pins file');
         set(read);
+        slot.style.minHeight = ''; // the reserve only held the place until the rows exist; a hidden legend type may shrink the list
       })
       .catch((e: unknown) => {
         slot.hidden = true;

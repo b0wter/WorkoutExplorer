@@ -9,6 +9,7 @@ import { loadGolden } from '../../test-support/golden.mjs';
 import type { Settings } from '../lib/owner';
 import { decodeDataFile } from '../lib/datafile';
 import { formatElapsed } from '../lib/format';
+import { PIN_REFUSED } from './pins';
 import { resetStubLog, stubLog } from '../page/testing/stub-log';
 import { startEdit } from './start.svelte';
 import editHtml from '../../edit.html?raw';
@@ -1766,5 +1767,29 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await start();
     expect(button('Add pin').hidden).toBe(true);
     expect(rowTexts()[0]).toMatch(/Hidden by the start/);
+  });
+
+  it('a section from the range; a new range moves its ends; a hidden end is refused and nothing changes (AC 34)', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'mid')] });
+    await start();
+    const sel = stubLog.chartStack[0].selection!;
+    document.querySelector<HTMLButtonElement>('.pin-row')!.click();
+    const box = document.querySelector<HTMLInputElement>('.pin-form input[type="checkbox"]')!;
+    sel.set(2000, 3000);
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    box.checked = true;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(rowTexts()[0]).toMatch(/–/);
+    sel.set(2500, 3500);
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    expect(rowTexts()[0]).toMatch(/–/);
+    sel.set(2600, N - 5); // the end is in the hidden end radius
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe(PIN_REFUSED);
+    await save();
+    expect(patches()).toEqual([{ pins: [{ ...pin(1000, 'mid'), start_at: at(2500), end_at: at(3500) }] }]); // still 2500 to 3500
   });
 });

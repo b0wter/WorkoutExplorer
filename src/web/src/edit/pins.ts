@@ -173,7 +173,6 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const [sa, sb] = [place(a), place(b)];
     if (sa < 0 || sb < 0) return;
     if (sa >= sb) return say(PIN_REFUSED);
-    if (dimReason({ from: sa, to: sb }, env.shade(), lat)) return say(PIN_REFUSED);
     p.from = sa;
     p.to = sb;
     changed(list.indexOf(p));

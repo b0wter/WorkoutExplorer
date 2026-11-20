@@ -91,6 +91,7 @@ describe('viewing page (PN-9, PN-11)', () => {
     expect(fetch).toHaveBeenCalledWith('/w/x/pins.0123456789abcdef.json');
     const r = rows();
     expect(r).toHaveLength(3);
+    expect(slot.style.minHeight).toBe(''); // the reserve is released once the rows exist
     expect(r[0]).toMatch(/^Fountain/);
     expect(r[1]).toContain(HOSTILE);
     expect(r[2]).toMatch(/^Difficult section/);
