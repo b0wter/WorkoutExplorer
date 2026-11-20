@@ -11,9 +11,10 @@ import { createSelectionStore } from '../../lib/selection';
 import type { WorkoutData } from '../../lib/datafile';
 import { buildRoute, mercatorX } from '../../lib/route';
 import { positioned } from '../../lib/route/testing/fixtures';
-import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MARKS_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, mergeStyle } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, HIDDEN_SOURCE, MARKS_SOURCE, MAX_MAP_PIXEL_RATIO, OPENFREEMAP_DARK_STYLE_URL, OPENFREEMAP_STYLE_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, SATELLITE, mergeStyle } from './map-style';
 import { RANGE_SETTLE_MS, mountRouteMap, type RouteMapHandle } from './map-view';
 import { createUnitsStore } from '../../lib/units';
+import { createViewerPrefs, type MapLayerPrefs } from '../../lib/prefs';
 import { recorder, resetRecorder, type FakeMap, type FakeMarker } from './testing/maplibre-fake';
 
 vi.mock('maplibre-gl', async () => await import('./testing/maplibre-fake'));
@@ -205,7 +206,7 @@ describe('mountRouteMap: start-up', () => {
     expect(Object.keys((o.style as { sources: object }).sources)).toContain(ROUTE_SOURCE);
     expect(map.rotationDisabled).toBe(true);
     expect(map.tapDragZoomDisabled).toBe(true); // one-finger tap-and-drag zoom off (v1.2)
-    expect(map.controls).toHaveLength(2);
+    expect(map.controls).toHaveLength(3); // zoom, fullscreen, satellite (F-61)
     expect(map.controls[0][1]).toBe('top-right');
     expect((map.controls[0][0] as { options: unknown }).options).toEqual({ showCompass: false });
     // F-26 FS-1: the fullscreen button under the zoom buttons, CSS overlay on our container.
@@ -1516,5 +1517,135 @@ describe('fullscreen (F-26, ADR-038)', () => {
     esc();
     window.dispatchEvent(new PopStateEvent('popstate'));
     expect(back).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('satellite (F-61 SL-2, SL-4, SL-6)', () => {
+  /** lib/prefs over a map, as the page glue hands it (start.ts). */
+  let store: Map<string, string>;
+  let prefs: MapLayerPrefs | undefined;
+  beforeEach(() => {
+    store = new Map();
+    prefs = createViewerPrefs(() => ({ getItem: (k) => store.get(k) ?? null, setItem: (k, v) => void store.set(k, v), removeItem: (k) => void store.delete(k) }));
+  });
+
+  type Style = { sources: Record<string, unknown>; layers: { id: string }[] };
+  /** Mounts, delivers load and the remote style, and lets the first setStyle through. */
+  async function ready(scheme?: 'dark') {
+    const s = setup();
+    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, whenQuiet: s.whenQuiet, scheme, prefs, signal: s.abort.signal });
+    await quietUntilMap(s);
+    const handle = await p;
+    handles.push(handle);
+    const map = recorder.maps[recorder.maps.length - 1];
+    s.styleResponse.resolve();
+    map.fire('load');
+    await settle();
+    s.quiet[2].resolve();
+    await settle();
+    const button = s.container.querySelector<HTMLButtonElement>('.wx-sat-group > button.wx-sat')!;
+    const last = (): Style => map.styles[map.styles.length - 1][0] as Style;
+    return { s, handle, map, button, last };
+  }
+  const click = async (r: Awaited<ReturnType<typeof ready>>): Promise<void> => {
+    r.button.click();
+    await settle();
+    r.s.quiet[r.s.quiet.length - 1].resolve();
+    await settle();
+  };
+
+  it('Map by default: a top-right control, not pressed, named; the remote style as is and nothing stored', async () => {
+    const r = await ready();
+    expect(r.map.controls[2][1]).toBe('top-right');
+    expect(r.button.getAttribute('aria-pressed')).toBe('false');
+    expect([r.button.title, r.button.getAttribute('aria-label')]).toEqual(['Satellite imagery', 'Satellite imagery']);
+    expect(r.map.styles).toHaveLength(1);
+    expect(r.last()).toBe(r.s.styleResponse.json);
+    expect(store.size).toBe(0);
+  });
+
+  it('a click shows Satellite and stores it; a second click returns to the remote style and stores Map; same transformStyle', async () => {
+    const r = await ready();
+    await click(r);
+    expect(r.button.getAttribute('aria-pressed')).toBe('true');
+    expect([...store]).toEqual([['wx.map', 'satellite']]);
+    expect(r.map.styles).toHaveLength(2);
+    expect(Object.keys(r.last().sources)).toContain(SATELLITE);
+    expect(r.map.styles[1][1]).toEqual({ diff: false, transformStyle: mergeStyle });
+    await click(r);
+    expect(r.button.getAttribute('aria-pressed')).toBe('false');
+    expect([...store]).toEqual([['wx.map', 'map']]);
+    expect(r.map.styles).toHaveLength(3);
+    expect(r.last()).toBe(r.s.styleResponse.json);
+    expect(recorder.maps).toHaveLength(1);
+    expect(r.map.fits).toHaveLength(0); // the viewport stays
+  });
+
+  it('Satellite remembered: the first remote style is already the Satellite one, the toggle pressed', async () => {
+    store.set('wx.map', 'satellite');
+    const r = await ready();
+    expect(r.button.getAttribute('aria-pressed')).toBe('true');
+    expect(r.map.styles).toHaveLength(1);
+    expect(Object.keys(r.last().sources)).toContain(SATELLITE);
+  });
+
+  for (const [name, make] of [
+    ['unreadable storage (the getter throws)', () => createViewerPrefs(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    })],
+    ['no prefs handed over (bench, tests)', () => undefined],
+  ] as const)
+  it(`${name}: Map, no error, the toggle still switches for this page`, async () => {
+    prefs = make();
+    const r = await ready();
+    expect(r.button.getAttribute('aria-pressed')).toBe('false');
+    expect(r.last()).toBe(r.s.styleResponse.json);
+    await click(r);
+    expect(r.button.getAttribute('aria-pressed')).toBe('true');
+    expect(Object.keys(r.last().sources)).toContain(SATELLITE);
+  });
+
+  it('no remote style yet: a click changes the choice but no style; the remote style then arrives as Satellite (SL-5)', async () => {
+    const s = setup();
+    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, whenQuiet: s.whenQuiet, prefs, signal: s.abort.signal });
+    await quietUntilMap(s);
+    handles.push(await p);
+    const map = recorder.maps[recorder.maps.length - 1];
+    map.fire('load');
+    const button = s.container.querySelector<HTMLButtonElement>('button.wx-sat')!;
+    button.click();
+    await settle();
+    expect(map.styles).toHaveLength(0);
+    s.styleResponse.resolve();
+    await settle();
+    s.quiet[s.quiet.length - 1].resolve();
+    await settle();
+    expect(map.styles).toHaveLength(1);
+    expect(Object.keys((map.styles[0][0] as Style).sources)).toContain(SATELLITE);
+  });
+
+  it('a scheme change on Satellite recomposes from the new scheme\'s style', async () => {
+    const r = await ready('dark');
+    await click(r);
+    const light = { version: 8, sources: {}, layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#ffffff' } }] };
+    r.s.styleResponse.json = light;
+    r.handle.setScheme('light');
+    await settle();
+    r.s.quiet[r.s.quiet.length - 1].resolve();
+    await settle();
+    expect(r.last().layers.map((l) => l.id)).toEqual(['background', SATELLITE]);
+    expect(r.last().layers[0]).toBe(light.layers[0]);
+  });
+
+  it('the toggle is relabelled on a language change, with the other controls', async () => {
+    const r = await ready();
+    const { resetI18n, use } = await import('../../lib/i18n');
+    (r.map as unknown as { _locale: object })._locale = {}; // MapLibre's field, absent from the fake
+    try {
+      use('de', { satellite: 'Satellitenbild' }, document);
+      expect([r.button.title, r.button.getAttribute('aria-label')]).toEqual(['Satellitenbild', 'Satellitenbild']);
+    } finally {
+      resetI18n();
+    }
   });
 });

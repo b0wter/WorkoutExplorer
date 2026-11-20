@@ -27,6 +27,7 @@ import { onLanguage } from '../../lib/i18n';
 import { mapLocale, t } from './map-texts';
 import type { WorkoutData } from '../../lib/datafile';
 import type { CursorIndex, CursorStore } from '../../lib/cursor';
+import type { MapLayerPrefs } from '../../lib/prefs';
 import type { SelectionStore } from '../../lib/selection';
 import type { UnitsStore } from '../../lib/units';
 import { legs, sections } from '../../lib/sections';
@@ -71,9 +72,13 @@ import {
   mergeStyle,
   rangeData,
   recolour,
+  satelliteStyle,
   styleUrlFor,
   type Scheme,
 } from './map-style';
+
+const SAT_SVG =
+  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27z"/></svg>';
 
 /** The range highlight is rebuilt this long after the range stops changing (F-17 R-10). */
 export const RANGE_SETTLE_MS = 150;
@@ -103,6 +108,8 @@ export interface MountOptions {
   readonly scheme?: Scheme;
   /** The viewer's units, for the colouring legend (F-25 C-6); metric when absent (tests, bench). */
   readonly units?: UnitsStore;
+  /** F-61 SL-2: the page glue's lib/prefs, for the map layer; absent (tests, bench): Map, nothing stored. */
+  readonly prefs?: MapLayerPrefs;
   readonly signal: AbortSignal;
 }
 
@@ -360,9 +367,34 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     // and back press its button, so every exit is the same one (FS-1, FS-7).
     const fullscreen = new FullscreenControl({ container, pseudo: true });
     map.addControl(fullscreen, 'top-right'); // its own group, under the zoom buttons (FS-3)
+    // ---- satellite (F-61 SL-2, SL-6): the last group of the top-right stack (map-view.css orders it after
+    // the entry's pin toggle). Read once here; only a click stores a choice.
+    const prefs = options.prefs;
+    let layer = prefs?.mapLayer() ?? 'map';
+    const satGroup = document.createElement('div');
+    satGroup.className = 'maplibregl-ctrl maplibregl-ctrl-group wx-sat-group';
+    const satButton = document.createElement('button');
+    satButton.type = 'button';
+    satButton.className = 'wx-sat';
+    satButton.innerHTML = SAT_SVG;
+    const satLabel = (): void => {
+      satButton.title = t('satellite');
+      satButton.setAttribute('aria-label', t('satellite'));
+    };
+    satLabel();
+    satButton.setAttribute('aria-pressed', String(layer === 'satellite'));
+    satButton.addEventListener('click', () => {
+      layer = layer === 'satellite' ? 'map' : 'satellite';
+      prefs?.setMapLayer(layer);
+      satButton.setAttribute('aria-pressed', String(layer === 'satellite'));
+      void applyRemote();
+    });
+    satGroup.appendChild(satButton);
+    map.addControl({ onAdd: () => satGroup, onRemove: () => satGroup.remove() }, 'top-right');
     const fsButton = container.querySelector<HTMLButtonElement>('button.maplibregl-ctrl-fullscreen');
     // F-54: a language change relabels MapLibre's controls in place (they read `locale` once).
     unsubscribeLabels = onLanguage(() => {
+      satLabel();
       const loc = mapLocale();
       Object.assign((map as unknown as { _locale: Record<string, string> })._locale, loc);
       const label = (sel: string, text: string): void =>
@@ -653,19 +685,24 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     let remote: StyleSpecification | null = null;
     let applying = false;
     let appliedStyle: StyleSpecification | null = null;
+    let appliedLayer = layer;
+    // The effective style is a function of the remote style (scheme) and the layer (F-61 SL-4).
+    const applied = (): boolean => remote === appliedStyle && layer === appliedLayer;
     const applyRemote = async (): Promise<void> => {
-      if (applying || destroyed || !loaded || remote === null || remote === appliedStyle) return;
+      if (applying || destroyed || !loaded || remote === null || applied()) return;
       applying = true;
       await whenQuiet();
       applying = false;
-      if (destroyed || remote === null || remote === appliedStyle) return;
+      if (destroyed || remote === null || applied()) return;
       appliedStyle = remote;
+      appliedLayer = layer;
       try {
         const styleStart = performance.now();
         // diff: false (v1.4): a diff from the small base style to liberty's 111 layers fails
         // anyway and falls back to a full rebuild; this skips serialising and diffing both.
         // The merge carries wx-range as serialized; 'style.load' then applies the latest range.
-        map.setStyle(remote, { diff: false, transformStyle: mergeStyle });
+        // Satellite drops every other OpenFreeMap layer and source, so Map again removes Esri's (SL-3, SL-4).
+        map.setStyle(layer === 'satellite' ? satelliteStyle(remote) : remote, { diff: false, transformStyle: mergeStyle });
         performance.measure('wx-map:set-style', { start: styleStart });
         // The first idle after the remote style: tiles, glyphs and sprite drawn (User Timing, v1.4).
         map.once('idle', () => performance.mark('wx-map:idle'));

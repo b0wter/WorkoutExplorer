@@ -33,6 +33,12 @@ import {
   mergeStyle,
   rangeColourExpression,
   rangeData,
+  ESRI_ORIGIN,
+  ESRI_SOURCES,
+  ESRI_TILES,
+  SATELLITE,
+  SATELLITE_MAX_ZOOM,
+  satelliteStyle,
 } from './map-style';
 
 const markers: RouteMarker[] = [
@@ -414,5 +420,67 @@ describe('class colour fallbacks match page.css (QA-25-r2-2)', () => {
     const b = block(css.indexOf(":root[data-theme='dark']"));
     expect(a.size).toBe(23);
     expect(b).toEqual(a);
+  });
+});
+
+describe('satelliteStyle (F-61 SL-3, SL-7, SL-8)', () => {
+  const sym = (id: string, sourceLayer: string, paint?: Record<string, unknown>): LayerSpecification =>
+    ({ id, type: 'symbol', source: 'openmaptiles', 'source-layer': sourceLayer, layout: { 'text-field': ['get', 'name'] }, ...(paint ? { paint } : {}) }) as LayerSpecification;
+  const remote = (): StyleSpecification => ({
+    version: 8,
+    glyphs: GLYPHS_URL,
+    sprite: `${TILE_HOST}/sprites/ofm_f384/ofm`,
+    sources: {
+      openmaptiles: { type: 'vector', url: `${TILE_HOST}/planet` },
+      ne2_shaded: { type: 'raster', tiles: [`${TILE_HOST}/natural_earth/ne2sr/{z}/{x}/{y}.png`], tileSize: 256 },
+    },
+    layers: [
+      { id: 'background', type: 'background', paint: { 'background-color': '#f8f4f0' } },
+      { id: 'natural_earth', type: 'raster', source: 'ne2_shaded' },
+      { id: 'water', type: 'fill', source: 'openmaptiles', 'source-layer': 'water' },
+      { id: 'road', type: 'line', source: 'openmaptiles', 'source-layer': 'transportation_name' },
+      sym('poi', 'poi', { 'text-color': '#666' }),
+      sym('water_name', 'water_name', { 'text-color': '#495e91' }),
+      sym('highway-name-minor', 'transportation_name', { 'text-color': '#666', 'text-halo-width': 1 }),
+      sym('highway-shield', 'transportation_name'),
+      sym('label_city', 'place', { 'text-color': '#000', 'icon-opacity': 0.7 }),
+    ],
+  });
+
+  it('keeps background, imagery directly above it, then only street and place names; glyphs and sprite stay', () => {
+    const r = remote();
+    const sat = satelliteStyle(r);
+    expect(sat.layers.map((l) => l.id)).toEqual(['background', SATELLITE, 'highway-name-minor', 'highway-shield', 'label_city']);
+    expect(Object.keys(sat.sources).sort()).toEqual(['openmaptiles', SATELLITE]);
+    expect([sat.glyphs, sat.sprite]).toEqual([r.glyphs, r.sprite]);
+    expect(r.layers).toHaveLength(9); // pure: the remote style is untouched
+  });
+
+  it('the raster source: Esri World Imagery only, keyless, overzoomed past SATELLITE_MAX_ZOOM, with the required attribution', () => {
+    const src = satelliteStyle(remote()).sources[SATELLITE];
+    expect(src).toMatchObject({ type: 'raster', tiles: [ESRI_TILES], tileSize: 256, maxzoom: SATELLITE_MAX_ZOOM });
+    expect(ESRI_TILES).toBe(`${ESRI_ORIGIN}/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}`);
+    expect(ESRI_ORIGIN).toBe('https://server.arcgisonline.com');
+    const attribution = (src as { attribution: string }).attribution;
+    expect(attribution).toContain('<a href="https://www.esri.com/">Powered by Esri</a>');
+    expect(attribution).toContain(ESRI_SOURCES);
+  });
+
+  it('labels: light text with a dark halo; a shield (no text colour of its own) keeps its paint; other paint stays', () => {
+    const sat = satelliteStyle(remote());
+    const paint = (id: string) => (sat.layers.find((l) => l.id === id) as { paint?: Record<string, unknown> }).paint;
+    expect(paint('highway-name-minor')).toMatchObject({ 'text-color': '#ffffff', 'text-halo-width': 1.5 });
+    expect(paint('label_city')).toMatchObject({ 'text-color': '#ffffff', 'icon-opacity': 0.7 });
+    expect(paint('highway-shield')).toBeUndefined();
+  });
+
+  it('merged with our style: every wx- layer on top, imagery under them (AC 3)', () => {
+    const merged = mergeStyle(baseStyle(lines, markers), satelliteStyle(remote()));
+    const ids = merged.layers.map((l) => l.id);
+    expect(ids.slice(0, 2)).toEqual(['background', SATELLITE]);
+    expect(ids.filter((id) => id.startsWith('wx-'))).toEqual([...WX_LAYER_IDS]);
+    expect(ids.indexOf('label_city')).toBeLessThan(ids.indexOf('wx-route-bridge'));
+    // Back to Map: the remote style carries no Esri source (SL-4).
+    expect(JSON.stringify(mergeStyle(merged, remote()))).not.toContain(ESRI_ORIGIN);
   });
 });

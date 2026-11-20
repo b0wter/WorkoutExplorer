@@ -16,7 +16,7 @@ import { buildRoute, classLines, recordedEdgeEnds, routeLines, routeLinesIn, rou
 import { NO_CLASS, classify, colourScale, metricValues } from '../../lib/colouring';
 import type { WorkoutData } from '../../lib/datafile';
 import { golden, positioned } from '../../lib/route/testing/fixtures';
-import { COLOUR_SOURCE, DIVERGING, GLYPHS_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, TILE_HOST, baseStyle, colourData, mergeStyle, rangeData } from './map-style';
+import { COLOUR_SOURCE, DIVERGING, GLYPHS_URL, NO_VALUE, RANGE_SOURCE, ROUTE_SOURCE, TILE_HOST, baseStyle, colourData, mergeStyle, rangeData, satelliteStyle } from './map-style';
 
 const N = Number.NaN;
 
@@ -132,6 +132,12 @@ describe('style-spec validation (QA-06-r3-2)', () => {
       const merged = mergeStyle(base(data), remote());
       expect(errors(merged)).toEqual([]);
     }
+  });
+
+  it('F-61: mergeStyle(baseStyle(…), satelliteStyle(remote)) and back to the remote style: valid', () => {
+    const sat = mergeStyle(base(golden('gps-dropout')), satelliteStyle(remote()));
+    expect(errors(sat)).toEqual([]);
+    expect(errors(mergeStyle(sat, remote()))).toEqual([]);
   });
 
   it('mergeStyle applied twice and with previous undefined: valid', () => {

@@ -12,6 +12,7 @@
   import type { CursorStore } from '../../lib/cursor';
   import type { SelectionStore } from '../../lib/selection';
   import type { UnitsStore } from '../../lib/units';
+  import type { MapLayerPrefs } from '../../lib/prefs';
   import { routePresence } from '../../lib/route';
   import { createTouchQuiet } from './touch-quiet';
   import type { Scheme } from './map-style';
@@ -42,9 +43,11 @@
     onmapready?: (handle: RouteMapHandle) => void;
     /** Inclusive sample ranges marked as to-be-hidden (F-19 E-9, ADR-030); edit page only. */
     hidden?: readonly (readonly [number, number])[];
+    /** F-61 SL-2: the map layer preference (lib/prefs); read once per data value by the lazy map. */
+    prefs?: MapLayerPrefs;
   }
 
-  let { data, cursor, selection, load = false, height, fill = false, scheme = 'light', units, styleUrl, onmapready, hidden }: Props = $props();
+  let { data, cursor, selection, load = false, height, fill = false, scheme = 'light', units, styleUrl, onmapready, hidden, prefs }: Props = $props();
 
   const MAP_HEIGHT = 320;
 
@@ -87,6 +90,7 @@
           styleUrl: untrack(() => styleUrl),
           scheme: untrack(() => scheme),
           units: untrack(() => units),
+          prefs: untrack(() => prefs),
           signal,
         });
         if (signal.aborted) {

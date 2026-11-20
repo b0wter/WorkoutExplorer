@@ -16,7 +16,8 @@
   "mlZoomOut": "Alejar",
   "mlCtrlScroll": "Usa Ctrl + desplazamiento para hacer zoom en el mapa",
   "mlCmdScroll": "Usa ⌘ + desplazamiento para hacer zoom en el mapa",
-  "mlTwoFingers": "Usa dos dedos para mover el mapa"
+  "mlTwoFingers": "Usa dos dedos para mover el mapa",
+  "satellite": "Imagen de satélite"
  },
  "components/map": {
   "mapFailed": "No se pudo cargar el mapa.",
@@ -496,6 +497,8 @@
   "ab_mapTiles": "Teselas del mapa",
   "ab_whenAWorkout": "Cuando un entrenamiento tiene mapa, tu navegador carga el mapa de OpenFreeMap (tiles.openfreemap.org), que puede servirlo a través de Cloudflare. Ven tu dirección IP, el tipo de navegador y qué parte del mapa miras, es decir, aproximadamente dónde está la ruta. No saben qué entrenamiento estás viendo. Lo que hace con estos datos se explica en {link}.",
   "ab_osmPrivacyLink": "la declaración de privacidad de OpenFreeMap",
+  "ab_ifYouSwitch": "Si cambias un mapa a Satélite, tu navegador carga además imágenes de satélite de Esri (server.arcgisonline.com), una empresa estadounidense, para cada mapa que muestre hasta que vuelvas a Mapa. Esri ve entonces tu dirección IP, el tipo de navegador y qué parte del mapa miras, es decir, aproximadamente dónde está la ruta. No sabe qué entrenamiento estás viendo. Los nombres de calles y lugares sobre las imágenes siguen viniendo de OpenFreeMap. Lo que Esri hace con estos datos está en {link}.",
+  "ab_esriPrivacyLink": "la declaración de privacidad de Esri",
   "ab_reportNotifications": "Avisos de denuncias",
   "ab_whenAWorkout2": "Cuando se denuncia un entrenamiento, el operador recibe un aviso a través de Pushover. Pushover conoce el número de la denuncia, el motivo y el enlace de visualización del entrenamiento (que abre la página pública), además de un enlace de un solo uso para eliminar el entrenamiento, válido hasta 30 días. Nunca conoce el mensaje de quien denuncia ni el título del entrenamiento. Cualquiera con acceso a la cuenta de Pushover del operador o a su teléfono desbloqueado podría usar ese enlace una vez para eliminar el entrenamiento denunciado.",
   "ab_uploadFromYour": "Subir desde el iPhone",
@@ -514,7 +517,7 @@
   "ab_copiesOutsideThis": "Copias fuera de este sitio",
   "ab_copiesThatViewers": "Las copias que los visitantes ya han guardado y las vistas previas de enlaces ya creadas se quedan con ellos. Este sitio no puede eliminarlas.",
   "ab_inYourBrowser": "En tu navegador",
-  "ab_yourBrowserRemembers": "Tu navegador recuerda tu elección de unidades, el eje x de los gráficos, la división entre mapa y contenido (por separado para pantallas anchas y para pantallas apaisadas bajas), el tema y el idioma de la interfaz. También guarda la lista de {link}: por cada entrenamiento subido o editado en este navegador, su título, deporte, fecha, estado, caducidad y enlace de edición. Cualquiera que use este navegador puede abrir esos enlaces de edición. Todo esto se guarda en el almacenamiento del navegador, no en una cookie, nunca se envía al servidor (del idioma, el servidor solo ve qué archivo de idioma carga tu navegador) y se mantiene hasta que borres los datos del sitio en tu navegador; la entrada de un entrenamiento también desaparece cuando caduca o se elimina aquí.",
+  "ab_yourBrowserRemembers": "Tu navegador recuerda tu elección de unidades, el eje x de los gráficos, la división entre mapa y contenido (por separado para pantallas anchas y para pantallas apaisadas bajas), el tema, la capa del mapa (Mapa o Satélite) y el idioma de la interfaz. También guarda la lista de {link}: por cada entrenamiento subido o editado en este navegador, su título, deporte, fecha, estado, caducidad y enlace de edición. Cualquiera que use este navegador puede abrir esos enlaces de edición. Todo esto se guarda en el almacenamiento del navegador, no en una cookie, nunca se envía al servidor (del idioma, el servidor solo ve qué archivo de idioma carga tu navegador) y se mantiene hasta que borres los datos del sitio en tu navegador; la entrada de un entrenamiento también desaparece cuando caduca o se elimina aquí.",
   "ab_mineLink": "Mis entrenamientos",
   "ab_yourRights": "Tus derechos",
   "ab_withTheEdit": "Con el enlace de edición puedes descargar el archivo FIT guardado y eliminar el entrenamiento en cualquier momento. Sin el enlace de edición, el operador no puede comprobar que un entrenamiento es tuyo, pero cualquiera puede denunciar un entrenamiento.",

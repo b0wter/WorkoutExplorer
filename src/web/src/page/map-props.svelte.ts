@@ -7,7 +7,7 @@ import type { SelectionStore } from '../lib/selection';
 import type { WorkoutData } from '../lib/datafile';
 import type { Units } from '../lib/format';
 import type { UnitsStore } from '../lib/units';
-import type { ThemeChoice } from '../lib/prefs';
+import type { MapLayerPrefs, ThemeChoice } from '../lib/prefs';
 import type { HintMode } from '../lib/charts';
 import type { ChartDecorator } from '../components/charts/uplot-options';
 import type { RouteMapHandle } from '../components/map/map-view';
@@ -96,6 +96,8 @@ export interface MapProps {
   readonly onmapready: (handle: RouteMapHandle) => void;
   /** F-19 E-9: sample ranges marked as to-be-hidden; edit page only. */
   readonly hidden: readonly (readonly [number, number])[] | undefined;
+  /** F-61 SL-2: the viewer's map layer choice. */
+  readonly prefs: MapLayerPrefs;
 }
 
 export function createMapProps(
@@ -104,7 +106,8 @@ export function createMapProps(
   selection: SelectionStore,
   look: Look,
   onmapready: (handle: RouteMapHandle) => void,
-  edit?: { readonly hidden: readonly (readonly [number, number])[] },
+  edit: { readonly hidden: readonly (readonly [number, number])[] } | undefined,
+  prefs: MapLayerPrefs,
 ): { props: MapProps; startLoading(): void } {
   let load = $state(false);
   return {
@@ -115,6 +118,7 @@ export function createMapProps(
       fill: true,
       units: look.store,
       onmapready,
+      prefs,
       get scheme() {
         return look.scheme;
       },

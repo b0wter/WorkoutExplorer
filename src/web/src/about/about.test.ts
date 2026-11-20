@@ -55,7 +55,8 @@ describe('About page', () => {
       'The settings:',
       'Reports from viewers',
       'choice of units, the x axis of the charts, the split between map and content',
-      'the theme and the interface language', // F-54 INF-1
+      'the theme, the map layer (Map or Satellite) and the interface language', // F-54, F-61 INF-1
+      'loads satellite imagery from Esri (server.arcgisonline.com), a US company', // F-61 SL-9
       'not in a cookie, is never sent to the server (of the language, the server only sees which language file your browser loads)',
       'My workouts</a>: for each workout uploaded or edited in this browser, its title, sport, date, status, expiry and edit link', // F-53 AC 58
       'They see your IP address',

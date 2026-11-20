@@ -16,7 +16,8 @@
   "mlZoomOut": "Zoom arrière",
   "mlCtrlScroll": "Utilisez Ctrl + défilement pour zoomer sur la carte",
   "mlCmdScroll": "Utilisez ⌘ + défilement pour zoomer sur la carte",
-  "mlTwoFingers": "Utilisez deux doigts pour déplacer la carte"
+  "mlTwoFingers": "Utilisez deux doigts pour déplacer la carte",
+  "satellite": "Image satellite"
  },
  "components/map": {
   "mapFailed": "La carte n'a pas pu être chargée.",
@@ -496,6 +497,8 @@
   "ab_mapTiles": "Tuiles de carte",
   "ab_whenAWorkout": "Quand un entraînement a une carte, votre navigateur charge la carte depuis OpenFreeMap (tiles.openfreemap.org), qui peut la servir via Cloudflare. Ils voient votre adresse IP, votre type de navigateur et la partie de la carte que vous regardez, donc à peu près où se trouve l'itinéraire. Ils ne savent pas quel entraînement vous consultez. Ce qu'il fait de ces données est décrit dans {link}.",
   "ab_osmPrivacyLink": "la déclaration de confidentialité d’OpenFreeMap",
+  "ab_ifYouSwitch": "Si vous passez une carte en Satellite, votre navigateur charge aussi des images satellite d'Esri (server.arcgisonline.com), une entreprise américaine, pour chaque carte qu'il affiche jusqu'à ce que vous repassiez en Carte. Esri voit alors votre adresse IP, le type de votre navigateur et la partie de la carte que vous regardez, donc à peu près où se trouve l'itinéraire. Elle ne sait pas quel entraînement vous consultez. Les noms de rues et de lieux sur les images viennent toujours d'OpenFreeMap. Ce qu'Esri fait de ces données figure dans {link}.",
+  "ab_esriPrivacyLink": "la déclaration de confidentialité d'Esri",
   "ab_reportNotifications": "Notifications de signalement",
   "ab_whenAWorkout2": "Quand un entraînement est signalé, l'exploitant reçoit une notification via Pushover. Pushover apprend le numéro du signalement, le motif et le lien de consultation de l'entraînement (qui ouvre la page publique), ainsi qu'un lien à usage unique pour supprimer l'entraînement, valable jusqu'à 30 jours. Il n'apprend jamais le message de la personne qui signale ni le titre de l'entraînement. Toute personne ayant accès au compte Pushover de l'exploitant ou à son téléphone déverrouillé pourrait utiliser ce lien une fois pour supprimer l'entraînement signalé.",
   "ab_uploadFromYour": "Importer depuis l'iPhone",
@@ -514,7 +517,7 @@
   "ab_copiesOutsideThis": "Copies hors de ce site",
   "ab_copiesThatViewers": "Les copies que les visiteurs ont déjà enregistrées et les aperçus de liens déjà créés restent chez eux. Ce site ne peut pas les supprimer.",
   "ab_inYourBrowser": "Dans votre navigateur",
-  "ab_yourBrowserRemembers": "Votre navigateur mémorise votre choix d'unités, l'axe x des graphiques, le partage entre carte et contenu (séparément pour les écrans larges et pour les écrans bas en paysage), le thème et la langue de l'interface. Il garde aussi la liste de {link} : pour chaque entraînement importé ou modifié dans ce navigateur, son titre, son sport, sa date, son statut, son expiration et son lien de modification. Toute personne qui utilise ce navigateur peut ouvrir ces liens de modification. Tout cela est conservé dans le stockage du navigateur, pas dans un cookie, n'est jamais envoyé au serveur (pour la langue, le serveur voit seulement quel fichier de langue votre navigateur charge) et reste jusqu'à ce que vous effaciez les données du site dans votre navigateur ; l'entrée d'un entraînement disparaît aussi quand il expire ou est supprimé ici.",
+  "ab_yourBrowserRemembers": "Votre navigateur mémorise votre choix d'unités, l'axe x des graphiques, le partage entre carte et contenu (séparément pour les écrans larges et pour les écrans bas en paysage), le thème, la couche de carte (Carte ou Satellite) et la langue de l'interface. Il garde aussi la liste de {link} : pour chaque entraînement importé ou modifié dans ce navigateur, son titre, son sport, sa date, son statut, son expiration et son lien de modification. Toute personne qui utilise ce navigateur peut ouvrir ces liens de modification. Tout cela est conservé dans le stockage du navigateur, pas dans un cookie, n'est jamais envoyé au serveur (pour la langue, le serveur voit seulement quel fichier de langue votre navigateur charge) et reste jusqu'à ce que vous effaciez les données du site dans votre navigateur ; l'entrée d'un entraînement disparaît aussi quand il expire ou est supprimé ici.",
   "ab_mineLink": "Mes entraînements",
   "ab_yourRights": "Vos droits",
   "ab_withTheEdit": "Avec le lien de modification, vous pouvez télécharger le fichier FIT stocké et supprimer l'entraînement à tout moment. Sans le lien de modification, l'exploitant ne peut pas vérifier qu'un entraînement est le vôtre, mais tout le monde peut signaler un entraînement.",

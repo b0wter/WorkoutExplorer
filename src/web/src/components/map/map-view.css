@@ -133,3 +133,29 @@ html.wx-fs :has(.maplibregl-pseudo-fullscreen) {
 html.wx-fs .maplibregl-pseudo-fullscreen {
   visibility: visible;
 }
+
+/* F-61 SL-6: the satellite toggle is the last group of the top-right stack (zoom, fullscreen, pin,
+   satellite) although the entry appends the pin later: a flex column orders it (floats are ignored). */
+.route-map .maplibregl-ctrl-top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.wx-sat-group {
+  order: 1;
+}
+.wx-sat {
+  color: black; /* MapLibre's buttons stay light in both themes, as the pin toggle (page.css) */
+}
+.wx-sat svg {
+  display: block;
+  margin: auto;
+}
+.wx-sat:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.wx-sat[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}

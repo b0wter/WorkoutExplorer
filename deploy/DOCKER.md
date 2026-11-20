@@ -13,7 +13,7 @@ This is one of the three install paths (RUNBOOK.md, "Which way should I run it?"
 | Tools | `curl`, `tar`, `sha256sum`, `flock`, `minisign` (checks every release's signature, RUNBOOK.md, "Updates"). `sqlite3` only to read reports from visitors (RUNBOOK.md, "Reports from visitors"). Debian: `apt install curl minisign sqlite3` |
 | Domain and proxy | A domain name pointing at your host, and a reverse proxy **on the same host** that terminates TLS (RUNBOOK.md, "Reverse proxy") |
 | Port | `8088/tcp` free on the host loopback (or another port, see `WX_LISTEN`) |
-| Location | For GDPR purposes, host in the EU if your visitors are there. No analytics or third-party trackers are used. The map tiles come from `tiles.openfreemap.org` (the visitor's browser fetches them) |
+| Location | For GDPR purposes, host in the EU if your visitors are there. No analytics or third-party trackers are used. The map tiles come from `tiles.openfreemap.org` (the visitor's browser fetches them); after a visitor chooses Satellite, their browser also fetches imagery from Esri (`server.arcgisonline.com`, a US company) |
 
 Check:
 

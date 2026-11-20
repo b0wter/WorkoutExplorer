@@ -85,8 +85,9 @@ describe('createViewerPrefs', () => {
         p.setTheme('system');
         p.setHowtoOpened();
         p.setHintDone();
+        p.setMapLayer('satellite');
       }).not.toThrow();
-      expect([p.units(), p.axis(), p.split('wide'), p.theme(), p.howtoOpened()]).toEqual([null, null, null, 'system', false]);
+      expect([p.units(), p.axis(), p.split('wide'), p.theme(), p.howtoOpened(), p.mapLayer()]).toEqual([null, null, null, 'system', false, 'map']);
     }
   });
 
@@ -106,5 +107,21 @@ describe('createViewerPrefs', () => {
       ['wx.hint.done', '1'],
     ]);
     expect(p.howtoOpened()).toBe(true);
+  });
+
+  it('F-61 SL-2: map layer defaults to Map, stores either choice, ignores any other value', () => {
+    const s = memory();
+    const p = createViewerPrefs(() => s);
+    expect(p.mapLayer()).toBe('map');
+    expect(s.map.size).toBe(0);
+    p.setMapLayer('satellite');
+    expect([...s.map]).toEqual([['wx.map', 'satellite']]);
+    expect(p.mapLayer()).toBe('satellite');
+    p.setMapLayer('map');
+    expect([...s.map]).toEqual([['wx.map', 'map']]);
+    for (const v of ['Satellite', 'satellite ', 'hybrid', '']) {
+      s.map.set('wx.map', v);
+      expect(p.mapLayer()).toBe('map');
+    }
   });
 });

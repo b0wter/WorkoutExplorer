@@ -142,6 +142,15 @@ describe('RouteMap: units (F-25 C-6)', () => {
   });
 });
 
+describe('RouteMap: map layer (F-61 SL-2)', () => {
+  it('the page glue\'s prefs reach the map at mount', async () => {
+    const prefs = { mapLayer: () => 'satellite' as const, setMapLayer: () => {} };
+    setup(ride(), { load: true, prefs });
+    await run();
+    expect(mv.calls[0].prefs).toBe(prefs);
+  });
+});
+
 describe('RouteMap: to-be-hidden marks (F-19 E-9)', () => {
   it('the ranges reach the map after mount and on every change, without a remount; none is []', async () => {
     const m = setup(ride(), { load: true, hidden: [[0, 9]] });

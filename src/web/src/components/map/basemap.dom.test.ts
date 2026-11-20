@@ -83,6 +83,23 @@ describe('renderBasemap', () => {
     expect(document.querySelector('.wx-basemap')).toBeNull();
   });
 
+  it('F-61 AC 11: Satellite remembered changes nothing: OpenFreeMap only, storage never read', async () => {
+    localStorage.setItem('wx.map', 'satellite');
+    const get = vi.spyOn(Storage.prototype, 'getItem');
+    try {
+      const out = renderBasemap(FRAME, new AbortController().signal);
+      const m = await mapped();
+      expect(fetches.map(([url]) => url)).toEqual([OPENFREEMAP_STYLE_URL]);
+      expect(JSON.stringify(m.options.style)).not.toContain('arcgisonline');
+      expect(get).not.toHaveBeenCalled();
+      blobOn(m, PNG);
+      m.fire('idle');
+      await out;
+    } finally {
+      localStorage.clear();
+    }
+  });
+
   it('an abort rejects and removes the map', async () => {
     const c = new AbortController();
     const out = renderBasemap(FRAME, c.signal);

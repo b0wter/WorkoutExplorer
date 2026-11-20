@@ -19,6 +19,8 @@ export const en = {
   mlCtrlScroll: 'Use Ctrl + scroll to zoom the map',
   mlCmdScroll: 'Use ⌘ + scroll to zoom the map',
   mlTwoFingers: 'Use two fingers to move the map',
+  /** F-61 SL-6: the satellite toggle's name and title; pressed = Satellite shown. */
+  satellite: 'Satellite imagery',
 };
 
 export const t = texts(en);

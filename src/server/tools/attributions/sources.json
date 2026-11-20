@@ -35,6 +35,13 @@
     "origins": []
   },
   {
+    "name": "Esri World Imagery (satellite map layer)",
+    "attribution": "Satellite imagery powered by Esri. Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community",
+    "licence": "Esri Master License Agreement and terms of use",
+    "link": "https://www.esri.com/en-us/legal/terms/master-agreement",
+    "origins": ["https://server.arcgisonline.com"]
+  },
+  {
     "name": "Natural Earth",
     "attribution": "Shaded relief at low zoom: made with Natural Earth",
     "licence": "Public domain",

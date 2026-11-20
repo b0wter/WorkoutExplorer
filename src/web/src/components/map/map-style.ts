@@ -397,3 +397,48 @@ export function isStyle(value: unknown): value is StyleSpecification {
   const v = value as StyleSpecification | null;
   return typeof v === 'object' && v !== null && v.version === 8 && Array.isArray(v.layers) && typeof v.sources === 'object' && v.sources !== null;
 }
+
+// ---- Satellite (F-61 SL-3, SL-7, SL-8; ADR-014 rev. 4) ---------------------------------------
+
+/** The second tile host, contacted only while Satellite is shown. */
+export const ESRI_ORIGIN = 'https://server.arcgisonline.com';
+/** Esri World Imagery, keyless; y before x, 256 px JPEG. */
+export const ESRI_TILES = ESRI_ORIGIN + '/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+/** The service's copyrightText, verified 20 Nov 2026 (SL-8). Source data: not translated. */
+export const ESRI_SOURCES = 'Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community';
+/** The raster source and layer id: without the wx- prefix, so mergeStyle treats it as part of the remote style. */
+export const SATELLITE = 'satellite';
+/** Deeper zooms overzoom zoom-18 imagery instead of fetching Esri's "not yet available" tiles where coverage
+ *  ends (SL-4, OQ-284); the map's own zoom range is unchanged. */
+export const SATELLITE_MAX_ZOOM = 18;
+/** The OpenFreeMap symbol layers kept over the imagery: street and place names (OQ-283). */
+const LABEL_SOURCE_LAYERS = ['transportation_name', 'place'];
+/** Label paint over imagery, the same in both schemes (SL-3); shields (no text-color of their own) keep theirs. */
+const LABEL_PAINT = { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.8)', 'text-halo-width': 1.5, 'text-halo-blur': 0.5 };
+
+/** The Satellite style from the current scheme's remote style: its background, Esri imagery directly above it,
+ *  then only the street and place name layers (with the sources they use); glyphs and sprite stay. Pure. */
+export function satelliteStyle(remote: StyleSpecification): StyleSpecification {
+  const sources: Record<string, SourceSpecification> = {
+    [SATELLITE]: {
+      type: 'raster',
+      tiles: [ESRI_TILES],
+      tileSize: 256,
+      maxzoom: SATELLITE_MAX_ZOOM,
+      attribution: `<a href="https://www.esri.com/">Powered by Esri</a> | ${ESRI_SOURCES}`,
+    },
+  };
+  const labels: LayerSpecification[] = [];
+  for (const l of remote.layers) {
+    const s = l as { source?: string; 'source-layer'?: string; paint?: Record<string, unknown> };
+    if (l.type !== 'symbol' || !LABEL_SOURCE_LAYERS.includes(s['source-layer'] ?? '') || !s.source) continue;
+    sources[s.source] = remote.sources[s.source];
+    labels.push(s.paint && 'text-color' in s.paint ? ({ ...l, paint: { ...s.paint, ...LABEL_PAINT } } as LayerSpecification) : l);
+  }
+  const layers: LayerSpecification[] = [
+    ...remote.layers.filter((l) => l.type === 'background'),
+    { id: SATELLITE, type: 'raster', source: SATELLITE },
+    ...labels,
+  ];
+  return { ...remote, sources, layers };
+}
