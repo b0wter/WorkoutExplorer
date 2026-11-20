@@ -57,6 +57,7 @@ export default defineConfig({
           const r = req as { url?: string }; // no Node types here (F-01 D-4)
           if (r.url?.startsWith('/edit/') || r.url?.startsWith('/published/')) r.url = '/edit.html';
           else if (r.url === '/report-delete') r.url = '/report-delete.html'; // F-37 DK-11
+          else if (r.url === '/my-workouts') r.url = '/my-workouts.html'; // F-53 MW-1
           next();
         });
       },
@@ -94,7 +95,7 @@ export default defineConfig({
     // upload page). Relative to the project root.
     // No module-preload polyfill: it would become a chunk both entries share (ADR-024 item 3).
     modulePreload: { polyfill: false },
-    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html', 'report-delete': 'report-delete.html', impressum: 'impressum.html' } },
+    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html', 'report-delete': 'report-delete.html', 'my-workouts': 'my-workouts.html', impressum: 'impressum.html' } },
   },
   test: {
     environment: 'node',

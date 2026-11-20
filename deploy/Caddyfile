@@ -142,6 +142,15 @@
 		file_server
 	}
 
+	# /my-workouts: the browser's list of edit links (F-53 MW-1); it renders edit
+	# links, so never cached. /my-workouts.html is the 404 below.
+	handle /my-workouts {
+		header Cache-Control no-store
+		root * {$WX_DATA}/site
+		rewrite * /my-workouts.html
+		file_server
+	}
+
 	# Go's Cache-Control (no-store) stays untouched.
 	handle /api/* {
 		# Go gets the client Caddy resolved as the only X-Forwarded-For entry

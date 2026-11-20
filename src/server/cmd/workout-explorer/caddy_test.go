@@ -379,6 +379,14 @@ func TestCaddy(t *testing.T) {
 		}
 		r.check("report-delete.html", r.get("/report-delete.html"), 404, ccNoCache)
 		r.check("report-delete/", r.get("/report-delete/"), 404, ccNoCache)
+		// F-53 MW-1: the browser's list, never cached; its .html name is not served.
+		mw := r.get("/my-workouts")
+		r.check("my-workouts", mw, 200, ccNoStore)
+		if !bytes.Equal(mw.body, r.siteFile("my-workouts.html")) {
+			t.Error("/my-workouts is not my-workouts.html")
+		}
+		r.check("my-workouts.html", r.get("/my-workouts.html"), 404, ccNoCache)
+		r.check("my-workouts/", r.get("/my-workouts/"), 404, ccNoCache)
 		// DK-12 through Caddy: the one invalid answer, Go's no-store once.
 		inv := r.get("/api/report-delete", "Authorization", "Bearer "+strings.Repeat("Z", 22))
 		r.check("api report-delete", inv, 404, ccNoStore)

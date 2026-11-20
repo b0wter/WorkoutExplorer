@@ -27,8 +27,8 @@ const (
 	fileMode  = 0o644
 )
 
-// Shells are the page shells always written (upload, generic, edit, confirmation).
-var Shells = []string{"upload.html", "generic.html", "edit.html", "report-delete.html"}
+// Shells are the page shells always written (upload, generic, edit, confirmation, my workouts).
+var Shells = []string{"upload.html", "generic.html", "edit.html", "report-delete.html", "my-workouts.html"}
 
 // Fill replaces the one Marker in src (named name in the error) with Link when
 // on, else with nothing. Anything but exactly one marker is an error.
