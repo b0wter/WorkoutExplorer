@@ -27,7 +27,7 @@
 
 | What | Limit |
 | --- | --- |
-| Activity entry (static) | Target 800, **ceiling 1,000 bytes gzip** from the ADR-011 reserve (2,074): core, drop-down, applier, prefix reader, `Intl` paths, hold release. Moving English literals into tables must be net zero. Above the ceiling: stop and report. The reserve then stays at or above 1,074, just over the review trigger; F-61 plans within it |
+| Activity entry (static) | Target 800, ceiling 1,000 bytes gzip from the ADR-011 reserve: core, drop-down, applier, prefix reader, `Intl` paths, hold release. Moving English literals into tables must be net zero. First build measured +2,482: apply **ADR-011 decision 6** (R-1 markup English read from the page, R-2 lazy groups' English in their chunks, R-3 API code texts out of the activity entry); its budget outcome (60,000 kept at entry ≤ 59,000, else 62,000) replaces this ceiling |
 | Upload entry | Within ADR-024's 8,000 |
 | Static entry (About, generic) | Ceiling 2,000 bytes gzip |
 | Language files | Each at most 5 KB gzip, checked in CI |
