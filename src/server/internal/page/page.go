@@ -44,7 +44,7 @@ type Header struct {
 type SummaryItem struct{ Key, Label, Value, Unit, Max string }
 
 // Route is the route presence as strings the template only tests.
-type Route struct{ Map, NoLocation, Hidden string }
+type Route struct{ Map, NoLocation, Hidden, Gpx string }
 
 // Column is one laps column.
 type Column struct{ Key, Label string }
@@ -147,6 +147,9 @@ func Build(f datafile.File, s Settings) ViewModel {
 	switch presence {
 	case "route":
 		route.Map = "yes"
+		if m.Sport != "multisport" {
+			route.Gpx = "yes" // F-57 GX-5: the map's condition, not for multisport
+		}
 	case "no-location-data":
 		if s.RouteHidden {
 			route.Hidden = "yes"

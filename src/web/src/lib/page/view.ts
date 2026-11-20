@@ -81,6 +81,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
       Map: presence === 'route' ? 'yes' : '',
       NoLocation: presence === 'no-location-data' && !settings.routeHidden ? 'yes' : '',
       Hidden: presence === 'no-location-data' && settings.routeHidden ? 'yes' : '',
+      Gpx: presence === 'route' && meta.sport !== 'multisport' ? 'yes' : '',
     },
     ChartsClass: chartsClass(data),
     Laps: laps

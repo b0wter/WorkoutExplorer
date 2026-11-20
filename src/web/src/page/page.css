@@ -268,6 +268,9 @@ h1 {
 /* How to use (F-39 HU-6, user 10 Nov 2026): a full-width info box under the header, viewing page only.
    Reserved in the markup (one 40 px line), invisible and inert until the enhancer adds .ready; .fresh
    (not yet opened on this device) is accent-tinted, afterwards grey, in the same box. */
+.gpx:not(.ready) {
+  visibility: hidden; /* F-57 GX-5: reserved, inert until enhanced; the frontend styles the rest */
+}
 .howto-row {
   margin-bottom: 8px;
 }

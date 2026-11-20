@@ -61,7 +61,7 @@ export interface PageViewModel {
    *  (no line). Plain text. */
   readonly Device: string;
   /** AP-3, as strings the template only tests: Map 'yes' reserves the map box, NoLocation 'yes' shows the hint, Hidden 'yes' shows the fully-hidden notice (F-16 FE-1). At most one is set. */
-  readonly Route: { readonly Map: string; readonly NoLocation: string; readonly Hidden: string };
+  readonly Route: { readonly Map: string; readonly NoLocation: string; readonly Hidden: string; /** F-57 GX-5: 'yes' exactly when Map is 'yes' and the sport is not multisport. */ readonly Gpx: string };
   /** Reserved-size classes of the chart slot: 'charts-4 cells-6' (D-10), plus ' has-distance' with a
    *  distance stream (F-17 R-8), or '' with no charts. */
   readonly ChartsClass: string;

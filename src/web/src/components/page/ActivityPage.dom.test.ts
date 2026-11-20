@@ -130,7 +130,7 @@ describe('ActivityPage', () => {
   });
 
   it('a fully hidden route (AP-3): one column, no map slot, no hint, nothing to pin', () => {
-    fx = renderSample('ride-30min', { route: { Map: '', NoLocation: '', Hidden: '' } });
+    fx = renderSample('ride-30min', { route: { Map: '', NoLocation: '', Hidden: '', Gpx: '' } });
     expect(fx.target.querySelector('.page')?.classList.contains('has-map')).toBe(false);
     expect(fx.target.querySelector('#map-slot')).toBeNull();
     expect(fx.target.querySelector('.hint')).toBeNull();

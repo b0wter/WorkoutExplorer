@@ -90,7 +90,8 @@
   "Route": {
     "Map": "",
     "NoLocation": "yes",
-    "Hidden": ""
+    "Hidden": "",
+    "Gpx": ""
   },
   "ChartsClass": "charts-3 cells-5 has-distance",
   "Laps": {

@@ -136,7 +136,16 @@ func TestSamplePages(t *testing.T) {
 			if strings.Contains(page, "map-pin") {
 				t.Error("pin toggle in the server markup")
 			}
-			if n := strings.Count(page, "<button"); n != 3 || !strings.Contains(page, `<button type="button" class="summary-info" data-summary-info data-trim="`) || !regexp.MustCompile(`</header>\s*<div class="howto-row"><button type="button" class="howto" data-howto>`).MatchString(page) {
+			wantBtn := 3
+			if route["Gpx"] != "" { // F-57 GX-5: the reserved GPX row above the summary
+				wantBtn = 4
+				if !strings.Contains(page, `<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route (GPX)</button></div>`) || route["Map"] == "" {
+					t.Error("Route.Gpx set but the row is missing or there is no map")
+				}
+			} else if strings.Contains(page, "data-gpx") {
+				t.Error("GPX button without Route.Gpx")
+			}
+			if n := strings.Count(page, "<button"); n != wantBtn || !strings.Contains(page, `<button type="button" class="summary-info" data-summary-info data-trim="`) || !regexp.MustCompile(`</header>\s*<div class="howto-row"><button type="button" class="howto" data-howto>`).MatchString(page) {
 				t.Errorf("server markup: %d buttons, want How to use (own row under the header), summary info and Report", n)
 			}
 

@@ -118,7 +118,7 @@ describe('header (AP-1, D-7)', () => {
 describe('modules (AP-3, D-5, D-10)', () => {
   it('indoor: the hint, no map slot, charts still sized', () => {
     const m = byName('indoor-ride');
-    expect(m.Route).toEqual({ Map: '', NoLocation: 'yes', Hidden: '' });
+    expect(m.Route).toEqual({ Map: '', NoLocation: 'yes', Hidden: '', Gpx: '' });
     expect(m.ChartsClass).toMatch(/^charts-\d cells-\d has-distance$/);
     expect(m.Summary.length).toBeGreaterThan(0);
   });
@@ -138,12 +138,12 @@ describe('modules (AP-3, D-5, D-10)', () => {
   });
 
   it('fully hidden (F-16 H-5): the notice only, never with the indoor hint', () => {
-    expect(byName('route-hidden').Route).toEqual({ Map: '', NoLocation: '', Hidden: 'yes' });
+    expect(byName('route-hidden').Route).toEqual({ Map: '', NoLocation: '', Hidden: 'yes', Gpx: '' });
   });
 
   it('a ride with a route reserves the map; cells = time + distance + charts', () => {
     const m = byName('ride-12h');
-    expect(m.Route).toEqual({ Map: 'yes', NoLocation: '', Hidden: '' });
+    expect(m.Route).toEqual({ Map: 'yes', NoLocation: '', Hidden: '', Gpx: 'yes' });
     expect(m.ChartsClass).toBe('charts-6 cells-8 has-distance');
   });
 
