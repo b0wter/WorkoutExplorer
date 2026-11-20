@@ -33,13 +33,13 @@ The owner marks dangers, points of interest and difficult sections on the route;
 - [ ] On the edit page, the owner chooses "Add pin", and the next tap on the map or a chart places a point pin and opens its form; Cancel or Esc leaves without a pin; without "Add pin" a tap only moves the cursor (AP-6, OQ-272); it lands on the nearest point of the visible route (OQ-234); type (six, PIN-2), title and optional note are set in its form; an empty title is allowed and the pin then shows its type's name, e.g. "Danger" (OQ-277). Pin changes show on the edit page at once and on the public page only after the edit page's Save (OQ-274).
 - [ ] With a range selected (AP-7), the pin form offers "Section"; while editing a section pin, selecting a new range moves its ends (OQ-273); both ends lie on the visible route; it is highlighted on the map and shaded on the charts.
 - [ ] A point pin inside a hidden start or end, or a section that touches one, is refused with a one-line message on the edit page, at each end's own radius (PIN-7, OQ-235). The server refuses it too; a test sends such a pin to the owner API directly.
-- [ ] After raising a radius or changing the trim, pins now inside a hidden or trimmed part are removed and the edit page shows a one-line notice (OQ-236, OQ-237); no public file ever contains them.
+- [ ] Pins in a part the trim removes are deleted on the edit page's Save, also if the trim is later undone; while the trim is unsaved they show dimmed with "Removed on Save", and after Save one line on the edit page says how many were removed (OQ-237). Pins inside a hidden start or end after its radius is raised are kept: dimmed on the edit page with the reason (e.g. "Hidden by the start radius"), still editable and deletable, never published, and public again once the radius is lowered so they are no longer hidden (OQ-236). No public file ever contains a trimmed or hidden pin; moving a pin, or adding one, into a hidden or trimmed part is still refused (AC 35).
 - [ ] On the viewing page, pins show on the map, as markers on the charts' x axis and in the list: one column: directly under the map; two columns: in the right column under the charts, above the range panel and laps; each row: type icon, title, distance from start in the units setting (a section: from–to), the note when the row is selected; no list without pins (OQ-276); selecting a pin in one view selects it in all and moves the cursor there.
 - [ ] The legend shows or hides each type in every view; every visit starts with all types shown (OQ-239).
 - [ ] In the fullscreen map, pins and the legend stay visible, and tapping a pin opens its card over the map (AP-15).
 - [ ] After publishing, editing, moving and deleting a pin shows on the public page without re-uploading (PIN-8); a removed or moved pin's old place is no longer served after 60 s (SH-10).
 - [ ] At most 50 pins per workout: the 51st cannot be added; title (60) and note (500) limits and text rules are enforced on the server as well (OQ-238). A hostile title or note is shown as plain text.
-- [ ] A workout without a visible route (indoor, pool, entirely hidden or trimmed away) has no pins and no "Add pin" button (OQ-275).
+- [ ] A workout without a visible route (indoor, pool, entirely hidden or trimmed away) shows no pins to viewers and has no "Add pin" button (OQ-275); pins kept from before a radius was raised stay listed, dimmed, on the edit page (OQ-236).
 - [ ] The preview image shows no pins (OQ-240).
 - [ ] Test: after delete or expiry, nothing of the pins remains (database rows and public pins file; UP-7, AC-4).
 - [ ] A workout without pins loads no pin code, icons or pins file for viewers; the entry bundle stays within budget and LCP is unchanged; with 50 pins on the synthetic 12-hour ride, cursor scrubbing keeps 60 fps.
@@ -49,8 +49,8 @@ The owner marks dangers, points of interest and difficult sections on the route;
 OQ-234 to OQ-240 accepted as suggested. Privacy zones were discarded on 14 Nov 2026; their parts now mean the hidden start and end, each at its own radius (SH-4, F-55).
 - **OQ-234:** every pin snaps to the nearest point of the visible route.
 - **OQ-235:** a section pin that crosses a hidden start or end is refused like a point pin there.
-- **OQ-236:** pins that end up inside a hidden start or end after its radius grows (including from 0) are removed, with a one-line notice on the edit page.
-- **OQ-237:** pins in parts that a changed trim or start and end hiding removes are removed, with the same notice.
+- **OQ-236:** pins that end up inside a hidden start or end after its radius grows (including from 0) are removed, with a one-line notice on the edit page. *Changed 20 Nov 2026, see below.*
+- **OQ-237:** pins in parts that a changed trim or start and end hiding removes are removed, with the same notice. *Changed 20 Nov 2026, see below.*
 - **OQ-238:** at most 50 pins per workout; note up to 500 characters, same text rules as the description (UP-4).
 - **OQ-239:** the legend choice is not remembered; all types shown on every visit.
 - **OQ-240:** no pins in the preview image (SH-5, SH-12).
@@ -63,3 +63,9 @@ OQ-272 to OQ-277 accepted as suggested.
 - **OQ-275:** no pins without a visible route; the Add pin button is hidden.
 - **OQ-276:** list under the map (one column) or in the right column under the charts, above the range panel and laps (two columns); rows: type icon, title, distance from start (a section: from–to); note on selection; no list without pins.
 - **OQ-277:** an empty title is allowed; the pin shows its type's name.
+
+## Decisions (user, 20 Nov 2026)
+OQ-236 and OQ-237 changed (architecture: `architect/F-56-map-pins.md` PN-4, PN-5, PN-7, PN-12; ADR-057 rev. 1).
+- **OQ-236:** pins inside a hidden start or end after its radius is raised are kept, not removed: dimmed on the edit page with the reason, editable and deletable, never published or counted for viewers; lowering the radius makes them public again. Raising or lowering a radius never deletes a pin.
+- **OQ-237:** pins in a part the trim removes are deleted on Save; the edit page shows them dimmed with "Removed on Save" before, and one line with the number removed after. Undoing the trim does not restore them.
+- Adding a pin, or moving one, into a hidden or trimmed part stays refused (PIN-7, AC 35).
