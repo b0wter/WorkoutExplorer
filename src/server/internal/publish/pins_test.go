@@ -443,3 +443,51 @@ func TestPinsSameRowStillRebuilds(t *testing.T) {
 		t.Error("an identical row was skipped")
 	}
 }
+
+// QA-56-r1-1: a radius or trim change in the same Save as a pin edit that
+// leaves the public pins as they are must still rebuild, remove-first, with a
+// new data file (PN-8 never overrides P-7; the sameRecord conjunct of samePublicPins).
+func TestPinsEditWithHidingChangeRebuildsRemoveFirst(t *testing.T) {
+	w := trimTrack(false)
+	for name, change := range map[string]func(*lifecycle.Record){
+		"radius": func(r *lifecycle.Record) { r.HideStartM = 300 },
+		"trim":   func(r *lifecycle.Record) { r.TrimStartAt = instant(w, 100) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			d := draft()
+			d.Pins = []lifecycle.Pin{point(w, 20, "before")}
+			fx := pinFixture(t, w)
+			fx.change(t, draft(), published(d))
+			old := fx.names(t)
+
+			d2 := d
+			d2.Pins = []lifecycle.Pin{point(w, 20, "after")} // dimmed or trimmed by the change: public pins stay empty
+			change(&d2)
+			var steps []string
+			fx.a.step = func(n string) error { steps = append(steps, n); return nil }
+			fx.change(t, published(d), published(d2))
+			if len(steps) == 0 || steps[0] != "remove "+indexName {
+				t.Fatalf("not remove-first: %v", steps)
+			}
+			for _, n := range fx.names(t) {
+				if strings.HasPrefix(n, "data.") && slices.Contains(old, n) {
+					t.Errorf("the old data file %s is still served", n)
+				}
+			}
+			if bytes.Contains(publicBytes(t, fx), []byte("before")) || bytes.Contains(publicBytes(t, fx), []byte("after")) {
+				t.Error("a pin is public")
+			}
+		})
+	}
+}
+
+// QA-56-r1-5: a section whose ends resolve to one sample is "merged", never
+// stored as from == to (PN-6 would reject the whole public file).
+func TestPinsMergedSection(t *testing.T) {
+	w := trimTrack(false)
+	fx := pinFixture(t, w)
+	checks, err := fx.a.CheckPins(context.Background(), draft(), []lifecycle.Pin{section(w, 40, 40, "x"), section(w, 40, 41, "y")})
+	if err != nil || !checks[0].Merged || checks[1].Merged {
+		t.Fatalf("%+v %v", checks, err)
+	}
+}

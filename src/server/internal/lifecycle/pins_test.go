@@ -258,3 +258,27 @@ func TestPinEncodingRoundTrip(t *testing.T) {
 		t.Error("none is not empty")
 	}
 }
+
+// QA-56-r1-5 (AC 35): a stored section keeps its start but moves its end into
+// a hidden part: refused, though the start is a stored anchor. A start moved
+// into a hidden part with the end kept is refused too.
+func TestPinsSectionEndMovedIntoHiddenPart(t *testing.T) {
+	s, r, _, _, c, _ := owned(t, nil)
+	s.d.Trimmer = &gridTrimmer{}
+	ctx := context.Background()
+	upd := func(p SettingsPatch) (Record, error) { return s.Update(ctx, c.PublicID, c.EditToken, p) }
+	set := func(ps ...Pin) SettingsPatch { return SettingsPatch{Pins: OptPins{Set: true, V: ps}} }
+	if _, err := upd(set(sec(100, 500, "s"))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := upd(SettingsPatch{HideStartM: ip(200)}); err != nil { // the start is now hidden, the end public
+		t.Fatal(err)
+	}
+	for _, p := range []Pin{sec(100, 520, "end moved"), sec(100, 600, "end moved to a public sample"), sec(150, 500, "start moved")} {
+		_, err := upd(set(p))
+		refused(t, err, MsgPinHidden)
+	}
+	if titles(pinsOf(r)) != "s" {
+		t.Fatal("a refused change was stored")
+	}
+}

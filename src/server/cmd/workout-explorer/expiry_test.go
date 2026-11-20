@@ -209,12 +209,28 @@ func TestExpiryEndToEnd(t *testing.T) {
 
 // texts are a title and description no fixture contains, so the byte search
 // of dataLeft finds only the workout's own row (QA-21-r1-1).
-var texts = []string{"F21TITLEMARKER", "F21DESCRIPTIONMARKER"}
+// The last two are a pin's title and note (F-56 AC 44).
+var texts = []string{"F21TITLEMARKER", "F21DESCRIPTIONMARKER", "F56PINTITLEMARKER", "F56PINNOTEMARKER"}
+
+// startAt is the first sample's instant, RFC 3339, read from the row.
+func (a *app) startAt(pub string) string {
+	a.t.Helper()
+	for _, r := range a.rows() {
+		if r["public_id"] == pub {
+			return time.Unix(r["start_time"].(int64), 0).UTC().Format(time.RFC3339)
+		}
+	}
+	a.t.Fatal("no row")
+	return ""
+}
 
 func (a *app) setTexts(pub, token string) {
 	a.t.Helper()
-	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"title":"`+texts[0]+`","description":"`+texts[1]+`"}`); rec.Code != 200 {
+	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"title":"`+texts[0]+`","description":"`+texts[1]+`","pins":[{"type":"note","title":"`+texts[2]+`","note":"`+texts[3]+`","start_at":"`+a.startAt(pub)+`","end_at":null}]}`); rec.Code != 200 {
 		a.t.Fatalf("patch: %d %s", rec.Code, rec.Body)
+	}
+	if rec := a.owner("GET", "/api/workouts/"+pub, token, ""); !strings.Contains(rec.Body.String(), texts[2]) {
+		a.t.Fatalf("the pin was not stored: %s", rec.Body)
 	}
 }
 

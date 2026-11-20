@@ -324,7 +324,7 @@ func TestPatchPins(t *testing.T) {
 		t.Errorf("no pins is not []: %s", out)
 	}
 	// 50 pins of 60 + 500 code points, each a surrogate pair escaped (12 bytes).
-	pair := strings.Repeat(`😀`, 1)
+	pair := `\ud83d\ude00`
 	one := `{"type":"difficult_section","title":"` + strings.Repeat(pair, 60) + `","note":"` + strings.Repeat(pair, 500) + `","start_at":"2026-06-01T06:00:00Z","end_at":"2026-06-01T06:05:00Z"}`
 	body := `{"title":"` + strings.Repeat(pair, 100) + `","description":"` + strings.Repeat(pair, 1000) + `","pins":[` + strings.TrimSuffix(strings.Repeat(one+",", 50), ",") + `]}`
 	if len(body) > maxPatchBytes {
