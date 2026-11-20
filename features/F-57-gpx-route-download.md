@@ -36,7 +36,7 @@ Someone who wants to ride or run the same route downloads it as a GPX file and l
 - [ ] Test, with a trim and both ends hidden: no position from the trimmed or hidden parts is in the file; its first and last points are the first and last visible points on the map.
 - [ ] Test: the file has one `<trk>` with one `<trkseg>`, joined across GPS dropouts and pauses (OQ-270); no point of a trimmed or hidden part lies between two of its points.
 - [ ] File name `route-YYYY-MM-DD.gpx` with the start date as above; `route.gpx` for a workout without a start date.
-- [ ] Downloading makes no network request (the public data is already loaded), and the server has no new endpoint, file or log line for it.
+- [ ] Downloading requests no workout data (the public data is already loaded; only the download code itself may load on the first click), and the server has no new endpoint, file or log line for it.
 - [ ] The GPX code is not in the entry bundle and loads only when the button is used; the entry bundle stays within its budget and LCP is unchanged.
 - [ ] A 12-hour ride downloads in under 2 s on the reference phone (Non-functional requirements, Performance) and does not freeze the page.
 - [ ] The edit page shows, under the hiding sliders, "Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data." The About page's "who sees what" part (INF-1) has one sentence saying the same (OQ-271).
