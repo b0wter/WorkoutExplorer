@@ -116,11 +116,13 @@ export function toRow(e: Obj): Row {
 
 /** Edit page (MW-3): adds or replaces the entry by `id`; an unreadable value is replaced by a fresh
  *  list (ADR-058 item 4). Never throws. */
-export function upsert(store: StoreGetter, entry: Entry): void {
+export function upsert(store: StoreGetter, entry: Entry, now = Date.now()): void {
   const list = read(store) ?? [];
   const old = list.find((e) => e.id === entry.id);
   const next: Obj = { ...entry, sport: entry.sport ?? old?.sport, date: entry.date ?? old?.date };
-  write(store, [...list.filter((e) => e.id !== entry.id), next]);
+  // Other entries past their expiry go on every write (About, INF-1); unparseable ones wait for prune.
+  const live = list.filter((e) => e.id !== entry.id && !(effectiveExpiry(e.created, e.expires, e.published) <= now));
+  write(store, [...live, next]);
 }
 
 /** Published page (MW-3): updates these fields of an existing entry, never adds one. */

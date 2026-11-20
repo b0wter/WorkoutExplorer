@@ -77,9 +77,9 @@ export function show(host: HTMLElement, store: StoreGetter = () => window.localS
   let rows: Row[] = [];
 
   /** `cleared`: the key was just removed; shown empty without writing it back (OQ-279). */
-  const render = (mode?: 'asking' | 'cleared'): void => {
+  const render = (mode?: 'asking' | 'cleared', focus?: string): void => {
     main.replaceChildren();
-    el('h1', TEXT.title, main);
+    el('h1', TEXT.title, main).tabIndex = -1;
     el('p', TEXT.note, main);
     const got = mode === 'cleared' ? [] : prune(store, now());
     rows = got ?? [];
@@ -118,6 +118,8 @@ export function show(host: HTMLElement, store: StoreGetter = () => window.localS
       }
     }
     link(TEXT.upload, '/', el('p', '', main));
+    // QA-53-r1-4: keep the place; the row's slot, else the heading.
+    (main.querySelector<HTMLElement>(`[data-act="${focus}"]`) ?? main.querySelector<HTMLElement>('h1'))?.focus();
   };
   host.replaceChildren(main);
   render();
@@ -128,9 +130,10 @@ export function show(host: HTMLElement, store: StoreGetter = () => window.localS
     if (act.startsWith('forget:')) {
       const r = rows[Number(act.slice(7))];
       if (r) forget(store, r.raw);
-      render();
-    } else if (act === 'clear') render('asking');
-    else if (act === 'confirm') render(clear(store) ? 'cleared' : undefined); else if (act === 'cancel') render();
+      render(undefined, act); // the next row now holds this index
+    } else if (act === 'clear') render('asking', 'cancel');
+    else if (act === 'confirm') render(clear(store) ? 'cleared' : undefined);
+    else if (act === 'cancel') render(undefined, 'clear');
   });
 
   const foot = el('footer', '', host);

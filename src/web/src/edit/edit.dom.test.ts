@@ -975,6 +975,7 @@ describe('F-20 C-2: back-forward cache, never a reload', () => {
     expect(btn('share')).not.toBeNull();
     expect(field('title').value).toBe('Typed, not saved');
     expect(patches()).toEqual([]);
+    expect(localStorage.getItem(LIST_KEY)).toContain('"published":true'); // QA-53-r1-3: the list follows
   });
 
   it('Back from the published page: the edit page shows as published and is no longer locked', async () => {
@@ -1841,6 +1842,9 @@ describe('F-53 MW-2, MW-3: the My workouts entry (AC 42, 44, 46, 48, 49, 51, 52)
     localStorage.setItem(LIST_KEY, '{"v":2}');
     await open();
     expect(stored()!.workouts.map((e) => e.id)).toEqual([ID]);
+    put({ id: ID, token: OTHER, title: 'old' });
+    await open();
+    expect(entry()?.token).toBe(TOKEN); // QA-53-r1-3: the address's token wins
   });
 
   it('the draft unreadable: the stored sport and date stay', async () => {

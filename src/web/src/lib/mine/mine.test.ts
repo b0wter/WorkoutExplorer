@@ -114,11 +114,17 @@ describe('writers (MW-3)', () => {
 
   it('upsert adds, then replaces by id (one entry per workout); absent sport and date keep the stored ones', () => {
     const m = memory(list(entry({ id: 'B'.repeat(22) })));
-    upsert(m.get, e);
-    upsert(m.get, { ...e, title: 'B', sport: undefined, date: undefined, published: true });
+    upsert(m.get, e, NOW);
+    upsert(m.get, { ...e, title: 'B', sport: undefined, date: undefined, published: true }, NOW);
     const w = JSON.parse(m.value()!).workouts;
     expect(w.map((x: { id: string }) => x.id)).toEqual(['B'.repeat(22), ID]);
     expect(w[1]).toEqual({ ...e, title: 'B', published: true });
+  });
+
+  it('upsert drops other expired entries (About), keeps unparseable ones', () => {
+    const m = memory(list(entry({ id: 'B'.repeat(22), published: true, expires: iso(NOW - 1) }), entry({ id: 'C'.repeat(22), expires: 5 })));
+    upsert(m.get, e, NOW);
+    expect(JSON.parse(m.value()!).workouts.map((x: { id: string }) => x.id)).toEqual(['C'.repeat(22), ID]);
   });
 
   it('upsert replaces an unreadable value with a fresh list (ADR-058 item 4)', () => {
