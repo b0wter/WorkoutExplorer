@@ -42,6 +42,7 @@ Every endpoint takes `Authorization: Bearer <token>` and no query string. On any
 | `trim_start_at`, `trim_end_at` | RFC 3339 UTC, whole seconds, or `null` | yes, `null` allowed | Trim (UP-6): [F-47](F-47-trim.md) TR-3, TR-4 |
 | `trimmed` | object or `null` | no | The trimmed `sport` and `summary`, with `hiding_steps` and `suggested_title` then also trimmed: [F-47](F-47-trim.md) TR-8 |
 | `zones_max_heart_rate`, `zones_threshold_power` | integer or `null` | yes, `null` allowed | The sharer's zone values (AP-10): 100–250 bpm, 50–1,000 W; `null` = the file's values ([F-49](F-49-zones.md) ZN-4) |
+| `pins` | array | yes, whole set, `[]` clears | Map pins (PIN-): type, title, note, `start_at`, `end_at`; at most 50; refused in a hidden or trimmed part; removed when a radius or trim change hides them ([F-56](F-56-map-pins.md) PN-2 to PN-5, ADR-057) |
 
 A `PATCH` body with an unknown field, a read-only field, a `null`, a wrong type, or anything that is not one JSON object gets `400`. An empty object `{}` is valid and changes nothing.
 
