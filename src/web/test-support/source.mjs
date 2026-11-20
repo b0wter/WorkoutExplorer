@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
+export const ROOT = path.resolve(import.meta.dirname, '..');
 
 /** @param {string} rel path relative to src/web */
 export function readWebFile(rel) {

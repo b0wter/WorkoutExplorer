@@ -10,7 +10,9 @@ import type { SelectionStore } from '../lib/selection';
 import type { UnitsStore } from '../lib/units';
 import { formatElapsed, formatPace, paceSeconds, speedOrPaceUnit, type Units } from '../lib/format';
 import { selectRow } from '../page/laps';
-import { bestPower, curveDurations, distanceEfforts, effortLegs, longest, powerEfforts, powerLegs, DURATIONS, type Effort, type PowerLeg } from '../lib/efforts';
+import { t } from './texts';
+import { onLanguage } from '../lib/i18n';
+import { bestPower, effortName, curveDurations, distanceEfforts, effortLegs, longest, powerEfforts, powerLegs, DURATIONS, type Effort, type PowerLeg } from '../lib/efforts';
 
 /** The public window (EF-1): inclusive sample indices. */
 export type EffortWindow = () => readonly [number, number];
@@ -44,13 +46,13 @@ export function startEfforts(root: ParentNode, data: WorkoutData, selection: Sel
 
   const table = (section: Element, heads: readonly string[], efforts: readonly Effort[], cells: (e: Effort, tr: HTMLElement) => void): void => {
     if (!efforts.length) return;
-    const t = el(section, 'table');
-    const hr = el(el(t, 'thead'), 'tr');
+    const tb = el(section, 'table');
+    const hr = el(el(tb, 'thead'), 'tr');
     for (const h of heads) el(hr, 'th', '', h);
-    const body = el(t, 'tbody');
+    const body = el(tb, 'tbody');
     for (const e of efforts) {
       const tr = el(body, 'tr');
-      el(tr, 'td', '', e.name);
+      el(tr, 'td', '', effortName(e.name));
       cells(e, tr);
       el(tr, 'td', '', formatElapsed(e.start));
       rows.push([tr, e]);
@@ -78,7 +80,7 @@ export function startEfforts(root: ParentNode, data: WorkoutData, selection: Sel
     plot.setAttribute('class', 'curve');
     plot.setAttribute('height', String(PLOT + 18));
     plot.setAttribute('role', 'img');
-    plot.setAttribute('aria-label', `Power curve: best average power for every duration from 1 s (${Math.round(ws[0])} W) to ${formatElapsed(max)} (${Math.round(ws[ws.length - 1])} W)`);
+    plot.setAttribute('aria-label', t('curveLabel', { first: Math.round(ws[0]), last: formatElapsed(max), lastW: Math.round(ws[ws.length - 1]) }));
     plot.innerHTML = svg;
     box.appendChild(plot);
   };
@@ -94,7 +96,7 @@ export function startEfforts(root: ParentNode, data: WorkoutData, selection: Sel
       const end = performance.now() + SLICE_MS;
       while (i < ds.length && (i === 0 || performance.now() < end)) ws[i] = bestPower(legs, ds[i++])![0];
       if (i < ds.length) return void win.setTimeout(slice);
-      el(box, 'h3', '', 'Power curve');
+      el(box, 'h3', '', t('powerCurve'));
       drawCurve(box, ds, ws);
       performance.measure('wx-efforts:curve', { start: t0 }); // EF-7: from the section's insertion
     };
@@ -116,13 +118,13 @@ export function startEfforts(root: ParentNode, data: WorkoutData, selection: Sel
     slot.hidden = !dist.length && !power.length;
     if (slot.hidden) return;
     const section = el(slot, 'section', 'efforts');
-    el(section, 'h2', '', 'Best efforts');
+    el(section, 'h2', '', t('bestEfforts'));
     const u = units.get();
-    table(section, ['Distance', 'Time', 'Pace', 'Start'], dist, (e, tr) => {
+    table(section, [t('colEffortDistance'), t('colEffortTime'), t('colEffortPace'), t('colEffortStart')], dist, (e, tr) => {
       el(tr, 'td', '', formatElapsed(Math.round(e.value)));
       paces.push([el(tr, 'td', '', paceText(e, u)), e]);
     });
-    table(section, ['Duration', 'Power', 'Start'], power, (e, tr) => void el(tr, 'td', '', Math.round(e.value) + ' W'));
+    table(section, [t('colEffortDuration'), t('colEffortPower'), t('colEffortStart')], power, (e, tr) => void el(tr, 'td', '', Math.round(e.value) + ' W'));
     markRows(selection.start(), selection.end());
     curve(section, pl, id, t0);
   };
@@ -136,6 +138,11 @@ export function startEfforts(root: ParentNode, data: WorkoutData, selection: Sel
   selection.subscribe(markRows);
   units.subscribe((u) => {
     for (const [td, e] of paces) td.textContent = paceText(e, u);
+  });
+  // F-54: a language change rebuilds the section (labels and decimal separators).
+  onLanguage(() => {
+    shown = '';
+    build();
   });
   build();
   return build;

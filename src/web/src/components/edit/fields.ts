@@ -1,6 +1,7 @@
 // Pure rules of the edit panel (F-19 design E-6 to E-8; F-12 O-4 to O-6). Every server rule has
 // one client counterpart here, so the panel never sends what the server refuses.
 
+import { t } from '../../edit/texts';
 import { formatClock, formatDate } from '../../lib/format/dates';
 import type { Settings, SettingsPatch } from '../../lib/owner';
 import { cleanText } from '../../lib/text';
@@ -43,8 +44,8 @@ export function hidingRanges(steps: Settings['hiding_steps'], startM: number, en
 
 /** F-49 OQ-195: the zone fields, their whole-number ranges and the server's sentences (F-12). */
 export const ZONE_FIELDS = [
-  ['zones_max_heart_rate', 100, 250, 'The max heart rate must be a whole number from 100 to 250 bpm.'],
-  ['zones_threshold_power', 50, 1000, 'The threshold power must be a whole number from 50 to 1,000 W.'],
+  ['zones_max_heart_rate', 100, 250, 'zoneMaxHr'],
+  ['zones_threshold_power', 50, 1000, 'zoneFtp'],
 ] as const;
 
 /** The first zone field the server would refuse, as its sentence; null when both are empty or valid.
@@ -52,7 +53,7 @@ export const ZONE_FIELDS = [
 export function zoneError(form: Pick<Form, 'zones_max_heart_rate' | 'zones_threshold_power'>): string | null {
   for (const [k, lo, hi, message] of ZONE_FIELDS) {
     const v = form[k];
-    if (v !== null && !(Number.isInteger(v) && v >= lo && v <= hi)) return message;
+    if (v !== null && !(Number.isInteger(v) && v >= lo && v <= hi)) return t(message);
   }
   return null;
 }
@@ -99,7 +100,7 @@ const pad2 = (n: number): string => (n < 10 ? '0' : '') + n;
 export function incompleteNotice(dataEndS: number | null): string | null {
   if (dataEndS === null) return null;
   const s = Math.max(0, Math.floor(dataEndS));
-  return `The file was incomplete; data after ${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s / 60) % 60)}:${pad2(s % 60)} is missing.`;
+  return t('incomplete', { t: `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s / 60) % 60)}:${pad2(s % 60)}` });
 }
 
 /** First index i with time[i] >= t; time.length when none. */

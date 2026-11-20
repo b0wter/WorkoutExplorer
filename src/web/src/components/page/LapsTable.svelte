@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './texts';
   // Laps table (AP-8), as in the template. Without laps but with an advancing distance the module
   // is hidden, headed "Splits", with no table, for the splits chunk (F-46 LS-3); without either there
   // is no module. The heading row has an empty slot for the chunk's switch or drop-down (LS-4). A multisport workout's rows sit
@@ -13,7 +14,7 @@
 
 {#if laps}
   <section class="laps" hidden={!!laps.None}>
-    <div class="laps-head"><h2>{laps.None ? 'Splits' : 'Laps'}</h2><span class="laps-slot" id="laps-slot"></span></div>
+    <div class="laps-head"><h2>{t(laps.None ? 'headSplits' : 'headLaps')}</h2><span class="laps-slot" id="laps-slot"></span></div>
     {#if !laps.None}
       <div class="laps-scroll">
         <table>

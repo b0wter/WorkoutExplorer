@@ -15,7 +15,7 @@
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>{{.Page.Title}}</title>
     <link rel="preload" id="wx-data" href="{{.Page.DataURL}}" as="fetch" crossorigin />
-    <script>try{var s=localStorage,d=document.documentElement,t=s.getItem("wx.theme");if(t=="light"||t=="dark")d.dataset.theme=t;if(s.getItem("wx.hint.done")=="1")d.dataset.hint="done"}catch(e){}</script>
+    <script>var d=document.documentElement,D=d.dataset,L=["en","de","es","fr"],l,u;try{var s=localStorage,t=s.getItem("wx.theme");if(t=="light"||t=="dark")D.theme=t;if(s.getItem("wx.hint.done")=="1")D.hint="done";l=s.getItem("wx.lang")}catch(e){}if(L.indexOf(l)==-1){l="en";(navigator.languages||[navigator.language]).some(function(x){x=String(x).split("-")[0].toLowerCase();return L.indexOf(x)>=0&&(l=x)})}D.lang=l;u=document.querySelector("meta[data-hold]");u=u&&u.getAttribute("data-"+l);if(u){D.hold="";window.wxLang=fetch(u);setTimeout(function(){delete D.hold},500)}</script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -38,23 +38,23 @@
           {{if .Header.Description}}<p class="desc">{{.Header.Description}}</p>{{end}}
           <p class="expires"><time data-expires datetime="{{.Header.ExpiresAt}}">{{.Header.ExpiresText}}</time></p>
         </div>
-        <div class="ctl"><a class="copy" href="{{.Page.ViewPath}}" data-copy-link>Copy link</a><span class="units-slot" id="units-slot"></span><span class="theme-slot" id="theme-slot"></span></div>
+        <div class="ctl"><a class="copy" href="{{.Page.ViewPath}}" data-copy-link data-t="copyLink">Copy link</a><span class="units-slot" id="units-slot"></span><span class="theme-slot" id="theme-slot"></span><span class="lang-slot" id="lang-slot"></span></div>
       </header>
-      <div class="howto-row"><button type="button" class="howto" data-howto><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>How to use this page</button></div>
-      {{if .Route.Gpx}}<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route (GPX)</button></div>{{end}}
-      <section class="summary"><button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed">ⓘ</button>{{range .Summary}}
+      <div class="howto-row"><button type="button" class="howto" data-howto><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span data-t="howto">How to use this page</span></button></div>
+      {{if .Route.Gpx}}<div class="gpx-row"><button type="button" class="gpx" data-gpx data-t="gpx">Download route (GPX)</button></div>{{end}}
+      <section class="summary"><button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed" data-t-title="summaryInfo" data-t-aria-label="summaryInfo">ⓘ</button>{{range .Summary}}
         <div class="metric" data-k="{{.Key}}"><div class="k">{{.Label}}</div><div class="v"><span class="n">{{.Value}}</span>{{if .Unit}}&nbsp;<span class="u">{{.Unit}}</span>{{end}}{{if .Max}}<span class="max">max {{.Max}}</span>{{end}}</div></div>{{end}}
       </section>
       {{if .Device}}<p class="device">{{.Device}}</p>{{end}}
-      <p class="notice">Parts of the route, such as the start and end, may be hidden for privacy. Totals include them.</p>
+      <p class="notice" data-t="privacyNotice">Parts of the route, such as the start and end, may be hidden for privacy. Totals include them.</p>
       {{if .Route.Map}}<div id="map-slot" class="map-slot"></div>{{end}}
       {{if .Pins.URL}}<div class="pins-slot" data-url="{{.Pins.URL}}" data-count="{{.Pins.Count}}" hidden></div>{{end}}
-      {{if .Route.NoLocation}}<p class="hint">No location data in this workout.</p>{{end}}
-      {{if .Route.Hidden}}<p class="hint">The entire route has been hidden by the uploader.</p>{{end}}
+      {{if .Route.NoLocation}}<p class="hint" data-t="noLocation">No location data in this workout.</p>{{end}}
+      {{if .Route.Hidden}}<p class="hint" data-t="routeHidden">The entire route has been hidden by the uploader.</p>{{end}}
       {{if .ChartsClass}}<div id="charts-slot" class="charts {{.ChartsClass}}"></div>{{end}}
       <div id="range-slot" class="range-slot"></div>
       {{with .Laps}}<section class="laps" {{if .None}}hidden{{end}}>
-        <div class="laps-head"><h2>{{if .None}}Splits{{else}}Laps{{end}}</h2><span class="laps-slot" id="laps-slot"></span></div>
+        <div class="laps-head">{{if .None}}<h2 data-t="headSplits">Splits</h2>{{else}}<h2 data-t="headLaps">Laps</h2>{{end}}<span class="laps-slot" id="laps-slot"></span></div>
         {{if .Columns}}<div class="laps-scroll"><table>
           <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
           {{if .Sections}}{{range .Sections}}<tbody><tr class="laps-section"><th colspan="{{.Span}}" scope="rowgroup">{{.Name}}</th></tr>
@@ -65,7 +65,7 @@
       </section>{{end}}
       <div id="zones-slot" class="zones-slot" hidden></div>
       <div id="efforts-slot" class="efforts-slot" hidden></div>
-      <footer class="foot"><a href="/about">About</a> <!--wx:impressum--> <button type="button" data-report hidden>Report</button></footer>
+      <footer class="foot"><a href="/about" data-t="about">About</a> <!--wx:impressum--> <button type="button" data-report hidden data-t="report">Report</button></footer>
       </div>
     </div>
   </body>

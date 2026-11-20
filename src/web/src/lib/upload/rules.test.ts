@@ -1,6 +1,7 @@
 // Pure rules of the upload page (F-11 design U-5 to U-9). AC 1 (edit link), AC 2/6 (size).
 import { describe, expect, it } from 'vitest';
-import { canPick, editTarget, outcomeOf, parseStatus, percent, SENTENCES, tooLarge } from './rules';
+import { canPick, editTarget, outcomeOf, parseStatus, percent, tooLarge } from './rules';
+import { en as errors } from '../errors/texts';
 
 const ORIGIN = 'https://workouts.example';
 const ID = '4kQ0dTqv1Zr8mN2xYbL7Ce';
@@ -47,7 +48,7 @@ describe('outcomeOf (U-8, U-9)', () => {
     });
   });
   it('201 with a bad link or a non-JSON body is a server error', () => {
-    const bad = { kind: 'error', message: SENTENCES.serverError };
+    const bad = { kind: 'error', message: errors.server_error };
     expect(outcomeOf(201, json({ edit_url: 'https://evil.example/edit/x' }), ORIGIN)).toEqual(bad);
     expect(outcomeOf(201, '<html>', ORIGIN)).toEqual(bad);
     expect(outcomeOf(201, json({}), ORIGIN)).toEqual(bad);
@@ -58,17 +59,20 @@ describe('outcomeOf (U-8, U-9)', () => {
     [429, 'rate_limited', 'Too many uploads. Please try again later.'],
     [503, 'busy', 'Too many uploads right now. Please try again in a minute.'],
     [413, 'too_large', 'This file is larger than 20 MB.'],
-  ])('%i %s shows the server message as it is (AC 3, AC 5)', (status, error, message) => {
-    expect(outcomeOf(status, json({ error, message }), ORIGIN)).toEqual({ kind: 'error', message });
+  ] as const)('%i %s shows the text of its code (AC 3, AC 5; F-54 LG-6)', (status, error, message) => {
+    expect(outcomeOf(status, json({ error, message }), ORIGIN)).toEqual({ kind: 'error', message: errors[error] });
+  });
+  it('an unlisted code shows the server message as it is', () => {
+    expect(outcomeOf(400, json({ error: 'new_code', message: 'Something new.' }), ORIGIN)).toEqual({ kind: 'error', message: 'Something new.' });
   });
   it('503 storage_full switches to paused', () => {
-    expect(outcomeOf(503, json({ error: 'storage_full', message: SENTENCES.paused }), ORIGIN)).toEqual({
+    expect(outcomeOf(503, json({ error: 'storage_full', message: 'x' }), ORIGIN)).toEqual({
       kind: 'paused',
-      message: SENTENCES.paused,
+      message: errors.storage_full,
     });
   });
   it('a proxy page, an empty body or a missing message gives the server error', () => {
-    const err = { kind: 'error', message: SENTENCES.serverError };
+    const err = { kind: 'error', message: errors.server_error };
     expect(outcomeOf(502, '<html>Bad gateway</html>', ORIGIN)).toEqual(err);
     expect(outcomeOf(500, '', ORIGIN)).toEqual(err);
     expect(outcomeOf(500, json({ error: 'x', message: '' }), ORIGIN)).toEqual(err);

@@ -9,30 +9,11 @@ import { clear, forget, prune, type Row, type StoreGetter } from '../lib/mine';
 import { formatDate, sportName } from '../lib/format/dates';
 import { MISSING_TEXT } from '../lib/format';
 import { impressum } from '../lib/page/impressum';
-
-/** MW-9: every interface text of the page, in one place (F-54 swaps it and LANG). */
-export const TEXT = {
-  title: 'My workouts',
-  note: 'Edit links are saved in this browser. Anyone using this browser can open them.',
-  empty: 'No workouts uploaded from this browser yet.',
-  unavailable: 'The list is not available in this browser.',
-  heads: ['Workout', 'Sport', 'Date', 'Status', 'Expires', 'Links', ''],
-  draft: 'Draft',
-  published: 'Published',
-  edit: 'Edit',
-  view: 'View',
-  forget: 'Forget',
-  clear: 'Clear list',
-  ask: 'Remove all workouts from this list? They stay online, but without their edit links you cannot change or delete them.',
-  confirm: 'Remove all',
-  cancel: 'Cancel',
-  upload: 'Upload a workout',
-  about: 'About',
-};
-const LANG = 'en';
+import { lang } from '../lib/i18n';
+import { t } from './texts';
 
 /** 'in 3 days' (MW-9): minutes below an hour, hours below two days, else days. */
-export function relative(ms: number, rtf = new Intl.RelativeTimeFormat(LANG)): string {
+export function relative(ms: number, rtf = new Intl.RelativeTimeFormat(lang())): string {
   const min = ms / 60_000;
   if (min < 60) return rtf.format(Math.max(1, Math.round(min)), 'minute');
   if (min < 48 * 60) return rtf.format(Math.round(min / 60), 'hour');
@@ -55,7 +36,7 @@ export function startMine(host: HTMLElement, store?: StoreGetter, now?: () => nu
 
 export function show(host: HTMLElement, store: StoreGetter = () => window.localStorage, now: () => number = Date.now): void {
   const doc = host.ownerDocument;
-  doc.title = TEXT.title + ' · Workout Explorer';
+  doc.title = t('mineTitle') + ' · Workout Explorer';
   const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', parent?: HTMLElement): HTMLElementTagNameMap[K] => {
     const e = doc.createElement(tag);
     e.textContent = text;
@@ -79,45 +60,46 @@ export function show(host: HTMLElement, store: StoreGetter = () => window.localS
   /** `cleared`: the key was just removed; shown empty without writing it back (OQ-279). */
   const render = (mode?: 'asking' | 'cleared', focus?: string): void => {
     main.replaceChildren();
-    el('h1', TEXT.title, main).tabIndex = -1;
-    el('p', TEXT.note, main);
+    el('h1', t('mineTitle'), main).tabIndex = -1;
+    el('p', t('mineNote'), main);
     const got = mode === 'cleared' ? [] : prune(store, now());
     rows = got ?? [];
-    if (!got) el('p', TEXT.unavailable, main);
-    else if (got.length === 0) el('p', TEXT.empty, main);
+    if (!got) el('p', t('mineUnavailable'), main);
+    else if (got.length === 0) el('p', t('mineEmpty'), main);
     else {
       const box = el('div', '', main);
       box.className = 'mine-box';
       const table = el('table', '', box);
       const head = el('tr', '', el('thead', '', table));
-      for (const h of TEXT.heads) el('th', h, head);
+      for (const h of ['colWorkout', 'colSport', 'colDate', 'colStatus', 'colExpires', 'colLinks'] as const) el('th', t(h), head);
+      el('th', '', head);
       const body = el('tbody', '', table);
-      const t = now();
+      const at = now();
       got.forEach((r, i) => {
         const tr = el('tr', '', body);
         el('td', rowTitle(r), tr);
         el('td', r.sport === undefined ? MISSING_TEXT : sportName(r.sport), tr);
         el('td', r.date ? day(r.date) : MISSING_TEXT, tr);
-        el('td', r.published ? TEXT.published : TEXT.draft, tr);
-        el('td', relative(r.expiresMs - t), tr);
+        el('td', r.published ? t('statusPublished') : t('statusDraft'), tr);
+        el('td', relative(r.expiresMs - at), tr);
         const links = el('td', '', tr);
         links.className = 'mine-links';
-        if (r.edit) link(TEXT.edit, r.edit, links);
-        if (r.view) link(TEXT.view, r.view, links);
-        button(TEXT.forget, 'forget:' + i, el('td', '', tr));
+        if (r.edit) link(t('linkEdit'), r.edit, links);
+        if (r.view) link(t('linkView'), r.view, links);
+        button(t('forget'), 'forget:' + i, el('td', '', tr));
       });
       const p = el('p', '', main);
-      if (mode !== 'asking') button(TEXT.clear, 'clear', p);
+      if (mode !== 'asking') button(t('clearList'), 'clear', p);
       else {
         p.className = 'mine-confirm';
-        el('span', TEXT.ask, p);
+        el('span', t('clearAsk'), p);
         el('br', '', p);
-        button(TEXT.confirm, 'confirm', p);
+        button(t('removeAll'), 'confirm', p);
         p.append(' ');
-        button(TEXT.cancel, 'cancel', p);
+        button(t('cancelClear'), 'cancel', p);
       }
     }
-    link(TEXT.upload, '/', el('p', '', main));
+    link(t('mineUpload'), '/', el('p', '', main));
     // QA-53-r1-4: keep the place; the row's slot, else the heading.
     (main.querySelector<HTMLElement>(`[data-act="${focus}"]`) ?? main.querySelector<HTMLElement>('h1'))?.focus();
   };
@@ -138,6 +120,6 @@ export function show(host: HTMLElement, store: StoreGetter = () => window.localS
 
   const foot = el('footer', '', host);
   foot.className = 'mine-foot';
-  link(TEXT.about, '/about', foot);
+  link(t('mineAbout'), '/about', foot);
   impressum(foot);
 }

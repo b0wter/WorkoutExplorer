@@ -4,10 +4,9 @@
 
 import type { DataFileErrorCode } from '../lib/datafile';
 
-export const LOAD_ERROR_TEXT = 'The workout data could not be loaded.';
-export const RELOAD_TEXT = 'Reload the page.';
+import { t } from './texts';
 
-/** 'unsupported-version' → LOAD_ERROR_TEXT + ' ' + RELOAD_TEXT; every other code and 'bad-name' → LOAD_ERROR_TEXT. */
+/** 'unsupported-version' → the load error and "Reload the page."; every other code and 'bad-name' → the load error. */
 export function loadErrorText(code: DataFileErrorCode | 'bad-name'): string {
-  return code === 'unsupported-version' ? LOAD_ERROR_TEXT + ' ' + RELOAD_TEXT : LOAD_ERROR_TEXT;
+  return code === 'unsupported-version' ? t('loadError') + ' ' + t('reload') : t('loadError');
 }

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- About page (F-29 AB-1, AB-2): the privacy policy and the licence list. CSS only, no script. Holds only facts true for every deployment of this code; the operator's facts come from the operator file. Filled by tools/attributions at build and by serve at start; the comment markers and their contract are in src/server/internal/about/about.go. -->
+<!-- About page (F-29 AB-1, AB-2): the privacy policy and the licence list. CSS, the head script and the static entry, which translates the app part (F-54 LG-5). Holds only facts true for every deployment of this code; the operator's facts come from the operator file. Filled by tools/attributions at build and by serve at start; the comment markers and their contract are in src/server/internal/about/about.go. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -8,103 +8,105 @@
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>About - Workout Explorer</title>
+    <script>var d=document.documentElement,D=d.dataset,L=["en","de","es","fr"],l,u;try{var s=localStorage,t=s.getItem("wx.theme");if(t=="light"||t=="dark")D.theme=t;if(s.getItem("wx.hint.done")=="1")D.hint="done";l=s.getItem("wx.lang")}catch(e){}if(L.indexOf(l)==-1){l="en";(navigator.languages||[navigator.language]).some(function(x){x=String(x).split("-")[0].toLowerCase();return L.indexOf(x)>=0&&(l=x)})}D.lang=l;u=document.querySelector("meta[data-hold]");u=u&&u.getAttribute("data-"+l);if(u){D.hold="";window.wxLang=fetch(u);setTimeout(function(){delete D.hold},500)}</script>
+    <script type="module" src="/src/static/main.ts"></script>
     <link rel="stylesheet" href="/src/about/about.css" />
   </head>
   <body>
     <main>
-      <h1>About Workout Explorer</h1>
-      <p>Workout Explorer turns a FIT file from a sports watch or bike computer into a page with a map, charts and laps. There are no accounts. This page is the site's privacy policy and lists the licences of everything it uses.</p>
+      <h1 data-t="ab_aboutWorkoutExplorer">About Workout Explorer</h1>
+      <p data-t="ab_workoutExplorerTurns">Workout Explorer turns a FIT file from a sports watch or bike computer into a page with a map, charts and laps. There are no accounts. This page is the site's privacy policy and lists the licences of everything it uses.</p>
 
       <!--wx:operator-->
 
-      <h2>What is stored</h2>
-      <p>For each uploaded workout, the site stores:</p>
+      <h2 data-t="ab_whatIsStored">What is stored</h2>
+      <p data-t="ab_forEachUploaded">For each uploaded workout, the site stores:</p>
       <ul>
-        <li>The FIT file as it was uploaded, without the data listed in the next section.</li>
-        <li>The workout data built from it: a data file, the workout page and a preview image.</li>
-        <li>The settings: title, description, hidden start and end, trimmed start and end, the max heart rate and threshold power for the zones if the holder of the edit link enters them, map pins (type, title, note and their place on the route), lifetime, whether it is published, and timestamps. The edit link is stored only as a hash.</li>
-        <li>Reports from viewers: the reason, an optional message of up to 1,000 characters, and the time. No contact details and no IP address.</li>
+        <li data-t="ab_theFitFile">The FIT file as it was uploaded, without the data listed in the next section.</li>
+        <li data-t="ab_theWorkoutData">The workout data built from it: a data file, the workout page and a preview image.</li>
+        <li data-t="ab_theSettingsTitle">The settings: title, description, hidden start and end, trimmed start and end, the max heart rate and threshold power for the zones if the holder of the edit link enters them, map pins (type, title, note and their place on the route), lifetime, whether it is published, and timestamps. The edit link is stored only as a hash.</li>
+        <li data-t="ab_reportsFromViewers">Reports from viewers: the reason, an optional message of up to 1,000 characters, and the time. No contact details and no IP address.</li>
       </ul>
 
-      <h2>Removed from every FIT file on upload</h2>
+      <h2 data-t="ab_removedFromEvery">Removed from every FIT file on upload</h2>
       <ul>
-        <li>Device and sensor serial numbers and ANT+ IDs, wherever the file records them</li>
-        <li>The user profile (name, gender, age, height, weight, heart-rate settings)</li>
-        <li>Saved locations</li>
-        <li>Segment leaderboard entries, the segment leaders' activity IDs and segment account keys</li>
-        <li>Raw ANT radio messages</li>
+        <li data-t="ab_deviceAndSensor">Device and sensor serial numbers and ANT+ IDs, wherever the file records them</li>
+        <li data-t="ab_theUserProfile">The user profile (name, gender, age, height, weight, heart-rate settings)</li>
+        <li data-t="ab_savedLocations">Saved locations</li>
+        <li data-t="ab_segmentLeaderboardEntries">Segment leaderboard entries, the segment leaders' activity IDs and segment account keys</li>
+        <li data-t="ab_rawAntRadio">Raw ANT radio messages</li>
       </ul>
-      <p>Zone messages recorded with the workout are kept in the stored FIT file. They can hold the max heart rate, resting heart rate and threshold power set on the device. The resting heart rate is never read or shown.</p>
+      <p data-t="ab_zoneMessagesRecorded">Zone messages recorded with the workout are kept in the stored FIT file. They can hold the max heart rate, resting heart rate and threshold power set on the device. The resting heart rate is never read or shown.</p>
 
-      <h2>What is not stored</h2>
+      <h2 data-t="ab_whatIsNot">What is not stored</h2>
       <ul>
-        <li>No accounts, no email addresses, no cookies, no analytics and no tracking.</li>
-        <li>The app writes no IP address to disk. To limit how often uploads and reports can be sent, it keeps a hashed client address in memory for up to an hour.</li>
-        <li>The app's own logs, including those of its bundled web server, contain no IP address, no link and no location. When a file cannot be read, the log records the device model.</li>
-      </ul>
-
-      <h2>How the data is used</h2>
-      <p>Only to show a workout to people who have its link, to let the holder of the edit link change, download or delete it, and to let the operator act on reports. It is not used for advertising or profiling, and it is not sold.</p>
-
-      <h2>Who sees a workout</h2>
-      <ul>
-        <li>A draft is visible only to whoever has its edit link.</li>
-        <li>A published workout is visible to anyone with its viewing link. It is not listed anywhere, and search engines are asked not to index it.</li>
-        <li>A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>
-        <li>Viewers of a published workout can download its visible route as a GPX file (not for multisport workouts or workouts without a route): the track only, without times, heart rate or any other data.</li>
-        <li>A trimmed start or end of the workout is removed from the public data, not just hidden on screen.</li>
-        <li>A workout page with zones shows the zone limits and the max heart rate or threshold power they are based on, from the FIT file or entered by the holder of the edit link.</li>
-        <li>A workout page shows the recording device's model or manufacturer and the types of sensors used, never their serial numbers or IDs.</li>
+        <li data-t="ab_noAccountsNo">No accounts, no email addresses, no cookies, no analytics and no tracking.</li>
+        <li data-t="ab_theAppWrites">The app writes no IP address to disk. To limit how often uploads and reports can be sent, it keeps a hashed client address in memory for up to an hour.</li>
+        <li data-t="ab_theAppS">The app's own logs, including those of its bundled web server, contain no IP address, no link and no location. When a file cannot be read, the log records the device model.</li>
       </ul>
 
-      <h2>Link previews</h2>
-      <p>When a viewing link is shared in a messenger, the messenger service fetches the title, the headline numbers and an image of the route to show a preview. Previews already made cannot be recalled.</p>
-      <p>A published workout with a route gets a preview image that shows the route on an OpenFreeMap map. The map is drawn by the publisher's browser when the workout is published, so OpenFreeMap sees that browser's request as described under Map tiles. Anyone who sees the link in a chat sees where the route is, as on the workout page. This server never contacts OpenFreeMap.</p>
+      <h2 data-t="ab_howTheData">How the data is used</h2>
+      <p data-t="ab_onlyToShow">Only to show a workout to people who have its link, to let the holder of the edit link change, download or delete it, and to let the operator act on reports. It is not used for advertising or profiling, and it is not sold.</p>
 
-      <h2>Map tiles</h2>
-      <p>When a workout has a map, your browser loads the map from OpenFreeMap (tiles.openfreemap.org), which may deliver it through Cloudflare. They see your IP address, your browser type and which part of the map you look at, so roughly where the route is. They do not learn which workout you are viewing. What it does with this data is in <a href="https://openfreemap.org/privacy/">OpenFreeMap's privacy statement</a>.</p>
+      <h2 data-t="ab_whoSeesA">Who sees a workout</h2>
+      <ul>
+        <li data-t="ab_aDraftIs">A draft is visible only to whoever has its edit link.</li>
+        <li data-t="ab_aPublishedWorkout">A published workout is visible to anyone with its viewing link. It is not listed anywhere, and search engines are asked not to index it.</li>
+        <li data-t="ab_aHiddenStart">A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>
+        <li data-t="ab_viewersOfA">Viewers of a published workout can download its visible route as a GPX file (not for multisport workouts or workouts without a route): the track only, without times, heart rate or any other data.</li>
+        <li data-t="ab_aTrimmedStart">A trimmed start or end of the workout is removed from the public data, not just hidden on screen.</li>
+        <li data-t="ab_aWorkoutPage">A workout page with zones shows the zone limits and the max heart rate or threshold power they are based on, from the FIT file or entered by the holder of the edit link.</li>
+        <li data-t="ab_aWorkoutPage2">A workout page shows the recording device's model or manufacturer and the types of sensors used, never their serial numbers or IDs.</li>
+      </ul>
+
+      <h2 data-t="ab_linkPreviews">Link previews</h2>
+      <p data-t="ab_whenAViewing">When a viewing link is shared in a messenger, the messenger service fetches the title, the headline numbers and an image of the route to show a preview. Previews already made cannot be recalled.</p>
+      <p data-t="ab_aPublishedWorkout2">A published workout with a route gets a preview image that shows the route on an OpenFreeMap map. The map is drawn by the publisher's browser when the workout is published, so OpenFreeMap sees that browser's request as described under Map tiles. Anyone who sees the link in a chat sees where the route is, as on the workout page. This server never contacts OpenFreeMap.</p>
+
+      <h2 data-t="ab_mapTiles">Map tiles</h2>
+      <p data-t="ab_whenAWorkout">When a workout has a map, your browser loads the map from OpenFreeMap (tiles.openfreemap.org), which may deliver it through Cloudflare. They see your IP address, your browser type and which part of the map you look at, so roughly where the route is. They do not learn which workout you are viewing. What it does with this data is in <a href="https://openfreemap.org/privacy/" data-p="link" data-t="ab_osmPrivacyLink">OpenFreeMap's privacy statement</a>.</p>
 
       <!--wx:pushover-->
-      <h2>Report notifications</h2>
-      <p>When a workout is reported, the operator gets a notification through Pushover. Pushover learns the report number, the reason and the workout's viewing link (which opens the public page), plus a single-use link to delete the workout that is valid for up to 30 days. It never learns the reporter's message or the workout's title. Anyone with access to the operator's Pushover account or unlocked phone could use that link once to delete the reported workout.</p>
+      <h2 data-t="ab_reportNotifications">Report notifications</h2>
+      <p data-t="ab_whenAWorkout2">When a workout is reported, the operator gets a notification through Pushover. Pushover learns the report number, the reason and the workout's viewing link (which opens the public page), plus a single-use link to delete the workout that is valid for up to 30 days. It never learns the reporter's message or the workout's title. Anyone with access to the operator's Pushover account or unlocked phone could use that link once to delete the reported workout.</p>
       <!--/wx:pushover-->
 
       <!--wx:shortcut-->
-      <h2>Upload from your iPhone</h2>
-      <p>The operator offers a Shortcut for iPhone that uploads a FIT file from the share sheet and opens its edit page in Safari. Add it from this link: <a href="<!--wx:shortcut-url-->"><!--wx:shortcut-url--></a></p>
+      <h2 data-t="ab_uploadFromYour">Upload from your iPhone</h2>
+      <p data-t="ab_theOperatorOffers">The operator offers a Shortcut for iPhone that uploads a FIT file from the share sheet and opens its edit page in Safari. Add it from this link: <a href="<!--wx:shortcut-url-->" data-p="link"><!--wx:shortcut-url--></a></p>
       <!--/wx:shortcut-->
 
       <!--wx:updates-->
-      <h2>Software updates</h2>
-      <p>This server downloads software updates from GitHub; no workout or visitor data is sent.</p>
+      <h2 data-t="ab_softwareUpdates">Software updates</h2>
+      <p data-t="ab_thisServerDownloads">This server downloads software updates from GitHub; no workout or visitor data is sent.</p>
       <!--/wx:updates-->
 
-      <h2>What the operator can do</h2>
-      <p>The operator can read reports and, after a report, delete any workout without its edit link. The app does not record who uploaded a workout.</p>
+      <h2 data-t="ab_whatTheOperator">What the operator can do</h2>
+      <p data-t="ab_theOperatorCan">The operator can read reports and, after a report, delete any workout without its edit link. The app does not record who uploaded a workout.</p>
 
-      <h2>How long data is kept</h2>
+      <h2 data-t="ab_howLongData">How long data is kept</h2>
       <ul>
-        <li>A workout is kept for 7 days by default. The holder of the edit link can choose a lifetime of up to 30 days from upload.</li>
-        <li>A draft that is never published is deleted 48 hours after upload.</li>
-        <li>Deleting a workout with its edit link removes everything at once. The site stops serving it within 60 seconds.</li>
-        <li>Reports are deleted with their workout, at the latest 30 days after they were filed.</li>
-        <li>The app makes no backup copies.</li>
+        <li data-t="ab_aWorkoutIs">A workout is kept for 7 days by default. The holder of the edit link can choose a lifetime of up to 30 days from upload.</li>
+        <li data-t="ab_aDraftThat">A draft that is never published is deleted 48 hours after upload.</li>
+        <li data-t="ab_deletingAWorkout">Deleting a workout with its edit link removes everything at once. The site stops serving it within 60 seconds.</li>
+        <li data-t="ab_reportsAreDeleted">Reports are deleted with their workout, at the latest 30 days after they were filed.</li>
+        <li data-t="ab_theAppMakes">The app makes no backup copies.</li>
       </ul>
-      <p>Workouts are not archived: after an app update, a damaged file may show less than before or be removed.</p>
+      <p data-t="ab_workoutsAreNot">Workouts are not archived: after an app update, a damaged file may show less than before or be removed.</p>
 
-      <h2>Copies outside this site</h2>
-      <p>Copies that viewers have already saved, and link previews already made, stay with them. This site cannot delete them.</p>
+      <h2 data-t="ab_copiesOutsideThis">Copies outside this site</h2>
+      <p data-t="ab_copiesThatViewers">Copies that viewers have already saved, and link previews already made, stay with them. This site cannot delete them.</p>
 
-      <h2>In your browser</h2>
-      <p>Your browser remembers your choice of units, the x axis of the charts, the split between map and content (separately for wide screens and for short landscape screens) and the theme. It also keeps the list on <a href="/my-workouts">My workouts</a>: for each workout uploaded or edited in this browser, its title, sport, date, status, expiry and edit link. Anyone using this browser can open those edit links. All of this is kept in browser storage, not in a cookie, is never sent to the server, and stays until you clear the site's data in your browser; a workout's entry also goes when the workout expires or is deleted here.</p>
+      <h2 data-t="ab_inYourBrowser">In your browser</h2>
+      <p data-t="ab_yourBrowserRemembers">Your browser remembers your choice of units, the x axis of the charts, the split between map and content (separately for wide screens and for short landscape screens), the theme and the interface language. It also keeps the list on <a href="/my-workouts" data-p="link" data-t="ab_mineLink">My workouts</a>: for each workout uploaded or edited in this browser, its title, sport, date, status, expiry and edit link. Anyone using this browser can open those edit links. All of this is kept in browser storage, not in a cookie, is never sent to the server (of the language, the server only sees which language file your browser loads), and stays until you clear the site's data in your browser; a workout's entry also goes when the workout expires or is deleted here.</p>
 
-      <h2>Your rights</h2>
-      <p>With the edit link you can download the stored FIT file and delete the workout at any time. Without the edit link the operator cannot check that a workout is yours, but anyone can report a workout.</p>
+      <h2 data-t="ab_yourRights">Your rights</h2>
+      <p data-t="ab_withTheEdit">With the edit link you can download the stored FIT file and delete the workout at any time. Without the edit link the operator cannot check that a workout is yours, but anyone can report a workout.</p>
 
-      <h2>Source code and licences</h2>
-      <p>Workout Explorer is free software. This site runs version <!--wx:version-->. Below are the app's own licence and every library, data source and font it uses. Open an entry to read its licence text.</p>
+      <h2 data-t="ab_sourceCodeAnd">Source code and licences</h2>
+      <p data-t="ab_workoutExplorerIs">Workout Explorer is free software. This site runs version <span data-p="version"><!--wx:version--></span>. Below are the app's own licence and every library, data source and font it uses. Open an entry to read its licence text.</p>
       <!--wx:attributions-->
     </main>
-    <footer><a href="/">Workout Explorer</a> · <a href="/about">About</a> <!--wx:impressum--></footer>
+    <footer><a href="/">Workout Explorer</a> · <a href="/about" data-t="ab_footAbout">About</a> <!--wx:impressum--></footer>
   </body>
 </html>

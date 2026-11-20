@@ -4,7 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LIST_KEY } from '../lib/mine';
 import { readWebFile } from '../../test-support/source.mjs';
-import { TEXT, relative, show, startMine } from '.';
+import { relative, show, startMine } from '.';
+import { en } from './texts';
 
 const ID = 'AbCdEfGhIjKlMnOpQrStUv';
 const TOKEN = 'Zz0123456789abcdefghij';
@@ -40,7 +41,7 @@ describe('the list', () => {
     );
     start();
     expect(document.title).toBe('My workouts · Workout Explorer');
-    expect([...host.querySelectorAll('th')].map((t) => t.textContent)).toEqual(TEXT.heads);
+    expect([...host.querySelectorAll('th')].map((t) => t.textContent)).toEqual([en.colWorkout, en.colSport, en.colDate, en.colStatus, en.colExpires, en.colLinks, '']);
     expect(cells()).toEqual([
       ['Ride, 19 Nov 2026', 'Ride', '19 Nov 2026', 'Published', 'in 3 days', 'EditView', 'Forget'],
       ['Morning ride', 'Ride', '19 Nov 2026', 'Draft', 'in 45 hours', 'Edit', 'Forget'], // 48 h after upload
@@ -53,7 +54,7 @@ describe('the list', () => {
       expect(a.hasAttribute('target')).toBe(false); // same tab (AC 43)
       expect(a.getAttribute('href')).toMatch(/^\/(edit\/|w\/|about$|impressum$|$)/);
     }
-    expect(host.textContent).toContain(TEXT.note);
+    expect(host.textContent).toContain(en.mineNote);
     expect(host.querySelector('main a[href="/"]')?.textContent).toBe('Upload a workout');
     expect(host.querySelector('footer a[href="/about"]')).not.toBeNull();
     expect(host.querySelector('footer a[href="/impressum"]')).not.toBeNull();
@@ -115,7 +116,7 @@ describe('Forget and Clear list (AC 50)', () => {
     click('[data-act="clear"]');
     click('[data-act="confirm"]');
     expect(localStorage.getItem(LIST_KEY)).toBeNull();
-    expect(host.textContent).toContain(TEXT.empty);
+    expect(host.textContent).toContain(en.mineEmpty);
   });
 });
 

@@ -1,8 +1,9 @@
 // The owner client (F-19 design E-2 to E-4; ADR-020 item 7 and rev. 1, ADR-025). Critical: the
 // token is read from the fragment only, sent only as a header, never in a URL or history state.
 import { describe, expect, it, vi } from 'vitest';
-import { SENTENCES } from '../upload';
-import { SERVER_ERROR, openOwner, type Settings } from '.';
+import { openOwner, type Settings } from '.';
+/** Without a server message the caller shows UP-10's sentence (F-54: texts are the caller's, lib/errors). */
+const SERVER_ERROR = '';
 
 const ID = 'AbCdEfGhIjKlMnOpQrStUv';
 const TOKEN = 'Zz0123456789abcdefghij';
@@ -165,9 +166,9 @@ describe('requests (E-2)', () => {
     expect(r).toEqual({ ok: false, notFound: true });
   });
 
-  it('400 and 500: the server message; without one, UP-10 sentence', async () => {
+  it('400 and 500: the error code and the server message (the caller picks the text, F-54 LG-6); without one, empty', async () => {
     const bad = await setup('#' + TOKEN, () => Response.json({ error: 'invalid_settings', message: 'Title too long.' }, { status: 400 })).owner!.save({ title: 'x' });
-    expect(bad).toEqual({ ok: false, notFound: false, message: 'Title too long.' });
+    expect(bad).toEqual({ ok: false, notFound: false, message: 'Title too long.', code: 'invalid_settings' });
     const proxy = await setup('#' + TOKEN, () => new Response('<html>Bad gateway</html>', { status: 502 })).owner!.settings();
     expect(proxy).toEqual({ ok: false, notFound: false, message: SERVER_ERROR });
   });
@@ -177,9 +178,6 @@ describe('requests (E-2)', () => {
     expect(r).toEqual({ ok: false, notFound: false, message: SERVER_ERROR });
   });
 
-  it('the server-error sentence is lib/upload\'s', () => {
-    expect(SERVER_ERROR).toBe(SENTENCES.serverError);
-  });
 });
 
 describe('preview map (F-36 MC-4)', () => {

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { t } from '../../edit/texts';
+  import { t as tc } from '../page/texts';
+  import { heartRateUnit } from '../../lib/format';
   // The edit panel (F-19 design E-6 to E-8, OQ-81, OQ-82; F-20 C-2 to C-4, C-6, C-7, C-9 to C-11):
   // always open, one Save button, Publish, Share, Download original and Delete. Never sees the token.
   // An uncontrolled form: one attachment fills it from each stored settings object (so a save
@@ -64,7 +67,7 @@
   // svelte-ignore state_referenced_locally
   const days = lifetimeOptions(settings.created_at, now);
   // svelte-ignore state_referenced_locally
-  const notice = incompleteNotice(settings.data_end_s);
+  const notice = $derived(incompleteNotice(settings.data_end_s));
 
   // F-47 TR-9: the slider, only when a trim can leave 60 s (TR-4).
   // svelte-ignore state_referenced_locally
@@ -79,7 +82,7 @@
   let ends = $state<[number, number]>([0, 0]);
   /** QA-55-r1-3: hiding_steps follow the SAVED trim, so with an unsaved trim the shading is stale. */
   const stale = $derived(trim !== null && (ends[0] > 0 || ends[1] > 0) && (cut[0] !== trimIndex(trim, startS, settings.trim_start_at, false) || cut[1] !== trimIndex(trim, startS, settings.trim_end_at, true)));
-  const hideText = (end: string, m: number): string => end + ': ' + (m ? 'hide ' + formatRadius(m, units) : 'not hidden');
+  const hideText = (end: 0 | 1, m: number): string => (m ? t(end ? 'hideEnd' : 'hideStart', { r: formatRadius(m, units) }) : t(end ? 'hideEndNone' : 'hideStartNone'));
   const setEnds = (f: HTMLFormElement): void => {
     const [a, b] = [Number(field(f, 'hide_start_m').value), Number(field(f, 'hide_end_m').value)];
     ends = [a, b]; // never read here: the fill attachment would re-run on it
@@ -165,71 +168,71 @@
 </script>
 
 <!-- novalidate: the zone fields' refusal is the server's sentence (zoneError), not the browser's. -->
-<form class="edit-panel" aria-label="Settings" novalidate {@attach fill} {@attach wire}>
+<form class="edit-panel" aria-label={t('settings')} novalidate {@attach fill} {@attach wire}>
   {#if notice}<p class="edit-notice">{notice}</p>{/if}
   <!-- Locked while an action runs: Publish reads the form once, so a later change would be dropped (QA-20-r2-1). -->
   <fieldset disabled={busy !== ''}>
-  <label class="edit-field">Title
+  <label class="edit-field">{t('title')}
     <input type="text" name="title" maxlength={TITLE_MAX} {placeholder} />
   </label>
-  <label class="edit-field">Description
+  <label class="edit-field">{t('description')}
     <textarea name="description" maxlength={DESCRIPTION_MAX} rows="3"></textarea>
   </label>
-  <div class="edit-field">Hide start and end
-    <label class="edit-hide"><span class="edit-value">{hideText('Start', ends[0])}</span>
-      <input type="range" name="hide_start_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('Start', ends[0])} />
+  <div class="edit-field">{t('hideStartEnd')}
+    <label class="edit-hide"><span class="edit-value">{hideText(0, ends[0])}</span>
+      <input type="range" name="hide_start_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText(0, ends[0])} />
     </label>
-    <label class="edit-hide"><span class="edit-value">{hideText('End', ends[1])}</span>
-      <input type="range" name="hide_end_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('End', ends[1])} />
+    <label class="edit-hide"><span class="edit-value">{hideText(1, ends[1])}</span>
+      <input type="range" name="hide_end_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText(1, ends[1])} />
     </label>
-    {#if stale}<p class="edit-small edit-stale">Save to update the hidden sections.</p>{/if}
-    {#if gpx}<p class="edit-small">Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.</p>{/if}
+    {#if stale}<p class="edit-small edit-stale">{t('hideStale')}</p>{/if}
+    {#if gpx}<p class="edit-small">{t('gpxNote')}</p>{/if}
   </div>
   {#if trim}
-    <div class="edit-field">Trim start and end
+    <div class="edit-field">{t('trimStartEnd')}
       <div class="edit-trim">
-        <input type="range" name="trim_a" aria-label="Trim start" min="0" max={trim.length - 1} step="1" />
-        <input type="range" name="trim_b" aria-label="Trim end" min="0" max={trim.length - 1} step="1" />
+        <input type="range" name="trim_a" aria-label={t('trimStart')} min="0" max={trim.length - 1} step="1" />
+        <input type="range" name="trim_b" aria-label={t('trimEnd')} min="0" max={trim.length - 1} step="1" />
       </div>
       <span class="edit-value">{elapsed(trim, cut[0])} – {elapsed(trim, cut[1])}</span>
     </div>
   {/if}
   <div class="edit-row">
-    <label class="edit-field">Max heart rate
-      <span class="edit-value"><input type="number" name="zones_max_heart_rate" min="100" max="250" step="1" inputmode="numeric" placeholder={zones.heart_rate?.basis?.toString()} /> bpm</span>
+    <label class="edit-field">{t('fieldMaxHr')}
+      <span class="edit-value"><input type="number" name="zones_max_heart_rate" min="100" max="250" step="1" inputmode="numeric" placeholder={zones.heart_rate?.basis?.toString()} /> {heartRateUnit()}</span>
     </label>
-    <label class="edit-field">Threshold power
+    <label class="edit-field">{t('fieldFtp')}
       <span class="edit-value"><input type="number" name="zones_threshold_power" min="50" max="1000" step="1" inputmode="numeric" placeholder={zones.power?.basis?.toString()} /> W</span>
     </label>
   </div>
-  <p class="edit-small">For the heart-rate and power zones. Empty: the device's zones and values from the FIT file are used.</p>
+  <p class="edit-small">{t('zonesNote')}</p>
   <div class="edit-row">
-    <span class="edit-field">Visibility <span class="edit-value">{draft ? 'Draft' : 'Unlisted'}</span></span>
-    <label class="edit-field">Keep for
+    <span class="edit-field">{t('visibility')} <span class="edit-value">{t(draft ? 'draft' : 'unlisted')}</span></span>
+    <label class="edit-field">{t('keepFor')}
       <span class="edit-value"><select name="lifetime">
         {#each days as d}<option>{d}</option>{/each}
-      </select> days</span>
+      </select> {t('days')}</span>
     </label>
-    <span class="edit-expiry">Expires {expiryText(settings.created_at, lifetime)}</span>
+    <span class="edit-expiry">{t('expiresAt', { at: expiryText(settings.created_at, lifetime) })}</span>
   </div>
   </fieldset>
   <div class="edit-row">
-    <button type="submit" class="edit-save" disabled={busy !== ''}>Save</button>
-    {#if draft}<button type="button" class="edit-save" data-act="publish" disabled={busy !== ''}>Publish</button>{/if}
+    <button type="submit" class="edit-save" disabled={busy !== ''}>{t('save')}</button>
+    {#if draft}<button type="button" class="edit-save" data-act="publish" disabled={busy !== ''}>{t('publish')}</button>{/if}
     <span class="edit-status" role="status">{busy || invalid || status}</span>
   </div>
-  {#if draft}<p class="edit-small">Unpublished drafts are deleted 48 hours after upload.</p>{/if}
+  {#if draft}<p class="edit-small">{t('draftNote')}</p>{/if}
   <div class="edit-row">
-    {#if !draft}<button type="button" class="edit-button" data-act="share">Share</button>{/if}
-    <button type="button" class="edit-button" data-act="download" disabled={busy !== ''}>Download original</button>
+    {#if !draft}<button type="button" class="edit-button" data-act="share">{t('share')}</button>{/if}
+    <button type="button" class="edit-button" data-act="download" disabled={busy !== ''}>{t('downloadOriginal')}</button>
     <DeleteControl {busy} {ondelete} />
   </div>
   {#if share && !draft}
     <p class="edit-share" {@attach (p) => enhanceCopyLink(p, origin, navigator)}>
       <span class="edit-link">{origin + settings.view_url}</span>
-      <a class="copy" href={settings.view_url} data-copy-link>Copy link</a>
-      <button type="button" class="edit-button" data-act="links" disabled={busy !== ''}>Show links</button>
+      <a class="copy" href={settings.view_url} data-copy-link>{tc('copyLink')}</a>
+      <button type="button" class="edit-button" data-act="links" disabled={busy !== ''}>{t('showLinks')}</button>
     </p>
   {/if}
-  <p class="edit-small">Copies that viewers have already downloaded, and previews that messengers have already made, cannot be recalled.</p>
+  <p class="edit-small">{t('recallNote')}</p>
 </form>

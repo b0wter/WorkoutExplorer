@@ -1,22 +1,8 @@
-// Pure rules of the upload page (F-11 design U-4 to U-9). No DOM, no imports.
+// Pure rules of the upload page (F-11 design U-4 to U-9). No DOM; texts from lib/errors (F-54 LG-6).
+import { serverText } from '../errors/texts';
 
 /** The 20 MB cap in bytes of file content (ADR-021 item 1; F-09 D-5). */
 export const MAX_UPLOAD_BYTES = 20_000_000;
-
-/** The only sentences the page holds itself (U-8); every other text comes from the server. */
-export const SENTENCES = {
-  tooLarge: 'This file is larger than 20 MB.',
-  unreadable: 'The upload could not be read. Please try again.',
-  serverError: 'Something went wrong on the server. Please try again later.',
-  paused: 'Uploads are paused because storage is full. Please try again later.',
-  // Zip archives (F-35); the last four are keyed by lib/zip's refusal reasons.
-  opening: 'Opening the archive…',
-  noZip: 'This browser cannot open ZIP archives. Please unzip it and upload the FIT file.',
-  noFit: 'This archive contains no FIT file.',
-  several: 'This archive contains more than one FIT file. Please upload one at a time.',
-  fitTooLarge: 'The FIT file in this archive is larger than 20 MB.',
-  damaged: 'This archive could not be opened. Please unzip it and upload the FIT file.',
-} as const;
 
 /** The page's states (U-5, U-7; F-35 Z-11: `opening` reads the file and opens an archive). Only `ready` accepts a file. */
 export type PageState = 'checking' | 'ready' | 'opening' | 'uploading' | 'processing' | 'paused';
@@ -76,15 +62,11 @@ export function outcomeOf(status: number, body: string, origin: string): Outcome
   const v = parseJson(body);
   if (status === 201) {
     const url = editTarget(v && typeof v === 'object' ? (v as { edit_url?: unknown }).edit_url : undefined, origin);
-    return url ? { kind: 'navigate', url } : { kind: 'error', message: SENTENCES.serverError };
+    return url ? { kind: 'navigate', url } : { kind: 'error', message: serverText(null) };
   }
-  let message: string = SENTENCES.serverError;
-  let code: unknown;
-  if (v && typeof v === 'object') {
-    const m = (v as { message?: unknown }).message;
-    if (typeof m === 'string' && m !== '') message = m;
-    code = (v as { error?: unknown }).error;
-  }
+  // F-54 LG-6: our text by the `error` code; the server's message only for a code not listed.
+  const message = serverText(v);
+  const code = v && typeof v === 'object' ? (v as { error?: unknown }).error : undefined;
   if (status === 503 && code === 'storage_full') return { kind: 'paused', message };
   return { kind: 'error', message };
 }

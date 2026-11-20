@@ -8,11 +8,30 @@ import { PREF_KEYS } from '../lib/prefs';
 const inline = (html: string): string[] => [...html.matchAll(/<script>([^<]*)<\/script>/g)].map((m) => m[1]);
 const [script] = inline(readWebFile('index.html'));
 
-/** Runs the script against a stand-in storage and root element; returns its dataset. */
-function attrs(getItem: (k: string) => string | null): Record<string, string> {
+interface Run {
+  dataset: Record<string, string>;
+  fetched: string[];
+  timers: (() => void)[];
+  win: { wxLang?: unknown };
+}
+/** Runs the script against stand-ins: storage, root element, the held meta's attributes, browser languages. */
+function runAll(getItem: (k: string) => string | null, languages: readonly string[] | undefined = ['en'], meta: Record<string, string> | null = null): Run {
   const html = { dataset: {} as Record<string, string> };
-  new Function('localStorage', 'document', script)({ getItem }, { documentElement: html });
-  return html.dataset;
+  const r: Run = { dataset: html.dataset, fetched: [], timers: [], win: {} };
+  const doc = { documentElement: html, querySelector: (q: string) => (q === 'meta[data-hold]' && meta ? { getAttribute: (a: string) => meta[a] ?? null } : null) };
+  const nav = { languages, language: 'en-GB' };
+  const fetch = (u: string) => (r.fetched.push(u), Promise.resolve('response'));
+  const setTimeout = (f: () => void, ms: number) => {
+    expect(ms).toBe(500);
+    r.timers.push(f);
+  };
+  new Function('localStorage', 'document', 'navigator', 'window', 'fetch', 'setTimeout', script)({ getItem }, doc, nav, r.win, fetch, setTimeout);
+  return r;
+}
+function attrs(getItem: (k: string) => string | null): Record<string, string> {
+  const d = runAll(getItem).dataset;
+  delete d.lang;
+  return d;
 }
 const run = (getItem: (k: string) => string | null): string | undefined => attrs(getItem).theme;
 const scriptSrc = (csp: string): string[] => / script-src ([^;]*);/.exec(csp)?.[1].split(' ') ?? [];
@@ -22,6 +41,8 @@ describe('theme head script', () => {
     expect(inline(readWebFile('index.html'))).toEqual([script]);
     expect(inline(readWebFile('edit.html'))).toEqual([script]);
     expect(inline(readWebFile('my-workouts.html'))).toEqual([script]); // F-53 MW-1
+    // F-54 LG-2: the upload, About and generic pages hold for the language too.
+    for (const f of ['upload.html', 'about.html', 'generic.html']) expect(inline(readWebFile(f)), f).toEqual([script]);
     expect(script).not.toMatch(/\{\{|\/\/|\/\*/); // html/template would rewrite actions or comments
   });
 
@@ -54,5 +75,53 @@ describe('theme head script', () => {
         throw new Error('SecurityError');
       }),
     ).toBeUndefined();
+  });
+
+  // F-54 LG-1, LG-2, AC 35, 38.
+  describe('language', () => {
+    const none = () => null;
+    const stored = (v: string) => (k: string) => (k === 'wx.lang' ? v : null);
+    const throwing = () => {
+      throw new Error('SecurityError');
+    };
+    const files = { 'data-de': '/assets/lang-page-de-x.json', 'data-es': '/assets/lang-page-es-x.json', 'data-fr': '/assets/lang-page-fr-x.json' };
+
+    it('takes the first browser language whose primary subtag is one of the four, else English', () => {
+      expect(runAll(none, ['de-AT', 'en']).dataset.lang).toBe('de');
+      expect(runAll(none, ['it', 'fr']).dataset.lang).toBe('fr');
+      expect(runAll(none, ['it']).dataset.lang).toBe('en');
+      expect(runAll(none, ['en-US', 'de']).dataset.lang).toBe('en');
+      expect(runAll(none, ['ES-mx']).dataset.lang).toBe('es');
+      expect(runAll(none, []).dataset.lang).toBe('en');
+      expect(runAll(none, undefined).dataset.lang).toBe('en'); // navigator.language 'en-GB'
+    });
+
+    it('a stored valid choice wins; anything else reads as nothing stored', () => {
+      expect(runAll(stored('fr'), ['de']).dataset.lang).toBe('fr');
+      expect(runAll(stored('en'), ['de']).dataset.lang).toBe('en');
+      for (const v of ['FR', 'it', 'de ', '']) expect(runAll(stored(v), ['es']).dataset.lang).toBe('es');
+    });
+
+    it('storage that throws skips only the stored step (AC 38)', () => {
+      expect(runAll(throwing, ['de-CH']).dataset.lang).toBe('de');
+    });
+
+    it('holds and requests the one file of the held group for a language other than English, released after 500 ms', () => {
+      const r = runAll(none, ['es'], files);
+      expect(r.dataset.hold).toBe('');
+      expect(r.fetched).toEqual(['/assets/lang-page-es-x.json']);
+      expect(r.win.wxLang).toBeInstanceOf(Promise);
+      expect(r.timers).toHaveLength(1);
+      r.timers[0]();
+      expect('hold' in r.dataset).toBe(false);
+    });
+
+    it('never holds or fetches for English or a page without a held group', () => {
+      for (const r of [runAll(none, ['en'], files), runAll(none, ['de'], null)]) {
+        expect(r.dataset.hold).toBeUndefined();
+        expect(r.fetched).toEqual([]);
+        expect(r.timers).toEqual([]);
+      }
+    });
   });
 });

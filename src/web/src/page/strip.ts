@@ -9,6 +9,7 @@ import CursorReadout from '../components/charts/CursorReadout.svelte';
 import type { CursorStore } from '../lib/cursor';
 import type { WorkoutData } from '../lib/datafile';
 import type { Units } from '../lib/format';
+import { onLanguage } from '../lib/i18n';
 import type { UnitsStore } from '../lib/units';
 
 export function mountStrip(container: HTMLElement, data: WorkoutData, cursor: CursorStore, units: UnitsStore): void {
@@ -23,10 +24,13 @@ export function mountStrip(container: HTMLElement, data: WorkoutData, cursor: Cu
   });
   const put = (u: Units): object => mount(CursorReadout, { target: strip, props: { data, cursor, units: u } });
   let readout = put(units.get());
-  units.subscribe((u) => {
+  const again = (): void => {
     void unmount(readout);
-    readout = put(u);
-  });
+    readout = put(units.get());
+  };
+  units.subscribe(again);
+  onLanguage(again); // F-54: labels and decimal separators
+
   if (typeof ResizeObserver === 'function') {
     new ResizeObserver((e) => container.style.setProperty('--wx-strip', e[0].contentRect.height + 'px')).observe(strip);
   }

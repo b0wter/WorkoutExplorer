@@ -4,28 +4,31 @@
 
 import './report.css';
 import { cleanText } from '../lib/text';
+import { serverText } from '../lib/errors/texts';
+import { onLanguage } from '../lib/i18n';
+import { t, type en } from './texts';
 
 const MAX = 1000;
-const FALLBACK = 'The report could not be sent. Please try again later.';
-/** Statuses whose JSON `message` is shown as is (RF-7). */
+/** Statuses whose JSON body is answered by its code's text (RF-7, F-54 LG-6). */
 const SPOKEN = [400, 404, 429, 500];
 
+/** Texts go in by `data-k` and textContent (LG-7: no text in innerHTML). */
 const HTML = `<form class="report-form">
-<h2>Report this workout</h2>
-<fieldset><legend>Reason</legend>
-<label><input type="radio" name="reason" value="spam" required> Spam</label>
-<label><input type="radio" name="reason" value="illegal_content"> Illegal content</label>
-<label><input type="radio" name="reason" value="personal_data"> Someone else's personal data</label>
-<label><input type="radio" name="reason" value="other"> Other</label>
+<h2 data-k="reportTitle"></h2>
+<fieldset><legend data-k="reason"></legend>
+<label><input type="radio" name="reason" value="spam" required> <span data-k="spam"></span></label>
+<label><input type="radio" name="reason" value="illegal_content"> <span data-k="illegal_content"></span></label>
+<label><input type="radio" name="reason" value="personal_data"> <span data-k="personal_data"></span></label>
+<label><input type="radio" name="reason" value="other"> <span data-k="other"></span></label>
 </fieldset>
-<label for="report-msg">Message (optional)</label>
+<label for="report-msg" data-k="messageLabel"></label>
 <textarea id="report-msg" name="message" maxlength="${MAX}" rows="4" aria-describedby="report-count report-note"></textarea>
 <p class="report-count" id="report-count">0 / ${MAX}</p>
-<p class="report-note" id="report-note">Please do not include contact details. Reports get no reply.</p>
+<p class="report-note" id="report-note" data-k="reportNote"></p>
 <p class="report-error" role="alert"></p>
-<p class="report-actions"><button type="submit">Send report</button> <button type="button">Cancel</button></p>
+<p class="report-actions"><button type="submit" data-k="sendReport"></button> <button type="button" data-k="cancelReport"></button></p>
 </form>
-<div class="report-done" role="status" hidden><p>Thank you. The report has been sent.</p><p class="report-actions"><button type="button">Close</button></p></div>`;
+<div class="report-done" role="status" hidden><p data-k="thanks"></p><p class="report-actions"><button type="button" data-k="closeReport"></button></p></div>`;
 
 /** Opens the form for the workout `publicId`; the entered text survives a close (RF-8). */
 export function openReport(doc: Document, publicId: string): void {
@@ -35,8 +38,13 @@ export function openReport(doc: Document, publicId: string): void {
 function build(doc: Document, publicId: string): HTMLDialogElement {
   const d = doc.createElement('dialog');
   d.className = 'report';
-  d.setAttribute('aria-label', 'Report this workout');
   d.innerHTML = HTML;
+  const label = (): void => {
+    d.setAttribute('aria-label', t('reportTitle'));
+    for (const e of d.querySelectorAll<HTMLElement>('[data-k]')) e.textContent = t(e.dataset.k as keyof typeof en);
+  };
+  label();
+  onLanguage(label);
   const form = d.querySelector('form')!;
   const done = d.querySelector<HTMLElement>('.report-done')!;
   const message = form.querySelector('textarea')!;
@@ -60,11 +68,11 @@ function build(doc: Document, publicId: string): HTMLDialogElement {
     const reason = (form.elements.namedItem('reason') as RadioNodeList).value;
     if (!reason) return; // `required` already stops the submit
     send.disabled = true;
-    send.textContent = 'Sending…';
+    send.textContent = t('sending');
     error.textContent = '';
     void post(publicId, reason, cleanText(message.value, true)).then((text) => {
       send.disabled = false;
-      send.textContent = 'Send report';
+      send.textContent = t('sendReport');
       if (text !== null) {
         error.textContent = text; // the reason and the text stay (AC 5)
         send.focus(); // QA-28-r1-1: focus left the disabled button
@@ -92,11 +100,10 @@ async function post(publicId: string, reason: string, message: string): Promise<
     if (res.status === 204) return null;
     if (SPOKEN.includes(res.status)) {
       const body: unknown = await res.json();
-      const text = (body as { message?: unknown } | null)?.message;
-      if (typeof text === 'string') return text;
+      return serverText(body, t('reportNotSent'));
     }
   } catch {
     // network failure or a body that is not JSON: the fallback
   }
-  return FALLBACK;
+  return t('reportNotSent');
 }

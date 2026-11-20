@@ -6,22 +6,23 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="referrer" content="no-referrer" />
     <title>Workout Explorer</title>
+    <script>var d=document.documentElement,D=d.dataset,L=["en","de","es","fr"],l,u;try{var s=localStorage,t=s.getItem("wx.theme");if(t=="light"||t=="dark")D.theme=t;if(s.getItem("wx.hint.done")=="1")D.hint="done";l=s.getItem("wx.lang")}catch(e){}if(L.indexOf(l)==-1){l="en";(navigator.languages||[navigator.language]).some(function(x){x=String(x).split("-")[0].toLowerCase();return L.indexOf(x)>=0&&(l=x)})}D.lang=l;u=document.querySelector("meta[data-hold]");u=u&&u.getAttribute("data-"+l);if(u){D.hold="";window.wxLang=fetch(u);setTimeout(function(){delete D.hold},500)}</script>
   </head>
   <body>
     <main id="page" data-state="checking">
-      <h1>Workout Explorer</h1>
-      <p class="intro">Upload a FIT file, or a ZIP archive holding one, to get a page with map, charts and laps that you can share.</p>
+      <div class="top"><h1>Workout Explorer</h1><span class="lang-slot" id="lang-slot"></span></div>
+      <p class="intro" data-t="intro">Upload a FIT file, or a ZIP archive holding one, to get a page with map, charts and laps that you can share.</p>
       <p id="notice" class="notice"></p>
       <div id="drop" class="drop">
-        <p>Drop a FIT file or ZIP archive here</p>
+        <p data-t="dropHere">Drop a FIT file or ZIP archive here</p>
         <input id="file" class="pick" type="file" />
-        <label for="file" class="button">Choose a file</label>
+        <label for="file" class="button" data-t="chooseFile">Choose a file</label>
       </div>
       <p id="progress" class="progress"></p>
       <p id="message" class="message"></p>
-      <p class="mine-link"><a href="/my-workouts">My workouts</a>: the workouts uploaded from this browser</p>
+      <p class="mine-link" data-t="mineLink"><a href="/my-workouts" data-p="link" data-t="mineLinkText">My workouts</a>: the workouts uploaded from this browser</p>
     </main>
-    <footer><a href="/about">About</a> <!--wx:impressum--></footer>
+    <footer><a href="/about" data-t="uploadAbout">About</a> <!--wx:impressum--></footer>
     <script type="module" src="/src/upload/main.ts"></script>
   </body>
 </html>

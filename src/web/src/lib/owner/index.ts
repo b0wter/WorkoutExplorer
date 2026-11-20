@@ -57,8 +57,9 @@ export type PreviewFrame =
 export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_start_m' | 'hide_end_m' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power' | 'pins'>>;
 
 /** 'not-found' is ADR-025's single answer (the generic page, E-4); 'error' carries the server's
- *  message or UP-10's sentence. */
-export type OwnerResult<T> = { ok: true; value: T } | { ok: false; notFound: true } | { ok: false; notFound: false; message: string };
+ *  `error` code and message ('' without one: UP-10's sentence); the caller picks the text by code
+ *  (F-54 LG-6, lib/errors). */
+export type OwnerResult<T> = { ok: true; value: T } | { ok: false; notFound: true } | { ok: false; notFound: false; message: string; code?: string };
 
 export interface OwnerClient {
   readonly publicId: string;
@@ -91,8 +92,6 @@ export interface OwnerClient {
   draft(): Promise<Response>;
 }
 
-/** UP-10's server-error sentence; the same text as lib/upload's (a test holds them equal). */
-export const SERVER_ERROR = 'Something went wrong on the server. Please try again later.';
 
 const ID = /^[0-9A-Za-z]{22}$/;
 /** F-36 MC-2: the key goes into the request path, so nothing else is ever sent. */
@@ -141,7 +140,7 @@ export function openOwner(location: OwnerLocation, fetchFn: typeof fetch = fetch
   /** One owner request: 404 is not found; another failure carries the server's message or UP-10's
    *  sentence; `read` turns a success into the value (null or a throw: UP-10's sentence). */
   const send = async <T>(suffix: string, init: RequestInit, read: (r: Response) => Promise<T | null>): Promise<OwnerResult<T>> => {
-    const failed = { ok: false, notFound: false, message: SERVER_ERROR } as const;
+    const failed = { ok: false, notFound: false, message: '' } as const;
     let response: Response;
     try {
       response = await request(suffix, init);
@@ -153,8 +152,9 @@ export function openOwner(location: OwnerLocation, fetchFn: typeof fetch = fetch
       const value = await read(response).catch(() => null);
       return value === null ? failed : { ok: true, value };
     }
-    const message = ((await response.json().catch(() => null)) as { message?: unknown } | null)?.message;
-    return typeof message === 'string' && message !== '' ? { ok: false, notFound: false, message } : failed;
+    const body = (await response.json().catch(() => null)) as { message?: unknown; error?: unknown } | null;
+    const message = typeof body?.message === 'string' ? body.message : '';
+    return typeof body?.error === 'string' ? { ok: false, notFound: false, message, code: body.error } : { ok: false, notFound: false, message };
   };
   const asSettings = (r: Response): Promise<Settings | null> =>
     r.json().then((b: unknown) => (typeof b === 'object' && b !== null ? (b as Settings) : null));
@@ -180,7 +180,7 @@ export function openOwner(location: OwnerLocation, fetchFn: typeof fetch = fetch
     putPreviewMap: (key, png, signal) =>
       KEY.test(key)
         ? send('/preview-map/' + key, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png, signal }, async () => true as const)
-        : Promise.resolve({ ok: false, notFound: false, message: SERVER_ERROR }),
+        : Promise.resolve({ ok: false, notFound: false, message: '' }),
     draft: () => request('/draft.bin'),
   };
 }

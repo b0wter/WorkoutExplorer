@@ -336,7 +336,11 @@ body > .page .charts {
     transition: height 0.2s, opacity 0.2s;
   }
 }
-/* Control group (D-8): Copy link, the units and the theme slot (DS-4); on their own line below the title
+/* F-54 LG-2: while the head script holds for the language file, the page is laid out, not painted. */
+html[data-hold] body {
+  visibility: hidden;
+}
+/* Control group (D-8): Copy link, the units, the theme (DS-4) and the language slot (F-54); on their own line below the title
    on narrow phones, beside it from 560 px when the title keeps its width. The slots reserve their size,
    so a select's arrival moves nothing. */
 .ctl {
@@ -347,14 +351,16 @@ body > .page .charts {
   gap: 8px;
 }
 .units-slot,
-.theme-slot {
+.theme-slot,
+.lang-slot {
   display: block;
   box-sizing: border-box;
   width: 104px;
   height: 32px;
 }
 .units-slot select,
-.theme-slot select {
+.theme-slot select,
+.lang-slot select {
   width: 100%;
   height: 100%;
   font: inherit;

@@ -35,7 +35,7 @@ func TestLapsMarkup(t *testing.T) {
 		file, want, not string
 	}{
 		{"ride-laps-no-totals.fit", "<td>3</td>", "Splits"},
-		{"ride-no-laps.fit", "<h2>Splits</h2>", "<table"},
+		{"ride-no-laps.fit", `<h2 data-t="headSplits">Splits</h2>`, "<table"},
 	} {
 		t.Run(c.file, func(t *testing.T) {
 			fx := newFixture(t, c.file)

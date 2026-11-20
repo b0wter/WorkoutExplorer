@@ -11,6 +11,8 @@ import type { SummaryItem, summaryItems } from '../lib/page';
 import { formatFixed, toSpeed, type Units } from '../lib/format';
 import { formatClock, formatRadius } from '../lib/format/dates';
 import type { Summary, TimeZone } from '../lib/datafile';
+import { lang } from '../lib/i18n';
+import { t } from './texts';
 
 /** The public facts (SE-1): the metadata's sport, summary, sessions' sports and lengths, and
  *  whether the page starts its zones section. */
@@ -34,7 +36,9 @@ export interface OwnerFacts {
   readonly untrimmed: Summary;
 }
 
-const TRIM_ENDS: Record<string, string> = { start: 'at the start', end: 'at the end', both: 'at the start and the end' };
+const TRIM_ENDS: Record<string, 'trimmedStart' | 'trimmedEnd' | 'trimmedBoth'> = { start: 'trimmedStart', end: 'trimmedEnd', both: 'trimmedBoth' };
+/** The pairs' keys (lib/page's avg/max cells), by Key: the labels are in the page language. */
+const PAIRS = ['speed', 'heart_rate', 'power', 'cadence', 'temperature'];
 
 const cell = (i: SummaryItem | undefined): string => (i ? i.Value + (i.Unit ? ' ' + i.Unit : '') : '');
 
@@ -45,52 +49,53 @@ export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cel
   const trim = button.dataset.trim ?? '';
   const items = cells(f.sport, f.summary, units);
   const get = (k: string): SummaryItem | undefined => items.find((i) => i.Key === k);
-  const ex = (text: string): readonly [string, string] => ['ex', text && 'This workout: ' + text + '.'];
+  const ex = (text: string): readonly [string, string] => ['ex', text && t('example', { x: text })];
   const speed = (kmh: number): string => formatFixed(toSpeed(kmh / 3.6, units), 1) + (units === 'metric' ? ' km/h' : ' mph');
+  // A label inside the example's sentence: lower case, but German nouns keep their capital.
+  const low = (label: string): string => (lang() === 'de' ? label : label.toLowerCase());
   const transitions = f.sessions.filter((s) => s.sport === 'transition').length;
   const lines: Node[] = [];
   const add = (name: string, text: string, example = ''): void => void lines.push(line(doc, name, ['', text], ex(example)));
 
   const [dist, moving, elapsed] = [cell(get('distance')), cell(get('moving_time')), cell(get('elapsed_time'))];
-  add('Totals', 'The values the device recorded for the whole workout; where it recorded none, the server computed them from the samples.', [dist, elapsed].filter(Boolean).join(' in '));
+  add(t('totalsName'), t('totalsText'), dist && elapsed ? t('distIn', { d: dist, t: elapsed }) : dist || elapsed);
+  add(t('movingName'), t('movingText', { ride: speed(1), other: speed(0.5) }), moving && (elapsed ? t('movingOf', { moving, elapsed }) : moving));
   add(
-    'Moving time',
-    `Taken from the device's pauses where it recorded them, otherwise the time faster than ${speed(1)} on a ride or ${speed(0.5)} in other sports; pauses count as stopped.`,
-    moving && (elapsed ? `${moving} moving of ${elapsed} elapsed` : moving),
+    t('elapsedName'),
+    t(transitions ? 'elapsedTransitions' : f.sessions.length > 1 ? 'elapsedLegs' : 'elapsedText'),
+    elapsed && transitions ? t('elapsedIncl', { elapsed, n: transitions }) : '',
   );
-  add(
-    'Elapsed time',
-    'From the start to the last record, including pauses' + (transitions ? ', transitions and gaps between legs.' : f.sessions.length > 1 ? ' and gaps between legs.' : '.'),
-    elapsed && transitions ? `${elapsed}, including ${transitions} transition${transitions > 1 ? 's' : ''}` : '',
-  );
-  const avg = items.find((i) => /^(Avg|Max) /.test(i.Label));
+  const avg = items.find((i) => PAIRS.includes(i.Key));
   if (avg)
     add(
-      'Averages and maximums',
-      'The device\'s values for the whole workout, or the server\'s where the device recorded none.' +
-        (transitions ? ' Heart rate includes the transitions; speed, cadence and power do not.' : ''),
-      avg.Label.toLowerCase() + ' ' + cell(avg) + (avg.Max ? ', max ' + avg.Max + (avg.Unit ? ' ' + avg.Unit : '') : ''),
+      t('avgName'),
+      t(transitions ? 'avgTextTransitions' : 'avgText'),
+      avg.Max ? t('avgMaxExample', { label: low(avg.Label), value: cell(avg), max: avg.Max + (avg.Unit ? ' ' + avg.Unit : '') }) : t('avgExample', { label: low(avg.Label), value: cell(avg) }),
     );
-  add('Range panel and laps', 'Computed from the recorded samples, so they can differ slightly from the device\'s totals.');
+  add(t('rangeLapsName'), t('rangeLapsText'));
   const o = f.owner;
   if (TRIM_ENDS[trim]) {
-    let example = 'trimmed ' + TRIM_ENDS[trim] + ', totals recomputed';
+    let example = t(TRIM_ENDS[trim]);
     if (o) {
       const off = o.zone?.known ? o.zone.offset_seconds : 0;
       const utc = o.zone?.known ? '' : ' UTC';
-      const at = o.trimAt.map((t, i) => t && (i ? 'ends ' : 'starts ') + formatClock(t, off) + utc).filter(Boolean);
+      const at = o.trimAt.map((x, i) => x && t(i ? 'endsAt' : 'startsAt', { t: formatClock(x, off) + utc })).filter(Boolean);
       const kept = new Set(items.map((i) => i.Key));
-      // An empty strip means the trimmed values are unavailable (TR-9 read failure), not dropped (QA-58-r1-3).
-      const dropped = items.length ? cells(f.sport, o.untrimmed, units).filter((i) => !kept.has(i.Key)).map((i) => i.Label.toLowerCase()) : [];
-      example = `trimmed (now ${at.join(', ')})` + (items.length ? `; recomputed: ${items.map((i) => i.Label.toLowerCase()).join(', ')}` : '') + (dropped.length ? `; dropped: ${dropped.join(', ')}` : '');
+      const dropped = items.length ? cells(f.sport, o.untrimmed, units).filter((i) => !kept.has(i.Key)).map((i) => low(i.Label)) : [];
+      example =
+        t('trimmedNow', { at: at.join(', ') }) +
+        (items.length ? t('recomputed', { list: items.map((i) => low(i.Label)).join(', ') }) : '') +
+        (dropped.length ? t('dropped', { list: dropped.join(', ') }) : '');
     }
-    add('Trim', 'After a trim, the totals are recomputed for the remaining part; calories are dropped.', example);
+    add(t('trimName'), t('trimText'), example);
   }
-  // Every workout, both pages (SE-3); the example only with the owner's facts (OQ-253).
-  const radius = (m: number, end: string): string => (m ? `${end} hidden within ${formatRadius(m, units)}` : `${end} not hidden`);
-  add('Hidden start and end', 'The sharer may hide the route near the start and end; that changes the map, never the totals.', o ? radius(o.radii[0], 'start') + ', ' + radius(o.radii[1], 'end') : '');
-  if (get('pool') || get('lengths') || f.lengths.length)
-    add('Pool swims', 'Lengths count the active lengths only; rests are not lengths.', [get('lengths') && cell(get('lengths')) + ' lengths', get('pool') && 'in a ' + cell(get('pool')) + ' pool'].filter(Boolean).join(' '));
-  if (f.zones) add('Zones', 'The line under the zones says where their limits come from: the device, an estimate, or the sharer\'s own values.');
-  openDialog(doc, 'summary-dlg', 'About these numbers', lines, button.parentElement ?? undefined);
+  const radius = (m: number, end: 0 | 1): string =>
+    m ? t(end ? 'endHiddenWithin' : 'startHiddenWithin', { r: formatRadius(m, units) }) : t(end ? 'endNotHidden' : 'startNotHidden');
+  add(t('hiddenName'), t('hiddenText'), o ? radius(o.radii[0], 0) + ', ' + radius(o.radii[1], 1) : '');
+  const lengths = get('lengths');
+  const pool = get('pool');
+  if (pool || lengths || f.lengths.length)
+    add(t('poolName'), t('poolText'), [lengths && t('poolLengths', { n: cell(lengths) }), pool && t('poolIn', { p: cell(pool) })].filter(Boolean).join(' '));
+  if (f.zones) add(t('zonesInfoName'), t('zonesInfoText'));
+  openDialog(doc, 'summary-dlg', t('numbersTitle'), lines, button.parentElement ?? undefined);
 }

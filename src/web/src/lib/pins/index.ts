@@ -5,19 +5,13 @@
 import { nearestIndex } from '../cursor/nearest';
 import { cleanText } from '../text';
 import type { ApiPin } from '../owner';
+import { t } from './texts';
 
 export const PIN_TYPES = ['point_of_interest', 'danger', 'difficult_section', 'water_food', 'photo_spot', 'note'] as const;
 export type PinType = (typeof PIN_TYPES)[number];
 
-/** PIN-2; an empty title shows its type's name (OQ-277). One place for F-54. */
-export const TYPE_NAMES: Readonly<Record<PinType, string>> = {
-  point_of_interest: 'Point of interest',
-  danger: 'Danger',
-  difficult_section: 'Difficult section',
-  water_food: 'Water and food',
-  photo_spot: 'Photo spot',
-  note: 'Note',
-};
+/** PIN-2; an empty title shows its type's name in the page language (OQ-277, F-54). */
+export const typeName = (type: PinType): string => t(type);
 
 /** PN-2, OQ-238: the server's limits, in code points. */
 export const MAX_PINS = 50;
@@ -64,7 +58,7 @@ export function sortPins<T extends Pick<ShownPin, 'from' | 'to'>>(pins: T[]): T[
 }
 
 /** The name a pin shows: its title, else its type's name (OQ-277). */
-export const pinName = (p: Pick<ShownPin, 'type' | 'title'>): string => p.title || TYPE_NAMES[p.type];
+export const pinName = (p: Pick<ShownPin, 'type' | 'title'>): string => p.title || typeName(p.type);
 
 // ---- edit page (PN-3, PN-5, PN-12) ------------------------------------------------------------
 
@@ -114,16 +108,17 @@ export interface Shade {
   readonly to: number;
 }
 
-export const REMOVED = 'Removed on Save';
+/** The reason that wins (trimmed away); compared by edit/pins, so read in the current language. */
+export const removed = (): string => t('removedOnSave');
 
 /** PN-12: why a pin is dimmed, '' when it would be public. Trimmed away wins over hidden. */
 export function dimReason(p: Pick<ShownPin, 'from' | 'to'>, s: Shade, lat: Float64Array | undefined): string {
   const ends = p.to === undefined ? [p.from] : [p.from, p.to];
-  if (ends.some((i) => i < s.a || i > s.b)) return REMOVED;
+  if (ends.some((i) => i < s.a || i > s.b)) return removed();
   const start = ends.some((i) => s.from < 0 || i < s.from);
   const end = ends.some((i) => s.to < 0 || i > s.to);
-  if (start || end) return 'Hidden by the ' + (start && end ? 'start and end radius' : start ? 'start radius' : 'end radius');
-  return lat && ends.every((i) => lat[i] === lat[i]) ? '' : 'Hidden';
+  if (start || end) return t(start && end ? 'hiddenBoth' : start ? 'hiddenStart' : 'hiddenEnd');
+  return lat && ends.every((i) => lat[i] === lat[i]) ? '' : t('hidden');
 }
 
 /** OQ-275's mirror: some sample is kept, not hidden and has a position. */

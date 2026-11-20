@@ -11,6 +11,7 @@ import { mount } from 'svelte';
 import { createCursorStore } from '../lib/cursor';
 import { createSelectionStore, type SelectionStore } from '../lib/selection';
 import { loadDataFile } from '../lib/datafile';
+import { loadGroup, onLanguage, pageLang } from '../lib/i18n';
 import { routePresence } from '../lib/route';
 import ChartStack from '../components/charts/ChartStack.svelte';
 import RouteMap from '../components/map/RouteMap.svelte';
@@ -18,7 +19,7 @@ import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
 import { parseRangeLink, rangeFragment } from '../lib/rangelink';
-import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, loadHeader, addLangSelect, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
 import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
@@ -26,7 +27,7 @@ import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
 import { mountStrip } from './strip';
-import type { DataFileResult, WorkoutData } from '../lib/datafile';
+import type { DataFileResult, WorkoutData, WorkoutMeta } from '../lib/datafile';
 import type { ZoneSource } from '../zones';
 import type { EffortWindow } from '../efforts';
 import type { Facts } from '../summary-info';
@@ -169,16 +170,54 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     look.theme = theme;
   });
 
+  // F-54 LG-1: the drop-down's choice applies to every loaded group and is remembered (DS-1).
+  // The loader is a lazy chunk: an English page view never needs it (F-54 bundle budget).
+  const i18n = (): Promise<typeof import('../lib/i18n/load')> => import('../lib/i18n/load');
+  addLangSelect(root, (l) => {
+    prefs.setLang(l);
+    void i18n().then((m) => m.setLang(l, win.document));
+  });
+  // The summary and laps (and on the viewing page the header) follow units and language once a
+  // metadata is known: the streamed prefix's or the full decode's, whichever comes first.
+  let enhanced = false;
+  const enhance = (meta: WorkoutMeta): void => {
+    if (enhanced) return;
+    enhanced = true;
+    enhanceUnits(root, meta, units, !edit);
+  };
+
   const url = edit ? '' : dataFileUrl(root);
+  // F-54 LG-2, LG-4: the viewing page's first language pass, released only while the head script holds.
+  let prefix: Promise<WorkoutMeta | null> = Promise.resolve(null);
+  let fromPrefix: ((r: Response) => void) | undefined;
+  if (!edit && pageLang(win.document) !== 'en' && url !== null) {
+    const reader = import('../lib/datafile/prefix'); // F-54: lazy, with the loader
+    // The clone is taken before the full read starts; the reader may arrive later.
+    prefix = new Promise((ok) => (fromPrefix = (r) => void ((c) => reader.then((m) => m.streamMeta(c), () => null).then(ok))(r.clone())));
+  }
+  const english = pageLang(win.document) === 'en';
+  const markup = (): void => void i18n().then((m) => m.applyMarkup(root));
+  if (!edit) onLanguage(markup);
+  void loadGroup('page', win.document); // English: only recorded, for a later switch
   if (url === null) {
     console.warn('page: no data file link');
+    if (!english) void i18n().then((m) => m.startLang(['page'], win.document, undefined, markup));
     showLoadError(root, loadErrorText('network'));
     return;
   }
   const measure = new URLSearchParams(win.location.search).has('measure');
   performance.mark('wx-page:load-start');
   // In parallel: the data file and, only with ?measure, the recorder chunk.
-  const loading = edit ? Promise.resolve(edit.data) : loadDataFile(() => fetch(url));
+  const loading = edit ? Promise.resolve(edit.data) : loadDataFile(() => fetch(url), fromPrefix);
+  if (!edit && !english) {
+    const meta = prefix.then((m) => m ?? loading.then((r) => (r.ok ? r.data.meta : null)));
+    void i18n().then((m) =>
+      m.startLang(['page'], win.document, Promise.all([meta, loadHeader()]), () => {
+        m.applyMarkup(root);
+        void meta.then((d) => d && enhance(d));
+      }),
+    );
+  }
   const recorderModule: Promise<RecorderModule | null> | null = measure
     ? import('../measure/recorder').catch((error: unknown) => {
         console.warn('page: scrub recorder not loaded', error);
@@ -193,7 +232,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     return;
   }
   const data = result.data;
-  enhanceUnits(root, data.meta, units, !edit);
+  enhance(data.meta);
   addUnitsSelect(root, units, prefs.setUnits);
   // F-58 SE-1: the viewing page's dialog gets these public metadata fields only, never streams,
   // positions, route state or the title (AC 39); owner facts come only through the edit seam.

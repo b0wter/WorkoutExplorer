@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './texts';
   // The route map's static glue (F-06 design, "Route presence", "Loading and start-up";
   // ADR-013). STATIC: only routePresence, the hint, the container, the touch-quiet gate and
   // the import() of the lazy adapter. MapLibre is reached only through import('./map-view').
@@ -101,7 +102,7 @@
         if (signal.aborted) return;
         // No WebGL2, a failed chunk or a throw during mount: one line in the map's place
         // (OQ-16); the charts are untouched. Console only; the error holds no coordinates.
-        node.textContent = 'The map could not be loaded.';
+        node.textContent = t('mapFailed');
         queueMicrotask(() => {
           throw error;
         });
@@ -136,7 +137,7 @@
   {#if presence === 'route'}
     <div class="route-map" class:fill {@attach attachMap}></div>
   {:else if presence === 'no-location-data'}
-    <p class="map-hint">No location data in this workout.</p>
+    <p class="map-hint">{t('noLocation')}</p>
   {/if}
 {/key}
 

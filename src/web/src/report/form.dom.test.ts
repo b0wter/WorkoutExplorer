@@ -146,10 +146,11 @@ describe('sending (RF-5, RF-6, AC 2)', () => {
 describe('errors keep the form (RF-7, AC 5)', () => {
   const json = (status: number, body: unknown) => async () => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   it.each([
-    ['429', json(429, { error: 'rate_limited', message: 'Too many reports. Please try again later.' }), 'Too many reports. Please try again later.'],
+    ['429', json(429, { error: 'rate_limited', message: 'Too many reports. Please try again later.' }), 'Too many requests. Please try again later.'],
     ['404', json(404, { error: 'not_found', message: 'This workout has expired or is not available.' }), 'This workout has expired or is not available.'],
-    ['400', json(400, { error: 'invalid_report', message: 'Server sentence.' }), 'Server sentence.'],
-    ['500', json(500, { error: 'server_error', message: 'Something went wrong.' }), 'Something went wrong.'],
+    ['400', json(400, { error: 'invalid_report', message: 'Server sentence.' }), 'The report was not accepted. Please reload the page and try again.'],
+    ['400, a code not listed: the server sentence', json(400, { error: 'new_code', message: 'Server sentence.' }), 'Server sentence.'],
+    ['500', json(500, { error: 'server_error', message: 'Something went wrong.' }), 'Something went wrong on the server. Please try again later.'],
     ['500 without a message string', json(500, { message: 5 }), FALLBACK],
     ['400 with null', json(400, null), FALLBACK],
     ['502 from Caddy, not JSON', async () => new Response('Bad Gateway', { status: 502 }), FALLBACK],

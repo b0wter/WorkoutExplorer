@@ -3,6 +3,7 @@
   // window.confirm. The confirmation is announced (role="alert") and takes the focus on Cancel, the
   // safe choice (QA-20-r1-3). No on*= directives: see EditPanel.
   import type { Attachment } from 'svelte/attachments';
+  import { t } from '../../edit/texts';
 
   interface Props {
     /** '' or the running action's text; Delete and Confirm are disabled meanwhile (C-2). */
@@ -25,11 +26,11 @@
 </script>
 
 <span class="edit-delete" {@attach wire}>
-  <button type="button" class="edit-button" data-act="delete" disabled={busy !== ''}>Delete</button>
+  <button type="button" class="edit-button" data-act="delete" disabled={busy !== ''}>{t('deleteButton')}</button>
   {#if confirming}
     <span class="edit-confirm" role="alert">
-      <span class="edit-confirm-text">Delete this workout permanently? Both the viewing link and the edit link stop working. This cannot be undone.</span>
-      <span><button type="button" class="edit-button edit-danger" data-act="confirm" disabled={busy !== ''}>Delete permanently</button> <button type="button" class="edit-button" data-act="cancel" {@attach (b) => b.focus()}>Cancel</button></span>
+      <span class="edit-confirm-text">{t('deleteConfirm')}</span>
+      <span><button type="button" class="edit-button edit-danger" data-act="confirm" disabled={busy !== ''}>{t('deletePermanently')}</button> <button type="button" class="edit-button" data-act="cancel" {@attach (b) => b.focus()}>{t('cancel')}</button></span>
     </span>
   {/if}
 </span>

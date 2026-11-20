@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 // The enhancers (F-13 design D-8, D-14; AC 1 expiry, AC 6 copy link). Synthetic markup only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
+import { enhanceCopyLink, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
+
+const COPIED_TEXT = 'Link copied';
+const COPY_TEXT = 'Copy link';
 
 const ORIGIN = 'https://example.test';
 let root: HTMLElement;

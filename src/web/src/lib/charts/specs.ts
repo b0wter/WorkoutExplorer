@@ -22,6 +22,8 @@ import {
   toTemperature,
   type Units,
 } from '../format';
+import { heartRateUnit } from '../format';
+import { t } from './texts';
 
 export type ChartMetric = 'altitude' | 'speed' | 'heart_rate' | 'power' | 'cadence' | 'temperature';
 
@@ -70,16 +72,16 @@ export function chartSpecs(sport: string, units: Units): Readonly<Record<ChartMe
     ? (() => {
         // A stop has no pace (NaN: a gap, '–'). The real pace is returned; the chart clips it (chartValues).
         const toDisplay = (v: number): number => (v >= STOP_SPEED ? paceSeconds(sport, units, v) : NaN);
-        return { ...spec('speed', 'Pace', speedOrPaceUnit(sport, units), toDisplay, 0, '#1f6fc5', formatPace), invert: true, incrs: PACE_INCRS };
+        return { ...spec('speed', t('chartPace'), speedOrPaceUnit(sport, units), toDisplay, 0, '#1f6fc5', formatPace), invert: true, incrs: PACE_INCRS };
       })()
-    : spec('speed', 'Speed', speedOrPaceUnit(sport, units), (v) => toSpeed(v, units), 1, '#1f6fc5');
+    : spec('speed', t('chartSpeed'), speedOrPaceUnit(sport, units), (v) => toSpeed(v, units), 1, '#1f6fc5');
   return {
-    altitude: spec('altitude', 'Elevation', elevationUnit(units), (v) => toElevation(v, units), 0, '#5b8c3a'),
+    altitude: spec('altitude', t('chartElevation'), elevationUnit(units), (v) => toElevation(v, units), 0, '#5b8c3a'),
     speed: speedSpec,
-    heart_rate: spec('heart_rate', 'Heart rate', 'bpm', identity, 0, '#d0312d'),
-    power: spec('power', 'Power', 'W', identity, 0, '#8a3ffc'),
-    cadence: spec('cadence', 'Cadence', cadenceUnit(sport), identity, 0, '#0f8b8d'),
-    temperature: spec('temperature', 'Temperature', temperatureUnit(units), (v) => toTemperature(v, units), 0, '#d97706'),
+    heart_rate: spec('heart_rate', t('chartHeartRate'), heartRateUnit(), identity, 0, '#d0312d'),
+    power: spec('power', t('chartPower'), 'W', identity, 0, '#8a3ffc'),
+    cadence: spec('cadence', t('chartCadence'), cadenceUnit(sport), identity, 0, '#0f8b8d'),
+    temperature: spec('temperature', t('chartTemperature'), temperatureUnit(units), (v) => toTemperature(v, units), 0, '#d97706'),
   };
 }
 
@@ -128,10 +130,10 @@ export interface ReadoutField {
  *  Built once per WorkoutData; text() reads the full-resolution arrays (D-9). */
 export function readoutFields(data: WorkoutData, units: Units = 'metric'): readonly ReadoutField[] {
   const time = data.time;
-  const fields: ReadoutField[] = [{ key: 'elapsed', label: 'Time', unit: '', text: (i) => formatElapsed(time[i]) }];
+  const fields: ReadoutField[] = [{ key: 'elapsed', label: t('axisTime'), unit: '', text: (i) => formatElapsed(time[i]) }];
   const distance = data.metrics.distance;
   if (distance !== undefined) {
-    fields.push({ key: 'distance', label: 'Distance', unit: distanceUnit(units), text: (i) => formatDistance(distance[i], units) });
+    fields.push({ key: 'distance', label: t('axisDistance'), unit: distanceUnit(units), text: (i) => formatDistance(distance[i], units) });
   }
   for (const spec of presentCharts(data, units)) {
     const values = data.metrics[spec.metric];

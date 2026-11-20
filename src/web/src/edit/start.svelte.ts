@@ -7,6 +7,14 @@
 // goes only into the My workouts list (F-53 MW-3, lib/mine) in `list`.
 // Only mount() from svelte: flushSync, unmount and the like would join the shared activity entry.
 
+import { t } from './texts';
+import { serverText } from '../lib/errors/texts';
+
+/** F-54 LG-6: an owner failure's text, by its code; the server's message for an unlisted code. */
+const said = (r: { message: string; code?: string }): string => serverText({ error: r.code, message: r.message });
+import { t as tc } from '../components/page/texts';
+import { onLanguage } from '../lib/i18n';
+import { langState } from '../page/map-props.svelte';
 import { mount } from 'svelte';
 import './edit.css';
 import ActivityPage from '../components/page/ActivityPage.svelte';
@@ -54,16 +62,21 @@ function shade(ranges: Ranges): ChartDecorator {
 const radii = (s: Settings): [number, number] => [s.hide_start_m, s.hide_end_m];
 
 /** The generic page's content (generic.html, E-4), in this page's theme. No workout data. */
-export function showGeneric(doc: Document, text = 'This workout has expired or is not available.', upload = ''): void {
+export function showGeneric(doc: Document, text = t('gone'), upload = ''): void {
   doc.title = 'Workout Explorer';
   const link = doc.getElementById('wx-impressum'); // kept: the other footers copy from it (F-38 IM-7)
-  doc.body.innerHTML = `<main class="generic"><h1>Workout Explorer</h1><p>${text}</p>${upload}</main><footer class="foot generic-foot"><a href="/about">About</a></footer>`;
+  doc.body.innerHTML = `<main class="generic"><h1>Workout Explorer</h1><p></p>${upload}</main><footer class="foot generic-foot"><a href="/about"></a></footer>`;
+  doc.querySelector('main.generic > p')!.textContent = text; // texts are never HTML (LG-7)
+  doc.querySelector('footer a')!.textContent = tc('about');
   if (link) doc.body.prepend(link);
   impressum(doc.querySelector('footer')!);
 }
 
 /** The deleted screen (F-20 C-8): E-4's teardown with a fixed sentence and the upload link. */
-const showDeleted = (doc: Document): void => showGeneric(doc, 'This workout has been deleted.', '<p><a href="/">Upload a workout</a></p>');
+const showDeleted = (doc: Document): void => {
+  showGeneric(doc, t('deleted'), '<p><a href="/"></a></p>');
+  doc.querySelector('main a[href="/"]')!.textContent = t('uploadWorkout');
+};
 
 /** How long the original's object URL lives after the click (C-6). */
 // shortcut: a fixed 40 s (FileSaver.js's value) because Safari can drop a download whose URL is
@@ -138,12 +151,12 @@ function actions(doc: Document, owner: OwnerClient, mineList: ReturnType<typeof 
       }
     },
     remove: (): Promise<void> =>
-      ui.run('Deleting…', async () => {
+      ui.run(t('deleting'), async () => {
         const r = await owner.delete();
         if (r.ok || r.notFound) mineList.remove(); // MW-3, AC 46, 48
         if (r.ok) showDeleted(doc);
         else if (r.notFound) showGeneric(doc);
-        else status = r.message; // O-10: it may still exist; trying again is safe
+        else status = said(r); // O-10: it may still exist; trying again is safe
       }),
   };
   return ui;
@@ -151,6 +164,7 @@ function actions(doc: Document, owner: OwnerClient, mineList: ReturnType<typeof 
 
 /** Never rejects. `loc` is the window's location (a test passes its own, to record navigations). */
 export async function startEdit(host: HTMLElement, win: Window = window, loc: OwnerLocation = win.location): Promise<void> {
+  langState(); // F-54: before the first mount, so every component's texts follow a switch
   const doc = host.ownerDocument;
   const owner = openOwner(loc);
   if (!owner) return showGeneric(doc);
@@ -164,7 +178,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const [got, result] = await Promise.all([owner.settings(), loadDataFile(owner.draft)]);
   if (!got.ok && got.notFound) return gone();
   if (!result.ok && result.error.code === 'http-status' && result.error.status === 404) return gone();
-  if (!got.ok) return showMessage(host, got.message);
+  if (!got.ok) return showMessage(host, said(got));
   const data = result.ok ? result.data : null;
 
   let settings = $state.raw(got.value);
@@ -199,6 +213,14 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     });
   const first = build(got.value);
   let model = $state.raw(first);
+  // F-54: the view model's strings (header, laps, device, leg names) in the new language.
+  onLanguage(() => {
+    const next = build(settings);
+    if (!next || !model) return;
+    model = next;
+    doc.title = next.Page.Title;
+    setTimeout(() => enhanceExpiry(doc, Date.now())); // after Svelte's update, as on a save
+  });
   /** F-47 TR-9: the trim handles [a, b] as sample indices, live, unsaved too. */
   const last = (data?.sampleCount ?? 1) - 1;
   let cut = $state.raw<readonly [number, number]>([0, last]);
@@ -240,7 +262,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const apply = (r: OwnerResult<Settings>): r is { ok: true; value: Settings } => {
     if (!r.ok) {
       if (r.notFound) gone();
-      else ui.status = r.message;
+      else ui.status = said(r);
       return false;
     }
     // The response is the truth (E-6): the panel refills from it, the header re-renders from it.
@@ -269,12 +291,12 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     if (ui.busy) return;
     const patch = withPins(panel);
     if (Object.keys(patch).length === 0) {
-      ui.status = 'No changes';
+      ui.status = t('noChanges');
       return;
     }
-    return ui.run('Saving…', async () => {
+    return ui.run(t('saving'), async () => {
       if (!apply(await owner.save(patch))) return;
-      ui.status = 'Saved';
+      ui.status = t('saved');
       // MC-8(b): hiding or trim changed on a published workout; in the background, nothing awaited or shown.
       if (('hide_start_m' in patch || 'hide_end_m' in patch || 'trim_start_at' in patch || 'trim_end_at' in patch) && visibility !== 'draft') void basemap();
     });
@@ -285,7 +307,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   // basemap job starts after the save, so its frame reflects the saved hiding, and runs alongside
   // publish; the published page opens once both ended (the job: at most 10 s).
   const publish = (panel: SettingsPatch): Promise<void> =>
-    ui.run('Publishing…', async () => {
+    ui.run(t('publishing'), async () => {
       const patch = withPins(panel);
       if (Object.keys(patch).length > 0 && !apply(await owner.save(patch))) return;
       const job = basemap();
@@ -298,11 +320,11 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     });
 
   const download = (): Promise<void> =>
-    ui.run('Downloading…', async () => {
+    ui.run(t('downloading'), async () => {
       const r = await owner.original();
       if (!r.ok) {
         if (r.notFound) gone();
-        else ui.status = r.message;
+        else ui.status = said(r);
         return;
       }
       const url = URL.createObjectURL(r.value.blob); // blob: holds no token (C-6)
@@ -462,7 +484,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
 async function startPublished(host: HTMLElement, owner: OwnerClient, origin: string, mineList: ReturnType<typeof list>, gone: () => void): Promise<void> {
   const doc = host.ownerDocument;
   const got = await owner.settings();
-  if (!got.ok) return got.notFound ? gone() : showMessage(host, got.message);
+  if (!got.ok) return got.notFound ? gone() : showMessage(host, said(got));
   if (got.value.visibility === 'draft') return owner.toEdit(true);
   mineList.update(got.value);
   const ui = actions(doc, owner, mineList);

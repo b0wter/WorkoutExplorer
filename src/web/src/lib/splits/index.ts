@@ -41,8 +41,10 @@ const LISTS: Readonly<Record<string, [number[], number]>> = {
 };
 const POOL = [100, 200, 400, 500, 1000];
 
+import { t } from './texts';
+
 function label(metres: number, swim: boolean): string {
-  if (metres === 21097.5) return 'Half marathon';
+  if (metres === 21097.5) return t('halfMarathon');
   return swim || metres < 1000 ? metres + ' m' : metres / 1000 + ' km';
 }
 

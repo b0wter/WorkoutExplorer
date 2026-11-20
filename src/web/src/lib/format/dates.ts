@@ -1,33 +1,29 @@
 // Part of lib/format (F-13 design D-6): sport names, dates and the hiding radius (F-55), imported by path ('lib/format/dates').
-// Not re-exported by index.ts, so that the activity entry does not carry them: in the bundle only
-// the edit page's owner chunk uses them (F-19 bundle share). Same rules as index.ts: fixed English, never Intl.
+// Not re-exported by index.ts. Same rules as index.ts: English fixed, never Intl; German, Spanish
+// and French dates through Intl.DateTimeFormat (F-54 LG-7). The viewing page's language pass uses
+// sport names and dates (LG-4), so they are in the activity entry since F-54.
 
+import { lang } from '../i18n';
 import { M_PER_MILE, formatFixed, toElevation, type Units } from './index';
+import { t } from './dates-texts';
 
 function pad2(n: number): string {
   return n < 10 ? '0' + n : '' + n;
 }
 
-const SPORT_NAMES: Readonly<Record<string, string>> = {
-  cycling: 'Ride',
-  running: 'Run',
-  walking: 'Walk',
-  hiking: 'Hike',
-  swimming: 'Swim',
-  rowing: 'Row',
-  multisport: 'Multisport',
-};
+const SPORTS = ['cycling', 'running', 'walking', 'hiking', 'swimming', 'rowing', 'multisport'] as const;
+const known = (sport: string): sport is (typeof SPORTS)[number] => (SPORTS as readonly string[]).includes(sport);
 
 /** 'cycling' → 'Ride'; an unknown sport → its name with a capital and spaces ('cross_country_skiing' → 'Cross country skiing'); '' → 'Workout'. */
 export function sportName(sport: string): string {
-  if (Object.hasOwn(SPORT_NAMES, sport)) return SPORT_NAMES[sport];
+  if (known(sport)) return t(sport);
   const words = sport.replaceAll('_', ' ').trim();
-  return words === '' ? 'Workout' : words.charAt(0).toUpperCase() + words.slice(1);
+  return words === '' ? t('workout') : words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /** Icon key: the sport when it has its own icon, else 'generic'. */
 export function sportIcon(sport: string): string {
-  return Object.hasOwn(SPORT_NAMES, sport) && sport !== 'multisport' ? sport : 'generic';
+  return known(sport) && sport !== 'multisport' ? sport : 'generic';
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -40,6 +36,8 @@ function shifted(rfc3339: string, offsetSeconds: number): Date {
 /** '9 Oct 2026' for an instant in a zone given by its offset; never the viewer's zone. */
 export function formatDate(rfc3339: string, offsetSeconds: number): string {
   const d = shifted(rfc3339, offsetSeconds);
+  const l = lang();
+  if (l !== 'en') return new Intl.DateTimeFormat(l, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(d);
   return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
 }
 

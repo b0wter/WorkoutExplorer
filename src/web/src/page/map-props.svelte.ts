@@ -11,6 +11,20 @@ import type { ThemeChoice } from '../lib/prefs';
 import type { HintMode } from '../lib/charts';
 import type { ChartDecorator } from '../components/charts/uplot-options';
 import type { RouteMapHandle } from '../components/map/map-view';
+import { langSource, type Lang } from '../lib/i18n';
+
+let installed = false;
+/** F-54: the language as Svelte state, so a template that reads a text re-renders on a change.
+ *  Once per page; the edit glue calls it before its first mount. */
+export function langState(): void {
+  if (installed) return;
+  installed = true;
+  let lg = $state<Lang>('en');
+  langSource(
+    () => lg,
+    (next) => (lg = next),
+  );
+}
 
 /** The viewer's units and colour scheme as reactive state (F-14 D-10): the one scheme listener
  *  of the page. The glue passes both to ChartStack and RouteMap. A forced theme (DS-4) wins over
@@ -37,6 +51,7 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
   let d = $state.raw<ChartDecorator>();
   const chunks: Record<string, ChartDecorator> = {};
   units.subscribe((next) => (u = next));
+  langState();
   dark?.addEventListener('change', (e) => (isDark = e.matches));
   return {
     get units() {

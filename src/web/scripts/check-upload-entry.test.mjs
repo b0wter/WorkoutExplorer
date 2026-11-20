@@ -11,8 +11,13 @@ describe('problems', () => {
     expect(problems(manifest, () => 'fetch("/api/status")')).toEqual([]);
   });
   it('flags cookie and storage APIs in the upload chunk only', () => {
-    const read = (f) => (f === 'assets/upload.js' ? 'localStorage.x' : 'document.cookie');
+    const read = (f) => (f === 'assets/upload.js' ? 'sessionStorage.x' : 'document.cookie');
     expect(problems(manifest, read)).toEqual(['assets/upload.js: cookie or storage API']);
+  });
+  it('F-54 LG-1: localStorage only for the language key', () => {
+    expect(problems(manifest, (f) => (f === 'assets/upload.js' ? 'localStorage.setItem("wx.lang",l)' : ''))).toEqual([]);
+    expect(problems(manifest, (f) => (f === 'assets/upload.js' ? 'localStorage.x' : ''))).toEqual(['assets/upload.js: cookie or storage API']);
+    expect(problems(manifest, (f) => (f === 'assets/upload.js' ? 'localStorage.setItem("wx.lang",l);s.getItem("wx.units")' : ''))).toEqual(['assets/upload.js: cookie or storage API']);
   });
   it('F-53 AC 57: flags the list key in the viewing page, not in its lazy chunks', () => {
     const m = { ...manifest, 'index.html': { ...manifest['index.html'], dynamicImports: ['_m'] }, _m: { file: 'assets/mine.js' } };

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { t } from './texts';
+  import { t as tm } from '../map/texts';
   // Root of the static page modules for the edit page (F-13 design D-9; F-19 mounts it lazily).
   // Renders the template's markup from the view model; the map and chart slots stay empty, and
   // the same glue (page/start.ts) mounts the islands into them and attaches the enhancers.
@@ -30,8 +32,8 @@
   {#if model.Route.Map}<div id="map-slot" class="map-slot"></div>{/if}
   {#if model.Pins.URL}<div class="pins-slot" data-url={model.Pins.URL} data-count={model.Pins.Count} hidden></div>{/if}
   {#if edit}<div class="pins-slot"></div>{/if}
-  {#if model.Route.NoLocation}<p class="hint">No location data in this workout.</p>{/if}
-  {#if model.Route.Hidden}<p class="hint">The entire route has been hidden by the uploader.</p>{/if}
+  {#if model.Route.NoLocation}<p class="hint">{tm('noLocation')}</p>{/if}
+  {#if model.Route.Hidden}<p class="hint">{t('routeHidden')}</p>{/if}
   {#if model.ChartsClass}<div id="charts-slot" class={'charts ' + model.ChartsClass}></div>{/if}
   <div id="range-slot" class="range-slot"></div>
   <LapsTable laps={model.Laps} />

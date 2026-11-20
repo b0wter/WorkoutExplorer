@@ -10,7 +10,8 @@ function errorName(e: unknown): string {
   return e instanceof Error ? e.name : typeof e;
 }
 
-export async function loadDataFile(request: () => Promise<Response>): Promise<DataFileResult> {
+/** `onresponse` gets the response before its body is read (F-54: the metadata prefix). */
+export async function loadDataFile(request: () => Promise<Response>, onresponse?: (r: Response) => void): Promise<DataFileResult> {
   try {
     let response: Response;
     try {
@@ -25,6 +26,7 @@ export async function loadDataFile(request: () => Promise<Response>): Promise<Da
         error: { code: 'http-status', status: response.status, message: `data file: HTTP status ${response.status}` },
       };
     }
+    onresponse?.(response);
     let body: ArrayBuffer;
     try {
       body = await response.arrayBuffer();

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // The upload page's wiring (F-11 design U-5 to U-10; ADR-012). upload.html is loaded as it is;
 // fetch, XMLHttpRequest and navigation are fakes. Synthetic data only.
+import { en as errorTexts } from '../lib/errors/texts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HTML from '../../upload.html?raw';
 import { start, type Env } from './page';
@@ -118,7 +119,8 @@ describe('page text (U-3)', () => {
     expect(document.querySelector('a[href="/my-workouts"]')!.textContent).toBe('My workouts');
     expect(document.querySelector('a[href="/my-workouts"]')!.hasAttribute('target')).toBe(false);
     expect(document.querySelector('meta[name=referrer]')!.getAttribute('content')).toBe('no-referrer');
-    expect(HTML).not.toMatch(/<script(?![^>]*\bsrc=)/);
+    // F-54 LG-2: the one inline script is the shared head script (theme-script.test.ts).
+    expect(HTML.match(/<script(?![^>]*\bsrc=)/g)).toHaveLength(1);
     expect(HTML).not.toMatch(/<style|\sstyle=/);
     expect(input().hasAttribute('accept')).toBe(false);
   });
@@ -284,10 +286,10 @@ describe('responses (AC 1, AC 3, AC 5, U-8, U-9)', () => {
     [422, 'unsupported_type', 'Unsupported FIT file type.'],
     [429, 'rate_limited', 'Too many uploads. Please try again later.'],
     [503, 'busy', 'Too many uploads right now. Please try again in a minute.'],
-  ])('%i %s: the server message is shown and a new pick works', async (status, error, message) => {
+  ] as const)('%i %s: the text of its code is shown (F-54 LG-6) and a new pick works', async (status, error, message) => {
     await pickFile(file(10));
     FakeXhr.all[0].respond(status, { error, message });
-    expect($('message').textContent).toBe(message);
+    expect($('message').textContent).toBe(errorTexts[error]);
     expect(state()).toBe('ready');
     expect(input().disabled).toBe(false);
     await pickFile(file(10));
@@ -323,10 +325,10 @@ describe('privacy (AC 8, U-10)', () => {
     expect(set).not.toHaveBeenCalled();
     expect(localStorage.length + sessionStorage.length).toBe(0);
   });
-  it('the sources use no cookie or storage API', () => {
+  it('the sources use no cookie or storage API; localStorage only for the language drop-down (F-54 LG-1)', () => {
     const forbidden = /document\.cookie|localStorage|sessionStorage|indexedDB|\bcaches\b|serviceWorker|cookieStore/;
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(4);
-    for (const [f, text] of Object.entries(sources)) expect(text, f).not.toMatch(forbidden);
+    for (const [f, text] of Object.entries(sources)) expect(f === './main.ts' ? text.replace('addLangSelect(document, () => window.localStorage)', '') : text, f).not.toMatch(forbidden);
   });
 });
 

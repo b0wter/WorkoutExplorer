@@ -1,6 +1,7 @@
 // DOM glue of the upload page (F-11 design U-5 to U-10). Everything the browser is asked to do
-// comes in through `Env`, so jsdom tests can replace it. No cookies, no browser storage (U-10).
-import { canPick, MAX_UPLOAD_BYTES, outcomeOf, parseStatus, percent, SENTENCES, tooLarge, type PageState } from '../lib/upload';
+// comes in through `Env`, so jsdom tests can replace it. No cookies; browser storage only for the
+// language drop-down's choice (F-54 LG-1, through `Env.remember`).
+import { canPick, MAX_UPLOAD_BYTES, outcomeOf, parseStatus, percent, t, tooLarge, type PageState } from '../lib/upload';
 import { canInflate, extractFit, isZip } from '../lib/zip';
 
 export interface Env {
@@ -55,13 +56,13 @@ export function start(doc: Document, win: Window, env: Env): () => void {
     }
     if (gen !== generation) return;
     if (open) show('ready');
-    else show('paused', { notice: SENTENCES.paused });
+    else show('paused', { notice: t('paused') });
   }
 
   function pick(file: File | undefined): void {
     if (!file || !canPick(state)) return; // a second pick or drop while busy starts nothing
     if (tooLarge(file.size)) {
-      show('ready', { message: SENTENCES.tooLarge });
+      show('ready', { message: t('tooLarge') });
       return;
     }
     void open(file);
@@ -78,35 +79,35 @@ export function start(doc: Document, win: Window, env: Env): () => void {
         return;
       }
       if (gen !== generation) return;
-      if (!canInflate()) return show('ready', { message: SENTENCES.noZip });
-      progress.textContent = SENTENCES.opening;
+      if (!canInflate()) return show('ready', { message: t('noZip') });
+      progress.textContent = t('opening');
       bytes = new Uint8Array(await file.arrayBuffer());
     } catch {
-      if (gen === generation) show('ready', { message: SENTENCES.unreadable });
+      if (gen === generation) show('ready', { message: t('uploadUnreadable') });
       return;
     }
     if (gen !== generation) return;
     const r = await extractFit(bytes, MAX_UPLOAD_BYTES);
     if (gen !== generation) return;
     if (r.ok) send(new File(r.chunks as BlobPart[], 'workout.fit'));
-    else show('ready', { message: SENTENCES[r.reason] });
+    else show('ready', { message: t(r.reason) });
   }
 
   function send(file: File): void {
     const gen = generation;
     const xhr = env.xhr();
-    show('uploading', { progress: 'Uploading… 0 %' });
+    show('uploading', { progress: t('uploadingPercent', { n: 0 }) });
     const fail = (text: string): void => {
       if (gen === generation) show('ready', { message: text });
     };
     xhr.open('POST', '/api/workouts');
     xhr.upload.onprogress = (e) => {
       if (gen === generation && state === 'uploading' && e.lengthComputable) {
-        progress.textContent = `Uploading… ${percent(e.loaded, e.total)} %`;
+        progress.textContent = t('uploadingPercent', { n: percent(e.loaded, e.total) });
       }
     };
     xhr.upload.onload = () => {
-      if (gen === generation) show('processing', { progress: 'Reading the workout…' });
+      if (gen === generation) show('processing', { progress: t('reading') });
     };
     xhr.onload = () => {
       if (gen !== generation) return;
@@ -115,7 +116,7 @@ export function start(doc: Document, win: Window, env: Env): () => void {
       else if (out.kind === 'paused') show('paused', { notice: out.message });
       else fail(out.message);
     };
-    xhr.onerror = xhr.onabort = () => fail(SENTENCES.unreadable);
+    xhr.onerror = xhr.onabort = () => fail(t('uploadUnreadable'));
     const form = new FormData();
     form.append('file', file);
     xhr.send(form);

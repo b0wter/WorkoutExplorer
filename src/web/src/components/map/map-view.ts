@@ -23,6 +23,8 @@ import { FullscreenControl, LngLat, Map as MapLibreMap, Marker, NavigationContro
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import './map-view.css';
+import { onLanguage } from '../../lib/i18n';
+import { mapLocale, t } from './map-texts';
 import type { WorkoutData } from '../../lib/datafile';
 import type { CursorIndex, CursorStore } from '../../lib/cursor';
 import type { SelectionStore } from '../../lib/selection';
@@ -205,6 +207,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
         ? { center: [west, south] as [number, number], zoom: 15 }
         : { bounds: [west, south, east, north] as [number, number, number, number], fitBoundsOptions: { padding: fitPadding(), maxZoom: 16 } }),
       cooperativeGestures: true,
+      locale: mapLocale(), // F-54 LG-7
       // Double-tap and double-click zoom off (F-06 v1.2): a short route scrub looks like a tap to
       // MapLibre, which never sees its moves, so two quick scrubs would zoom.
       doubleClickZoom: false,
@@ -291,6 +294,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let rangeTimer: ReturnType<typeof setTimeout> | undefined;
   let unsubscribeRange: (() => void) | null = null;
   let unsubscribeUnits: (() => void) | null = null;
+  let unsubscribeLang: (() => void) | null = null;
+  let unsubscribeLabels: (() => void) | null = null;
   // Route colouring (F-25 C-7): the latest wx-colour data, re-applied on 'style.load' like the range.
   let colour = colourData([]);
   // The current metric's class colour index c per sample, no class as NO_VALUE (null = plain route), and the
@@ -323,6 +328,9 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     unsubscribeRange = null;
     unsubscribeUnits?.();
     unsubscribeUnits = null;
+    unsubscribeLang?.();
+    unsubscribeLabels?.();
+    unsubscribeLang = unsubscribeLabels = null;
     for (const [target, type, fn, opts] of listeners) target.removeEventListener(type, fn, opts);
     listeners.length = 0;
     query?.removeEventListener('change', onResolution);
@@ -353,6 +361,20 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     const fullscreen = new FullscreenControl({ container, pseudo: true });
     map.addControl(fullscreen, 'top-right'); // its own group, under the zoom buttons (FS-3)
     const fsButton = container.querySelector<HTMLButtonElement>('button.maplibregl-ctrl-fullscreen');
+    // F-54: a language change relabels MapLibre's controls in place (they read `locale` once).
+    unsubscribeLabels = onLanguage(() => {
+      const loc = mapLocale();
+      Object.assign((map as unknown as { _locale: Record<string, string> })._locale, loc);
+      const label = (sel: string, text: string): void =>
+        container.querySelectorAll(sel).forEach((b) => (b.setAttribute('title', text), b.setAttribute('aria-label', text)));
+      label('.maplibregl-ctrl-zoom-in', loc['NavigationControl.ZoomIn']);
+      label('.maplibregl-ctrl-zoom-out', loc['NavigationControl.ZoomOut']);
+      label('.maplibregl-ctrl-attrib-button', loc['AttributionControl.ToggleAttribution']);
+      label('button.maplibregl-ctrl-fullscreen', loc['FullscreenControl.Enter']);
+      label('button.maplibregl-ctrl-shrink', loc['FullscreenControl.Exit']);
+      for (const [sel, key] of [['.maplibregl-desktop-message', /Mac/.test(navigator.platform) ? 'MacHelpText' : 'WindowsHelpText'], ['.maplibregl-mobile-message', 'MobileHelpText']])
+        container.querySelectorAll(sel).forEach((e) => (e.textContent = loc['CooperativeGesturesHandler.' + key]));
+    });
     const root = document.documentElement;
     let fsOn = false;
     let popped = false;
@@ -462,9 +484,17 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       const box = document.createElement('div');
       box.className = 'maplibregl-ctrl wx-colour';
       const select = document.createElement('select');
-      select.setAttribute('aria-label', 'Route colour');
-      select.add(new Option('Plain route', ''));
-      for (const m of offered) select.add(new Option(metricLabel(m, sport), m));
+      const fill = (): void => {
+        const v = select.value;
+        select.setAttribute('aria-label', t('routeColour'));
+        select.replaceChildren(new Option(t('plainRoute'), ''), ...offered.map((m) => new Option(metricLabel(m, sport), m)));
+        select.value = v;
+      };
+      fill();
+      unsubscribeLang = onLanguage(() => {
+        fill();
+        renderLegend();
+      });
       const legendBox = document.createElement('div');
       legendBox.className = 'wx-legend';
       legendBox.hidden = true;
@@ -498,7 +528,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
         if (missing) {
           const none = document.createElement('div');
           none.className = 'wx-nodata';
-          none.append(span('wx-cn'), 'no data');
+          none.append(span('wx-cn'), t('noData'));
           legendBox.append(none);
         }
       };

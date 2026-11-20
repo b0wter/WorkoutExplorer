@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from './texts';
   // Header (AP-1) as Svelte, for the edit page (F-13 design D-9). The reference markup is the
   // template, src/web/index.html: keep them equal. Plain text only (AC 5).
   import type { HeaderGroup, PageGroup } from '../../lib/page';
@@ -20,5 +21,5 @@
     {#if header.Description}<p class="desc">{header.Description}</p>{/if}
     <p class="expires"><time data-expires datetime={header.ExpiresAt}>{header.ExpiresText}</time></p>
   </div>
-  <div class="ctl"><a class="copy" href={page.ViewPath} hidden={!copy} data-copy-link>Copy link</a><span class="units-slot" id="units-slot"></span><span class="theme-slot" id="theme-slot"></span></div>
+  <div class="ctl"><a class="copy" href={page.ViewPath} hidden={!copy} data-copy-link>{t('copyLink')}</a><span class="units-slot" id="units-slot"></span><span class="theme-slot" id="theme-slot"></span><span class="lang-slot" id="lang-slot"></span></div>
 </header>

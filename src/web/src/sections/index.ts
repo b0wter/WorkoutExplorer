@@ -5,6 +5,7 @@
 import './sections.css';
 import type { WorkoutData } from '../lib/datafile';
 import { legs, sectionRanges, sections, type Section } from '../lib/sections';
+import { onLanguage } from '../lib/i18n';
 import type { ChartDecorator } from '../components/charts/uplot-options';
 
 /** MS-7: in every chart a line at each leg start after the first and each leg's name from its left
@@ -40,4 +41,6 @@ export function startSections(data: WorkoutData, look: { decorator(key: string, 
   if (!secs) return;
   rows(sectionRanges(secs, data.sampleCount));
   look.decorator('legs', decorator(secs, data.sampleCount));
+  // F-54: leg names follow the language (the separator rows are the language pass's).
+  onLanguage(() => look.decorator('legs', decorator(sections(data.meta)!, data.sampleCount)));
 }

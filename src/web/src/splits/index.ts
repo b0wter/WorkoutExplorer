@@ -15,6 +15,8 @@ import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type P
 import type { UnitsStore } from '../lib/units';
 import type { LapsSeams } from '../page/laps';
 import { createChart, type Slot } from './chart';
+import { t } from './texts';
+import { onLanguage } from '../lib/i18n';
 
 /** The entry's formatters, passed in: imported here, Vite splits lib/format out of the entry into a
  *  second script of the page. A tuple, as property names would survive minification in the entry. */
@@ -48,14 +50,16 @@ function table(doc: Document, heads: readonly (readonly [key: string, label: str
 /** The lengths table (F-48 PL-8): number, stroke, time, pace, and strokes and SWOLF when any active
  *  length has a stroke count. A rest row shows "Rest" and its time only. Pace always per 100 m or yd
  *  (lengths exist in pool swims only). */
-function lengthsTable([, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit]: Fmt, doc: Document, lengths: readonly Length[], units: Units): HTMLTableElement {
+function lengthsTable([lapsGroup, codeWord, formatElapsed, formatSpeedOrPace]: Fmt, doc: Document, lengths: readonly Length[], units: Units): HTMLTableElement {
   const counts = hasStrokeCounts(lengths);
-  const heads: [string, string][] = [['number', '#'], ['stroke', 'Stroke'], ['elapsed_time', 'Time'], ['avg_speed', 'Pace (' + speedOrPaceUnit('swimming', units) + ')']];
-  if (counts) heads.push(['strokes', 'Strokes'], ['swolf', 'SWOLF']);
+  const lap = lapsGroup('swimming', [{ totals: { elapsed_time: 1, avg_speed: 1 }, stroke: 'freestyle' }], units)!.Columns;
+  const head = (k: string): string => lap.find((c) => c.Key === k)!.Label;
+  const heads: [string, string][] = [['number', '#'], ['stroke', head('stroke')], ['elapsed_time', head('elapsed_time')], ['avg_speed', head('avg_speed')]];
+  if (counts) heads.push(['strokes', t('colStrokes')], ['swolf', t('colSwolf')]);
   const rows = lengthRows(lengths).map((r, i) => {
     const l = lengths[i];
     const time = formatElapsed(r.time); // NaN: '–'
-    if (l.rest) return ['Rest', '', time, '', ...(counts ? ['', ''] : [])];
+    if (l.rest) return [t('rest'), '', time, '', ...(counts ? ['', ''] : [])];
     const cells = [String(r.number), codeWord('stroke', l.stroke), time, formatSpeedOrPace('swimming', l.avg_speed ?? 0, units) || '–'];
     if (counts) cells.push(l.strokes === undefined ? '–' : String(l.strokes), r.swolf === r.swolf ? String(r.swolf) : '–');
     return cells;
@@ -92,12 +96,13 @@ function splitsTable(laps: Fmt[0], doc: Document, sport: string, totals: { total
   const dj = pool ? (group?.Columns.findIndex((c) => c.Key === 'distance') ?? -1) : -1;
   return table(
     doc,
-    group?.Columns.map((c, j) => [c.Key, j === dj ? 'Distance (' + pool!.unit + ')' : c.Label] as const) ?? [],
+    group?.Columns.map((c, j) => [c.Key, j === dj ? t('poolDistance', { u: pool!.unit }) : c.Label] as const) ?? [],
     group?.Rows.map((row, i) => row.map((t, j) => (j === dj ? String(Math.round(poolDistance(totals[i].totals.distance!, preset, pool!))) : t))) ?? [],
   );
 }
 
 type View = 'Laps' | 'Splits' | 'Lengths';
+const viewName = (v: View): string => t(`view${v}`);
 
 /** The chunk's entry. `seams` are the laps enhancer's (LS-8): the rows of the shown splits or lengths
  *  table tap through its one listener; the chart mirrors its mark (F-51 SC-7). `splits`: the
@@ -117,7 +122,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   let current: View = views[0];
   const boxes: Partial<Record<View, HTMLElement>> = server ? { Laps: server } : {};
   const pairs: Partial<Record<View, number[]>> = {};
-  const choice = d ? splitChoice(data.meta, d[d.length - 1] - d[0]) : null;
+  let choice = d ? splitChoice(data.meta, d[d.length - 1] - d[0]) : null;
   let preset = choice?.presets[choice.index];
   const seam = seams.splits;
   // F-51 SC-4: no chart for a multisport workout (AP-12). Slots per view, from the rows its table is built from (SC-3).
@@ -132,7 +137,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     const laps = data.meta.laps;
     slots.Laps = rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1), ...net(laps[i].start_index, laps[i].end_index - 1) })) : [];
   }
-  const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? preset!.label + ' splits' : current, units.get(), current.slice(0, -1));
+  const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? t('splitsCaption', { preset: preset!.label }) : viewName(current), units.get(), current);
   // LS-9, PL-8: built only on arrival, a change, a switch to it or a units change; the selection is untouched (LS-7).
   const build = (view: View): void => {
     const wrap = doc.createElement('div');
@@ -169,7 +174,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     else if (view !== 'Laps') seam(box, pairs[view]!);
     for (const v of views) if (boxes[v]) boxes[v].hidden = v !== view;
     select.hidden = view !== 'Splits';
-    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.textContent === view)));
+    buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(views[i] === view)));
     draw();
   };
   if (views.length > 1) {
@@ -178,7 +183,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     for (const v of views) {
       const b = doc.createElement('button');
       b.type = 'button';
-      b.textContent = v;
+      b.textContent = viewName(v);
       b.addEventListener('click', () => show(v));
       buttons.push(b);
     }
@@ -187,24 +192,39 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   }
   if (choice) {
     select.className = 'split-select';
-    select.setAttribute('aria-label', 'Split distance');
-    select.innerHTML = choice.presets.map((p, i) => `<option value="${i}">${p.label}</option>`).join('');
+    select.setAttribute('aria-label', t('splitDistance'));
+    select.append(...choice.presets.map((p, i) => new Option(p.label, String(i))));
     select.value = String(choice.index);
     select.addEventListener('change', () => {
-      preset = choice.presets[+select.value];
+      preset = choice!.presets[+select.value];
       build('Splits');
       draw();
     });
     slot.appendChild(select);
   }
-  // Boundaries do not depend on units; the cells do (pace only, for lengths).
-  units.subscribe(() => {
+  // Boundaries do not depend on units; the cells do (pace only, for lengths). The language (F-54):
+  // the cells' decimal separators and every label.
+  const redraw = (): void => {
     if (boxes.Splits) build('Splits');
     if (boxes.Lengths) build('Lengths');
     draw();
-  });
+  };
+  units.subscribe(redraw);
   // LS-3: no device laps: the module, headed by its first view, is revealed on it.
-  if (!server) section.querySelector('h2')!.textContent = current;
+  const heading = (): void => void (!server && (section.querySelector('h2')!.textContent = viewName(views[0])));
+  onLanguage(() => {
+    heading();
+    buttons.forEach((b, i) => (b.textContent = viewName(views[i])));
+    select.setAttribute('aria-label', t('splitDistance'));
+    // Preset names follow the language ('Half marathon'): the choice is made again, the index kept.
+    if (choice && d) {
+      choice = splitChoice(data.meta, d[d.length - 1] - d[0]);
+      choice.presets.forEach((p, i) => (select.options[i].text = p.label));
+      preset = choice.presets[+select.value];
+    }
+    redraw();
+  });
+  heading();
   show(current);
   section.hidden = false;
 }

@@ -1,5 +1,16 @@
 @import '../theme/plain.css';
 
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lang-slot select {
+  font: inherit;
+  font-size: 14px;
+}
 .intro {
   color: var(--muted);
   margin: 0 0 1.5rem;

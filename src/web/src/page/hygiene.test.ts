@@ -39,13 +39,13 @@ describe('template', () => {
     expect(template).not.toMatch(/map-pin|aria-pressed|pinned/);
     // Report, hidden without JavaScript (F-28 RF-1, RF-9); How to use, invisible until enhanced
     // (F-39 HU-6: a reserved box, not hidden).
-    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="howto" data-howto>', '<button type="button" class="gpx" data-gpx>', '<button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed">', '<button type="button" data-report hidden>']);
+    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="howto" data-howto>', '<button type="button" class="gpx" data-gpx data-t="gpx">', '<button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed" data-t-title="summaryInfo" data-t-aria-label="summaryInfo">', '<button type="button" data-report hidden data-t="report">']);
   });
 
   it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6; F-46 LS-3)', () => {
     const slot = '</h2><span class="laps-slot" id="laps-slot"></span></div>';
-    expect(template).toContain('<div class="laps-head"><h2>{{if .None}}Splits{{else}}Laps{{end}}' + slot);
-    expect(sources['../components/page/LapsTable.svelte']).toContain(`<div class="laps-head"><h2>{laps.None ? 'Splits' : 'Laps'}` + slot);
+    expect(template).toContain('<div class="laps-head">{{if .None}}<h2 data-t="headSplits">Splits</h2>{{else}}<h2 data-t="headLaps">Laps</h2>{{end}}' + slot.slice(5));
+    expect(sources['../components/page/LapsTable.svelte']).toContain(`<div class="laps-head"><h2>{t(laps.None ? 'headSplits' : 'headLaps')}` + slot);
     expect(template).not.toMatch(/laps-switch|laps-none|No laps recorded/);
   });
 
@@ -77,7 +77,9 @@ describe('sources', () => {
       expect(code, file).not.toMatch(/\{@html/);
       expect(code, file).not.toMatch(/\sstyle[:=]/);
       expect(code, file).not.toMatch(/\son[a-z]+=\{/);
-      expect(code, file).not.toMatch(/Intl\.[A-Z]|\.toLocale/);
+      expect(code, file).not.toMatch(/\.toLocale/);
+      // F-54 LG-7: Intl only for German, Spanish and French, behind a language test, in lib/format and lib/i18n.
+      if (/Intl\.[A-Z]/.test(code)) expect(['../lib/format/index.ts', '../lib/format/dates.ts', '../lib/i18n/index.ts'], file).toContain(file);
     }
   });
 });
@@ -91,7 +93,7 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
   };
 
   it('F-57 GX-5: the GPX row only under Route.Gpx, directly above the summary, outside its grid and the map; reserved at full size, invisible until .ready', () => {
-    expect(template).toMatch(/<\/div>\s*\{\{if \.Route\.Gpx\}\}<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route \(GPX\)<\/button><\/div>\{\{end\}\}\s*<section class="summary">/);
+    expect(template).toMatch(/<\/div>\s*\{\{if \.Route\.Gpx\}\}<div class="gpx-row"><button type="button" class="gpx" data-gpx data-t="gpx">Download route \(GPX\)<\/button><\/div>\{\{end\}\}\s*<section class="summary">/);
     expect(template.match(/data-gpx/g)).toHaveLength(1);
     expect(rule('.gpx')).toMatch(/height: 40px;/);
     expect(css).toMatch(/^\.howto:not\(\.ready\),\n\.gpx:not\(\.ready\) \{\s*visibility: hidden;/m);
@@ -155,7 +157,7 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
   it('the header controls wrap below the title at fixed widths, so the title never gets squeezed', () => {
     expect(rule('.head-text')).toContain('min-width: min(160px, 100% - 44px)');
     expect(css).toMatch(/@media \(min-width: 560px\) \{\s*\.head-text \{\s*min-width: min\(240px, 100% - 44px\);/);
-    expect(rule('.units-slot,\n.theme-slot')).toMatch(/width: 104px;\s*height: 32px;/);
+    expect(rule('.units-slot,\n.theme-slot,\n.lang-slot')).toMatch(/width: 104px;\s*height: 32px;/);
     expect(rule('.copy')).toMatch(/height: 32px;\s*min-width: 84px;/);
     // F-39 HU-6 (user 10 Nov 2026): one full-width 40 px row, the same box emphasised, plain and before the bundle.
     expect(rule('.howto')).toMatch(/width: 100%;\s*height: 40px;/);
@@ -300,7 +302,7 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
       expect(code, file).not.toMatch(/sessionStorage|document\.cookie|cookieStore|indexedDB|history\.(push|replace)State/);
       if (file === '../lib/prefs/index.ts' || file === '../lib/mine/index.ts') continue;
       // The page glue hands lib/prefs its storage getter, the owner glue and the list page lib/mine theirs; nothing else.
-      const getter = { './start.ts': '(): KeyValueStore => win.localStorage', '../edit/start.svelte.ts': '() => win.localStorage', '../mine/index.ts': '() => window.localStorage' }[file];
+      const getter = { './start.ts': '(): KeyValueStore => win.localStorage', '../edit/start.svelte.ts': '() => win.localStorage', '../mine/index.ts': '() => window.localStorage', '../upload/main.ts': '() => window.localStorage' }[file];
       const rest = getter ? code.replace(getter, '') : code;
       expect(rest, file).not.toMatch(/localStorage|\.(getItem|setItem|removeItem)\(/);
     }
@@ -311,7 +313,7 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
 describe('F-56 PN-11: pin text is text', () => {
   const pins = import.meta.glob(['../pins/*.ts', '../lib/pins/*.ts', '../edit/pins.ts', '!**/*.test.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
   it('no HTML API in the pins chunk, lib/pins or the pin editor', () => {
-    expect(Object.keys(pins).length).toBe(3);
+    expect(Object.keys(pins).length).toBe(5); // with the two text tables (F-54)
     for (const [f, s] of Object.entries(pins)) expect(s, f).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|setHTML|DOMParser|createContextualFragment|document\.write|\{@html/);
   });
   it('the template slot: under {{if .Pins.URL}}, hidden, URL and count as data attributes, no inline style', () => {

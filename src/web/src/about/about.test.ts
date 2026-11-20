@@ -1,5 +1,5 @@
-// Static checks of the About page template (F-29 AB-1, AB-2, AB-7; AC 1 to 3, AC 7, AC 8): CSS
-// only, the generic page's metas, same-origin resources, the markers of the server contract
+// Static checks of the About page template (F-29 AB-1, AB-2, AB-7; AC 1 to 3, AC 7, AC 8): CSS,
+// the head script and the static entry (F-54 LG-5), the generic page's metas, same-origin resources, the markers of the server contract
 // (src/server/internal/about/about.go), and the facts the acceptance criteria name word for word.
 import { describe, expect, it } from 'vitest';
 import { readWebFile } from '../../test-support/source.mjs';
@@ -8,8 +8,8 @@ const html = readWebFile('about.html');
 const count = (s: string) => html.split(s).length - 1;
 
 describe('About page', () => {
-  it('has no script, no inline style, no handler', () => {
-    expect(html).not.toMatch(/<script/i);
+  it('has no script but the head script and the static entry, no inline style, no handler', () => {
+    expect([...html.matchAll(/<script[^>]*>/gi)].map((m) => m[0])).toEqual(['<script>', '<script type="module" src="/src/static/main.ts">']);
     expect(html).not.toMatch(/<style[\s>]/i);
     expect(html).not.toMatch(/\sstyle\s*=/i);
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
@@ -24,7 +24,7 @@ describe('About page', () => {
 
   it('loads only same-origin resources and links to / and itself (AB-7)', () => {
     const loaded = [...html.matchAll(/<(?:link|script|img)[^>]*(?:href|src)="([^"]*)"/g)].map((m) => m[1]);
-    expect(loaded).toEqual(['/src/about/about.css']);
+    expect(loaded).toEqual(['/src/static/main.ts', '/src/about/about.css']);
     const footer = html.slice(html.indexOf('<footer>'));
     expect([...footer.matchAll(/href="([^"]*)"/g)].map((m) => m[1])).toEqual(['/', '/about']);
   });
@@ -37,8 +37,8 @@ describe('About page', () => {
     expect(html.indexOf('<!--wx:pushover-->')).toBeLessThan(html.indexOf('<!--/wx:pushover-->'));
     // F-34: the Shortcut link is filled only inside its block.
     const sc = html.slice(html.indexOf('<!--wx:shortcut-->'), html.indexOf('<!--/wx:shortcut-->'));
-    expect(sc).toContain('<h2>Upload from your iPhone</h2>');
-    expect(sc).toContain('<a href="<!--wx:shortcut-url-->"><!--wx:shortcut-url--></a>');
+    expect(sc).toMatch(/<h2 data-t="\w+">Upload from your iPhone<\/h2>/);
+    expect(sc).toContain('<a href="<!--wx:shortcut-url-->" data-p="link"><!--wx:shortcut-url--></a>');
     expect(count('<!--wx:shortcut-url-->')).toBe(2);
     // F-52 PT-9a (OQ-216): the update sentence only inside its block.
     const up = html.slice(html.indexOf('<!--wx:updates-->'), html.indexOf('<!--/wx:updates-->'));
@@ -55,8 +55,8 @@ describe('About page', () => {
       'The settings:',
       'Reports from viewers',
       'choice of units, the x axis of the charts, the split between map and content',
-      'and the theme',
-      'not in a cookie, is never sent to the server',
+      'the theme and the interface language', // F-54 INF-1
+      'not in a cookie, is never sent to the server (of the language, the server only sees which language file your browser loads)',
       'My workouts</a>: for each workout uploaded or edited in this browser, its title, sport, date, status, expiry and edit link', // F-53 AC 58
       'They see your IP address',
       '7 days by default',
@@ -80,8 +80,8 @@ describe('About page', () => {
   });
 
   it('F-57 OQ-271: one sentence on the GPX download, next to the hiding one (INF-1)', () => {
-    const hide = '<li>A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>';
-    const gpx = '<li>Viewers of a published workout can download its visible route as a GPX file (not for multisport workouts or workouts without a route): the track only, without times, heart rate or any other data.</li>';
+    const hide = '<li data-t="ab_aHiddenStart">A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>';
+    const gpx = '<li data-t="ab_viewersOfA">Viewers of a published workout can download its visible route as a GPX file (not for multisport workouts or workouts without a route): the track only, without times, heart rate or any other data.</li>';
     expect(count(gpx)).toBe(1);
     expect(html).toContain(hide + '\n        ' + gpx);
   });

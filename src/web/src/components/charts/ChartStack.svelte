@@ -12,6 +12,9 @@
   import { distanceAxis, presentCharts, timeAxis, type AxisKind, type HintMode } from '../../lib/charts';
   import type { Units } from '../../lib/format';
   import CursorReadout from './CursorReadout.svelte';
+  import { lang } from '../../lib/i18n';
+  import { t } from '../../lib/charts/texts';
+  import { t as tp } from '../../page/texts';
   import MetricChart from './MetricChart.svelte';
   import { DEFAULT_CHART_HEIGHT, TITLE_ROW_HEIGHT, Y_AXIS_SIZE, chartAreaHeight, plotWidth, type ChartDecorator } from './uplot-options';
 
@@ -52,7 +55,7 @@
   }
   $effect.pre(() => checkWiring(data, cursor));
 
-  const charts = $derived(presentCharts(data, units));
+  const charts = $derived((lang(), presentCharts(data, units)));
   // The x axis (F-17 R-7, R-8): ChartStack's own state, from initialAxis (time by default); the page
   // remembers the viewer's choice through onaxis. Both axes are built once per data value; a switch
   // rebuilds the uPlot instances (F-14 D-11's path) and leaves the stores alone, so the cursor and
@@ -147,13 +150,13 @@
     <div class="toolbar">
       {#if distanceX}
         <span class="axis-toggle">
-          <button type="button" aria-pressed={axis.kind === 'time'} onclick={() => pickAxis('time')}>Time</button><button
-            type="button" aria-pressed={axis.kind === 'distance'} onclick={() => pickAxis('distance')}>Distance</button>
+          <button type="button" aria-pressed={axis.kind === 'time'} onclick={() => pickAxis('time')}>{t('axisTime')}</button><button
+            type="button" aria-pressed={axis.kind === 'distance'} onclick={() => pickAxis('distance')}>{t('axisDistance')}</button>
         </span>
       {/if}
     </div>
    {/if}
-   {#key units + scheme + axis.kind}
+   {#key units + scheme + axis.kind + lang()}
     <CursorReadout {data} {cursor} {units} />
     <div class="chart-area" bind:this={area}>
       {#if drawable}
@@ -179,8 +182,8 @@
     <!-- How to select (R-12): the wording follows the primary pointer, in CSS. The viewing page's hint
          (once) shares the How to use box's rules (page.css .howto).
          Static classes and icon: a class expression pulls in ~200 bytes of runtime. -->
-    <p class:select-hint={hint === 'plain'} class:howto={hint === 'once'} class:fresh={hint === 'once'} class:ready={hint === 'once'}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span class="fine">Drag across a chart to select a range.</span><span class="coarse">Touch and hold a chart, then drag to select a range.</span>{#if hint === 'once'}<button
-      type="button" class="hint-x" aria-label="Dismiss hint" onclick={() => {
+    <p class:select-hint={hint === 'plain'} class:howto={hint === 'once'} class:fresh={hint === 'once'} class:ready={hint === 'once'}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span class="fine">{tp('hintFine')}</span><span class="coarse">{tp('hintCoarse')}</span>{#if hint === 'once'}<button
+      type="button" class="hint-x" aria-label={tp('dismissHint')} onclick={() => {
         stack.focus({ preventScroll: true });
         onhint?.();
       }}>×</button>{/if}</p>

@@ -22,6 +22,10 @@
     --error: #ff8a80;
   }
 }
+/* F-54 LG-2: while the head script holds for the language file, the page is laid out, not painted. */
+html[data-hold] body {
+  visibility: hidden;
+}
 /* On the root: iOS Safari paints its landscape notch strips with the root's colour. */
 html {
   background: var(--bg);

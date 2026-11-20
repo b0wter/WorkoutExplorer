@@ -30,3 +30,5 @@ In a multi-entry Vite build, every module that both entries import moves into a 
 - The upload page grows into a real view, for example the "remember my uploads" list (Later). Then use Svelte, measure the shared-chunk cost against ADR-011's reserve at that time, and record it in a superseding ADR. *(Note 20 Nov 2026: F-53 put that list on its own page on the activity entry, F-53 MW-1; the upload page gains only a static link, so this ADR stands.)*
 - *(Note 20 Nov 2026, F-54 LG-5: the i18n core is used by the activity, upload and new static (About, generic) entries; it is kept per entry under item 3, never a chunk shared with the activity entry.)*
 - The activity page gets clear budget slack (a superseded ADR-002 measuring brotli, or a raised budget). Then consistency may be worth the shared chunk.
+
+- (20 Nov 2026, F-54 LG-1, LG-5) The upload entry keeps its own copy of `lib/i18n` and `lib/prefs` (`wx-entry-copy` in `vite.config.ts`, no shared chunk), and writes one storage key, `wx.lang`, on a language drop-down choice; `check-upload-entry.mjs` allows that key only. Measured entry 5,337 gzip.

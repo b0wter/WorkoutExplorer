@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Generic page (F-15 P-12): what Caddy serves, with status 404, for every /w/{public_id} without a page (draft, private, deleted, expired, unknown). One static file, so the answer is the same for every ID. No script, no Open Graph data, no workout data, no link to a workout. -->
+<!-- Generic page (F-15 P-12): what Caddy serves, with status 404, for every /w/{public_id} without a page (draft, private, deleted, expired, unknown). One static file, so the answer is the same for every ID. No script but the head script and the static entry (F-54 LG-5), no Open Graph data, no workout data, no link to a workout. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -8,13 +8,15 @@
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>Workout Explorer</title>
+    <script>var d=document.documentElement,D=d.dataset,L=["en","de","es","fr"],l,u;try{var s=localStorage,t=s.getItem("wx.theme");if(t=="light"||t=="dark")D.theme=t;if(s.getItem("wx.hint.done")=="1")D.hint="done";l=s.getItem("wx.lang")}catch(e){}if(L.indexOf(l)==-1){l="en";(navigator.languages||[navigator.language]).some(function(x){x=String(x).split("-")[0].toLowerCase();return L.indexOf(x)>=0&&(l=x)})}D.lang=l;u=document.querySelector("meta[data-hold]");u=u&&u.getAttribute("data-"+l);if(u){D.hold="";window.wxLang=fetch(u);setTimeout(function(){delete D.hold},500)}</script>
+    <script type="module" src="/src/static/main.ts"></script>
     <link rel="stylesheet" href="/src/generic/generic.css" />
   </head>
   <body>
     <main>
       <h1>Workout Explorer</h1>
-      <p>This workout has expired or is not available.</p>
+      <p data-t="genericGone">This workout has expired or is not available.</p>
     </main>
-    <footer><a href="/about">About</a> <!--wx:impressum--></footer>
+    <footer><a href="/about" data-t="genericAbout">About</a> <!--wx:impressum--></footer>
   </body>
 </html>

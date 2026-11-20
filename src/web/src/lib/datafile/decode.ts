@@ -29,12 +29,11 @@ export function decodeDataFile(buffer: ArrayBuffer): DataFileResult {
   }
 }
 
-function decode(buffer: ArrayBuffer): DataFileResult {
+/** Rules 1 to 3 against a file of `length` bytes, of which `buffer` holds at least the header. */
+export function checkHead(buffer: ArrayBuffer, length: number): Failure | { ok: true; n: number; l: number } {
   if (!LITTLE_ENDIAN) return failure('unsupported-platform', undefined, 'data file: big-endian platform not supported');
-  const length = buffer.byteLength;
-
   // Rule 1.
-  if (length < HEADER_SIZE) return failure('not-a-data-file', 1, `data file: ${length} bytes, shorter than the header`);
+  if (length < HEADER_SIZE || buffer.byteLength < HEADER_SIZE) return failure('not-a-data-file', 1, `data file: ${length} bytes, shorter than the header`);
   const view = new DataView(buffer);
   for (let i = 0; i < 4; i++) {
     if (view.getUint8(i) !== MAGIC.charCodeAt(i)) return failure('not-a-data-file', 1, 'data file: bad magic');
@@ -47,6 +46,14 @@ function decode(buffer: ArrayBuffer): DataFileResult {
   const l = view.getUint32(10, true);
   if (n === 0) return failure('corrupt', 3, 'data file: no samples');
   if (HEADER_SIZE + l > length) return failure('corrupt', 3, `data file: metadata length ${l} beyond the end of the file`);
+  return { ok: true, n, l };
+}
+
+function decode(buffer: ArrayBuffer): DataFileResult {
+  const length = buffer.byteLength;
+  const head = checkHead(buffer, length);
+  if (!head.ok) return head;
+  const { n, l } = head;
 
   // Rule 4.
   const parsed = parseMeta(new Uint8Array(buffer, HEADER_SIZE, l));

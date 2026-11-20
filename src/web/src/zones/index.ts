@@ -10,6 +10,9 @@ import type { WorkoutData, ZoneKind, Zones } from '../lib/datafile';
 import type { formatElapsed } from '../lib/format';
 import type { SelectionStore } from '../lib/selection';
 import { boundText, timeInZone, zoneStarts } from '../lib/zones';
+import { onLanguage } from '../lib/i18n';
+import { t } from './texts';
+import { t as ft } from '../lib/format/texts';
 
 /** What the section reads (ZN-7, F-50's "public window"): inclusive sample indices. */
 export interface ZoneSource {
@@ -17,9 +20,9 @@ export interface ZoneSource {
   window(): readonly [number, number];
 }
 
-const KINDS: readonly (readonly [ZoneKind, string, string])[] = [
-  ['heart_rate', 'Heart rate', 'bpm'],
-  ['power', 'Power', 'W'],
+const KINDS: readonly (readonly [ZoneKind, 'zonesHeartRate' | 'zonesPower', string])[] = [
+  ['heart_rate', 'zonesHeartRate', 'bpm'],
+  ['power', 'zonesPower', 'W'],
 ];
 
 const POWER = ['grey', 'blue', 'green', 'yellow', 'orange', 'red', 'purple'];
@@ -57,7 +60,7 @@ export function startZones(root: ParentNode, data: WorkoutData, selection: Selec
     slot.replaceChildren();
     blocks = [];
     const section = el(slot, 'section', 'zones');
-    el(section, 'h2', '', 'Zones');
+    el(section, 'h2', '', t('zones'));
     const zones = source.zones();
     for (const [kind, label, unit] of KINDS) {
       const entry = zones[kind];
@@ -65,18 +68,19 @@ export function startZones(root: ParentNode, data: WorkoutData, selection: Selec
       if (!entry || !values) continue; // a kind needs zone values and its stream (OQ-189)
       const starts = zoneStarts(kind, entry);
       const box = el(section, 'div', 'zones-kind');
-      el(box, 'h3', '', label);
+      el(box, 'h3', '', t(label));
       // ZN-7: the caption says what the zones rest on; a basis alone means the default model, a
       // basis next to `from` only names the device's own value.
-      const basis = `${kind === 'power' ? 'threshold power' : 'max heart rate'} ${entry.basis} ${unit}`;
-      el(box, 'p', 'zones-src', entry.from ? 'Zones as recorded by the device' + (entry.basis ? ` (${basis})` : '') : 'Estimated from ' + basis);
+      const p = kind === 'power';
+      const v = { v: entry.basis ?? '' };
+      el(box, 'p', 'zones-src', entry.from ? (entry.basis ? t(p ? 'fromDeviceFtp' : 'fromDeviceMaxHr', v) : t('fromDevice')) : t(p ? 'estimatedFtp' : 'estimatedMaxHr', v));
       const block: Block = { box, starts, values, out: new Float64Array(starts.length + 1), bars: [], times: [], shares: [] };
       for (let z = starts.length; z >= 0; z--) { // highest zone on top
         const row = el(box, 'div', 'zone');
         row.dataset.k = kind;
         row.style.setProperty('--t', `var(--zone-${zoneColour(z, starts.length + 1)})`);
         el(row, 'span', 'zone-n', 'Z' + (z + 1));
-        el(row, 'span', 'zone-r', boundText(starts, z, unit));
+        el(row, 'span', 'zone-r', boundText(starts, z, unit === 'bpm' ? ft('bpm') : unit));
         block.bars[z] = el(el(row, 'span', 'zone-bar'), 'span');
         block.times[z] = el(row, 'span', 'zone-t');
         block.shares[z] = el(row, 'span', 'zone-p');
@@ -108,8 +112,10 @@ export function startZones(root: ParentNode, data: WorkoutData, selection: Selec
 
   build();
   selection.subscribe(update);
-  return () => {
+  const refresh = (): void => {
     build();
     update(selection.start(), selection.end());
   };
+  onLanguage(refresh); // F-54: headings and captions
+  return refresh;
 }

@@ -20,7 +20,7 @@ const (
 	samplesGlob  = "../../testdata/page/*.json"
 )
 
-var noticeRE = regexp.MustCompile(`(?s)<p class="notice">.*?</p>`)
+var noticeRE = regexp.MustCompile(`(?s)<p class="notice" data-t="privacyNotice">.*?</p>`) // F-54 LG-4: keyed markup
 
 func TestSamplePages(t *testing.T) {
 	tmpl, err := os.ReadFile(templatePath)
@@ -115,7 +115,7 @@ func TestSamplePages(t *testing.T) {
 			hint := strings.Contains(page, `class="hint"`)
 			slot := strings.Contains(page, `id="map-slot"`)
 			if route["Hidden"] != "" {
-				if !strings.Contains(page, `<p class="hint">The entire route has been hidden by the uploader.</p>`) || slot || route["NoLocation"] != "" || route["Map"] != "" {
+				if !strings.Contains(page, `<p class="hint" data-t="routeHidden">The entire route has been hidden by the uploader.</p>`) || slot || route["NoLocation"] != "" || route["Map"] != "" {
 					t.Errorf("fully hidden: notice or slot wrong (map slot %v)", slot)
 				}
 			} else if strings.Contains(page, "hidden by the uploader") {
@@ -139,7 +139,7 @@ func TestSamplePages(t *testing.T) {
 			wantBtn := 3
 			if route["Gpx"] != "" { // F-57 GX-5: the reserved GPX row above the summary
 				wantBtn = 4
-				if !strings.Contains(page, `<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route (GPX)</button></div>`) || route["Map"] == "" {
+				if !strings.Contains(page, `<div class="gpx-row"><button type="button" class="gpx" data-gpx data-t="gpx">Download route (GPX)</button></div>`) || route["Map"] == "" {
 					t.Error("Route.Gpx set but the row is missing or there is no map")
 				}
 			} else if strings.Contains(page, "data-gpx") {
@@ -151,12 +151,12 @@ func TestSamplePages(t *testing.T) {
 
 			// AC 10: About and Report in the footer; Report is a button the bundle unhides (F-28 RF-1, RF-9).
 			foot := page[strings.Index(page, `<footer`):]
-			if !strings.Contains(foot, `href="/about">About</a>`) || !strings.Contains(foot, `<button type="button" data-report hidden>Report</button>`) {
+			if !strings.Contains(foot, `href="/about" data-t="about">About</a>`) || !strings.Contains(foot, `<button type="button" data-report hidden data-t="report">Report</button>`) {
 				t.Error("footer lacks About or Report")
 			}
 
 			// AC 5: user text is escaped; the module script and DS-4's inline theme script are the only scripts.
-			if c := strings.Count(page, "<script"); c != 2 || strings.Count(page, `<script type="module"`) != 1 || !strings.Contains(page, `<script>try{var s=localStorage,`) {
+			if c := strings.Count(page, "<script"); c != 2 || strings.Count(page, `<script type="module"`) != 1 || !strings.Contains(page, `<script>var d=document.documentElement,D=d.dataset,`) {
 				t.Errorf("%d script elements, or not the module and theme scripts", c)
 			}
 			if name == "hostile-text" {

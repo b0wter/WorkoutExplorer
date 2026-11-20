@@ -2,9 +2,11 @@
 import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import type { Plugin } from 'vite';
+import { langFiles, langMetas, readTranslations } from './scripts/lang-files.mjs';
+import { GROUPS, PAGES, TRANSLATED } from './src/i18n/groups';
 
 // Typed locally so @types/node does not leak Node globals into the app's type check (F-01 D-4).
-declare const process: { env: Record<string, string | undefined> };
+declare const process: { env: Record<string, string | undefined>; cwd(): string };
 
 // API address for the dev proxy (F-01 "Local development address"). The default
 // must equal the Makefile's DEV_ADDR default and Go's defaultAddr in main.go.
@@ -44,10 +46,63 @@ function uplotTrim(): Plugin {
   };
 }
 
+/** F-54 LG-2, LG-3: emits one content-hashed JSON file per text group and language into assets/,
+ *  and writes the head elements naming a page's files before its <title> (the head script reads
+ *  them). The dev server serves the same files from memory. */
+function langFilesPlugin(): Plugin {
+  const webRoot = process.cwd(); // npm runs Vite and Vitest in src/web
+  const build = () => langFiles(GROUPS, readTranslations(webRoot, TRANSLATED));
+  let out = build();
+  return {
+    name: 'wx-lang-files',
+    buildStart() {
+      out = build();
+      for (const l of TRANSLATED) this.addWatchFile(`${webRoot}/src/i18n/${l}.json`);
+    },
+    transformIndexHtml(html, ctx) {
+      const page = PAGES[ctx.filename.slice(ctx.filename.lastIndexOf('/') + 1)];
+      if (!page) return html;
+      if (html.split('<title>').length !== 2) throw new Error(`wx-lang-files: ${ctx.filename} has not exactly one <title>`);
+      return html.replace('<title>', langMetas(page, out.urls) + '\n    <title>');
+    },
+    generateBundle() {
+      for (const [fileName, source] of Object.entries(out.files)) this.emitFile({ type: 'asset', fileName, source });
+    },
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const text = out.files[((req as { url?: string }).url ?? '').slice(1)];
+        if (text === undefined) return next();
+        (res as unknown as { setHeader(k: string, v: string): void; end(t: string): void }).setHeader('Content-Type', 'application/json');
+        (res as unknown as { end(t: string): void }).end(text);
+      });
+    },
+  };
+}
+
+/** LG-5, ADR-024 item 3: the upload and static entries keep their own copy of every lib module they
+ *  import (the i18n core, the prefs key), so no chunk is shared with the activity entry. A module
+ *  reached from them is resolved with a `?wx=<entry>` suffix, which makes it a module of its own. */
+function entryCopies(): Plugin {
+  return {
+    name: 'wx-entry-copy',
+    enforce: 'pre',
+    async resolveId(source, importer, options) {
+      if (!importer) return;
+      const tag = /[?&]wx=(\w+)/.exec(importer)?.[1] ?? /\/src\/(upload|static)\//.exec(importer)?.[1];
+      if (!tag) return;
+      const r = await this.resolve(source, importer.split('?')[0], { ...options, skipSelf: true });
+      if (!r || r.external || !/\/src\/lib\/.*\.ts$/.test(r.id)) return r;
+      return r.id + '?wx=' + tag;
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     svelte(),
     uplotTrim(),
+    langFilesPlugin(),
+    entryCopies(),
     // Dev only: every /edit/* and /published/* is edit.html, as Caddy serves it (F-19 E-1, F-20 C-1).
     // The fragment never reaches here.
     {
@@ -95,7 +150,18 @@ export default defineConfig({
     // upload page). Relative to the project root.
     // No module-preload polyfill: it would become a chunk both entries share (ADR-024 item 3).
     modulePreload: { polyfill: false },
-    rollupOptions: { input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html', 'report-delete': 'report-delete.html', 'my-workouts': 'my-workouts.html', impressum: 'impressum.html' } },
+    // One script for the activity page (F-54): index.html, edit.html and my-workouts.html share
+    // main.ts, so Rolldown would put modules that the entry and lazy chunks share (lib/i18n, lib/format,
+    // the text tables) into extra chunks, each a second module script. Every module the three load
+    // up front stays in the one main chunk; the other entries (own copies, wx-entry-copy) and lazy chunks are untouched.
+    rollupOptions: {
+      input: { index: 'index.html', edit: 'edit.html', upload: 'upload.html', generic: 'generic.html', about: 'about.html', 'report-delete': 'report-delete.html', 'my-workouts': 'my-workouts.html', impressum: 'impressum.html' },
+      output: {
+        codeSplitting: {
+          groups: [{ name: 'main', tags: ['$initial'], test: (id: string) => !/\.html($|\?)|[?&]wx=|[\\/]src[\\/](upload|static|report-delete|impressum|about|generic|theme)[\\/]/.test(id) }],
+        },
+      },
+    },
   },
   test: {
     environment: 'node',

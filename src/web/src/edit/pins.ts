@@ -8,10 +8,10 @@ import type { WorkoutData } from '../lib/datafile';
 import type { PinsView } from '../pins';
 // Through src/pins (not lib/pins): this static import puts the view and lib/pins in one lazy chunk
 // with the owner chunk's dependency, instead of a third shared chunk in the viewing entry's preload list.
-import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, REMOVED, TYPE_NAMES, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi, type ApiPin, type PinType, type Shade, type ShownPin } from '../pins';
+import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedText, typeName, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi, type ApiPin, type PinType, type Shade, type ShownPin } from '../pins';
 
-/** The server's sentence (lifecycle.MsgPinHidden): the browser shows it before sending. */
-export const PIN_REFUSED = 'This pin is in a hidden or trimmed part of the route.';
+import { onLanguage } from '../lib/i18n';
+import { t } from './texts';
 
 export interface PinEditorEnv {
   /** The pins slot: the tools and form go first, the view's list after them. */
@@ -60,37 +60,57 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
 
   // ---- tools: Add pin, the armed hint with Cancel, one message line ----
   const tools = make('div', 'edit-row pin-tools');
-  const add = tools.appendChild(button('Add pin'));
-  const hint = tools.appendChild(make('span', 'edit-small', 'Tap the map or a chart to place the pin.'));
-  const cancel = tools.appendChild(button('Cancel'));
+  const add = tools.appendChild(button(''));
+  const hint = tools.appendChild(make('span', 'edit-small'));
+  const cancel = tools.appendChild(button(''));
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
 
   // ---- the form of the selected pin ----
   const form = make('div', 'pin-form');
-  const field = (label: string, input: HTMLElement): void => {
-    const l = form.appendChild(make('label', 'edit-field', label));
+  const field = (input: HTMLElement): Text => {
+    const l = form.appendChild(make('label', 'edit-field'));
+    const text = l.appendChild(doc.createTextNode(''));
     l.append(input);
+    return text;
   };
   const type = make('select', '');
-  for (const t of PIN_TYPES) type.add(new Option(TYPE_NAMES[t], t));
-  field('Type', type);
+  for (const p of PIN_TYPES) type.add(new Option('', p));
+  const typeLabel = field(type);
   const title = make('input', '');
   title.maxLength = PIN_TITLE_MAX;
-  field('Title', title);
+  const titleLabel = field(title);
   const note = make('textarea', '');
   note.maxLength = PIN_NOTE_MAX;
   note.rows = 2;
-  field('Note', note);
+  const noteLabel = field(note);
   const row = form.appendChild(make('div', 'edit-row'));
-  const sectionLabel = row.appendChild(make('label', 'edit-small', ' Section (the selected range)'));
+  const sectionLabel = row.appendChild(make('label', 'edit-small'));
+  const sectionText = sectionLabel.appendChild(doc.createTextNode(''));
   const section = make('input', '');
   section.type = 'checkbox';
   sectionLabel.prepend(section);
-  const move = row.appendChild(button('Move'));
-  const del = row.appendChild(button('Delete pin'));
-  const done = row.appendChild(button('Done'));
+  const move = row.appendChild(button(''));
+  const del = row.appendChild(button(''));
+  const done = row.appendChild(button(''));
   slot.prepend(tools, form);
+  /** Every fixed text, again on a language change (F-54). */
+  const label = (): void => {
+    add.textContent = t('addPin');
+    hint.textContent = t('placePin');
+    cancel.textContent = t('cancelPin');
+    PIN_TYPES.forEach((p, i) => (type.options[i].text = typeName(p)));
+    typeLabel.data = t('pinType');
+    titleLabel.data = t('pinTitle');
+    noteLabel.data = t('pinNote');
+    sectionText.data = ' ' + t('pinSection');
+    move.textContent = t('movePin');
+    del.textContent = t('deletePin');
+    done.textContent = t('donePin');
+    const k = view.selected();
+    if (k !== null) title.placeholder = typeName(list[k].type);
+  };
+  label();
 
   let armed: '' | 'add' | 'move' = '';
   let dims = '';
@@ -131,7 +151,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
       const p = list[k];
       type.value = p.type;
       title.value = p.title;
-      title.placeholder = TYPE_NAMES[p.type];
+      title.placeholder = typeName(p.type);
       note.value = p.note;
     }
     controls();
@@ -146,7 +166,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   type.addEventListener('change', () =>
     edit((p) => {
       p.type = type.value as PinType;
-      title.placeholder = TYPE_NAMES[p.type];
+      title.placeholder = typeName(p.type);
     }),
   );
   title.addEventListener('input', () => edit((p) => (p.title = title.value)));
@@ -163,7 +183,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   const place = (i: number): number => {
     const s = lat && i >= 0 ? snap(lat, i) : -1;
     if (s < 0 || dimReason({ from: s }, env.shade(), lat)) {
-      say(PIN_REFUSED);
+      say(t('pinRefused'));
       return -1;
     }
     return s;
@@ -172,7 +192,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   const toSection = (p: Pin, a: number, b: number): void => {
     const [sa, sb] = [place(a), place(b)];
     if (sa < 0 || sb < 0) return;
-    if (sa >= sb) return say(PIN_REFUSED);
+    if (sa >= sb) return say(t('pinRefused'));
     p.from = sa;
     p.to = sb;
     changed(list.indexOf(p));
@@ -242,10 +262,14 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   );
 
   render(null);
+  onLanguage(() => {
+    label();
+    render(view.selected());
+  });
 
   const send = (): ApiPin[] => {
     const s = env.shade();
-    return list.filter((p) => dimReason(p, s, lat) !== REMOVED).map((p) => toApi(p, time, startS));
+    return list.filter((p) => dimReason(p, s, lat) !== removedText()).map((p) => toApi(p, time, startS));
   };
   return {
     refresh: () => {
@@ -263,7 +287,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
       list = load(stored);
       arm('');
       render(null);
-      say(removed ? `${removed} ${removed === 1 ? 'pin' : 'pins'} in the trimmed part removed.` : '');
+      say(removed ? t('pinsRemoved', { n: removed }) : '');
     },
   };
 }

@@ -8,7 +8,7 @@
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>My workouts · Workout Explorer</title>
-    <script>try{var s=localStorage,d=document.documentElement,t=s.getItem("wx.theme");if(t=="light"||t=="dark")d.dataset.theme=t;if(s.getItem("wx.hint.done")=="1")d.dataset.hint="done"}catch(e){}</script>
+    <script>var d=document.documentElement,D=d.dataset,L=["en","de","es","fr"],l,u;try{var s=localStorage,t=s.getItem("wx.theme");if(t=="light"||t=="dark")D.theme=t;if(s.getItem("wx.hint.done")=="1")D.hint="done";l=s.getItem("wx.lang")}catch(e){}if(L.indexOf(l)==-1){l="en";(navigator.languages||[navigator.language]).some(function(x){x=String(x).split("-")[0].toLowerCase();return L.indexOf(x)>=0&&(l=x)})}D.lang=l;u=document.querySelector("meta[data-hold]");u=u&&u.getAttribute("data-"+l);if(u){D.hold="";window.wxLang=fetch(u);setTimeout(function(){delete D.hold},500)}</script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>

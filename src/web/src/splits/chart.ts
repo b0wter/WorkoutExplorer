@@ -5,6 +5,7 @@
 import '../theme/zones.css';
 import type { formatSpeedOrPace, isPaceSport, speedOrPaceUnit, Units } from '../lib/format';
 import { compare, overlay, type CompareRow, type OverlayKey } from '../lib/compare';
+import { t } from './texts';
 
 /** One slot: its table row (taps and hover go through it) and the number the table shows. */
 export interface Slot extends CompareRow {
@@ -13,8 +14,8 @@ export interface Slot extends CompareRow {
 }
 
 export interface Chart {
-  /** `noun`: a row's name in the accessible label ("Lap", "Split", "Length"). */
-  draw(slots: readonly Slot[], caption: string, units: Units, noun: string): void;
+  /** `noun`: the rows' kind for the accessible label. */
+  draw(slots: readonly Slot[], caption: string, units: Units, noun: 'Laps' | 'Splits' | 'Lengths'): void;
 }
 
 /** The entry's formatters (see ../splits Fmt). */
@@ -22,12 +23,13 @@ export type Fmt = readonly [typeof formatSpeedOrPace, typeof speedOrPaceUnit, ty
 
 const PLOT = 110; // px, plus the row numbers below: about 190 px with header, gaps and legend
 const PAD = 4;
-const NAMES: Readonly<Record<OverlayKey, readonly [label: string, colour: string]>> = {
-  avg_heart_rate: ['Heart rate', 'heart_rate'],
-  avg_power: ['Power', 'power'],
-  avg_cadence: ['Cadence', 'cadence'],
-  elevation: ['Elevation', 'altitude'],
+const NAMES: Readonly<Record<OverlayKey, readonly [label: 'ovHeartRate' | 'ovPower' | 'ovCadence' | 'ovElevation', colour: string]>> = {
+  avg_heart_rate: ['ovHeartRate', 'heart_rate'],
+  avg_power: ['ovPower', 'power'],
+  avg_cadence: ['ovCadence', 'cadence'],
+  elevation: ['ovElevation', 'altitude'],
 };
+const BEYOND = { Laps: 'lapBeyond', Splits: 'splitBeyond', Lengths: 'lengthBeyond' } as const;
 
 const yp = (f: number): number => PAD + f * (PLOT - 2 * PAD);
 const r2 = (x: number): number => Math.round(x * 100) / 100;
@@ -53,10 +55,11 @@ export function createChart(
   const head = el(doc, 'div', 'compare-head');
   // Median and best as two stat blocks (label over value) that never wrap into the plot.
   const headText = el(doc, 'span', 'compare-stats');
-  const label = el(doc, 'label', 'compare-overlay', 'Overlay ');
+  const label = el(doc, 'label', 'compare-overlay');
+  const labelText = doc.createTextNode('');
   const select = el(doc, 'select', 'split-select');
   const body = el(doc, 'div', '');
-  label.appendChild(select);
+  label.append(labelText, select);
   head.append(headText, label);
   box.append(head, body);
   section.appendChild(box);
@@ -83,7 +86,7 @@ export function createChart(
     if (last) draw(...last);
   });
 
-  const draw = (slots: readonly Slot[], caption: string, units: Units, noun: string): void => {
+  const draw: Chart['draw'] = (slots, caption, units, noun) => {
     last = [slots, caption, units, noun];
     const c = compare(slots, pace);
     box.hidden = !c;
@@ -95,7 +98,8 @@ export function createChart(
     const text = (v: number): string => speedText(sport, v, units);
 
     // Header: reference and best, and the overlay drop-down when there is a metric to offer.
-    const stats: [string, string][] = [['Median', text(c.reference) + unit], ['Best', text(c.best) + unit]];
+    labelText.data = t('overlay') + ' ';
+    const stats: [string, string][] = [[t('median'), text(c.reference) + unit], [t('best'), text(c.best) + unit]];
     headText.replaceChildren(
       ...stats.map(([k, v]) => {
         const s = el(doc, 'span', 'compare-stat', ' ' + v);
@@ -105,9 +109,9 @@ export function createChart(
     );
     const headLabel = stats.map((kv) => kv.join(' ')).join(' · ');
     label.hidden = !c.overlays.length;
-    if (offered !== (offered = c.overlays.join())) {
+    if (offered !== (offered = c.overlays.join() + t('none'))) {
       select.replaceChildren();
-      for (const [v, t] of [['', 'None'], ...c.overlays.map((k) => [k, NAMES[k][0]])]) select.add(new Option(t, v));
+      for (const [v, name] of [['', t('none')], ...c.overlays.map((k) => [k, t(NAMES[k][0])])]) select.add(new Option(name, v));
     }
     select.value = choice;
 
@@ -146,7 +150,7 @@ export function createChart(
     const plot = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
     plot.setAttribute('height', String(PLOT + 18));
     plot.setAttribute('role', 'img');
-    const beyond = slots.flatMap((s, i) => (c.bars[i]?.clipped ? [noun + ' ' + s.label + ' beyond the scale'] : []));
+    const beyond = slots.flatMap((s, i) => (c.bars[i]?.clipped ? [t(BEYOND[noun], { n: s.label })] : []));
     plot.setAttribute('aria-label', [headLabel + ', ' + caption, ...beyond].join('. '));
     plot.innerHTML = svg;
     plot.querySelectorAll<SVGElement>('rect[data-i]').forEach((r) => barOf.set(slots[+r.dataset.i!].row, r));
@@ -181,8 +185,8 @@ export function createChart(
 
     const foot = el(doc, 'div', 'compare-foot', caption);
     const legend = el(doc, 'span', 'compare-legend');
-    for (const [cls, t] of [['faster', 'Faster'], ['pace', 'On pace'], ['slower', 'Slower']]) {
-      const k = el(doc, 'span', '', t);
+    for (const [cls, key] of [['faster', 'faster'], ['pace', 'onPace'], ['slower', 'slower']] as const) {
+      const k = el(doc, 'span', '', t(key));
       k.prepend(el(doc, 'i', cls));
       legend.appendChild(k);
     }

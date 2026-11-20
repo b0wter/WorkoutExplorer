@@ -7,6 +7,8 @@
   import { impressum } from '../../lib/page/impressum';
   import { enhanceCopyLink } from '../../page/enhance';
   import DeleteControl from './DeleteControl.svelte';
+  import { t } from '../../edit/texts';
+  import { t as tc } from '../page/texts';
 
   interface Props {
     /** location.origin, for the viewing link. */
@@ -32,8 +34,8 @@
       else if (act === 'copy-edit') {
         const write = navigator.clipboard ? navigator.clipboard.writeText(editLink) : Promise.reject(new Error('no clipboard'));
         write.then(
-          () => (copied = 'Edit link copied.'),
-          () => (copied = 'Copying did not work. Select the link above and copy it by hand.'),
+          () => (copied = t('editLinkCopied')),
+          () => (copied = t('copyFailed')),
         );
       }
     });
@@ -41,27 +43,27 @@
 </script>
 
 <main class="generic published" {@attach wire}>
-  <h1>Workout published</h1>
+  <h1>{t('published')}</h1>
   <section class="link-box view-box">
-    <h2>Viewing link</h2>
+    <h2>{t('viewingLink')}</h2>
     <p class="edit-share" {@attach (p) => enhanceCopyLink(p, origin, navigator)}>
       <span class="edit-link">{origin + viewUrl}</span>
-      <a class="copy" href={viewUrl} data-copy-link>Copy link</a>
-      <a class="go" href={viewUrl}>Go there</a>
+      <a class="copy" href={viewUrl} data-copy-link>{tc('copyLink')}</a>
+      <a class="go" href={viewUrl}>{t('goThere')}</a>
     </p>
   </section>
   <section class="link-box edit-warn">
-    <h2>Edit link</h2>
-    <p><strong>Save this link. It is the only way to change or delete this workout, and it cannot be recovered.</strong></p>
+    <h2>{t('editLink')}</h2>
+    <p><strong>{t('saveLinkWarning')}</strong></p>
     <p class="edit-link" translate="no">{editLink}</p>
-    <p><button type="button" class="edit-button" data-act="copy-edit">Copy edit link</button>
-      <button type="button" class="edit-button" data-act="back" disabled={busy !== ''}>Go there</button> <span class="edit-copied" role="status">{copied}</span></p>
+    <p><button type="button" class="edit-button" data-act="copy-edit">{t('copyEditLink')}</button>
+      <button type="button" class="edit-button" data-act="back" disabled={busy !== ''}>{t('goThere')}</button> <span class="edit-copied" role="status">{copied}</span></p>
   </section>
-  <p>Edit links are saved in this browser. Anyone using this browser can open them.</p>
-  <p class="edit-delete-hint">Uploaded accidentally?</p>
+  <p>{t('linksSaved')}</p>
+  <p class="edit-delete-hint">{t('accidental')}</p>
   <p class="edit-row">
     <DeleteControl {busy} {ondelete} />
     <span class="edit-status" role="status">{busy || status}</span>
   </p>
 </main>
-<footer class="foot generic-foot" {@attach impressum}><a href="/about">About</a></footer>
+<footer class="foot generic-foot" {@attach impressum}><a href="/about">{tc('about')}</a></footer>

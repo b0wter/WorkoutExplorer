@@ -2,6 +2,7 @@
 // a value per sample, the scale and its classes, and the legend's texts. Pure: no DOM, no MapLibre,
 // no lib/route (the drawn edges come in as their end indices). LAZY: imported by map-view only.
 
+import { t } from '../../components/map/map-texts';
 import type { WorkoutData } from '../datafile';
 import { STOP_SPEED, formatFixed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit, type Units } from '../format';
 
@@ -45,8 +46,8 @@ export function offeredMetrics(data: WorkoutData): ColourMetric[] {
 
 /** The option's text: speed is "Pace" for the pace sports by the workout sport (DS-2, F-13 D-4). */
 export function metricLabel(metric: ColourMetric, sport: string): string {
-  if (metric === 'speed') return isPaceSport(sport) ? 'Pace' : 'Speed';
-  return metric === 'heart_rate' ? 'Heart rate' : metric === 'power' ? 'Power' : 'Gradient';
+  if (metric === 'speed') return t(isPaceSport(sport) ? 'colourPace' : 'colourSpeed');
+  return t(metric === 'heart_rate' ? 'colourHeartRate' : metric === 'power' ? 'colourPower' : 'colourGradient');
 }
 
 /** A copy of `src` with NaN in every sample of a `transition` session (F-08 hand-off, user answer 6). */

@@ -1,5 +1,5 @@
 // Static checks of the generic page (F-15 design P-12; AC 6, AC 7; DS-4): one static file with
-// no script, no Open Graph data, no workout data and no link to a workout; its theme is the
+// no script but the head script and the static entry (F-54 LG-5), no Open Graph data, no workout data and no link to a workout; its theme is the
 // plain pages' CSS-only light and dark theme.
 import { describe, expect, it } from 'vitest';
 import { readWebFile } from '../../test-support/source.mjs';
@@ -7,8 +7,8 @@ import { readWebFile } from '../../test-support/source.mjs';
 const html = readWebFile('generic.html');
 
 describe('generic page', () => {
-  it('has no script, no inline style, no handler, no Open Graph or other card data', () => {
-    expect(html).not.toMatch(/<script/i);
+  it('has no script but the head script and the static entry, no inline style, no handler, no Open Graph or other card data', () => {
+    expect([...html.matchAll(/<script[^>]*>/gi)].map((m) => m[0])).toEqual(['<script>', '<script type="module" src="/src/static/main.ts">']);
     expect(html).not.toMatch(/<style[\s>]/i);
     expect(html).not.toMatch(/\sstyle\s*=/i);
     expect(html).not.toMatch(/\son[a-z]+\s*=/i);
@@ -26,7 +26,7 @@ describe('generic page', () => {
 
   it('links only to About and its own stylesheet, never to a workout', () => {
     const hrefs = [...html.matchAll(/(?:href|src)="([^"]*)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(['/src/generic/generic.css', '/about']);
+    expect(hrefs).toEqual(['/src/static/main.ts', '/src/generic/generic.css', '/about']);
   });
 
   it('follows the system light or dark setting with CSS only (DS-4)', () => {

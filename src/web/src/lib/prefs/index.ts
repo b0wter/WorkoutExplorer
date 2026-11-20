@@ -36,6 +36,8 @@ export interface ViewerPrefs {
   howtoOpened(): boolean;
   setHowtoOpened(): void;
   setHintDone(): void;
+  /** F-54 LG-1: written only by the language drop-down, English included; read only by the head script. */
+  setLang(lang: string): void;
 }
 
 export const PREF_KEYS = {
@@ -48,7 +50,18 @@ export const PREF_KEYS = {
   howto: 'wx.howto.opened',
   /** Also read by the inline head script (sets <html data-hint="done">, F-39 HU-2). */
   hint: 'wx.hint.done',
+  /** F-54 LG-1: also read by the inline head script, which decides the page view's language. */
+  lang: 'wx.lang',
 } as const;
+
+/** F-54 LG-1: the language drop-down's write alone, for the upload page's entry (no other key there). */
+export function rememberLang(storage: () => KeyValueStore | null | undefined, lang: string): void {
+  try {
+    storage()?.setItem('wx.lang', lang);
+  } catch {
+    // Not remembered; the choice still applies to this page.
+  }
+}
 
 /** `storage` is called on every access, so a getter that throws (blocked site data) is contained too. */
 export function createViewerPrefs(storage: () => KeyValueStore | null | undefined): ViewerPrefs {
@@ -89,5 +102,6 @@ export function createViewerPrefs(storage: () => KeyValueStore | null | undefine
     howtoOpened: () => read(PREF_KEYS.howto) === '1',
     setHowtoOpened: () => write(PREF_KEYS.howto, '1'),
     setHintDone: () => write(PREF_KEYS.hint, '1'),
+    setLang: (lang) => write(PREF_KEYS.lang, lang),
   };
 }

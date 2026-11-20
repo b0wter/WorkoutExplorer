@@ -11,10 +11,10 @@ import type { SelectionStore } from '../lib/selection';
 import type { UnitsStore } from '../lib/units';
 import type { ChartDecorator } from '../components/charts/uplot-options';
 import { distanceUnit, formatDistance } from '../lib/format';
-import { PIN_TYPES, TYPE_NAMES, pinName, readPins, type PinType, type ShownPin } from '../lib/pins';
+import { PIN_TYPES, typeName, pinName, readPins, type PinType, type ShownPin } from '../lib/pins';
 
 // The pin editor's helpers (owner chunk), re-exported: see src/edit/pins.ts.
-export { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, REMOVED, TYPE_NAMES, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi } from '../lib/pins';
+export { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed, typeName, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi } from '../lib/pins';
 export type { ApiPin, PinType, Shade, ShownPin } from '../lib/pins';
 
 /** The lazy map module's seam for pins (ADR-013): nothing pin-specific lives there. */
@@ -93,6 +93,9 @@ const el = <K extends keyof HTMLElementTagNameMap>(doc: Document, tag: K, cls: s
 
 /** The chunk's entry. Viewing page: fetches the slot's pins file (PN-9); a failed or invalid file
  *  (PN-11) shows no pins and releases the slot. Edit page: hands the empty view to the edit seam. */
+import { onLanguage } from '../lib/i18n';
+import { t } from './texts';
+
 export function startPins(env: PinsEnv): PinsView {
   const { slot, data, cursor, selection, units } = env;
   const doc = slot.ownerDocument;
@@ -102,7 +105,7 @@ export function startPins(env: PinsEnv): PinsView {
   const listeners: ((i: number | null) => void)[] = [];
   const dist = data.metrics.distance;
 
-  const head = el(doc, 'h2', 'pins-head', 'Pins');
+  const head = el(doc, 'h2', 'pins-head', t('pins'));
   const list = el(doc, 'ul', 'pin-list');
   slot.append(head, list);
 
@@ -200,7 +203,7 @@ export function startPins(env: PinsEnv): PinsView {
   const close = card.appendChild(el(doc, 'button', 'pin-x-btn', '×'));
   const cardName = card.appendChild(el(doc, 'b', 'pin-t'));
   close.type = 'button';
-  close.setAttribute('aria-label', 'Close');
+  close.setAttribute('aria-label', t('closePin'));
   close.addEventListener('click', () => select(null));
   const cardWhere = card.appendChild(el(doc, 'div', 'pin-d'));
   const cardNote = card.appendChild(el(doc, 'p', 'pin-note'));
@@ -215,7 +218,7 @@ export function startPins(env: PinsEnv): PinsView {
     pins.forEach((p, k) => {
       const b = tag(el(doc, 'button', 'pin-mk'), k);
       b.type = 'button';
-      b.setAttribute('aria-label', TYPE_NAMES[p.type] + ': ' + pinName(p));
+      b.setAttribute('aria-label', typeName(p.type) + ': ' + pinName(p));
       b.append(icon(doc, p.type));
       b.addEventListener('click', () => tap(k));
       removals.push(m.marker(b, p.from));
@@ -227,8 +230,8 @@ export function startPins(env: PinsEnv): PinsView {
       ...types.map((t) => {
         const b = el(doc, 'button', 'pin-key');
         b.type = 'button';
-        b.title = TYPE_NAMES[t];
-        b.setAttribute('aria-label', TYPE_NAMES[t]);
+        b.title = typeName(t);
+        b.setAttribute('aria-label', typeName(t));
         b.setAttribute('aria-pressed', String(!off.has(t)));
         b.append(icon(doc, t));
         b.addEventListener('click', () => {
@@ -260,6 +263,15 @@ export function startPins(env: PinsEnv): PinsView {
     paint();
   };
   set(pins);
+
+  // F-54: names, distances and the card follow the language.
+  onLanguage(() => {
+    head.textContent = t('pins');
+    close.setAttribute('aria-label', t('closePin'));
+    renderList();
+    renderMap();
+    paint();
+  });
 
   const view: PinsView = {
     slot,

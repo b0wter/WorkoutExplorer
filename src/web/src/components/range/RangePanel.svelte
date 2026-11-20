@@ -4,6 +4,8 @@
   // fixed per workout, in a fixed grid, so the height never changes during a drag. The selection
   // listener writes text only (F-05 D-10): one O(1) query, about nine strings.
   import { onMount, untrack } from 'svelte';
+  import { lang } from '../../lib/i18n';
+  import { en, t } from '../../page/texts';
   import type { WorkoutData } from '../../lib/datafile';
   import type { SelectionStore } from '../../lib/selection';
   import { createRangeStats, emptyValues, type RangeField, type RangeValues } from '../../lib/range';
@@ -11,6 +13,7 @@
     MISSING_TEXT,
     cadenceUnit,
     distanceUnit,
+    heartRateUnit,
     elevationUnit,
     formatDistance,
     formatElapsed,
@@ -41,16 +44,16 @@
   const fields = stats.fields;
   const out = emptyValues();
 
-  const LABELS: Readonly<Record<RangeField, string>> = {
-    distance: 'Distance',
-    elapsed: 'Time',
-    moving: 'Moving',
-    gain: 'Gain',
-    speed: isPaceSport(sport) ? 'Avg pace' : 'Avg speed',
-    heartRate: 'Avg HR',
-    power: 'Avg power',
-    cadence: 'Avg cadence',
-    temperature: 'Avg temp',
+  const LABELS: Readonly<Record<RangeField, keyof typeof en>> = {
+    distance: 'rangeDistance',
+    elapsed: 'rangeTime',
+    moving: 'rangeMoving',
+    gain: 'rangeGain',
+    speed: isPaceSport(sport) ? 'rangePace' : 'rangeSpeed',
+    heartRate: 'rangeHeartRate',
+    power: 'rangePower',
+    cadence: 'rangeCadence',
+    temperature: 'rangeTemperature',
   };
 
   function unitOf(f: RangeField, u: Units): string {
@@ -62,7 +65,7 @@
       case 'speed':
         return speedOrPaceUnit(sport, u);
       case 'heartRate':
-        return 'bpm';
+        return heartRateUnit();
       case 'power':
         return 'W';
       case 'cadence':
@@ -110,6 +113,7 @@
   // A units change rewrites the values (labels and units are markup).
   $effect(() => {
     current = units;
+    lang(); // F-54: decimal separators
     untrack(() => write(selection.start(), selection.end()));
   });
 </script>
@@ -119,13 +123,13 @@
 <div class="range-panel" bind:this={root}>
   {#each fields as f (f)}
     <div class="cell">
-      <div class="label">{LABELS[f]}</div>
-      <div class="val"><span class="value">{MISSING_TEXT}</span>{#if unitOf(f, units)}&nbsp;<span class="unit">{unitOf(f, units)}</span>{/if}</div>
+      <div class="label">{t(LABELS[f])}</div>
+      <div class="val"><span class="value">{MISSING_TEXT}</span>{#if (lang(), unitOf(f, units))}&nbsp;<span class="unit">{(lang(), unitOf(f, units))}</span>{/if}</div>
     </div>
   {/each}
   <div class="actions">
-    <button type="button" class="clear" onclick={() => selection.clear()}>Clear</button>
-    {#if oncopy}<button type="button" class="share" onclick={(e) => oncopy?.(e.currentTarget)}>Copy link to this selection</button>{/if}
+    <button type="button" class="clear" onclick={() => selection.clear()}>{t('clear')}</button>
+    {#if oncopy}<button type="button" class="share" onclick={(e) => oncopy?.(e.currentTarget)}>{t('copyRange')}</button>{/if}
   </div>
 </div>
 

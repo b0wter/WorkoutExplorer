@@ -1,8 +1,23 @@
-// The one formatting home (F-13 design D-6): numbers, durations, pace, dates and sport names
-// as fixed English strings. Never Intl or toLocale*: their output differs between engines and
-// from Go (DS-3). Every unit-dependent function takes the unit system (F-14 D-1); the factors and
-// unit strings live only here. Imports nothing. Hot-path callers (the readout) use
-// only the first functions: no allocations other than the returned string.
+// The one formatting home (F-13 design D-6): numbers, durations, pace, dates and sport names.
+// English: fixed strings, never Intl or toLocale* (their output differs between engines and from
+// Go, DS-3). German, Spanish and French: the decimal separator and dates through Intl (F-54 LG-7).
+// Every unit-dependent function takes the unit system (F-14 D-1); the factors and unit strings
+// live only here. Imports only lib/i18n. Hot-path callers (the readout) use only the first
+// functions: no allocations other than the returned string.
+import { lang } from '../i18n';
+import { t } from './texts';
+
+let sepLang = 'en';
+let sep = '.';
+/** The language's decimal separator, from Intl once per language (LG-7); '.' for English. */
+function decimal(): string {
+  const l = lang();
+  if (l !== sepLang) {
+    sepLang = l;
+    sep = l === 'en' ? '.' : (new Intl.NumberFormat(l).formatToParts(1.5).find((p) => p.type === 'decimal')?.value ?? '.');
+  }
+  return sep;
+}
 
 /** Missing value: U+2013 EN DASH. Never '0'. */
 export const MISSING_TEXT = '–';
@@ -28,7 +43,8 @@ export function formatFixed(v: number, decimals: number): string {
   if (!Number.isFinite(v)) return MISSING_TEXT;
   const text = v.toFixed(decimals);
   // toFixed keeps the sign of values that round to zero ('-0', '-0.0').
-  return text.charCodeAt(0) === 45 && Number(text) === 0 ? text.slice(1) : text;
+  const out = text.charCodeAt(0) === 45 && Number(text) === 0 ? text.slice(1) : text;
+  return decimals > 0 ? out.replace('.', decimal()) : out;
 }
 
 /** The viewer's unit system (DS-1). */
@@ -105,21 +121,29 @@ export function toSpeed(v: number, units: Units): number {
   return v * (units === 'metric' ? 3.6 : MPS_TO_MPH);
 }
 
+/** 'bpm', a text (F-54 LG-7). */
+export const heartRateUnit = (): string => t('bpm');
+
 /** Cadence unit: spm for the pace sports, the neutral '/min' for a multisport file, else rpm. */
 export function cadenceUnit(sport: string): string {
-  return isPaceSport(sport) ? 'spm' : sport === 'multisport' ? '/min' : 'rpm';
+  return t(isPaceSport(sport) ? 'spm' : sport === 'multisport' ? 'perMin' : 'rpm');
 }
 
 /** "Expires in 6 days" for the time left until `expiresAt` at `now` (both ms; zone independent). */
 export function formatTimeLeft(expiresAtMs: number, nowMs: number): string {
   const left = Math.floor((expiresAtMs - nowMs) / 1000);
-  if (!(left > 0)) return 'Expires now';
+  if (!(left > 0)) return t('expiresNow');
   const days = Math.floor(left / 86400);
   const hours = Math.floor(left / 3600);
   const minutes = Math.floor(left / 60);
-  const plural = (n: number, unit: string): string => n + ' ' + unit + (n === 1 ? '' : 's');
-  if (days >= 2) return 'Expires in ' + plural(days, 'day');
-  if (hours >= 1) return 'Expires in ' + plural(hours, 'hour');
-  if (minutes >= 1) return 'Expires in ' + plural(minutes, 'minute');
-  return 'Expires in less than a minute';
+  if (days >= 2) return t('expires', { when: relative(days, 'day') });
+  if (hours >= 1) return t('expires', { when: relative(hours, 'hour') });
+  if (minutes >= 1) return t('expires', { when: relative(minutes, 'minute') });
+  return t('expiresSoon');
+}
+
+/** 'in 6 days': English by hand; other languages through Intl.RelativeTimeFormat (LG-7, MW-9: we pick the unit only). */
+export function relative(n: number, unit: 'day' | 'hour' | 'minute'): string {
+  const l = lang();
+  return l === 'en' ? 'in ' + n + ' ' + unit + (n === 1 ? '' : 's') : new Intl.RelativeTimeFormat(l).format(n, unit);
 }

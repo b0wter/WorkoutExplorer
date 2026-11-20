@@ -3,17 +3,21 @@
 
 import type { WorkoutData } from '../datafile';
 import { carriedDistance } from '../range';
+import { en, t } from '../splits/texts';
 import { legs as sectionLegs, sections } from '../sections';
 
-/** EF-4: distance efforts, metres and name (names stay in both unit systems, DS-1). */
+/** EF-4: distance efforts, metres and name (names stay in both unit systems, DS-1); a word is a key of lib/splits' texts (effortName). */
 export const DISTANCES: readonly (readonly [number, string])[] = [
   [1000, '1 km'],
   [1609.344, '1 mi'],
   [5000, '5 km'],
   [10000, '10 km'],
-  [21097.5, 'Half marathon'],
-  [42195, 'Marathon'],
+  [21097.5, 'halfMarathon'],
+  [42195, 'marathon'],
 ];
+
+/** A distance effort's name as shown: '5 km', or 'Half marathon' in the page language (F-54). */
+export const effortName = (name: string): string => (name in en ? t(name as keyof typeof en) : name);
 
 /** EF-5: power durations, seconds and name. */
 export const DURATIONS: readonly (readonly [number, string])[] = [

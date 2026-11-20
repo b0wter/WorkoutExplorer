@@ -9,7 +9,10 @@ import { loadGolden } from '../../test-support/golden.mjs';
 import type { Settings } from '../lib/owner';
 import { decodeDataFile } from '../lib/datafile';
 import { formatElapsed } from '../lib/format';
-import { PIN_REFUSED } from './pins';
+import { en as editTexts } from './texts';
+import { en as errorTexts } from '../lib/errors/texts';
+
+const PIN_REFUSED = editTexts.pinRefused;
 import { resetStubLog, stubLog } from '../page/testing/stub-log';
 import { startEdit } from './start.svelte';
 import editHtml from '../../edit.html?raw';
@@ -410,13 +413,13 @@ describe('AC 2, E-6: saving', () => {
     expect($<HTMLButtonElement>('.edit-save')?.disabled).toBe(false);
   });
 
-  it('400: the server message, the form keeps the input, the header the stored text', async () => {
+  it('400: the text of the error code (F-54 LG-6, P-14), the form keeps the input, the header the stored text', async () => {
     onPatch = () => Response.json({ error: 'invalid_settings', message: 'The title is too long.' }, { status: 400 });
     await open();
     const before = $('h1')?.textContent;
     type('title', 'Mine');
     await save();
-    expect($('.edit-status')?.textContent).toBe('The title is too long.');
+    expect($('.edit-status')?.textContent).toBe(errorTexts.invalid_settings);
     expect(field('title').value).toBe('Mine');
     expect($('h1')?.textContent).toBe(before);
   });

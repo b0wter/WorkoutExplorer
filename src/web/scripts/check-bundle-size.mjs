@@ -14,8 +14,8 @@ import zlib from 'node:zlib';
 
 export const LIMIT_BYTES = 60000;
 
-/** Lower ceilings for single entries, by manifest key (ADR-024 item 4: upload page 8,000; F-37 DK-11: delete link page 4,000; F-38 IM-2: Impressum page 2,000). */
-export const ENTRY_LIMITS = { 'upload.html': 8000, 'report-delete.html': 4000, 'impressum.html': 2000 };
+/** Lower ceilings for single entries, by manifest key (ADR-024 item 4: upload page 8,000; F-37 DK-11: delete link page 4,000; F-38 IM-2: Impressum page 2,000; F-54 LG-5: the static entry of the About and generic pages 2,000). */
+export const ENTRY_LIMITS = { 'upload.html': 8000, 'report-delete.html': 4000, 'impressum.html': 2000, 'about.html': 2000, 'generic.html': 2000 };
 
 /** The ceiling that applies to one entry. */
 export function limitFor(entry) {
@@ -160,8 +160,24 @@ export function main(buildDir) {
   }
 }
 
-function report(buildDir, entries) {
+/** F-54 LG-3: each language file at most 5 KB gzip. */
+export const LANG_FILE_LIMIT = 5120;
+
+function langFiles(buildDir) {
   let failed = false;
+  const dir = path.join(buildDir, 'assets');
+  const names = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /^lang-.*\.json$/.test(f)) : [];
+  for (const f of names) {
+    const s = sizes(path.join(dir, f));
+    const ok = withinBudget(s.gzip, LANG_FILE_LIMIT);
+    if (!ok) failed = true;
+    console.log(`language file ${f}: ${s.gzip} / ${LANG_FILE_LIMIT} bytes gzip ${ok ? 'PASS' : 'FAIL'}`);
+  }
+  return failed;
+}
+
+function report(buildDir, entries) {
+  let failed = langFiles(buildDir);
   for (const { entry, files, dynamicFiles } of entries) {
     let gzip = 0;
     let brotli = 0;

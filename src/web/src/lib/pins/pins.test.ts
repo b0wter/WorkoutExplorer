@@ -1,6 +1,6 @@
 // F-56 PN-3, PN-6, PN-11, PN-12: the pins file check, order and the edit page's mirror rules.
 import { describe, expect, it } from 'vitest';
-import { REMOVED, dimReason, fromApi, hasVisibleRoute, indexAt, instantAt, pinName, readPins, snap, toApi } from '.';
+import { removed, dimReason, fromApi, hasVisibleRoute, indexAt, instantAt, pinName, readPins, snap, toApi } from '.';
 
 const p = (o: Record<string, unknown>) => ({ type: 'danger', title: 't', note: '', from: 1, ...o });
 
@@ -80,8 +80,8 @@ describe('edit mirror (PN-12, OQ-234, OQ-275)', () => {
   it('dimReason: trim wins, then each radius, both ends of a section; public is empty', () => {
     expect(dimReason({ from: 5 }, shade, lat)).toBe('');
     expect(dimReason({ from: 2, to: 7 }, shade, lat)).toBe('');
-    expect(dimReason({ from: 0 }, shade, lat)).toBe(REMOVED);
-    expect(dimReason({ from: 2, to: 9 }, shade, lat)).toBe(REMOVED);
+    expect(dimReason({ from: 0 }, shade, lat)).toBe(removed());
+    expect(dimReason({ from: 2, to: 9 }, shade, lat)).toBe(removed());
     expect(dimReason({ from: 1 }, shade, lat)).toBe('Hidden by the start radius');
     expect(dimReason({ from: 8 }, shade, lat)).toBe('Hidden by the end radius');
     expect(dimReason({ from: 1, to: 8 }, shade, lat)).toBe('Hidden by the start and end radius');

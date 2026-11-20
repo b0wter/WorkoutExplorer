@@ -31,7 +31,7 @@ import (
 
 // Asserted exactly, so a loosened policy fails the build (H-2, H-12).
 var securitySet = map[string]string{
-	"Content-Security-Policy":   "default-src 'self'; script-src 'self' 'sha256-oU85smkdewIErbjHrk9QZ1FiICdjcwU0koHX7ul9Dpw=' 'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+	"Content-Security-Policy":   "default-src 'self'; script-src 'self' 'sha256-O55BZSok+26ER+X6MzVA5nes+xUDGDoeXwJKDKzdalw=' 'sha256-oU85smkdewIErbjHrk9QZ1FiICdjcwU0koHX7ul9Dpw=' 'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org; img-src 'self' data: blob: https://tiles.openfreemap.org; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 	"Referrer-Policy":           "no-referrer",
 	"X-Content-Type-Options":    "nosniff",
 	"Strict-Transport-Security": "max-age=31536000",
@@ -249,7 +249,8 @@ func (r *rig) gone(label, pub, oldData string, since time.Time) {
 	}
 }
 
-var assetRef = regexp.MustCompile(`(?:/assets/|\./|"assets/)([0-9A-Za-z._-]+\.(?:js|css))`)
+// F-54: the page's language files (.json) are assets too, public and immutable (LG-3, LG-9).
+var assetRef = regexp.MustCompile(`(?:/assets/|\./|"assets/)([0-9A-Za-z._-]+\.(?:json|js|css))\b`)
 
 func TestCaddy(t *testing.T) {
 	r := startRig(t)

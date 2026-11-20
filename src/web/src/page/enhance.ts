@@ -9,16 +9,22 @@ import type { UnitsStore } from '../lib/units';
 import type { ThemeChoice } from '../lib/prefs';
 import type { Facts } from '../summary-info';
 import type { GpxInput } from '../lib/gpx';
+import { LANGS, LANG_NAMES, lang, loadGroup, onLanguage, type Lang } from '../lib/i18n';
+import { t as tp } from '../lib/page/texts';
+import { en, t } from './texts';
 
 /** Rewrites the summary and laps text of the server markup (metric) into the store's units (F-14
  *  D-5, ADR-027): the page builders run over the data file's metadata and write strings into the
  *  existing nodes, matched by `data-k` (the view model's Key) and by position. Text only; no node
  *  is added, removed or replaced. A markup that does not match is left untouched and logged.
  *  Runs once for the store's current value when it is not metric, then on every change. */
-export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' | 'summary' | 'laps'>, store: UnitsStore, strip = true): void {
+export function enhanceUnits(root: ParentNode, meta: WorkoutMeta, store: UnitsStore, strip = true): void {
   const apply = (): void => {
     const units = store.get();
     const writes: [Node, string][] = [];
+    // F-54 LG-4: the viewing page's header, device line and leg rows from the metadata (the edit
+    // page renders its own); a lazy chunk, loaded once the page is not English.
+    if (strip && (lang() !== 'en' || headerChunk)) void loadHeader().then((m) => m.header(root, meta));
     // The edit page renders its strip itself (F-47 TR-9: it may show the trimmed summary).
     const items = strip ? summaryItems(meta.sport, meta.summary, units) : [];
     const cells = strip ? root.querySelectorAll('.summary > .metric') : [];
@@ -33,8 +39,10 @@ export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' |
         return;
       }
       writes.push([num[0], item.Value]);
+      const k = cell.querySelector('.k');
+      if (k) writes.push([k, item.Label]);
       if (item.Unit) writes.push([unit[0], item.Unit]);
-      if (item.Max) writes.push([max[0], 'max ' + item.Max]);
+      if (item.Max) writes.push([max[0], tp('max', { v: item.Max })]);
     });
     const laps = lapsGroup(meta.sport, meta.laps, units);
     // The server table only, not the bundle's splits table (F-18 L-6); lap rows only, not the
@@ -57,15 +65,20 @@ export function enhanceUnits(root: ParentNode, meta: Pick<WorkoutMeta, 'sport' |
     }
     for (const [node, t] of writes) node.textContent = t;
   };
-  if (store.get() !== 'metric') apply();
+  if (store.get() !== 'metric' || lang() !== 'en') apply();
   store.subscribe(apply);
+  onLanguage(apply); // F-54 LG-4: labels, words and decimal separators
 }
+
+let headerChunk: Promise<typeof import('./header')> | null = null;
+/** F-54: the viewing page's language pass for the header (dates, sport names, device line). */
+export const loadHeader = (): Promise<typeof import('./header')> => (headerChunk ??= import('./header'));
 
 /** The units drop-down (F-14 D-8): a native select in the header's reserved slot, created only
  *  once the data file is decoded. Never in the template. Wording: plain 'Metric' and 'Imperial'.
  *  `onchoose` hears only the viewer's own choices (DS-1: only those are remembered). */
 export function addUnitsSelect(root: ParentNode, store: UnitsStore, onchoose?: (units: Units) => void): HTMLSelectElement | null {
-  return addSelect(root, '#units-slot', 'Units', ['Metric', 'Imperial'], store.get(), (v) => {
+  return addSelect(root, '#units-slot', 'units', ['metric', 'imperial'], store.get(), (v) => {
     const units: Units = v === 'imperial' ? 'imperial' : 'metric';
     store.set(units);
     onchoose?.(units);
@@ -74,16 +87,29 @@ export function addUnitsSelect(root: ParentNode, store: UnitsStore, onchoose?: (
 
 /** The theme drop-down (DS-4, user 3 Nov 2026), beside the units one; System by default. */
 export function addThemeSelect(root: ParentNode, value: ThemeChoice, onchoose: (theme: ThemeChoice) => void): HTMLSelectElement | null {
-  return addSelect(root, '#theme-slot', 'Theme', ['System', 'Light', 'Dark'], value, (v) => onchoose(v as ThemeChoice));
+  return addSelect(root, '#theme-slot', 'theme', ['system', 'light', 'dark'], value, (v) => onchoose(v as ThemeChoice));
 }
 
-/** A native select in an empty reserved header slot (D-8); the option values are the labels in lower case. */
-function addSelect(root: ParentNode, slotQuery: string, label: string, labels: string[], value: string, onchange: (value: string) => void): HTMLSelectElement | null {
+/** The language drop-down (F-54 LG-1, OQ-280), beside units and theme: each language named in itself. */
+export function addLangSelect(root: ParentNode, onchoose: (l: Lang) => void): HTMLSelectElement | null {
+  const select = addSelect(root, '#lang-slot', 'language', [], lang(), (v) => onchoose(v as Lang));
+  select?.append(...LANGS.map((l, i) => new Option(LANG_NAMES[i], l)));
+  if (select) select.value = lang();
+  return select;
+}
+
+/** A native select in an empty reserved header slot (D-8): option values are the keys, labels their texts. */
+function addSelect(root: ParentNode, slotQuery: string, label: keyof typeof en, keys: readonly (keyof typeof en)[], value: string, onchange: (value: string) => void): HTMLSelectElement | null {
   const slot = root.querySelector(slotQuery);
   if (!slot || slot.firstChild) return null;
   const select = slot.ownerDocument.createElement('select');
-  select.setAttribute('aria-label', label);
-  select.innerHTML = labels.map((l) => `<option value="${l.toLowerCase()}">${l}</option>`).join('');
+  const name = (): void => {
+    select.setAttribute('aria-label', t(label));
+    keys.forEach((k, i) => (select.options[i].text = t(k)));
+  };
+  select.append(...keys.map((k) => new Option('', k)));
+  name();
+  onLanguage(name);
   select.value = value;
   select.addEventListener('change', () => onchange(select.value));
   slot.appendChild(select);
@@ -100,9 +126,6 @@ export function enhanceExpiry(root: ParentNode, nowMs: number): void {
   el.textContent = formatTimeLeft(at, nowMs);
 }
 
-export const COPY_TEXT = 'Copy link';
-export const COPIED_TEXT = 'Link copied';
-
 /** The viewing URL to copy: the page's origin plus the link's root-relative path. Never
  *  `location.href` and never the fragment, so an edit token cannot get into the copy (SH-6, AC 6). */
 export function viewingUrl(origin: string, href: string | null): string | null {
@@ -116,16 +139,18 @@ export type ClipboardNav = { clipboard?: { writeText(t: string): Promise<void> }
  *  the Clipboard API, then "Link copied" for 2 s; without it (a non-secure context) or when it
  *  refuses, `fallback` shows the URL. No execCommand. */
 export function copier(el: HTMLElement, nav: ClipboardNav, fallback: (url: string) => void): (url: string) => void {
-  const idle = el.textContent;
+  let idle = el.textContent;
   let timer = 0;
   return (url) => {
     const write = nav.clipboard ? nav.clipboard.writeText(url) : Promise.reject(new Error('no clipboard'));
     write.then(
       () => {
-        el.textContent = COPIED_TEXT;
+        if (!timer) idle = el.textContent; // in the page language (F-54)
+        el.textContent = t('linkCopied');
         clearTimeout(timer);
         timer = window.setTimeout(() => {
           el.textContent = idle;
+          timer = 0;
         }, 2000);
       },
       () => fallback(url),
@@ -164,33 +189,31 @@ export function enhanceCopyLink(root: ParentNode, origin: string, nav: Clipboard
 
 /** The Report button (F-28 RF-1, RF-2, RF-5): shown only with JavaScript and a valid public ID,
  *  taken from the copy link's view path, never `location`. The form is a lazy chunk (ADR-011). */
-export function enhanceReport(root: ParentNode, load = () => import('../report/form')): void {
+export function enhanceReport(root: ParentNode, load = () => Promise.all([import('../report/form'), loadGroup('report')]).then(([m]) => m)): void {
   const button = root.querySelector<HTMLButtonElement>('button[data-report]');
   const id = root.querySelector('a[data-copy-link]')?.getAttribute('href')?.split('/').pop();
   if (!button || !id || !/^[0-9A-Za-z]{22}$/.test(id)) return;
   button.hidden = false;
-  lazyClick(button, load, (m) => m.openReport(button.ownerDocument, id), 'The report form could not be loaded. Reload the page and try again.');
+  lazyClick(button, load, (m) => m.openReport(button.ownerDocument, id), 'reportFailed');
 }
 
 /** A click loads the lazy chunk and opens; on a failed load, one line after `at` (F-28, F-39, F-58),
  *  never a second one. */
-function lazyClick<M>(button: HTMLElement, load: () => Promise<M>, open: (m: M) => void, text: string, at = button): void {
+function lazyClick<M>(button: HTMLElement, load: () => Promise<M>, open: (m: M) => void, text: 'reportFailed' | 'helpFailed' | 'gpxFailed', at = button): void {
   button.addEventListener('click', () => {
     load().then(open, () => {
       if (at.nextElementSibling?.className === 'report-fail') return;
       const p = at.ownerDocument.createElement('span');
       p.className = 'report-fail';
-      p.textContent = text;
+      p.textContent = t(text);
       at.after(p);
     });
   });
 }
 
-const HELP_FAILED = 'The help could not be loaded. Reload the page and try again.';
-
 /** How to use (F-39 HU-6, HU-7; AP-22): reveals the template's button, emphasised until the dialog
  *  has been shown on this device (`opened`); the dialog is a lazy chunk (ADR-011). */
-export function enhanceHowto(root: ParentNode, opened: boolean, onopen: () => void, load = () => import('../howto')): void {
+export function enhanceHowto(root: ParentNode, opened: boolean, onopen: () => void, load = () => Promise.all([import('../howto'), loadGroup('help')]).then(([m]) => m)): void {
   const button = root.querySelector<HTMLButtonElement>('button[data-howto]');
   if (!button) return;
   button.classList.add('ready');
@@ -203,18 +226,18 @@ export function enhanceHowto(root: ParentNode, opened: boolean, onopen: () => vo
       button.classList.remove('fresh');
       onopen();
     },
-    HELP_FAILED,
+    'helpFailed',
   );
 }
 
 /** "About these numbers" (F-58 SE-5, SE-6; AP-24): reveals the strip's ⓘ (the data file is decoded);
  *  the dialog is a lazy chunk, which reads the trim string from the button (SE-2). `facts` is read
  *  on every open. */
-export function enhanceSummaryInfo(root: ParentNode, units: UnitsStore, facts: () => Facts, load = () => import('../summary-info')): void {
+export function enhanceSummaryInfo(root: ParentNode, units: UnitsStore, facts: () => Facts, load = () => Promise.all([import('../summary-info'), loadGroup('help')]).then(([m]) => m)): void {
   const button = root.querySelector<HTMLButtonElement>('button[data-summary-info]');
   if (!button) return;
   button.hidden = false;
-  lazyClick(button, load, (m) => m.openSummaryInfo(button, facts(), units.get(), summaryItems), HELP_FAILED, button.parentElement!);
+  lazyClick(button, load, (m) => m.openSummaryInfo(button, facts(), units.get(), summaryItems), 'helpFailed', button.parentElement!);
 }
 
 /** "Download route (GPX)" (F-57 GX-5 to GX-7; SH-13): reveals the template's reserved button once the
@@ -224,10 +247,9 @@ export function enhanceGpx(root: ParentNode, input: GpxInput, load = () => impor
   const button = root.querySelector<HTMLButtonElement>('button[data-gpx]');
   if (!button) return;
   button.classList.add('ready');
-  lazyClick(button, load, (m) => m.downloadGpx(button.ownerDocument, input), 'The download could not be loaded. Reload the page and try again.');
+  lazyClick(button, load, (m) => m.downloadGpx(button.ownerDocument, input), 'gpxFailed');
 }
 
-const PIN_LABEL = 'Pin map';
 const PIN_SVG =
   '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M16 3H8v2l1 .5V11l-3 3v2h5v5l1 1 1-1v-5h5v-2l-3-3V5.5L16 5z"/></svg>';
 
@@ -245,8 +267,12 @@ export function addPinToggle(root: ParentNode, slot: HTMLElement): HTMLButtonEle
   const button = doc.createElement('button');
   button.type = 'button';
   button.className = 'map-pin';
-  button.title = PIN_LABEL;
-  button.setAttribute('aria-label', PIN_LABEL);
+  const label = (): void => {
+    button.title = t('pinMap');
+    button.setAttribute('aria-label', t('pinMap'));
+  };
+  label();
+  onLanguage(label);
   button.setAttribute('aria-pressed', 'false');
   button.innerHTML = PIN_SVG;
   button.addEventListener('click', () => {

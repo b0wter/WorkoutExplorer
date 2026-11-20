@@ -4,6 +4,7 @@
 // Esc and the Android back gesture close it natively.
 
 import './dialog.css';
+import { t } from './texts';
 
 /** Opens the dialog of class `cls` with a title and the given lines, then a Close button. With an
  *  `anchor`, at 1024 px and wider (F-13 D-17), its top-right corner sits on the anchor's, inside
@@ -15,7 +16,7 @@ export function openDialog(doc: Document, cls: string, title: string, lines: rea
   h.textContent = title;
   const close = doc.createElement('button');
   close.type = 'button';
-  close.textContent = 'Close';
+  close.textContent = t('closeDialog');
   close.addEventListener('click', () => d.close());
   const actions = doc.createElement('p');
   actions.className = 'dlg-actions';
