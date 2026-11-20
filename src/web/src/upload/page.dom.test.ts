@@ -325,6 +325,18 @@ describe('privacy (AC 8, U-10)', () => {
     expect(set).not.toHaveBeenCalled();
     expect(localStorage.length + sessionStorage.length).toBe(0);
   });
+  it('the language drop-down writes wx.lang and nothing else (F-11 U-10 exception, F-54 LG-1)', async () => {
+    document.body.innerHTML = '<span id="lang-slot"></span>';
+    const { addLangSelect } = await import('./lang');
+    const set = vi.spyOn(Storage.prototype, 'setItem');
+    addLangSelect(document, () => localStorage);
+    const select = document.querySelector('select')!;
+    select.value = 'de';
+    select.dispatchEvent(new Event('change'));
+    expect(set.mock.calls).toEqual([['wx.lang', 'de']]);
+    expect(Object.keys(localStorage)).toEqual(['wx.lang']);
+    localStorage.clear();
+  });
   it('the sources use no cookie or storage API; localStorage only for the language drop-down (F-54 LG-1)', () => {
     const forbidden = /document\.cookie|localStorage|sessionStorage|indexedDB|\bcaches\b|serviceWorker|cookieStore/;
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(4);

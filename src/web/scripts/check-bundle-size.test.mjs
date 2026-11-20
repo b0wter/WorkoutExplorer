@@ -108,10 +108,10 @@ describe('limitFor', () => {
 });
 
 describe('withinBudget', () => {
-  it('uses a 60,000 byte limit, inclusive', () => {
-    expect(LIMIT_BYTES).toBe(60000);
-    expect(withinBudget(60000)).toBe(true);
-    expect(withinBudget(60001)).toBe(false);
+  it('uses a 62,000 byte limit, inclusive (ADR-011 decision 6)', () => {
+    expect(LIMIT_BYTES).toBe(62000);
+    expect(withinBudget(62000)).toBe(true);
+    expect(withinBudget(62001)).toBe(false);
   });
 });
 
@@ -162,7 +162,7 @@ describe('main', () => {
     writeManifest({ 'index.html': { file: 'assets/index.js', isEntry: true } });
 
     expect(main(dir)).toBe(0);
-    expect(totalLine()).toMatch(/^entry index\.html: \d+ \/ 60000 bytes gzip \(\d+ brotli\) PASS$/);
+    expect(totalLine()).toMatch(/^entry index\.html: \d+ \/ 62000 bytes gzip \(\d+ brotli\) PASS$/);
     expect(error).not.toHaveBeenCalled();
   });
 
@@ -171,7 +171,7 @@ describe('main', () => {
     writeManifest({ 'index.html': { file: 'assets/index.js', isEntry: true } });
 
     expect(main(dir)).toBe(1);
-    expect(totalLine()).toMatch(/^entry index\.html: \d+ \/ 60000 bytes gzip \(\d+ brotli\) FAIL$/);
+    expect(totalLine()).toMatch(/^entry index\.html: \d+ \/ 62000 bytes gzip \(\d+ brotli\) FAIL$/);
   });
 
   it('does not count a large chunk reached only through a dynamic import', () => {

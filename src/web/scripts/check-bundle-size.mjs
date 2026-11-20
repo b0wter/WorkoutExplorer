@@ -6,13 +6,14 @@
 // dynamic import() are listed for information and not counted.
 //
 // Only node:fs, node:zlib and node:path (ADR-002, decision 6).
-// Raising LIMIT_BYTES requires a superseding ADR (ADR-002, decision 7).
+// Raising LIMIT_BYTES requires a superseding ADR (ADR-002, decision 7). 62,000 since ADR-011
+// decision 6 (rev. 16, user decision 20 Nov 2026: F-54 entry above 59,000 after R-1 to R-3).
 
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-export const LIMIT_BYTES = 60000;
+export const LIMIT_BYTES = 62000;
 
 /** Lower ceilings for single entries, by manifest key (ADR-024 item 4: upload page 8,000; F-37 DK-11: delete link page 4,000; F-38 IM-2: Impressum page 2,000; F-54 LG-5: the static entry of the About and generic pages 2,000). */
 export const ENTRY_LIMITS = { 'upload.html': 8000, 'report-delete.html': 4000, 'impressum.html': 2000, 'about.html': 2000, 'generic.html': 2000 };
