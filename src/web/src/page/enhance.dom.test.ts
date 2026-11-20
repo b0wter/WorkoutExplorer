@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The enhancers (F-13 design D-8, D-14; AC 1 expiry, AC 6 copy link). Synthetic markup only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
+import { COPIED_TEXT, COPY_TEXT, enhanceCopyLink, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
 
 const ORIGIN = 'https://example.test';
 let root: HTMLElement;
@@ -206,5 +206,43 @@ describe('How to use button (F-39 HU-6, HU-7; AC 2, AC 5)', () => {
     expect(b.nextElementSibling?.textContent).toBe('The help could not be loaded. Reload the page and try again.');
     expect(onopen).not.toHaveBeenCalled();
     expect(b.classList.contains('fresh')).toBe(true);
+  });
+});
+
+describe('Download route (GPX) button (F-57 GX-5, GX-6; AC 1, AC 8)', () => {
+  const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
+  const input = { latitude: new Float64Array(1), longitude: new Float64Array(1), startTime: '', zone: { known: false, offset_seconds: 0 } };
+  const button = (): HTMLButtonElement => {
+    root.insertAdjacentHTML('beforeend', '<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route (GPX)</button></div>');
+    return root.querySelector('button[data-gpx]')!;
+  };
+
+  it('revealed by the enhancer only; the chunk loads on click and gets the given inputs', async () => {
+    const b = button();
+    expect(b.classList.contains('ready')).toBe(false); // without JavaScript: an invisible reserved box
+    const downloadGpx = vi.fn();
+    const load = vi.fn(async () => ({ downloadGpx }));
+    enhanceGpx(root, input, load);
+    expect([...b.classList]).toEqual(['gpx', 'ready']);
+    expect(load).not.toHaveBeenCalled();
+    b.click();
+    await flush();
+    expect(downloadGpx).toHaveBeenCalledExactlyOnceWith(document, input);
+  });
+
+  it('no button in the markup: nothing happens', () => {
+    const load = vi.fn();
+    enhanceGpx(root, input, load);
+    expect(root.querySelector('.gpx')).toBeNull();
+  });
+
+  it('a failed chunk shows one line beside the button', async () => {
+    const b = button();
+    enhanceGpx(root, input, () => Promise.reject(new Error('offline')));
+    b.click();
+    b.click();
+    await flush();
+    expect(root.querySelectorAll('.report-fail').length).toBe(1);
+    expect(b.nextElementSibling?.textContent).toBe('The download could not be loaded. Reload the page and try again.');
   });
 });

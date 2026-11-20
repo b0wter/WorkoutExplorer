@@ -78,6 +78,13 @@ describe('About page', () => {
     }
   });
 
+  it('F-57 OQ-271: one sentence on the GPX download, next to the hiding one (INF-1)', () => {
+    const hide = '<li>A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>';
+    const gpx = '<li>Viewers of a published workout can download its visible route as a GPX file: the track only, without times, heart rate or any other data.</li>';
+    expect(count(gpx)).toBe(1);
+    expect(html).toContain(hide + '\n        ' + gpx);
+  });
+
   it('follows the system light or dark setting with CSS only (DS-4)', () => {
     expect(readWebFile('src/about/about.css')).toContain("@import '../theme/plain.css';");
   });

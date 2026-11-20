@@ -264,6 +264,13 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     }
   });
 
+  it('F-57: no GPX button (GX-5); the viewer download is stated under the hiding sliders (OQ-271)', async () => {
+    await open();
+    expect($('[data-gpx]')).toBeNull();
+    const field = $('input[name="hide_end_m"]')!.closest('.edit-field')!;
+    expect(field.lastElementChild?.textContent).toBe('Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.');
+  });
+
   it('the copy link copies the view path, never the address', async () => {
     const writeText = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
@@ -1555,7 +1562,7 @@ describe('F-49 ZN-4, ZN-7: zone fields and the Zones section (AC 6, 7, 9)', () =
     // Power has a basis next to its list; heart rate only a list: no placeholder.
     expect([field('zones_max_heart_rate').placeholder, field('zones_threshold_power').placeholder]).toEqual(['', '250']);
     expect([field('zones_max_heart_rate').value, field('zones_threshold_power').value]).toEqual(['', '']);
-    expect($('.edit-small')?.textContent).toBe("For the heart-rate and power zones. Empty: the device's zones and values from the FIT file are used.");
+    expect([...document.querySelectorAll('.edit-small')].map((e) => e.textContent)).toContain("For the heart-rate and power zones. Empty: the device's zones and values from the FIT file are used.");
     await vi.waitFor(() => expect(bounds('power')).toHaveLength(7));
     expect(captions()).toEqual(['Zones as recorded by the device', 'Zones as recorded by the device (threshold power 250 W)']);
     expect(bounds('power')[5]).toBe('139–188 W'); // the device's list

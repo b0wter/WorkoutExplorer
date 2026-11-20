@@ -17,6 +17,9 @@ import { resetStubLog, stubLog } from './testing/stub-log';
 vi.mock('../components/charts/ChartStack.svelte', async () => await import('./testing/ChartStackStub.svelte'));
 vi.mock('../components/map/RouteMap.svelte', async () => await import('./testing/RouteMapStub.svelte'));
 
+const gpx = vi.hoisted(() => ({ calls: [] as unknown[][] }));
+vi.mock('../gpx', () => ({ downloadGpx: (...a: unknown[]) => gpx.calls.push(a) }));
+
 const rec = vi.hoisted(() => ({
   /** How often the mocked module was loaded (its factory runs on the first import only). */
   imports: 0,
@@ -748,5 +751,81 @@ describe('pin toggle (D-19, AP-18)', () => {
     respond = () => new Response('x', { status: 404 });
     await open('ride-30min');
     expect(document.querySelector('.map-pin')).toBeNull();
+  });
+});
+
+describe('Download route (GPX) (F-57 GX-2, GX-5; AC 1, AC 7)', () => {
+  const row = (): HTMLButtonElement => {
+    document.querySelector('.head')!.insertAdjacentHTML('afterend', '<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route (GPX)</button></div>');
+    return document.querySelector<HTMLButtonElement>('button[data-gpx]')!;
+  };
+  beforeEach(() => {
+    gpx.calls = [];
+  });
+
+  it('revealed only once the data file is decoded; a click hands over the closed inputs only, no new request', async () => {
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-30min');
+    const b = row();
+    let release!: () => void;
+    respond = () => new Response(RIDE.slice(0), { status: 200 });
+    fetchMock.mockImplementationOnce(() => new Promise<Response>((r) => (release = () => r(respond()))));
+    const started = startPage(document);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(b.classList.contains('ready')).toBe(false);
+    release();
+    await started;
+    await settle();
+    expect(b.classList.contains('ready')).toBe(true);
+    expect(b.closest('#map-slot')).toBeNull(); // never a map control, nor in the fullscreen map
+    b.click();
+    await settle();
+    expect(gpx.calls).toHaveLength(1);
+    const [doc, input] = gpx.calls[0] as [Document, Record<string, unknown>];
+    expect(doc).toBe(document);
+    expect(Object.keys(input).sort()).toEqual(['altitude', 'latitude', 'longitude', 'startTime', 'zone']);
+    const decoded = await loadDataFile(async () => new Response(RIDE.slice(0)));
+    if (!decoded.ok) throw new Error('golden does not decode');
+    expect(input.latitude).toEqual(decoded.data.position!.latitude);
+    expect(input.altitude).toEqual(decoded.data.metrics.altitude);
+    expect(input.startTime).toBe(decoded.data.meta.start_time);
+    expect(input.zone).toEqual(decoded.data.meta.time_zone);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the data file only
+  });
+
+  it('stays hidden and inert on a failed load and without positions', async () => {
+    respond = () => new Response('x', { status: 404 });
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-30min');
+    let b = row();
+    await startPage(document);
+    await settle();
+    expect(b.classList.contains('ready')).toBe(false);
+    page.remove();
+    respond = () => new Response(RIDE.slice(0), { status: 200 });
+    // A file without position streams, should a row ever be printed for one.
+    const g = loadGolden().find((x) => x.name === 'indoor-no-gps')!;
+    respond = () => new Response(g.bin.slice(0), { status: 200 });
+    page = renderSample('indoor-ride');
+    b = row();
+    await startPage(document);
+    await settle();
+    expect(b.classList.contains('ready')).toBe(false);
+    b.click();
+    await settle();
+    expect(gpx.calls).toHaveLength(0);
+  });
+
+  it('never on the edit page: the seam data (the unhidden draft) is never wired, even to a stray button', async () => {
+    window.history.replaceState(null, '', '/edit/x');
+    page = renderSample('ride-30min');
+    const b = row();
+    const decoded = await loadDataFile(async () => new Response(RIDE.slice(0)));
+    await startPage(document, window, { data: decoded, hidden: [], onlook() {}, onzones() {}, onefforts() {}, explain: () => ({ sport: 'cycling', summary: {}, sessions: [], lengths: [], zones: false }) });
+    await settle();
+    expect(b.classList.contains('ready')).toBe(false);
+    b.click();
+    await settle();
+    expect(gpx.calls).toHaveLength(0);
   });
 });

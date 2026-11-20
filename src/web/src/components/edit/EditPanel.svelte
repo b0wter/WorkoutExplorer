@@ -181,6 +181,7 @@
       <input type="range" name="hide_end_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('End', ends[1])} />
     </label>
     {#if stale}<p class="edit-small edit-stale">Save to update the hidden sections.</p>{/if}
+    <p class="edit-small">Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.</p>
   </div>
   {#if trim}
     <div class="edit-field">Trim start and end

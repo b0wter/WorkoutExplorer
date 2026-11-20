@@ -18,7 +18,7 @@ import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
 import { parseRangeLink, rangeFragment } from '../lib/rangelink';
-import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
 import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
@@ -210,6 +210,9 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const laps = enhanceLaps(root, data, selection, win);
   const viewUrl = edit ? null : viewingUrl(win.location.origin, root.querySelector('a[data-copy-link]')?.getAttribute('href') ?? null);
   const hasRoute = routePresence(data) === 'route';
+  // F-57 GX-2: viewing page only (the edit seam's data is the unhidden draft); closed inputs.
+  // data.position holds latitude and longitude only (lib/datafile decode).
+  if (!edit && hasRoute) enhanceGpx(root, { ...data.position!, altitude: data.metrics.altitude, startTime: data.meta.start_time, zone: data.meta.time_zone });
   const mapSlot = root.querySelector<HTMLElement>('#map-slot');
   const chartsSlot = root.querySelector<HTMLElement>('#charts-slot');
   const mod = recorderModule ? await recorderModule : null;

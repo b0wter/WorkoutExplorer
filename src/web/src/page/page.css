@@ -268,9 +268,6 @@ h1 {
 /* How to use (F-39 HU-6, user 10 Nov 2026): a full-width info box under the header, viewing page only.
    Reserved in the markup (one 40 px line), invisible and inert until the enhancer adds .ready; .fresh
    (not yet opened on this device) is accent-tinted, afterwards grey, in the same box. */
-.gpx:not(.ready) {
-  visibility: hidden; /* F-57 GX-5: reserved, inert until enhanced; the frontend styles the rest */
-}
 .howto-row {
   margin-bottom: 8px;
 }
@@ -290,8 +287,9 @@ h1 {
   font-size: 14px;
   white-space: nowrap;
 }
-.howto:not(.ready) {
-  visibility: hidden;
+.howto:not(.ready),
+.gpx:not(.ready) {
+  visibility: hidden; /* F-57 GX-5 too: reserved, inert until enhanced */
 }
 .howto.fresh {
   border-color: var(--accent);
@@ -301,6 +299,20 @@ h1 {
 .howto svg {
   width: 16px;
   height: 16px;
+}
+/* Download route (F-57 GX-5, OQ-269): a prominent accent button above the summary, viewing page only.
+   Reserved in the markup at its full size; invisible and inert until .ready (with .howto above). */
+.gpx-row {
+  margin-bottom: 8px;
+}
+.gpx {
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  font: 600 14px system-ui, sans-serif;
 }
 /* F-39 HU-2: the viewing page (not the edit page under #wx-edit) reserves the hint box (8 px gap +
    40 px, as .howto); once the head script found the hint done, nothing. */

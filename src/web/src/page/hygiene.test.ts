@@ -90,6 +90,13 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     return m[1];
   };
 
+  it('F-57 GX-5: the GPX row only under Route.Gpx, directly above the summary, outside its grid and the map; reserved at full size, invisible until .ready', () => {
+    expect(template).toMatch(/<\/div>\s*\{\{if \.Route\.Gpx\}\}<div class="gpx-row"><button type="button" class="gpx" data-gpx>Download route \(GPX\)<\/button><\/div>\{\{end\}\}\s*<section class="summary">/);
+    expect(template.match(/data-gpx/g)).toHaveLength(1);
+    expect(rule('.gpx')).toMatch(/height: 40px;/);
+    expect(css).toMatch(/^\.howto:not\(\.ready\),\n\.gpx:not\(\.ready\) \{\s*visibility: hidden;/m);
+  });
+
   it.each([1, 2, 3, 4, 5, 6])('.charts-%s reserves exactly what ChartStack sets for its chart area', (n) => {
     expect(rule('.charts-' + n)).toContain(`--area: ${chartAreaHeight(n, DEFAULT_CHART_HEIGHT)}px`);
   });

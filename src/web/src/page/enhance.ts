@@ -8,6 +8,7 @@ import { lapsGroup, summaryItems } from '../lib/page';
 import type { UnitsStore } from '../lib/units';
 import type { ThemeChoice } from '../lib/prefs';
 import type { Facts } from '../summary-info';
+import type { GpxInput } from '../lib/gpx';
 
 /** Rewrites the summary and laps text of the server markup (metric) into the store's units (F-14
  *  D-5, ADR-027): the page builders run over the data file's metadata and write strings into the
@@ -214,6 +215,16 @@ export function enhanceSummaryInfo(root: ParentNode, units: UnitsStore, facts: (
   if (!button) return;
   button.hidden = false;
   lazyClick(button, load, (m) => m.openSummaryInfo(button, facts(), units.get(), summaryItems), HELP_FAILED, button.parentElement!);
+}
+
+/** "Download route (GPX)" (F-57 GX-5 to GX-7; SH-13): reveals the template's reserved button once the
+ *  data file is decoded; the builder is a lazy chunk. Viewing page only: `input` must hold the public
+ *  data file's positions (GX-2), never the edit page's draft. */
+export function enhanceGpx(root: ParentNode, input: GpxInput, load = () => import('../gpx')): void {
+  const button = root.querySelector<HTMLButtonElement>('button[data-gpx]');
+  if (!button) return;
+  button.classList.add('ready');
+  lazyClick(button, load, (m) => m.downloadGpx(button.ownerDocument, input), 'The download could not be loaded. Reload the page and try again.');
 }
 
 const PIN_LABEL = 'Pin map';
