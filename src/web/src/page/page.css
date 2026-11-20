@@ -311,7 +311,7 @@ h1 {
   border: 0;
   border-radius: 6px;
   background: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
   font: 600 14px system-ui, sans-serif;
 }
 /* F-39 HU-2: the viewing page (not the edit page under #wx-edit) reserves the hint box (8 px gap +

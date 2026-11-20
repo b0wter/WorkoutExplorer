@@ -49,8 +49,10 @@
     ontrim: (a: number, b: number) => void;
     /** F-49 ZN-10: draft.bin's zone values; each kind's file basis is its field's placeholder. */
     zones: Zones;
+    /** F-57 QA-57-r1-1: the workout has positions and is not multisport (static, not the sliders). */
+    gpx: boolean;
   }
-  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, units, onedit, time, startTime, ontrim, zones }: Props = $props();
+  let { settings, visibility, placeholder, busy, status, now, origin, onsave, onpublish, ondelete, ondownload, onlinks, onhide, units, onedit, time, startTime, ontrim, zones, gpx }: Props = $props();
 
   let share = $state(false);
   /** A zone field the server would refuse (OQ-195): its sentence, until the next edit. */
@@ -181,7 +183,7 @@
       <input type="range" name="hide_end_m" min="0" max={HIDE_MAX_M} step={HIDE_STEP_M} aria-valuetext={hideText('End', ends[1])} />
     </label>
     {#if stale}<p class="edit-small edit-stale">Save to update the hidden sections.</p>{/if}
-    <p class="edit-small">Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.</p>
+    {#if gpx}<p class="edit-small">Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.</p>{/if}
   </div>
   {#if trim}
     <div class="edit-field">Trim start and end

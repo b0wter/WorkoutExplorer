@@ -277,6 +277,15 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
     expect(theme).toContain('color-scheme: light dark');
   });
 
+  it('F-57 AC 8, QA-57-r1-3: src/gpx is reached only through import(), lib/gpx only from src/gpx (types elsewhere)', () => {
+    const all = import.meta.glob(['../**/*.ts', '../**/*.svelte', '!../**/*.test.ts', '!../**/testing/**', '!../**/*.test-helper.*'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+    for (const [file, text] of Object.entries(all)) {
+      if (file.startsWith('../gpx/')) continue;
+      expect(text, file).not.toMatch(/^import (?!type )[^;]*from '[./]*(lib\/)?gpx';/m);
+    }
+    expect(all['./enhance.ts']).toContain("import('../gpx')");
+  });
+
   it('browser storage only through lib/prefs, localStorage only; no cookie, URL or history state (DS-1, AP-5, AP-17)', () => {
     const all = import.meta.glob(['../**/*.ts', '../**/*.svelte', '!../**/*.test.ts', '!../**/testing/**', '!../**/*.test-helper.*'], {
       query: '?raw',

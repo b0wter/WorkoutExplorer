@@ -21,6 +21,7 @@ import { buildPageViewModel, defaultTitle } from '../lib/page/view';
 import { enhanceExpiry } from '../page/enhance';
 import { loadErrorText } from '../page/load-error';
 import { startPage } from '../page/start';
+import { routePresence } from '../lib/route';
 import { basemapJobs } from './basemap-job';
 import { hidingRanges, trimIndex } from '../components/edit/fields';
 import type { ZoneSource } from '../zones';
@@ -327,6 +328,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       startTime: data?.meta.start_time ?? '',
       ontrim: (a: number, b: number) => (cut = [a, b]),
       zones: data?.meta.zones ?? {},
+      gpx: !!data && data.meta.sport !== 'multisport' && routePresence(data) === 'route',
     },
   });
   // C-2: a back-forward cache restore (also an app resume on mobile WebKit) never reloads, which

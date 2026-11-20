@@ -271,6 +271,13 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expect(field.lastElementChild?.textContent).toBe('Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.');
   });
 
+  it.each(['triathlon', 'indoor-no-gps'])('F-57 QA-57-r1-1: no GPX line for %s (multisport or no positions)', async (name) => {
+    draft = () => new Response(golden(name).slice(0), { status: 200 });
+    await open();
+    expect($('input[name="hide_end_m"]')).not.toBeNull();
+    expect($('.edit-panel')?.textContent).not.toContain('GPX');
+  });
+
   it('the copy link copies the view path, never the address', async () => {
     const writeText = vi.fn(async () => {});
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });

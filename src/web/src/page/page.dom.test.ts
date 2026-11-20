@@ -10,6 +10,8 @@ import { flushSync } from 'svelte';
 import { loadGolden } from '../../test-support/golden.mjs';
 import type { RecorderOptions } from '../measure/recorder';
 import { loadDataFile, type DataFileResult } from '../lib/datafile';
+import { buildDataFile, type Stored } from '../lib/datafile/testing/build-file';
+import { gpxFileName, type GpxInput } from '../lib/gpx';
 import { dataFileUrl, startPage } from './start';
 import { renderSample, type Fixture } from './testing/fixture';
 import { resetStubLog, stubLog } from './testing/stub-log';
@@ -791,6 +793,23 @@ describe('Download route (GPX) (F-57 GX-2, GX-5; AC 1, AC 7)', () => {
     expect(input.startTime).toBe(decoded.data.meta.start_time);
     expect(input.zone).toEqual(decoded.data.meta.time_zone);
     expect(fetchMock).toHaveBeenCalledTimes(1); // the data file only
+  });
+
+  it('QA-57-r1-2 GX-4: a hidden start across local midnight names the file by the header date, never the first visible sample', async () => {
+    // 23:50 local (UTC+2) on 31 May; the start is hidden, the first position at 00:13 on 1 June.
+    const time = Array.from({ length: 30 }, (_, i) => i * 60);
+    const pos = (v: number): Stored[] => time.map((t) => (t >= 23 * 60 ? v : null));
+    const bin = buildDataFile({ time, position: { latitude: pos(47_500_000), longitude: pos(8_500_000) }, meta: { sport: 'walking', start_time: '2026-05-31T21:50:00Z', time_zone: { known: true, offset_seconds: 7200 } } });
+    respond = () => new Response(bin.slice(0), { status: 200 });
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-30min');
+    const b = row();
+    await startPage(document);
+    await settle();
+    b.click();
+    await settle();
+    expect(gpx.calls).toHaveLength(1);
+    expect(gpxFileName(gpx.calls[0][1] as GpxInput)).toBe('route-2026-05-31.gpx');
   });
 
   it('stays hidden and inert on a failed load and without positions', async () => {

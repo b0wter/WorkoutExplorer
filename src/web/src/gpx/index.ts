@@ -4,8 +4,9 @@
 
 import { gpxFileName, gpxParts, type GpxInput } from '../lib/gpx';
 
-/** Long enough for any browser to start the download; a new task, never the click's (GX-7). */
-const REVOKE_MS = 10_000;
+/** Long enough for any browser to start the download (40 s as FileSaver.js: iOS Safari's prompt
+ *  stays open; QA-57-r1 Q2); a new task, never the click's (GX-7). */
+const REVOKE_MS = 40_000;
 
 export function downloadGpx(doc: Document, input: GpxInput): void {
   const url = URL.createObjectURL(new Blob(gpxParts(input), { type: 'application/gpx+xml' }));

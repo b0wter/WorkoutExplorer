@@ -70,8 +70,8 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-60](F-60-bare-metal-auto-update.md) | Automatic updates for bare-metal installs | — | backend | F-59, F-52 | built, QA r3 ready with conditions, minors fixed | real Debian 13 host run before the first bare-metal release (qa/F-60-bare-metal-auto-update-r3.md), incl. the section 7 migration with the first release with the `/etc/workout-explorer` layout |
 | [F-58](F-58-summary-explained.md) | How the summary is computed | — | both | F-13, F-39 | built, QA r1 ready with conditions, minors fixed | browser checks (qa/F-58-summary-explained-r1.md, "What the user should check by hand") |
 | [F-55](F-55-start-end-hiding-radius.md) | Selectable radius for start and end hiding | — | both (backend first) | F-16, F-19, F-36, F-47, F-58 | built, QA r1 ready with conditions, minors fixed | browser checks and a local migration run (qa/F-55-start-end-hiding-radius-r1.md, "What you should check by hand") |
-| [F-57](F-57-gpx-route-download.md) | GPX route download | — | both (backend: `Route.Gpx`) | F-16, F-47, F-55 | built, QA r1 ready with conditions, minors being fixed | device checks (qa/F-57-gpx-route-download-r1.md, "What the user should check by hand") |
-| [F-56](F-56-map-pins.md) | Map pins | — | both (backend first) | F-16, F-19, F-26, F-47, F-55 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
+| [F-57](F-57-gpx-route-download.md) | GPX route download | — | both (backend: `Route.Gpx`) | F-16, F-47, F-55 | built, QA r1 ready with conditions, minors fixed | device checks (qa/F-57-gpx-route-download-r1.md, "What the user should check by hand") |
+| [F-56](F-56-map-pins.md) | Map pins | — | both (backend first) | F-16, F-19, F-26, F-47, F-55 | design in progress | — |
 | [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 | [F-54](F-54-translated-interface.md) | Translated interface: German, Spanish, French | — | both (backend first) | all features with text; F-53 | draft (decided 14 Nov 2026; acceptance criteria to write) | — |
 
