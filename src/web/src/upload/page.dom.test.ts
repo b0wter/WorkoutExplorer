@@ -114,6 +114,9 @@ describe('page text (U-3)', () => {
     expect(document.querySelector('label.button')!.textContent).toBe('Choose a file');
     expect(document.querySelector('footer a')!.getAttribute('href')).toBe('/about');
     expect(document.querySelector('footer a')!.textContent).toBe('About');
+    // F-53 AC 43: a static link, same tab; the upload script touches no storage (check-upload-entry.mjs).
+    expect(document.querySelector('a[href="/my-workouts"]')!.textContent).toBe('My workouts');
+    expect(document.querySelector('a[href="/my-workouts"]')!.hasAttribute('target')).toBe(false);
     expect(document.querySelector('meta[name=referrer]')!.getAttribute('content')).toBe('no-referrer');
     expect(HTML).not.toMatch(/<script(?![^>]*\bsrc=)/);
     expect(HTML).not.toMatch(/<style|\sstyle=/);

@@ -3,7 +3,8 @@
 // loads settings and draft.bin through the owner client in parallel, mounts the D-9 root and the
 // panel into its slot, then runs the viewing page's glue on it with the decoded draft (one glue,
 // F-13 D-19). The published page loads the settings only. Never sees the edit token: lib/owner
-// holds it (the published view gets only lib/owner's edit link).
+// holds it (the published view gets only lib/owner's edit link); its one other exit, owner.token,
+// goes only into the My workouts list (F-53 MW-3, lib/mine) in `list`.
 // Only mount() from svelte: flushSync, unmount and the like would join the shared activity entry.
 
 import { mount } from 'svelte';
@@ -26,6 +27,7 @@ import { basemapJobs } from './basemap-job';
 import { HIDE_STEP_M, hidingRanges, trimIndex } from '../components/edit/fields';
 import { startPinEditor, type PinEditor } from './pins';
 import type { ZoneSource } from '../zones';
+import * as mine from '../lib/mine';
 
 type Ranges = readonly (readonly [number, number])[];
 
@@ -76,8 +78,30 @@ function showMessage(host: HTMLElement, message: string): void {
   host.replaceChildren(p);
 }
 
+/** F-53 MW-3, MW-6: the owner pages' My workouts writes; storage failures are contained in lib/mine. */
+function list(win: Window, owner: OwnerClient) {
+  const store = () => win.localStorage;
+  return {
+    /** Not found or deleted: removes the entry only when it holds this address's token (P-12). */
+    remove: () => mine.remove(store, owner.publicId, owner.token()),
+    upsert: (s: Settings, meta: Pick<WorkoutMeta, 'sport' | 'start_time' | 'time_zone'> | null) =>
+      mine.upsert(store, {
+        id: owner.publicId,
+        token: owner.token(),
+        ...fields(s),
+        // The header's sport and local start date (MW-2); without a decoded draft the stored ones stay.
+        sport: meta?.sport,
+        date: meta ? new Date(Date.parse(meta.start_time) + (meta.time_zone.known ? meta.time_zone.offset_seconds : 0) * 1000).toISOString().slice(0, 10) : undefined,
+      }),
+    /** The published page: an existing entry only (MW-3). */
+    update: (s: Settings) => mine.update(store, owner.publicId, fields(s)),
+  };
+}
+/** MW-2: the stored title when not blank, else the suggestion ('' = the default title applies). */
+const fields = (s: Settings) => ({ title: s.title.trim() !== '' ? s.title : s.suggested_title, created: s.created_at, expires: s.expires_at, published: s.visibility === 'unlisted' });
+
 /** One owner action at a time (C-2), shared by both pages; Delete (C-7, C-8). */
-function actions(doc: Document, owner: OwnerClient) {
+function actions(doc: Document, owner: OwnerClient, mineList: ReturnType<typeof list>) {
   /** '' or the running action's text. */
   let busy = $state('');
   let status = $state('');
@@ -116,6 +140,7 @@ function actions(doc: Document, owner: OwnerClient) {
     remove: (): Promise<void> =>
       ui.run('Deleting…', async () => {
         const r = await owner.delete();
+        if (r.ok || r.notFound) mineList.remove(); // MW-3, AC 46, 48
         if (r.ok) showDeleted(doc);
         else if (r.notFound) showGeneric(doc);
         else status = r.message; // O-10: it may still exist; trying again is safe
@@ -129,15 +154,21 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const doc = host.ownerDocument;
   const owner = openOwner(loc);
   if (!owner) return showGeneric(doc);
-  if (owner.kind === 'published') return startPublished(host, owner, loc.origin);
+  const mineList = list(win, owner);
+  /** ADR-025's not-found: the generic page, and the list entry goes (F-53 MW-3, P-12). */
+  const gone = (): void => {
+    mineList.remove();
+    showGeneric(doc);
+  };
+  if (owner.kind === 'published') return startPublished(host, owner, loc.origin, mineList, gone);
   const [got, result] = await Promise.all([owner.settings(), loadDataFile(owner.draft)]);
-  if (!got.ok && got.notFound) return showGeneric(doc);
-  if (!result.ok && result.error.code === 'http-status' && result.error.status === 404) return showGeneric(doc);
+  if (!got.ok && got.notFound) return gone();
+  if (!result.ok && result.error.code === 'http-status' && result.error.status === 404) return gone();
   if (!got.ok) return showMessage(host, got.message);
   const data = result.ok ? result.data : null;
 
   let settings = $state.raw(got.value);
-  const ui = actions(doc, owner);
+  const ui = actions(doc, owner, mineList);
   /** F-55 HR-8: the sliders' radii in metres, unsaved too; set at most once per animation frame. */
   let ends = $state.raw<readonly [number, number]>(radii(got.value));
   let pending: readonly [number, number] | null = null;
@@ -178,6 +209,10 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const strip = (s: Settings, meta: WorkoutMeta): Pick<WorkoutMeta, 'sport' | 'summary'> =>
     s.trim_start_at === null && s.trim_end_at === null ? meta : s.trimmed ? { sport: s.trimmed.sport, summary: s.trimmed.summary as Summary } : { sport: meta.sport, summary: {} };
 
+  /** F-53 MW-3: the list entry from saved settings, with the header's (trimmed) sport. */
+  const record = (s: Settings): void => mineList.upsert(s, data && { ...data.meta, sport: strip(s, data.meta).sport });
+  record(got.value);
+
   /** F-49 ZN-7: what the public build writes, from the SAVED settings only (E-6): the sharer's
    *  value as a basis before the draft's zone values, over the saved trim window (TR-9). */
   const startS = data ? Date.parse(data.meta.start_time) / 1000 : 0;
@@ -204,12 +239,13 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
    *  True for settings. */
   const apply = (r: OwnerResult<Settings>): r is { ok: true; value: Settings } => {
     if (!r.ok) {
-      if (r.notFound) showGeneric(doc);
+      if (r.notFound) gone();
       else ui.status = r.message;
       return false;
     }
     // The response is the truth (E-6): the panel refills from it, the header re-renders from it.
     settings = r.value;
+    record(r.value);
     pinEditor?.saved(r.value.pins ?? []);
     zones();
     void effortsRefresh?.then((refresh) => refresh?.());
@@ -255,6 +291,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       const job = basemap();
       const r = await owner.publish();
       if (!r.ok) return void apply(r);
+      record(r.value); // AC 46: Published, with the viewing link
       await job;
       owner.toPublished();
       return true;
@@ -264,7 +301,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     ui.run('Downloading…', async () => {
       const r = await owner.original();
       if (!r.ok) {
-        if (r.notFound) showGeneric(doc);
+        if (r.notFound) gone();
         else ui.status = r.message;
         return;
       }
@@ -349,6 +386,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   win.addEventListener('pageshow', (e) => {
     if (!e.persisted || visibility !== 'draft') return;
     void owner.settings().then((r) => {
+      if (r.ok) record(r.value);
       if (r.ok && r.value.visibility !== 'draft') {
         visibility = r.value.visibility;
         ui.release();
@@ -421,12 +459,13 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
 }
 
 /** The published page (C-5): the settings only; a draft goes to the edit page with replace. */
-async function startPublished(host: HTMLElement, owner: OwnerClient, origin: string): Promise<void> {
+async function startPublished(host: HTMLElement, owner: OwnerClient, origin: string, mineList: ReturnType<typeof list>, gone: () => void): Promise<void> {
   const doc = host.ownerDocument;
   const got = await owner.settings();
-  if (!got.ok) return got.notFound ? showGeneric(doc) : showMessage(host, got.message);
+  if (!got.ok) return got.notFound ? gone() : showMessage(host, got.message);
   if (got.value.visibility === 'draft') return owner.toEdit(true);
-  const ui = actions(doc, owner);
+  mineList.update(got.value);
+  const ui = actions(doc, owner, mineList);
   doc.title = 'Workout Explorer';
   host.replaceChildren();
   mount(PublishedView, {

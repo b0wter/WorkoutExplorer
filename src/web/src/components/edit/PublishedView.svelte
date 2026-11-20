@@ -1,6 +1,6 @@
 <script lang="ts">
   // The published page (F-20 C-5, AC-6): the viewing link with Copy (C-4) and Go there, the edit link
-  // with Copy, Go there (a button, lib/owner navigates) and the save warning, and Delete. No other workout data.
+  // with Copy, Go there (a button, lib/owner navigates) and the save warning, F-53's list note (AC 51), and Delete. No other workout data.
   // CRITICAL: the edit link is the only place the token is in the DOM: one text node in a
   // translate="no" element; never an attribute, an input or a link. Its copy fallback is text only.
   import type { Attachment } from 'svelte/attachments';
@@ -57,6 +57,7 @@
     <p><button type="button" class="edit-button" data-act="copy-edit">Copy edit link</button>
       <button type="button" class="edit-button" data-act="back" disabled={busy !== ''}>Go there</button> <span class="edit-copied" role="status">{copied}</span></p>
   </section>
+  <p>Edit links are saved in this browser. Anyone using this browser can open them.</p>
   <p class="edit-delete-hint">Uploaded accidentally?</p>
   <p class="edit-row">
     <DeleteControl {busy} {ondelete} />

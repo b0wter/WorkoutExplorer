@@ -1,8 +1,9 @@
 // The owner client (F-19 design E-2, E-3; F-20 C-1, C-5; ADR-020 item 7 and rev. 2, ADR-025; F-12
 // endpoints). CRITICAL: the only module that reads the URL fragment or holds the edit token. The
 // token goes out only as the Authorization header of same-origin requests to
-// /api/workouts/{public_id}..., in the published page's edit link, and in the two navigations to
-// the owner pages; it is never logged, stored, or put into history.state. Imports nothing of ours.
+// /api/workouts/{public_id}..., in the published page's edit link, in the two navigations to the
+// owner pages, and through `token` to src/edit's My workouts list write (F-53 MW-7, ADR-058); it is
+// never logged or put into history.state. Imports nothing of ours.
 
 /** A pin as the API carries it (F-56 PN-2): instants RFC 3339 UTC whole seconds; end_at null for a point. */
 export interface ApiPin {
@@ -63,9 +64,12 @@ export interface OwnerClient {
   readonly publicId: string;
   /** Which owner page the address is (F-20 C-1). */
   readonly kind: 'edit' | 'published';
-  /** The edit link (F-20 C-5), only on the published page; otherwise null. The only way the
-   *  token leaves this module as a value. */
+  /** The edit link (F-20 C-5), only on the published page; otherwise null. Apart from `token`
+   *  (F-53), the only way the token leaves this module as a value. */
   readonly editLink: string | null;
+  /** F-53 MW-7: the checked edit token, read only by src/edit for the My workouts list write
+   *  (lib/mine). Nothing else may read it. A function, so that serialising the client never shows it. */
+  token(): string;
   /** location.assign to the published page (C-3, OQ-86). */
   toPublished(): void;
   /** To the edit page: location.replace from a draft's published page (C-5), else assign. */
@@ -159,6 +163,7 @@ export function openOwner(location: OwnerLocation, fetchFn: typeof fetch = fetch
     publicId,
     kind,
     editLink: kind === 'published' ? link('edit') : null,
+    token: () => token,
     toPublished: () => location.assign(link('published')),
     toEdit: (replace) => (replace ? location.replace(link('edit')) : location.assign(link('edit'))),
     settings: () => send('', {}, asSettings),

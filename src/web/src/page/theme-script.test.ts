@@ -21,6 +21,7 @@ describe('theme head script', () => {
   it('is the same single script in both pages, with no template action', () => {
     expect(inline(readWebFile('index.html'))).toEqual([script]);
     expect(inline(readWebFile('edit.html'))).toEqual([script]);
+    expect(inline(readWebFile('my-workouts.html'))).toEqual([script]); // F-53 MW-1
     expect(script).not.toMatch(/\{\{|\/\/|\/\*/); // html/template would rewrite actions or comments
   });
 

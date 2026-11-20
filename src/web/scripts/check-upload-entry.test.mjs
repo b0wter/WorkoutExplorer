@@ -14,6 +14,11 @@ describe('problems', () => {
     const read = (f) => (f === 'assets/upload.js' ? 'localStorage.x' : 'document.cookie');
     expect(problems(manifest, read)).toEqual(['assets/upload.js: cookie or storage API']);
   });
+  it('F-53 AC 57: flags the list key in the viewing page, not in its lazy chunks', () => {
+    const m = { ...manifest, 'index.html': { ...manifest['index.html'], dynamicImports: ['_m'] }, _m: { file: 'assets/mine.js' } };
+    const read = (f) => (f === 'assets/upload.js' ? '' : 'k="wx.workouts"');
+    expect(problems(m, read)).toEqual(['assets/index.js: the viewing page holds wx.workouts']);
+  });
   it('flags a chunk shared by both entries', () => {
     const m = {
       'index.html': { file: 'assets/index.js', isEntry: true, imports: ['_s'] },

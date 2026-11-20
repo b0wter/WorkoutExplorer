@@ -286,7 +286,7 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
     expect(all['./enhance.ts']).toContain("import('../gpx')");
   });
 
-  it('browser storage only through lib/prefs, localStorage only; no cookie, URL or history state (DS-1, AP-5, AP-17)', () => {
+  it('browser storage only through lib/prefs and lib/mine (F-53 MW-7), localStorage only; no cookie, URL or history state (DS-1, AP-5, AP-17)', () => {
     const all = import.meta.glob(['../**/*.ts', '../**/*.svelte', '!../**/*.test.ts', '!../**/testing/**', '!../**/*.test-helper.*'], {
       query: '?raw',
       import: 'default',
@@ -298,9 +298,10 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
       // F-40 SR-5: the range link's fragment dropped from the address, history state kept.
       const code = file === '../components/map/map-view.ts' ? text.replace("history.pushState(null, '')", '') : file === './start.ts' ? text.replace("win.history.replaceState(win.history.state, '', win.location.pathname + win.location.search)", '') : text;
       expect(code, file).not.toMatch(/sessionStorage|document\.cookie|cookieStore|indexedDB|history\.(push|replace)State/);
-      if (file === '../lib/prefs/index.ts') continue;
-      // The page glue hands lib/prefs its storage getter, nothing else.
-      const rest = file === './start.ts' ? code.replace('(): KeyValueStore => win.localStorage', '') : code;
+      if (file === '../lib/prefs/index.ts' || file === '../lib/mine/index.ts') continue;
+      // The page glue hands lib/prefs its storage getter, the owner glue and the list page lib/mine theirs; nothing else.
+      const getter = { './start.ts': '(): KeyValueStore => win.localStorage', '../edit/start.svelte.ts': '() => win.localStorage', '../mine/index.ts': '() => window.localStorage' }[file];
+      const rest = getter ? code.replace(getter, '') : code;
       expect(rest, file).not.toMatch(/localStorage|\.(getItem|setItem|removeItem)\(/);
     }
     expect(all['./start.ts']).toContain('createViewerPrefs((): KeyValueStore => win.localStorage)');

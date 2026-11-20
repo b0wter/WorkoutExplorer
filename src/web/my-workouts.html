@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- F-53 MW-1: the My workouts shell. B-1 placeholder from the backend; the frontend engineer owns it: add the sprite and noscript line, and main.ts switches on #wx-mine. -->
+<!-- F-53 MW-1: the My workouts page, served by Caddy for /my-workouts with no-store (it renders edit links). main.ts switches on #wx-mine and loads src/mine/. No Open Graph card. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -7,21 +7,12 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="referrer" content="no-referrer" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
-    <title>Workout Explorer</title>
+    <title>My workouts · Workout Explorer</title>
     <script>try{var s=localStorage,d=document.documentElement,t=s.getItem("wx.theme");if(t=="light"||t=="dark")d.dataset.theme=t;if(s.getItem("wx.hint.done")=="1")d.dataset.hint="done"}catch(e){}</script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
-    <svg class="sprite" aria-hidden="true"><defs>
-      <symbol id="sport-cycling" viewBox="0 0 24 24"><circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-8h5l3 8M10 8H8"/></symbol>
-      <symbol id="sport-running" viewBox="0 0 24 24"><circle cx="14" cy="5" r="2"/><path d="M12 9l-3 4 3 2v5M12 9l4 2 2 3M9 13l-3 1"/></symbol>
-      <symbol id="sport-walking" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 8v6l-3 6M12 14l3 6M9 10l3-2 3 2"/></symbol>
-      <symbol id="sport-hiking" viewBox="0 0 24 24"><circle cx="11" cy="5" r="2"/><path d="M11 8v6l-3 6M11 14l3 6M8 10l3-2 3 2M18 8v13"/></symbol>
-      <symbol id="sport-swimming" viewBox="0 0 24 24"><circle cx="16" cy="6" r="2"/><path d="M4 12l6-3 4 3M3 17q2 2 4.5 0t4.5 0 4.5 0 4.5 0"/></symbol>
-      <symbol id="sport-rowing" viewBox="0 0 24 24"><path d="M3 16h18l-3 4H6zM6 13l12-6M16 5l3 3"/></symbol>
-      <symbol id="sport-generic" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
-    </defs></svg>
     <template id="wx-impressum"><!--wx:impressum--></template>
-    <div id="wx-mine"></div>
+    <div id="wx-mine"><noscript><p>My workouts needs JavaScript. Turn it on in your browser to see the workouts uploaded from this browser.</p></noscript></div>
   </body>
 </html>

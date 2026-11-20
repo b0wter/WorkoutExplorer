@@ -56,7 +56,8 @@ describe('About page', () => {
       'Reports from viewers',
       'choice of units, the x axis of the charts, the split between map and content',
       'and the theme',
-      'not in a cookie, are never sent to the server',
+      'not in a cookie, is never sent to the server',
+      'My workouts</a>: for each workout uploaded or edited in this browser, its title, sport, date, status, expiry and edit link', // F-53 AC 58
       'They see your IP address',
       '7 days by default',
       'up to 30 days from upload',

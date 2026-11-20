@@ -1,0 +1,44 @@
+/* The My workouts page (F-53 MW-10): the plain page width; the table scrolls in its own box, so a
+   phone in portrait never scrolls the page sideways; Edit, View and Forget are touch-sized. */
+.mine,
+.mine-foot {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.mine-box {
+  overflow-x: auto;
+}
+.mine td {
+  text-align: left;
+}
+.mine th {
+  text-align: left;
+}
+.mine td:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 10em;
+}
+.mine-links a,
+.mine-button {
+  display: inline-block;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  line-height: 42px;
+  text-align: center;
+}
+.mine-button {
+  font: inherit;
+  color: var(--fg);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mine-confirm {
+  padding: 8px 10px;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+}

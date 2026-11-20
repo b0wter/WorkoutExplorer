@@ -13,6 +13,7 @@ import { PIN_REFUSED } from './pins';
 import { resetStubLog, stubLog } from '../page/testing/stub-log';
 import { startEdit } from './start.svelte';
 import editHtml from '../../edit.html?raw';
+import { LIST_KEY } from '../lib/mine';
 
 vi.mock('../components/charts/ChartStack.svelte', async () => await import('../page/testing/ChartStackStub.svelte'));
 vi.mock('../components/map/RouteMap.svelte', async () => await import('../page/testing/RouteMapStub.svelte'));
@@ -196,7 +197,9 @@ function expectNoTokenOutsideTheFragment(): void {
   for (const store of [localStorage, sessionStorage]) {
     for (let i = 0; i < store.length; i++) {
       const k = store.key(i) ?? '';
-      expect(k + (store.getItem(k) ?? '')).not.toContain(TOKEN);
+      // F-53 (ADR-058): the one exception, the My workouts entry's `token` field, never a link.
+      const v = store === localStorage && k === LIST_KEY ? JSON.stringify(JSON.parse(store.getItem(k)!), (key, x) => (key === 'token' ? '' : x)) : store.getItem(k);
+      expect(k + (v ?? '')).not.toContain(TOKEN);
     }
   }
   expect(JSON.stringify(window.history.state) ?? '').not.toContain(TOKEN);
@@ -574,7 +577,7 @@ describe('E-9, AC 8; F-55 HR-8: to-be-hidden marks from the sliders', () => {
     hideAt(2000, 0);
     await save();
     expect(patches()).toEqual([{ hide_end_m: 0 }]);
-    expect(Object.keys(localStorage).filter((k) => k !== 'wx.units')).toEqual([]); // OQ-248
+    expect(Object.keys(localStorage).filter((k) => k !== 'wx.units' && k !== LIST_KEY)).toEqual([]); // OQ-248; F-53's list
   });
 
   it('OQ-268: imperial labels; the value sent stays metric', async () => {
@@ -1791,5 +1794,124 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe(PIN_REFUSED);
     await save();
     expect(patches()).toEqual([{ pins: [{ ...pin(1000, 'mid'), start_at: at(2500), end_at: at(3500) }] }]); // still 2500 to 3500
+  });
+});
+
+describe('F-53 MW-2, MW-3: the My workouts entry (AC 42, 44, 46, 48, 49, 51, 52)', () => {
+  const OTHER = 'Yy0123456789abcdefghij';
+  const stored = () => JSON.parse(localStorage.getItem(LIST_KEY) ?? 'null') as { v: number; workouts: Record<string, unknown>[] } | null;
+  const entry = () => stored()?.workouts.find((e) => e.id === ID);
+  const meta = () => {
+    const d = decodeDataFile(RIDE.slice(0));
+    if (!d.ok) throw new Error('golden');
+    return d.data.meta;
+  };
+  const put = (...workouts: Record<string, unknown>[]) => localStorage.setItem(LIST_KEY, JSON.stringify({ v: 1, workouts }));
+
+  it('the first read adds one entry with the header sport and local date, Draft, the stored instants; nothing sent', async () => {
+    settings = fresh({ suggested_title: 'Morning ride' });
+    await open();
+    const m = meta();
+    const date = new Date(Date.parse(m.start_time) + (m.time_zone.known ? m.time_zone.offset_seconds : 0) * 1000).toISOString().slice(0, 10);
+    expect(stored()).toEqual({
+      v: 1,
+      workouts: [{ id: ID, token: TOKEN, title: 'Morning ride', sport: m.sport, date, created: settings.created_at, expires: settings.expires_at, published: false }],
+    });
+    for (const { url, init } of calls) expect(url + String(init.body ?? '')).not.toMatch(/Morning ride|wx\.workouts/);
+    expect(document.cookie).toBe('');
+    expectNoTokenOutsideTheFragment();
+  });
+
+  it('the default title applies: title stored empty; an owner title wins', async () => {
+    await open();
+    expect(entry()?.title).toBe('');
+    type('title', 'Loop');
+    await save();
+    expect(entry()?.title).toBe('Loop');
+  });
+
+  it('one entry per workout: reopening and saving replace it, others stay; an unreadable value is replaced', async () => {
+    put({ id: 'B'.repeat(22), token: OTHER, title: 'Other' }, { id: ID, token: TOKEN, title: 'old', sport: 'rowing', date: '2020-01-01' });
+    await open();
+    expect(entry()).toMatchObject({ title: '', sport: meta().sport });
+    type('title', 'New');
+    await save();
+    expect(stored()!.workouts.map((e) => e.id)).toEqual(['B'.repeat(22), ID]);
+    expect(entry()).toMatchObject({ title: 'New', sport: meta().sport, expires: settings.expires_at });
+    localStorage.setItem(LIST_KEY, '{"v":2}');
+    await open();
+    expect(stored()!.workouts.map((e) => e.id)).toEqual([ID]);
+  });
+
+  it('the draft unreadable: the stored sport and date stay', async () => {
+    put({ id: ID, token: TOKEN, title: 'x', sport: 'rowing', date: '2020-01-01' });
+    draft = () => new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+    await open();
+    expect(entry()).toMatchObject({ sport: 'rowing', date: '2020-01-01', title: '' });
+  });
+
+  it('publish sets Published before the navigation; the published page updates title, status, expiry of an entry and never adds one', async () => {
+    await open();
+    await click('publish');
+    expect(entry()?.published).toBe(true);
+    localStorage.clear();
+    settings = fresh({ visibility: 'unlisted', title: 'Pub', expires_at: '2026-11-05T11:00:00Z' });
+    await openPublished();
+    expect(stored()).toBeNull();
+    put({ id: ID, token: TOKEN, title: 'old', sport: 'rowing', published: false });
+    await openPublished();
+    expect(entry()).toEqual({ id: ID, token: TOKEN, title: 'Pub', sport: 'rowing', created: settings.created_at, expires: '2026-11-05T11:00:00Z', published: true });
+    expect(document.body.textContent).toContain('Edit links are saved in this browser. Anyone using this browser can open them.');
+  });
+
+  it.each([
+    ['edit', () => open()],
+    ['published', () => openPublished()],
+  ])('delete on the %s page removes the entry', async (_, go) => {
+    settings = fresh({ visibility: 'unlisted' });
+    put({ id: ID, token: TOKEN, title: 'x' }, { id: 'B'.repeat(22), token: OTHER });
+    await go();
+    expect(entry()).toBeDefined();
+    await click('delete');
+    await click('confirm');
+    expect(stored()!.workouts.map((e) => e.id)).toEqual(['B'.repeat(22)]);
+  });
+
+  it('P-12: not found removes the entry only when it holds the address token', async () => {
+    onGet = () => new Response('{}', { status: 404 });
+    put({ id: ID, token: OTHER, title: 'mine' });
+    await open();
+    expect(document.body.textContent).toContain(GENERIC);
+    expect(entry()?.token).toBe(OTHER);
+    put({ id: ID, token: TOKEN, title: 'mine' });
+    await open();
+    expect(stored()!.workouts).toEqual([]);
+    put({ id: ID, token: TOKEN, title: 'mine' });
+    await openPublished();
+    expect(stored()!.workouts).toEqual([]);
+  });
+
+  it('not found on save also removes it', async () => {
+    await open();
+    onPatch = () => new Response('', { status: 404 });
+    type('title', 'x');
+    await save();
+    expect(stored()!.workouts).toEqual([]);
+  });
+
+  it.each([
+    ['a throwing getter', () => vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => { throw new DOMException('blocked', 'SecurityError'); })],
+    ['a full storage', () => vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new DOMException('full', 'QuotaExceededError'); })],
+    ['a throwing getItem', () => vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new DOMException('blocked', 'SecurityError'); })],
+  ])('AC 52, %s: edit, save, publish and delete still work, no message', async (_, block) => {
+    block();
+    await open();
+    expect($('form.edit-panel')).not.toBeNull();
+    type('title', 'x');
+    await save();
+    expect($('.edit-status')?.textContent).toBe('Saved');
+    await click('publish');
+    expect(navs).toEqual([PUBLISHED_PAGE()]);
+    expect(consoleOut).toEqual([]);
   });
 });

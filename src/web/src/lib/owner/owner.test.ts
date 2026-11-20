@@ -72,6 +72,7 @@ describe('openOwner: the link', () => {
     expect(owner?.editLink).toBeNull();
     expect(JSON.stringify(owner)).not.toContain(TOKEN);
     expect(Object.values(owner ?? {}).map(String).join()).not.toContain(TOKEN);
+    expect(owner?.token()).toBe(TOKEN); // F-53 MW-7: the list write's one exit
   });
 
   it('the published page: kind published; the token only in the edit link (C-5)', () => {
