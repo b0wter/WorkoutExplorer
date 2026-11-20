@@ -283,7 +283,9 @@
   "fitTooLarge": "Le fichier FIT de cette archive dépasse 20 Mo.",
   "damaged": "Cette archive n'a pas pu être ouverte. Décompressez-la et importez le fichier FIT.",
   "uploadingPercent": "Import… {n} %",
-  "reading": "Lecture de l'entraînement…"
+  "reading": "Lecture de l'entraînement…",
+  "rateLimited": "Trop d’imports. Réessayez plus tard.",
+  "busyNow": "Trop d’imports en ce moment. Réessayez dans une minute."
  },
  "mine": {
   "mineTitle": "Mes entraînements",
@@ -525,6 +527,7 @@
   "ab_workoutExplorerIs": "Workout Explorer est un logiciel libre. Ce site utilise la version {version}. Ci-dessous figurent la licence de l'application et chaque bibliothèque, source de données et police qu'elle utilise. Ouvrez une entrée pour lire le texte de sa licence.",
   "ab_footAbout": "À propos",
   "genericGone": "Cet entraînement a expiré ou n'est pas disponible.",
-  "genericAbout": "À propos"
+  "genericAbout": "À propos",
+  "ab_title": "À propos - Workout Explorer"
  }
 }

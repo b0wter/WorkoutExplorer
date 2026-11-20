@@ -157,8 +157,17 @@ describe('no interface text outside the tables (LG-8)', () => {
   });
 });
 
+// Files that assign HTML: constants, SVG, markup shells or fetched files, never a text. A new file here
+// (or a text passed to one of them through a variable) is a decision, so it fails until listed.
+// Gap (F-62): English text that TypeScript builds with textContent or setAttribute is not scanned.
+const HTML_ASSIGNERS = ['edit/start.svelte.ts', 'efforts/index.ts', 'splits/chart.ts', 'impressum/page.ts', 'page/enhance.ts', 'components/map/map-view.ts', 'report/form.ts', 'lib/i18n/index.ts'];
+
 describe('texts never reach HTML parsing (LG-7)', () => {
   const code = import.meta.glob(['../**/*.ts', '../**/*.svelte', '!../**/*.test.ts', '!../**/testing/**'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+  it('only the listed files assign HTML', () => {
+    const files = Object.entries(code).filter(([, s]) => /innerHTML|outerHTML|insertAdjacentHTML|\{@html/.test(s)).map(([f]) => f.replace('../', ''));
+    expect(files.filter((f) => !HTML_ASSIGNERS.includes(f))).toEqual([]);
+  });
   it('no innerHTML, outerHTML, insertAdjacentHTML or {@html} is given a text from a table', () => {
     for (const [f, s] of Object.entries(code))
       for (const line of s.split('\n')) expect(line, f).not.toMatch(/(innerHTML|outerHTML|insertAdjacentHTML\([^,]*,)\s*[=+]?[^;]*\bt[a-z]?\(|\{@html[^}]*\bt[a-z]?\(/);

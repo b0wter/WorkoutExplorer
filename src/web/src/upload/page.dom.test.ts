@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 // The upload page's wiring (F-11 design U-5 to U-10; ADR-012). upload.html is loaded as it is;
 // fetch, XMLHttpRequest and navigation are fakes. Synthetic data only.
-import { en as errorTexts } from '../lib/errors/texts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HTML from '../../upload.html?raw';
 import { start, type Env } from './page';
@@ -288,8 +287,8 @@ describe('responses (AC 1, AC 3, AC 5, U-8, U-9)', () => {
     [503, 'busy', 'Too many uploads right now. Please try again in a minute.'],
   ] as const)('%i %s: the text of its code is shown (F-54 LG-6) and a new pick works', async (status, error, message) => {
     await pickFile(file(10));
-    FakeXhr.all[0].respond(status, { error, message });
-    expect($('message').textContent).toBe(errorTexts[error]);
+    FakeXhr.all[0].respond(status, { error, message: 'server words' });
+    expect($('message').textContent).toBe(message);
     expect(state()).toBe('ready');
     expect(input().disabled).toBe(false);
     await pickFile(file(10));

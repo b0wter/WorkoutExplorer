@@ -1,5 +1,6 @@
 // Pure rules of the upload page (F-11 design U-4 to U-9). No DOM; texts from lib/errors (F-54 LG-6).
 import { serverText } from '../errors/texts';
+import { t } from './texts';
 
 /** The 20 MB cap in bytes of file content (ADR-021 item 1; F-09 D-5). */
 export const MAX_UPLOAD_BYTES = 20_000_000;
@@ -65,8 +66,10 @@ export function outcomeOf(status: number, body: string, origin: string): Outcome
     return url ? { kind: 'navigate', url } : { kind: 'error', message: serverText(null) };
   }
   // F-54 LG-6: our text by the `error` code; the server's message only for a code not listed.
-  const message = serverText(v);
   const code = v && typeof v === 'object' ? (v as { error?: unknown }).error : undefined;
+  // UP-10's sentences are the upload page's own (like storage_full), not the general ones of lib/errors.
+  const own = ({ rate_limited: 'rateLimited', busy: 'busyNow', too_large: 'tooLarge' } as const)[code as 'busy'];
+  const message = own ? t(own) : serverText(v);
   if (status === 503 && code === 'storage_full') return { kind: 'paused', message };
   return { kind: 'error', message };
 }

@@ -119,6 +119,17 @@ describe('which file (D-12)', () => {
   });
 });
 
+describe('map layer choice (F-61 AC 4)', () => {
+  it('the page hands its viewer prefs to the map: the stored layer is read back, a new one stored', async () => {
+    localStorage.setItem('wx.map', 'satellite');
+    await open();
+    const prefs = stubLog.routeMap[0].prefs;
+    expect(prefs?.mapLayer()).toBe('satellite');
+    prefs?.setMapLayer('map');
+    expect(localStorage.getItem('wx.map')).toBe('map');
+  });
+});
+
 describe('load failure (AC 9, D-13, OQ-10)', () => {
   it('404: the exact text, no technical detail, neither island mounted, the server markup stays', async () => {
     respond = () => new Response('not found\n', { status: 404 });

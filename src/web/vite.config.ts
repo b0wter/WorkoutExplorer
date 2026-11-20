@@ -62,8 +62,8 @@ function langFilesPlugin(): Plugin {
     transformIndexHtml(html, ctx) {
       const page = PAGES[ctx.filename.slice(ctx.filename.lastIndexOf('/') + 1)];
       if (!page) return html;
-      if (html.split('<title>').length !== 2) throw new Error(`wx-lang-files: ${ctx.filename} has not exactly one <title>`);
-      return html.replace('<title>', langMetas(page, out.urls) + '\n    <title>');
+      if (html.split('<title').length !== 2) throw new Error(`wx-lang-files: ${ctx.filename} has not exactly one <title>`);
+      return html.replace('<title', langMetas(page, out.urls) + '\n    <title');
     },
     generateBundle() {
       for (const [fileName, source] of Object.entries(out.files)) this.emitFile({ type: 'asset', fileName, source });

@@ -3,6 +3,8 @@ import { texts } from '../i18n';
 
 export const en = {
   tooLarge: 'This file is larger than 20 MB.',
+  rateLimited: 'Too many uploads. Please try again later.',
+  busyNow: 'Too many uploads right now. Please try again in a minute.',
   uploadUnreadable: 'The upload could not be read. Please try again.',
   paused: 'Uploads are paused because storage is full. Please try again later.',
   opening: 'Opening the archive…',

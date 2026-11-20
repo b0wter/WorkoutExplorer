@@ -60,7 +60,7 @@ describe('outcomeOf (U-8, U-9)', () => {
     [503, 'busy', 'Too many uploads right now. Please try again in a minute.'],
     [413, 'too_large', 'This file is larger than 20 MB.'],
   ] as const)('%i %s shows the text of its code (AC 3, AC 5; F-54 LG-6)', (status, error, message) => {
-    expect(outcomeOf(status, json({ error, message }), ORIGIN)).toEqual({ kind: 'error', message: errors[error] });
+    expect(outcomeOf(status, json({ error, message: 'server words' }), ORIGIN)).toEqual({ kind: 'error', message });
   });
   it('an unlisted code shows the server message as it is', () => {
     expect(outcomeOf(400, json({ error: 'new_code', message: 'Something new.' }), ORIGIN)).toEqual({ kind: 'error', message: 'Something new.' });

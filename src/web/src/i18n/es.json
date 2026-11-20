@@ -283,7 +283,9 @@
   "fitTooLarge": "El archivo FIT de este archivo comprimido ocupa más de 20 MB.",
   "damaged": "No se pudo abrir este archivo comprimido. Descomprímelo y sube el archivo FIT.",
   "uploadingPercent": "Subiendo… {n} %",
-  "reading": "Leyendo el entrenamiento…"
+  "reading": "Leyendo el entrenamiento…",
+  "rateLimited": "Demasiadas subidas. Inténtalo de nuevo más tarde.",
+  "busyNow": "Demasiadas subidas en este momento. Inténtalo de nuevo en un minuto."
  },
  "mine": {
   "mineTitle": "Mis entrenamientos",
@@ -525,6 +527,7 @@
   "ab_workoutExplorerIs": "Workout Explorer es software libre. Este sitio ejecuta la versión {version}. Abajo están la licencia propia de la aplicación y cada biblioteca, fuente de datos y tipografía que usa. Abre una entrada para leer su texto de licencia.",
   "ab_footAbout": "Acerca de",
   "genericGone": "Este entrenamiento ha caducado o no está disponible.",
-  "genericAbout": "Acerca de"
+  "genericAbout": "Acerca de",
+  "ab_title": "Acerca de - Workout Explorer"
  }
 }

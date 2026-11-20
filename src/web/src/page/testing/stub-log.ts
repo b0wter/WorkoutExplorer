@@ -4,6 +4,7 @@
 
 import type { WorkoutData } from '../../lib/datafile';
 import type { CursorStore } from '../../lib/cursor';
+import type { MapLayerPrefs } from '../../lib/prefs';
 import type { SelectionStore } from '../../lib/selection';
 
 export interface ChartStackStubProps {
@@ -32,6 +33,7 @@ export interface RouteMapStubProps {
   styleUrl?: string;
   onmapready?: (handle?: never) => void;
   hidden?: readonly (readonly [number, number])[];
+  prefs?: MapLayerPrefs;
 }
 
 export const stubLog = {
