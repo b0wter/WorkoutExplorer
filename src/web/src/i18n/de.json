@@ -98,6 +98,8 @@
   "saved": "Gespeichert",
   "addPin": "Pin hinzufügen",
   "addPinHint": "Wähle zuerst einen Punkt auf der Karte oder in einem Diagramm.",
+  "pinHiddenSpot": "Dieser Punkt ist verborgen oder abgeschnitten.",
+  "pinHere": "Hier gibt es schon einen Pin.",
   "pinType": "Art",
   "pinTitle": "Titel",
   "pinNote": "Notiz",

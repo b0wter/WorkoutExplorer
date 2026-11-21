@@ -1798,6 +1798,39 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(patches()).toEqual([{ pins: [{ ...pin(2500, ''), type: 'point_of_interest', end_at: at(3500) }] }]); // still 2500 to 3500
   });
 
+  const why = (): string => document.querySelector('.pin-tools .edit-small')!.textContent!.trim();
+
+  it('the button and its visible reason follow radius and trim changes; a twin is refused; Move refuses a hidden spot (r3-2 to r3-4)', async () => {
+    settings = fresh({ ...ON, pins: [] });
+    await start();
+    expect([button('Add pin').disabled, why()]).toEqual([true, 'Select a point on the map or a chart first.']);
+    await pick(20); // inside the 300 m start radius
+    expect([button('Add pin').disabled, why()]).toEqual([true, 'This point is hidden or trimmed.']);
+    hideAt(0, 0); // radius off: the same cursor is public
+    await settle();
+    expect([button('Add pin').disabled, why()]).toEqual([false, '']);
+    hideAt(300, 300);
+    await settle();
+    expect(button('Add pin').disabled).toBe(true);
+    await pick(2000);
+    type('trim_a', '3000'); // the cursor is now in the trimmed part
+    await settle();
+    expect([button('Add pin').disabled, why()]).toEqual([true, 'This point is hidden or trimmed.']);
+    type('trim_a', '0');
+    await settle();
+    expect(button('Add pin').disabled).toBe(false);
+    button('Add pin').click();
+    expect(rowTexts()).toHaveLength(1);
+    expect([button('Add pin').disabled, why()]).toEqual([true, 'There is a pin here already.']); // selected pin: no twin
+    button('Add pin').click();
+    expect(rowTexts()).toHaveLength(1);
+    await pick(30); // Move into the hidden start: disabled, and a click changes nothing
+    expect(button('Move').disabled).toBe(true);
+    button('Move').click();
+    await save();
+    expect(patches().at(-1)).toEqual({ pins: [{ ...pin(2000, ''), type: 'point_of_interest' }] });
+  });
+
   it('Move puts a point pin at the cursor; disabled without a usable cursor', async () => {
     settings = fresh({ ...ON, pins: [pin(1000, 'mid')] });
     await start();

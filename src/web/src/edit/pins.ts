@@ -61,6 +61,8 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   // ---- tools: Add pin (at the cursor or the selected range), one message line ----
   const tools = make('div', 'edit-row pin-tools');
   const add = tools.appendChild(button(''));
+  // The reason Add pin is off, in the row (touch has no tooltip); a no-break space keeps the line's height.
+  const why = tools.appendChild(make('span', 'edit-small'));
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
 
@@ -90,7 +92,6 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   /** Every fixed text, again on a language change (F-54). */
   const label = (): void => {
     add.textContent = t('addPin');
-    add.title = t('addPinHint');
     PIN_TYPES.forEach((p, i) => (type.options[i].text = typeName(p)));
     typeLabel.data = t('pinType');
     titleLabel.data = t('pinTitle');
@@ -125,7 +126,11 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   };
   /** Add pin and Move need a usable spot; light enough for every cursor step. */
   const enable = (): void => {
-    add.disabled = spot() === null;
+    const sp = spot();
+    const none = selection.start() < 0 && (cursor.get() ?? -1) < 0;
+    const twin = sp !== null && list.some((p) => p.from === sp[0] && p.to === sp[1]);
+    add.disabled = sp === null || twin;
+    why.textContent = add.hidden ? '\u00a0' : none ? t('addPinHint') : sp === null ? t('pinHiddenSpot') : twin ? t('pinHere') : '\u00a0';
     const k = view.selected();
     move.disabled = k === null || place(cursor.get() ?? -1) < 0;
   };
@@ -201,8 +206,8 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
 
   // ---- placing: at the selected point or range (OQ-272, revised 21 Nov 2026); no waiting mode ----
   add.addEventListener('click', () => {
-    const sp = spot();
-    if (!sp) return;
+    if (add.disabled) return;
+    const sp = spot()!;
     say('');
     const p: Pin = { type: 'point_of_interest', title: '', note: '', from: sp[0], ...(sp[1] !== undefined && { to: sp[1] }) };
     list.push(p);
