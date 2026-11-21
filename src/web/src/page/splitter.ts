@@ -11,6 +11,8 @@
 import type { SplitLayout, ViewerPrefs } from '../lib/prefs';
 
 /** page.css's short-landscape two-column query; everything else with the splitter is desktop. */
+/** The page's two-column layout (page.css), the one switch for everything that depends on it. */
+export const TWO_COLUMN_QUERY = '(min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px)';
 export const LANDSCAPE_QUERY = '(max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px)';
 
 /** Map width as a share of the layout, while dragging. */

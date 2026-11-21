@@ -57,7 +57,7 @@ describe('downloadGpx', () => {
     await downloadGpx(document, input);
     expect(fetchMock).not.toHaveBeenCalled();
     await downloadGpx(document, { ...input, pinsUrl: '/w/pins.x.json' });
-    expect(fetchMock).toHaveBeenCalledWith('/w/pins.x.json');
+    expect(fetchMock).toHaveBeenCalledWith('/w/pins.x.json', expect.objectContaining({ signal: expect.any(AbortSignal) }));
     expect(await blob!.text()).toContain('<wpt lat="47.600000" lon="8.600000"><name>Hi</name><type>note</type></wpt>');
     fetchMock.mockRejectedValueOnce(new Error('x')); // failed file: the route alone
     await downloadGpx(document, { ...input, pinsUrl: '/w/pins.x.json' });

@@ -809,7 +809,7 @@ describe('Download route (GPX) (F-57 GX-2, GX-5; AC 1, AC 7)', () => {
     expect(gpx.calls).toHaveLength(1);
     const [doc, input] = gpx.calls[0] as [Document, Record<string, unknown>];
     expect(doc).toBe(document);
-    expect(Object.keys(input).sort()).toEqual(['altitude', 'latitude', 'longitude', 'startTime', 'zone']);
+    expect(Object.keys(input).sort()).toEqual(['altitude', 'latitude', 'longitude', 'pinsUrl', 'startTime', 'zone']);
     const decoded = await loadDataFile(async () => new Response(RIDE.slice(0)));
     if (!decoded.ok) throw new Error('golden does not decode');
     expect(input.latitude).toEqual(decoded.data.position!.latitude);
@@ -817,6 +817,18 @@ describe('Download route (GPX) (F-57 GX-2, GX-5; AC 1, AC 7)', () => {
     expect(input.startTime).toBe(decoded.data.meta.start_time);
     expect(input.zone).toEqual(decoded.data.meta.time_zone);
     expect(fetchMock).toHaveBeenCalledTimes(1); // the data file only
+  });
+
+  it('QA-57-r2-5 GX-10: the pins slot\'s data-url reaches the download', async () => {
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-30min');
+    const b = row();
+    document.querySelector('.head')!.insertAdjacentHTML('afterend', '<div class="pins-slot" data-url="/w/x/pins.0123.json" hidden></div>');
+    await startPage(document);
+    await settle();
+    b.click();
+    await settle();
+    expect((gpx.calls[0][1] as GpxInput).pinsUrl).toBe('/w/x/pins.0123.json');
   });
 
   it('QA-57-r1-2 GX-4: a hidden start across local midnight names the file by the header date, never the first visible sample', async () => {

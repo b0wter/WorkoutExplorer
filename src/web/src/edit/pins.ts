@@ -12,6 +12,7 @@ import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedTex
 
 import { onLanguage } from '../lib/i18n';
 import { t } from './texts';
+import { TWO_COLUMN_QUERY } from '../page/splitter';
 
 export interface PinEditorEnv {
   /** The pins slot: the tools and form go first, the view's list after them. */
@@ -65,6 +66,21 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   const why = tools.appendChild(make('span', 'edit-small'));
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
+  // Two-column layout (the page's own switch): Add pin and its reason sit on the map, bottom left
+  // (PN-12); one column: in the tools row. Same elements, so name, focus order and texts are kept.
+  const mapSlot = doc.getElementById('map-slot');
+  const onMap = mapSlot ? make('div', 'wx-addpin') : null;
+  const mq = doc.defaultView?.matchMedia?.(TWO_COLUMN_QUERY);
+  const dock = (): void => {
+    const map = onMap !== null && !!mq?.matches;
+    if (map) {
+      onMap.append(add, why);
+      if (!onMap.isConnected) mapSlot!.append(onMap);
+    } else tools.prepend(add, why);
+    tools.classList.toggle('on-map', map);
+  };
+  dock();
+  mq?.addEventListener?.('change', dock);
 
   // ---- the form of the selected pin ----
   const form = make('div', 'pin-form');
@@ -131,6 +147,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const twin = sp !== null && list.some((p) => p.from === sp[0] && p.to === sp[1]);
     add.disabled = sp === null || twin;
     why.textContent = add.hidden ? '\u00a0' : none ? t('addPinHint') : sp === null ? t('pinHiddenSpot') : twin ? t('pinHere') : '\u00a0';
+    why.classList.toggle('blank', why.textContent === '\u00a0');
     const k = view.selected();
     move.disabled = k === null || place(cursor.get() ?? -1) < 0;
   };

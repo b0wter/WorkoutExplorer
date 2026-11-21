@@ -228,7 +228,7 @@ In the edit view, the owner marks places on the route that matter to the next ri
 | PIN-6 | Viewers can show or hide each pin type from a legend. | Should |
 | PIN-7 | Pins inside a hidden start or end section (SH-4, at that end's radius) are refused, so a pin never reveals a hidden place. (Was: inside a privacy zone; SH-3 discarded 14 Nov 2026.) | Must |
 | PIN-8 | Owner can edit, move and delete pins after publishing; changes appear on the shared page after the edit page's Save, without re-uploading. | Must |
-| PIN-9 | The GPX route download (SH-13) also holds the workout's public pins, exactly those viewers see (never in hidden or trimmed parts), as waypoints: name = title (type name if empty), symbol and type = pin type, description = note when present; a section pin gives two waypoints, "Title (start)" and "Title (end)". No times, no other data. (Removed 14 Nov 2026, reinstated in this form 21 Nov 2026; F-57.) | — |
+| PIN-9 | The GPX route download (SH-13) also holds the workout's public pins, exactly those viewers see (never in hidden or trimmed parts), as waypoints: name = title (type name if empty), type = pin type, description = note when present; a section pin gives two waypoints, "Title (start)" and "Title (end)". No times, no other data. (Removed 14 Nov 2026, reinstated in this form 21 Nov 2026; F-57.) | — |
 
 ### Ownership and links
 

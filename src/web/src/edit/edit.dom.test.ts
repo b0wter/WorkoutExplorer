@@ -1722,7 +1722,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
   const at = (i: number): string => new Date((startS + data.time[i]) * 1000).toISOString().slice(0, 19) + 'Z';
   const pin = (i: number, title: string) => ({ type: 'danger' as const, title, note: '', start_at: at(i), end_at: null });
   const rowTexts = (): string[] => [...document.querySelectorAll('.pin-row')].map((r) => r.textContent!);
-  const button = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.pin-tools button, .pin-form button')].find((b) => b.textContent === text)!;
+  const button = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.pin-tools button, .wx-addpin button, .pin-form button')].find((b) => b.textContent === text)!;
   async function start(): Promise<void> {
     await open();
     stubLog.chartStack[0].onready?.();
@@ -1798,7 +1798,22 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(patches()).toEqual([{ pins: [{ ...pin(2500, ''), type: 'point_of_interest', end_at: at(3500) }] }]); // still 2500 to 3500
   });
 
-  const why = (): string => document.querySelector('.pin-tools .edit-small')!.textContent!.trim();
+  it('PN-12: in the two-column layout Add pin and its reason dock on the map slot, one column keeps them in the tools row', async () => {
+    let matches = true;
+    const listeners: ((e: { matches: boolean }) => void)[] = [];
+    vi.stubGlobal('matchMedia', () => ({ get matches() { return matches; }, addEventListener: (_: string, f: (e: { matches: boolean }) => void) => listeners.push(f), removeEventListener() {} }));
+    settings = fresh({ ...ON, pins: [] });
+    await start();
+    const add = button('Add pin');
+    expect(add.closest('#map-slot .wx-addpin')).not.toBeNull();
+    expect(add.nextElementSibling?.classList.contains('edit-small')).toBe(true);
+    matches = false;
+    listeners.forEach((f) => f({ matches }));
+    expect(add.closest('.pin-tools')).not.toBeNull();
+    expect(document.querySelector('.pin-tools')?.classList.contains('on-map')).toBe(false);
+  });
+
+  const why = (): string => document.querySelector('.pin-tools .edit-small, .wx-addpin .edit-small')!.textContent!.trim();
 
   it('the button and its visible reason follow radius and trim changes; a twin is refused; Move refuses a hidden spot (r3-2 to r3-4)', async () => {
     settings = fresh({ ...ON, pins: [] });

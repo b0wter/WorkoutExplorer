@@ -118,11 +118,6 @@ export interface EditSeam {
 }
 
 /** Enhances the server markup, then loads and mounts. Never rejects. */
-const pinsUrl = (root: ParentNode): { pinsUrl?: string } => {
-  const url = root.querySelector<HTMLElement>('.pins-slot')?.dataset.url;
-  return url ? { pinsUrl: url } : {};
-};
-
 export async function startPage(root: ParentNode, win: Window = window, edit?: EditSeam): Promise<void> {
   // Viewer preferences on this device (lib/prefs): the getter itself may throw (blocked site data).
   const prefs = createViewerPrefs((): KeyValueStore => win.localStorage);
@@ -269,7 +264,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const hasRoute = routePresence(data) === 'route';
   // F-57 GX-2: viewing page only (the edit seam's data is the unhidden draft); closed inputs.
   // data.position holds latitude and longitude only (lib/datafile decode).
-  if (!edit && hasRoute) enhanceGpx(root, { ...data.position!, altitude: data.metrics.altitude, startTime: data.meta.start_time, zone: data.meta.time_zone, ...pinsUrl(root) });
+  if (!edit && hasRoute) enhanceGpx(root, { ...data.position!, altitude: data.metrics.altitude, startTime: data.meta.start_time, zone: data.meta.time_zone, pinsUrl: pinSlot?.dataset.url });
   const mapSlot = root.querySelector<HTMLElement>('#map-slot');
   const chartsSlot = root.querySelector<HTMLElement>('#charts-slot');
   const mod = recorderModule ? await recorderModule : null;

@@ -3,7 +3,7 @@
 // the file is built from the already decoded public data and handed over as a blob: link.
 
 import { gpxFileName, gpxParts, type GpxInput } from '../lib/gpx';
-import { readPins, type ShownPin } from '../lib/pins';
+import type { ShownPin } from '../lib/pins';
 
 /** Long enough for any browser to start the download (40 s as FileSaver.js: iOS Safari's prompt
  *  stays open; QA-57-r1 Q2); a new task, never the click's (GX-7). */
@@ -13,7 +13,7 @@ const REVOKE_MS = 40_000;
 async function publicPins(input: GpxInput): Promise<ShownPin[] | undefined> {
   if (!input.pinsUrl) return undefined;
   try {
-    const r = await fetch(input.pinsUrl);
+    const [r, { readPins }] = await Promise.all([fetch(input.pinsUrl, { signal: AbortSignal.timeout(5000) }), import('../lib/pins')]); // GX-10: no pin code without a pins file
     return (r.ok && readPins(await r.json(), input.latitude.length)) || undefined;
   } catch {
     return undefined;

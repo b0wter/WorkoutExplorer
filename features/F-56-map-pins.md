@@ -66,6 +66,7 @@ OQ-272 to OQ-277 accepted as suggested.
 
 ## Decisions (user, 21 Nov 2026)
 - **OQ-272 changed:** pins only on the route; "Add pin" places a point pin at the cursor and opens its form, or a section pin over a selected range (AP-7; replaces the form's "Section" option). No "next tap places" mode. Disabled without a cursor point, and when the cursor or range lies in a hidden start or end (current radius) or a trimmed part; the refusal rule (PIN-7) is unchanged. OQ-273 unchanged.
+- The reason text "There is a pin here already." is approved as written.
 
 ## Decisions (user, 20 Nov 2026)
 OQ-236 and OQ-237 changed (architecture: `architect/F-56-map-pins.md` PN-4, PN-5, PN-7, PN-12; ADR-057 rev. 1).

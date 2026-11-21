@@ -205,4 +205,9 @@ describe('public pins as waypoints (GX-10)', () => {
     expect(build([pin({ from: 2 })])).not.toContain('<wpt');
     expect(build([pin({ from: 1, to: 2 })]).match(/<wpt/g)).toHaveLength(1);
   });
+
+  it('QA-57-r2-2: characters invalid in XML 1.0 are dropped, tab, LF and emoji kept', () => {
+    const g = build([pin({ title: 'a\uFFFFb\uFFFEc\x01d\uD800e\tf\u{1F600}', note: 'x\ny' })]);
+    expect(g).toContain('<name>abcde\tf\u{1F600}</name><desc>x\ny</desc>');
+  });
 });

@@ -33,7 +33,11 @@ function fixed(v: number, digits: number, scale: number): string {
 
 /** The file as Blob parts (GX-7): head, one line per positioned sample in index order, tail. One
  *  segment, joined across dropouts and pauses (OQ-270); `<ele>` only where altitude is recorded. */
-const esc = (s: string): string => s.replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'));
+// Characters outside XML 1.0's Char production (controls but tab/LF/CR, U+FFFE/F, lone surrogates) are dropped.
+const esc = (s: string): string =>
+  s
+    .replace(/[\0-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+    .replace(/[&<>]/g, (c) => (c === '&' ? '&amp;' : c === '<' ? '&lt;' : '&gt;'));
 
 /** One `<wpt>` per public pin end that has a position (GX-10); a section's ends are "(start)" and "(end)". */
 function waypoints(pins: readonly ShownPin[], lat: Float64Array, lon: Float64Array): string {
