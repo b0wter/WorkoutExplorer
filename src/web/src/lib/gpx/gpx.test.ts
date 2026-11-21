@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGolden } from '../../../test-support/golden.mjs';
 import { decodeDataFile, type WorkoutData } from '../datafile';
 import { gpxFileName, gpxParts } from '.';
+import type { ShownPin } from '../pins';
 
 const nan = NaN;
 const f64 = (a: number[]) => Float64Array.from(a);
@@ -63,7 +64,7 @@ describe('content (GX-3; AC 3, AC 5)', () => {
     expect(points(gpx)).toEqual(expected(d.position!.latitude, d.position!.longitude, d.metrics.altitude));
     expect(gpx.match(/<trk>/g)).toHaveLength(1);
     expect(gpx.match(/<trkseg>/g)).toHaveLength(1);
-    // Only the GX-3 elements: no time, name, desc, metadata, extensions, wpt, rte, type, bounds.
+    // Only the GX-3 elements without pins: no time, name, desc, metadata, extensions, wpt, rte, type, bounds.
     expect(new Set([...gpx.matchAll(/<([a-z?]+)/g)].map((m) => m[1]))).toEqual(new Set(['?xml', 'gpx', 'trk', 'trkseg', 'trkpt', 'ele']));
     expect(gpxParts(input(d)).join('')).toBe(gpx);
   });
@@ -166,5 +167,42 @@ describe('cost (GX-8; AC 9)', () => {
     const best = Math.min(...runs);
     console.info(`F-57: 12-hour ride (${d.sampleCount} samples) GPX build + Blob: best ${best.toFixed(1)} ms of 5`);
     expect(best).toBeLessThan(500); // generous bound against CI noise; the figure is reported
+  });
+});
+
+describe('public pins as waypoints (GX-10)', () => {
+  const lat = f64([47.1, 47.2, nan, 47.4]);
+  const lon = f64([8.1, 8.2, nan, 8.4]);
+  const pin = (o: Partial<ShownPin>): ShownPin => ({ type: 'danger', title: 'T', note: '', from: 0, ...o });
+  const build = (pins?: ShownPin[]) => gpxParts({ latitude: lat, longitude: lon }, pins).join('');
+
+  it('no pins or an empty list: byte-identical to the track-only file', () => {
+    expect(build([])).toBe(build());
+    expect(build()).not.toContain('<wpt');
+  });
+
+  it('a point pin: wpt before trk with name, desc only when a note exists, type', () => {
+    const g = build([pin({ from: 1, note: 'Slippery' }), pin({ from: 3, title: 'B' })]);
+    expect(g).toContain('<wpt lat="47.200000" lon="8.200000"><name>T</name><desc>Slippery</desc><type>danger</type></wpt>\n<wpt lat="47.400000" lon="8.400000"><name>B</name><type>danger</type></wpt>\n<trk>');
+    expect(g.indexOf('<wpt')).toBeLessThan(g.indexOf('<trk>'));
+    expect(g).not.toMatch(/<time|<extensions/);
+  });
+
+  it('escapes title and note; an empty title shows the type name', () => {
+    const g = build([pin({ title: 'A & <B>', note: '1 < 2 & 3 > 2' }), pin({ title: '', type: 'water_food', from: 1 })]);
+    expect(g).toContain('<name>A &amp; &lt;B&gt;</name><desc>1 &lt; 2 &amp; 3 &gt; 2</desc>');
+    expect(g).toContain('<name>Water and food</name>');
+  });
+
+  it('a section pin gives two waypoints (start) and (end)', () => {
+    const g = build([pin({ title: 'Climb', from: 0, to: 3, type: 'difficult_section' })]);
+    expect(g).toContain('<name>Climb (start)</name>');
+    expect(g).toContain('<name>Climb (end)</name>');
+    expect(g.match(/<wpt/g)).toHaveLength(2);
+  });
+
+  it('an end without a position is skipped', () => {
+    expect(build([pin({ from: 2 })])).not.toContain('<wpt');
+    expect(build([pin({ from: 1, to: 2 })]).match(/<wpt/g)).toHaveLength(1);
   });
 });

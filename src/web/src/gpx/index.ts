@@ -3,13 +3,25 @@
 // the file is built from the already decoded public data and handed over as a blob: link.
 
 import { gpxFileName, gpxParts, type GpxInput } from '../lib/gpx';
+import { readPins, type ShownPin } from '../lib/pins';
 
 /** Long enough for any browser to start the download (40 s as FileSaver.js: iOS Safari's prompt
  *  stays open; QA-57-r1 Q2); a new task, never the click's (GX-7). */
 const REVOKE_MS = 40_000;
 
-export function downloadGpx(doc: Document, input: GpxInput): void {
-  const url = URL.createObjectURL(new Blob(gpxParts(input), { type: 'application/gpx+xml' }));
+/** The public pins (GX-10), fetched on click; a failed or invalid file gives the route without waypoints. */
+async function publicPins(input: GpxInput): Promise<ShownPin[] | undefined> {
+  if (!input.pinsUrl) return undefined;
+  try {
+    const r = await fetch(input.pinsUrl);
+    return (r.ok && readPins(await r.json(), input.latitude.length)) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function downloadGpx(doc: Document, input: GpxInput): Promise<void> {
+  const url = URL.createObjectURL(new Blob(gpxParts(input, await publicPins(input)), { type: 'application/gpx+xml' }));
   const a = doc.createElement('a');
   a.href = url;
   a.download = gpxFileName(input);

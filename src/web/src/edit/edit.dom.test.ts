@@ -276,7 +276,7 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     await open();
     expect($('[data-gpx]')).toBeNull();
     const field = $('input[name="hide_end_m"]')!.closest('.edit-field')!;
-    expect(field.lastElementChild?.textContent).toBe('Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.');
+    expect(field.lastElementChild?.textContent).toBe('Viewers can download the visible route as a GPX file: the track and its public pins, without times, heart rate or any other data.');
   });
 
   it.each(['triathlon', 'indoor-no-gps'])('F-57 QA-57-r1-1: no GPX line for %s (multisport or no positions)', async (name) => {

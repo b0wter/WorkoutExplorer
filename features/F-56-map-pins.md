@@ -18,7 +18,7 @@ The owner marks dangers, points of interest and difficult sections on the route;
 - Texts in English; F-54 (built last) translates them.
 
 ## Out of scope
-- Photos on pins (discarded 14 Nov 2026). Pins from viewers or shared across workouts. Exporting pins (PIN-9 removed 14 Nov 2026). Clustering of overlapping markers.
+- Photos on pins (discarded 14 Nov 2026). Pins from viewers or shared across workouts. Exporting pins other than as waypoints in the F-57 route GPX (PIN-9, reinstated 21 Nov 2026). Clustering of overlapping markers.
 
 ## Assumptions
 - Icons and colours are drafted by the engineer and reviewed by the user on screen in both themes.

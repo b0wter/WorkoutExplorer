@@ -12,7 +12,7 @@ export const en = {
   hideStartNone: 'Start: not hidden',
   hideEndNone: 'End: not hidden',
   hideStale: 'Save to update the hidden sections.',
-  gpxNote: 'Viewers can download the visible route as a GPX file: the track only, without times, heart rate or any other data.',
+  gpxNote: 'Viewers can download the visible route as a GPX file: the track and its public pins, without times, heart rate or any other data.',
   trimStartEnd: 'Trim start and end',
   trimStart: 'Trim start',
   trimEnd: 'Trim end',

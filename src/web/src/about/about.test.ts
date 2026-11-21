@@ -82,7 +82,7 @@ describe('About page', () => {
 
   it('F-57 OQ-271: one sentence on the GPX download, next to the hiding one (INF-1)', () => {
     const hide = '<li data-t="ab_aHiddenStart">A hidden start or end of the route is removed from the public data, not just hidden on screen.</li>';
-    const gpx = '<li data-t="ab_viewersOfA">Viewers of a published workout can download its visible route as a GPX file (not for multisport workouts or workouts without a route): the track only, without times, heart rate or any other data.</li>';
+    const gpx = '<li data-t="ab_viewersOfA">Viewers of a published workout can download its visible route as a GPX file (not for multisport workouts or workouts without a route): the track and its public pins, without times, heart rate or any other data.</li>';
     expect(count(gpx)).toBe(1);
     expect(html).toContain(hide + '\n        ' + gpx);
   });
