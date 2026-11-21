@@ -12,6 +12,7 @@ import type { RecorderOptions } from '../measure/recorder';
 import { loadDataFile, type DataFileResult } from '../lib/datafile';
 import { buildDataFile, type Stored } from '../lib/datafile/testing/build-file';
 import { gpxFileName, type GpxInput } from '../lib/gpx';
+import { resetI18n, use } from '../lib/i18n';
 import { dataFileUrl, startPage } from './start';
 import { renderSample, type Fixture } from './testing/fixture';
 import { resetStubLog, stubLog } from './testing/stub-log';
@@ -145,6 +146,18 @@ describe('load failure (AC 9, D-13, OQ-10)', () => {
     expect(summaryBefore()).toBe(before);
     expect(document.querySelector('h1')).not.toBeNull();
     expect(console.warn).toHaveBeenCalledWith('data file: HTTP status 404');
+  });
+
+  it('a language switch redraws the error line, also when the language arrives after the failure', async () => {
+    resetI18n(); // drops listeners that earlier tests' pages left behind
+    respond = () => new Response('not found\n', { status: 404 });
+    window.history.replaceState(null, '', '/w/x');
+    page = renderSample('ride-30min');
+    await startPage(document);
+    await settle();
+    use('de', { loadError: 'Die Trainingsdaten konnten nicht geladen werden.' }, document);
+    expect(slot('map-slot')?.textContent).toBe('Die Trainingsdaten konnten nicht geladen werden.');
+    resetI18n();
   });
 
   it('a different format version (bytes 4 and 5 = 7): the text ends in "Reload the page."', async () => {

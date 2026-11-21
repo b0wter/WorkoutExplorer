@@ -4,6 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HTML from '../../upload.html?raw';
 import { start, type Env } from './page';
+import { resetI18n, use } from '../lib/i18n';
+import { MAX_UPLOAD_BYTES } from '../lib/upload';
 import { syntheticFits, zip, type Entry } from '../../test-support/zip.mjs';
 
 const sources = import.meta.glob(['./*.ts', '../lib/upload/*.ts', '../lib/zip/*.ts', '!./*.test.ts', '!../lib/*/*.test.ts'], {
@@ -104,6 +106,17 @@ afterEach(() => {
   stop?.();
   stop = undefined;
   vi.restoreAllMocks();
+});
+
+describe('language switch (F-54 AC: a choice applies at once)', () => {
+  afterEach(() => resetI18n());
+  it('redraws the message on screen', async () => {
+    await boot();
+    await pickFile(file(MAX_UPLOAD_BYTES + 1));
+    expect($('message').textContent).toBe('This file is larger than 20 MB.');
+    use('de', { tooLarge: 'Diese Datei ist groesser als 20 MB.' }, document);
+    expect($('message').textContent).toBe('Diese Datei ist groesser als 20 MB.');
+  });
 });
 
 describe('page text (U-3)', () => {

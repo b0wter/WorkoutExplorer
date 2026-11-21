@@ -41,7 +41,7 @@ export function dataFileUrl(root: ParentNode): string | null {
   return root.querySelector('link#wx-data')?.getAttribute('href') ?? null;
 }
 
-function showLoadError(root: ParentNode, text: string): void {
+function showLoadError(root: ParentNode, text: () => string): void {
   // Map and chart area both show the text (D-13); with the load failed nothing can shift
   // any more, so the chart area drops its reserved height.
   let hosts = ['#map-slot', '#charts-slot'].map((q) => root.querySelector(q)).filter((h) => h !== null);
@@ -49,9 +49,10 @@ function showLoadError(root: ParentNode, text: string): void {
   for (const host of hosts) {
     const p = host.ownerDocument.createElement('p');
     p.className = 'load-error';
-    p.textContent = text;
+    p.textContent = text();
     host.replaceChildren(p);
     host.classList.add('load-failed');
+    onLanguage(() => (p.textContent = text())); // F-54: a switch, or the language file arriving after the failure
   }
 }
 
@@ -202,7 +203,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   if (url === null) {
     console.warn('page: no data file link');
     if (!english) void i18n().then((m) => m.startLang(['page'], win.document, undefined, markup));
-    showLoadError(root, loadErrorText('network'));
+    showLoadError(root, () => loadErrorText('network'));
     return;
   }
   const measure = new URLSearchParams(win.location.search).has('measure');
@@ -228,7 +229,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   performance.mark('wx-page:data-ready');
   if (!result.ok) {
     console.warn(result.error.message);
-    showLoadError(root, loadErrorText(result.error.code));
+    showLoadError(root, () => loadErrorText(result.error.code));
     return;
   }
   const data = result.data;

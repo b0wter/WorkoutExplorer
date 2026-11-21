@@ -202,8 +202,28 @@ describe('legs and corpus (EF-1, EF-2; AC 2, 3, 5, 7)', () => {
     const t: WorkoutData = { ...d, sampleCount: hi - lo + 1, time: cut(d.time), movingTime: cut(d.movingTime!), metrics: { distance: cut(d.metrics.distance!), power: d.metrics.power!.slice(lo, hi + 1) } };
     const trimmed = power(t);
     expect(trimmed.map((e) => [e.value, e.a + lo, e.b + lo, e.start + d.time[lo]])).toEqual(inWindow.map((e) => [e.value, e.a, e.b, e.start]));
+    // Curve values, same window and same rebase (the curve is bestPower over the grid).
+    const curve = (ls: ReturnType<typeof powerLegs>) => curveDurations(longest(ls)).map((s) => [s, bestPower(ls, s)?.[0]]);
+    const trimmedCurve = curve(powerLegs(t, all(t)));
+    const windowCurve = curve(powerLegs(d, effortLegs(d, lo, hi)));
+    expect(trimmedCurve).toEqual(windowCurve);
     const full = powerLegs(d, all(d));
     expect(longest(powerLegs(t, all(t)))).toBeLessThan(longest(full));
+  });
+
+  it('AC 5: distance efforts of a run window equal those of its trimmed (rebased) file', () => {
+    const d = golden('run-30min');
+    const [lo, hi] = [200, 1500];
+    const win = distanceEfforts(d, effortLegs(d, lo, hi));
+    expect(win.length).toBeGreaterThan(0);
+    for (const e of win) expect(e.a >= lo && e.b <= hi, e.name).toBe(true);
+    const cut = (x: Float64Array) => x.slice(lo, hi + 1).map((v) => v - x[lo]);
+    const t: WorkoutData = { ...d, sampleCount: hi - lo + 1, time: cut(d.time), movingTime: cut(d.movingTime!), metrics: { distance: cut(d.metrics.distance!) } };
+    // Value to 1e-6 s and the covering range; the start is left out: the two scan orientations tie to within float noise, and the
+    // rebased file may pick the other one (1 mi: same value and range, start 0.4 s apart).
+    const key = (e: Effort, off: number) => [e.name, e.value.toFixed(6), e.a + off, e.b + off];
+    expect(dist(t).map((e) => key(e, lo))).toEqual(win.map((e) => key(e, 0)));
+    // Remaining gap: the trimmed file is rebuilt here from the decoded streams, not by the Go trim (no Go-built fixture of a trim exists).
   });
 
   it('AC 7: truncated files give efforts without error', () => {
