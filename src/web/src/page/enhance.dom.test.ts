@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // The enhancers (F-13 design D-8, D-14; AC 1 expiry, AC 6 copy link). Synthetic markup only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { enhanceCopyLink, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
+import { addLangSelect, enhanceCopyLink, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, viewingUrl } from './enhance';
 
 const COPIED_TEXT = 'Link copied';
 const COPY_TEXT = 'Copy link';
@@ -247,5 +247,17 @@ describe('Download route (GPX) button (F-57 GX-5, GX-6; AC 1, AC 8)', () => {
     await flush();
     expect(root.querySelectorAll('.report-fail').length).toBe(1);
     expect(b.nextElementSibling?.textContent).toBe('The download could not be loaded. Reload the page and try again.');
+  });
+});
+
+describe('language drop-down', () => {
+  it('shows the language in use: follows the page language applied after the select exists', async () => {
+    const { use } = await import('../lib/i18n');
+    root.insertAdjacentHTML('beforeend', '<span id="lang-slot"></span>');
+    const select = addLangSelect(root, () => {})!;
+    expect(select.value).toBe('en');
+    use('de', {}, document);
+    expect(select.value).toBe('de');
+    use('en', {}, document);
   });
 });

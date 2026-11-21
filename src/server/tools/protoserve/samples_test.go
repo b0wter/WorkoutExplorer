@@ -139,7 +139,7 @@ func TestSamplePages(t *testing.T) {
 			wantBtn := 3
 			if route["Gpx"] != "" { // F-57 GX-5: the reserved GPX row above the summary
 				wantBtn = 4
-				if !strings.Contains(page, `<div class="gpx-row"><button type="button" class="gpx" data-gpx data-t="gpx">Download route (GPX)</button></div>`) || route["Map"] == "" {
+				if !strings.Contains(page, `<button type="button" class="gpx" data-gpx data-t="gpx">Download route (GPX)</button>`) || route["Map"] == "" {
 					t.Error("Route.Gpx set but the row is missing or there is no map")
 				}
 			} else if strings.Contains(page, "data-gpx") {

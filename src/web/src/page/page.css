@@ -300,19 +300,17 @@ h1 {
   width: 16px;
   height: 16px;
 }
-/* Download route (F-57 GX-5, OQ-269): a prominent accent button above the summary, viewing page only.
-   Reserved in the markup at its full size; invisible and inert until .ready (with .howto above). */
-.gpx-row {
-  margin-bottom: 8px;
-}
+/* Download route (F-57 GX-5, OQ-269): the secondary button beside Copy link (the primary one), in .ctl-btns;
+   viewing page only. Reserved in the markup at its full size; invisible and inert until .ready. */
 .gpx {
-  height: 40px;
-  padding: 0 16px;
-  border: 0;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: var(--accent);
-  color: var(--on-accent);
-  font: 600 14px system-ui, sans-serif;
+  background: none;
+  color: var(--fg);
+  font: 14px/30px system-ui, sans-serif;
 }
 /* F-39 HU-2: the viewing page (not the edit page under #wx-edit) reserves the hint box (8 px gap +
    40 px, as .howto); once the head script found the hint done, nothing. */
@@ -350,11 +348,31 @@ html[data-hold] body {
   align-items: flex-start;
   gap: 8px;
 }
+/* Buttons on one line, the three selects on the next, one line where there is room. */
+.ctl-btns,
+.ctl-sel {
+  flex: 1 0 100%;
+  display: flex;
+  gap: 8px;
+}
+.ctl-btns[hidden] {
+  display: none;
+}
+.ctl-sel {
+  flex-wrap: wrap; /* one line where there is room, wraps on a small device (user 21 Nov 2026) */
+}
+.ctl-btns .copy {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+}
 .units-slot,
 .theme-slot,
 .lang-slot {
   display: block;
   box-sizing: border-box;
+  flex: none;
   width: 104px;
   height: 32px;
 }
@@ -372,6 +390,10 @@ html[data-hold] body {
   }
   .ctl {
     flex: none;
+  }
+  .ctl-btns,
+  .ctl-sel {
+    flex-basis: auto;
   }
 }
 .copy-url {

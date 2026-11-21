@@ -349,6 +349,16 @@ describe('privacy (AC 8, U-10)', () => {
     expect(Object.keys(localStorage)).toEqual(['wx.lang']);
     localStorage.clear();
   });
+  it('the language drop-down shows the language applied after it was created', async () => {
+    document.body.innerHTML = '<span id="lang-slot"></span>';
+    const { addLangSelect } = await import('./lang');
+    const { use } = await import('../lib/i18n');
+    addLangSelect(document, () => localStorage);
+    const select = document.querySelector('select')!;
+    use('de', {}, document);
+    expect(select.value).toBe('de');
+    use('en', {}, document);
+  });
   it('the sources use no cookie or storage API; localStorage only for the language drop-down (F-54 LG-1)', () => {
     const forbidden = /document\.cookie|localStorage|sessionStorage|indexedDB|\bcaches\b|serviceWorker|cookieStore/;
     expect(Object.keys(sources).length).toBeGreaterThanOrEqual(4);

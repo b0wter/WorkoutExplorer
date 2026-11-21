@@ -39,7 +39,7 @@ describe('template', () => {
     expect(template).not.toMatch(/map-pin|aria-pressed|pinned/);
     // Report, hidden without JavaScript (F-28 RF-1, RF-9); How to use, invisible until enhanced
     // (F-39 HU-6: a reserved box, not hidden).
-    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="howto" data-howto>', '<button type="button" class="gpx" data-gpx data-t="gpx">', '<button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed" data-t-title="summaryInfo" data-t-aria-label="summaryInfo">', '<button type="button" data-report hidden data-t="report">']);
+    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="gpx" data-gpx data-t="gpx">', '<button type="button" class="howto" data-howto>', '<button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed" data-t-title="summaryInfo" data-t-aria-label="summaryInfo">', '<button type="button" data-report hidden data-t="report">']);
   });
 
   it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6; F-46 LS-3)', () => {
@@ -92,10 +92,10 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     return m[1];
   };
 
-  it('F-57 GX-5: the GPX row only under Route.Gpx, directly above the summary, outside its grid and the map; reserved at full size, invisible until .ready', () => {
-    expect(template).toMatch(/<\/div>\s*\{\{if \.Route\.Gpx\}\}<div class="gpx-row"><button type="button" class="gpx" data-gpx data-t="gpx">Download route \(GPX\)<\/button><\/div>\{\{end\}\}\s*<section class="summary">/);
+  it('F-57 GX-5 (user 21 Nov 2026): the GPX button only under Route.Gpx, secondary, beside Copy link in the header; reserved, invisible until .ready', () => {
+    expect(template).toMatch(/data-copy-link data-t="copyLink">Copy link<\/a>\{\{if \.Route\.Gpx\}\}<button type="button" class="gpx" data-gpx data-t="gpx">Download route \(GPX\)<\/button>\{\{end\}\}<\/div>/);
     expect(template.match(/data-gpx/g)).toHaveLength(1);
-    expect(rule('.gpx')).toMatch(/height: 40px;/);
+    expect(rule('.gpx')).toMatch(/height: 32px;/);
     expect(css).toMatch(/^\.howto:not\(\.ready\),\n\.gpx:not\(\.ready\) \{\s*visibility: hidden;/m);
   });
 

@@ -304,7 +304,7 @@ func checkHiddenAt(t *testing.T, name string, orig []byte, parser Parser, w work
 		}
 		same = bytes.Replace(same, []byte(`<div class="page has-map">`), []byte(`<div class="page">`), 1)
 		same = bytes.Replace(same, []byte(`<div id="map-slot" class="map-slot"></div>`), nil, 1)
-		same = bytes.Replace(same, []byte(`<div class="gpx-row"><button type="button" class="gpx" data-gpx data-t="gpx">Download route (GPX)</button></div>`), nil, 1) // F-57 GX-5: follows the map
+		same = bytes.Replace(same, []byte(`<button type="button" class="gpx" data-gpx data-t="gpx">Download route (GPX)</button>`), nil, 1) // F-57 GX-5: follows the map
 		got := bytes.Replace(on.page, []byte(notice), nil, 1)
 		if !bytes.Equal(got, same) {
 			t.Fatalf("%s: fully hidden page differs from hiding off in more than the map", name)

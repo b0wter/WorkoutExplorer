@@ -94,7 +94,11 @@ export function addThemeSelect(root: ParentNode, value: ThemeChoice, onchoose: (
 export function addLangSelect(root: ParentNode, onchoose: (l: Lang) => void): HTMLSelectElement | null {
   const select = addSelect(root, '#lang-slot', 'language', [], lang(), (v) => onchoose(v as Lang));
   select?.append(...LANGS.map((l, i) => new Option(LANG_NAMES[i], l)));
-  if (select) select.value = lang();
+  if (select) {
+    select.value = lang();
+    // The page language is applied after this select exists (async file load): follow it (r: showed English on a German page).
+    onLanguage(() => (select.value = lang()));
+  }
   return select;
 }
 
