@@ -220,7 +220,7 @@ In the edit view, the owner marks places on the route that matter to the next ri
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| PIN-1 | The owner places a pin by choosing "Add pin" and then tapping the map, or a point on a chart, which drops it on the route at that position. A workout without a visible route has no pins. | Must |
+| PIN-1 | The owner places a pin on the route at the cursor (the point selected on the map or a chart) by choosing "Add pin"; with a range selected (AP-7), "Add pin" makes a section pin (PIN-4). Without a cursor point, "Add pin" is disabled. A workout without a visible route has no pins. | Must |
 | PIN-2 | Pin types with distinct icons and colours: point of interest, danger, difficult section, water or food, photo spot, note. | Must |
 | PIN-3 | A pin has a type, a short title (up to 60 characters; when empty, the type's name is shown) and an optional note. No photos on pins (discarded 14 Nov 2026). | Must |
 | PIN-4 | A pin can mark a section instead of a point (steep climb, rough gravel, busy road), made from a selected range (AP-7): start and end on the route, highlighted on the map and shaded on the charts. | Should |

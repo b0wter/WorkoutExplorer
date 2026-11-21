@@ -58,11 +58,9 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     return b;
   };
 
-  // ---- tools: Add pin, the armed hint with Cancel, one message line ----
+  // ---- tools: Add pin (at the cursor or the selected range), one message line ----
   const tools = make('div', 'edit-row pin-tools');
   const add = tools.appendChild(button(''));
-  const hint = tools.appendChild(make('span', 'edit-small'));
-  const cancel = tools.appendChild(button(''));
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
 
@@ -85,11 +83,6 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   note.rows = 2;
   const noteLabel = field(note);
   const row = form.appendChild(make('div', 'edit-row'));
-  const sectionLabel = row.appendChild(make('label', 'edit-small'));
-  const sectionText = sectionLabel.appendChild(doc.createTextNode(''));
-  const section = make('input', '');
-  section.type = 'checkbox';
-  sectionLabel.prepend(section);
   const move = row.appendChild(button(''));
   const del = row.appendChild(button(''));
   const done = row.appendChild(button(''));
@@ -97,13 +90,11 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   /** Every fixed text, again on a language change (F-54). */
   const label = (): void => {
     add.textContent = t('addPin');
-    hint.textContent = t('placePin');
-    cancel.textContent = t('cancelPin');
+    add.title = t('addPinHint');
     PIN_TYPES.forEach((p, i) => (type.options[i].text = typeName(p)));
     typeLabel.data = t('pinType');
     titleLabel.data = t('pinTitle');
     noteLabel.data = t('pinNote');
-    sectionText.data = ' ' + t('pinSection');
     move.textContent = t('movePin');
     del.textContent = t('deletePin');
     done.textContent = t('donePin');
@@ -112,7 +103,6 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   };
   label();
 
-  let armed: '' | 'add' | 'move' = '';
   let dims = '';
   const shown = (): ShownPin[] => {
     const s = env.shade();
@@ -127,14 +117,17 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   };
   const controls = (): void => {
     const k = view.selected();
-    add.hidden = armed !== '' || list.length >= MAX_PINS || !hasVisibleRoute(env.shade(), lat);
-    hint.hidden = cancel.hidden = armed === '';
+    // Hidden (not disabled) only when no pin can be added at all; never a layout change while scrubbing.
+    add.hidden = list.length >= MAX_PINS || !hasVisibleRoute(env.shade(), lat);
     form.hidden = k === null;
-    if (k === null) return;
-    const p = list[k];
-    section.checked = p.to !== undefined;
-    sectionLabel.hidden = p.to === undefined && selection.start() < 0;
-    move.hidden = p.to !== undefined;
+    if (k !== null) move.hidden = list[k].to !== undefined;
+    enable();
+  };
+  /** Add pin and Move need a usable spot; light enough for every cursor step. */
+  const enable = (): void => {
+    add.disabled = spot() === null;
+    const k = view.selected();
+    move.disabled = k === null || place(cursor.get() ?? -1) < 0;
   };
   const say = (text: string): void => {
     msg.textContent = text;
@@ -182,84 +175,50 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   /** A sample snapped to the nearest one with a position (OQ-234); -1 when refused (PIN-7). */
   const place = (i: number): number => {
     const s = lat && i >= 0 ? snap(lat, i) : -1;
-    if (s < 0 || dimReason({ from: s }, env.shade(), lat)) {
-      say(t('pinRefused'));
-      return -1;
-    }
-    return s;
+    return s < 0 || dimReason({ from: s }, env.shade(), lat) ? -1 : s;
+  };
+  /** Add pin's target: the range's snapped ends, else the cursor's sample; null when none or refused. */
+  const spot = (): [number, number?] | null => {
+    const r = selection.start() >= 0 ? [selection.start(), selection.end()] : [cursor.get() ?? -1];
+    const s = r.map(place);
+    return s.some((x) => x < 0) || (s.length > 1 && s[0] >= s[1]) ? null : (s as [number, number?]);
   };
   /** OQ-273: the selected range as the section's ends, each snapped; refused as a point would be. */
   const toSection = (p: Pin, a: number, b: number): void => {
     const [sa, sb] = [place(a), place(b)];
-    if (sa < 0 || sb < 0) return;
-    if (sa >= sb) return say(t('pinRefused'));
+    if (sa < 0 || sb < 0 || sa >= sb) return say(t('pinRefused')), enable();
     p.from = sa;
     p.to = sb;
     changed(list.indexOf(p));
   };
-  section.addEventListener('change', () => {
-    say('');
-    const k = view.selected();
-    if (k === null) return;
-    const p = list[k];
-    if (section.checked && selection.start() >= 0) toSection(p, selection.start(), selection.end());
-    else if (!section.checked) {
-      delete p.to;
-      changed(list.indexOf(p));
-    } else controls();
-  });
   selection.subscribe((a, b) => {
     const k = view.selected();
     const p = k === null ? null : list[k];
     if (p?.to !== undefined && a >= 0 && (a !== p.from || b !== p.to)) toSection(p, a, b);
     else controls();
   });
+  cursor.subscribe(enable);
 
-  // ---- arming: the next tap on the map or a chart places (OQ-272) ----
-  const arm = (mode: typeof armed): void => {
-    armed = mode;
+  // ---- placing: at the selected point or range (OQ-272, revised 21 Nov 2026); no waiting mode ----
+  add.addEventListener('click', () => {
+    const sp = spot();
+    if (!sp) return;
     say('');
-    controls();
-  };
-  add.addEventListener('click', () => arm('add'));
-  move.addEventListener('click', () => arm('move'));
-  cancel.addEventListener('click', () => arm(''));
-  // Esc disarms before it would leave the fullscreen map (the map listens on the document).
-  doc.defaultView?.addEventListener(
-    'keydown',
-    (e) => {
-      if (armed && e.key === 'Escape') {
-        e.stopPropagation();
-        arm('');
-      }
-    },
-    true,
-  );
-  const charts = doc.getElementById('charts-slot');
-  const mapSlot = doc.getElementById('map-slot');
-  doc.addEventListener(
-    'click',
-    (e) => {
-      if (!armed) return;
-      const t = e.target as Element;
-      // As the cursor would (ADR-015 on the map, x on a chart); a miss leaves it armed.
-      const i = mapSlot?.contains(t) ? (t.tagName === 'CANVAS' ? view.sampleAt(e.clientX, e.clientY) : -2) : charts?.contains(t) && t.closest('.chart-host') ? (cursor.get() ?? -1) : -2;
-      if (i === -2) return;
-      say('');
-      const s = place(i);
-      if (s < 0) return;
-      const k = view.selected();
-      let p: Pin;
-      if (armed === 'move' && k !== null) {
-        p = list[k];
-        p.from = s;
-      } else list.push((p = { type: 'point_of_interest', title: '', note: '', from: s }));
-      armed = '';
-      changed(list.indexOf(p));
-      view.select(list.indexOf(p));
-    },
-    true,
-  );
+    const p: Pin = { type: 'point_of_interest', title: '', note: '', from: sp[0], ...(sp[1] !== undefined && { to: sp[1] }) };
+    list.push(p);
+    changed(list.indexOf(p));
+    view.select(list.indexOf(p));
+  });
+  move.addEventListener('click', () => {
+    const k = view.selected();
+    const s = place(cursor.get() ?? -1);
+    if (k === null || s < 0) return;
+    say('');
+    const p = list[k];
+    p.from = s;
+    changed(list.indexOf(p));
+    view.select(list.indexOf(p));
+  });
 
   render(null);
   onLanguage(() => {
@@ -285,7 +244,6 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
       const kept = new Set(stored.map(key));
       const removed = list.filter((p) => !kept.has(key(toApi(p, time, startS)))).length;
       list = load(stored);
-      arm('');
       render(null);
       say(removed ? t('pinsRemoved', { n: removed }) : '');
     },

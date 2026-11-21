@@ -1729,11 +1729,9 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await vi.waitFor(() => expect(document.querySelector('.pin-tools')).not.toBeNull());
     await settle();
   }
-  const tapChart = async (i: number): Promise<void> => {
+  const pick = async (i: number): Promise<void> => {
     stubLog.chartStack[0].cursor.set(i);
-    const h = document.getElementById('charts-slot')!.appendChild(document.createElement('div'));
-    h.className = 'chart-host';
-    h.click();
+    frames.splice(0).forEach((f) => f(0));
     await settle();
   };
 
@@ -1741,11 +1739,14 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     settings = fresh({ ...ON, pins: [pin(10, 'start'), pin(1000, 'mid'), pin(N - 5, 'end')] });
     await start();
     expect(rowTexts()).toEqual(['startHidden by the start radius', expect.stringMatching(/^mid\d/), 'endHidden by the end radius']);
+    expect(button('Add pin').disabled).toBe(true); // no cursor
+    await pick(20); // in the hidden start radius: refused, nothing placed
+    expect(button('Add pin').disabled).toBe(true);
     button('Add pin').click();
-    expect(button('Add pin').hidden).toBe(true);
-    await tapChart(20);
-    expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe('This pin is in a hidden or trimmed part of the route.');
-    await tapChart(2000);
+    expect(rowTexts()).toHaveLength(3);
+    await pick(2000);
+    expect(button('Add pin').disabled).toBe(false);
+    button('Add pin').click();
     expect(rowTexts()).toHaveLength(4);
     const title = document.querySelector<HTMLInputElement>('.pin-form input:not([type])')!;
     expect(document.querySelector<HTMLElement>('.pin-form')!.hidden).toBe(false);
@@ -1776,28 +1777,35 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(rowTexts()[0]).toMatch(/Hidden by the start/);
   });
 
-  it('a section from the range; a new range moves its ends; a hidden end is refused and nothing changes (AC 34)', async () => {
-    settings = fresh({ ...ON, pins: [pin(1000, 'mid')] });
+  it('Add pin over a range makes a section; a new range moves its ends; a hidden end is refused and nothing changes (AC 34)', async () => {
+    settings = fresh({ ...ON, pins: [] });
     await start();
     const sel = stubLog.chartStack[0].selection!;
-    document.querySelector<HTMLButtonElement>('.pin-row')!.click();
-    const box = document.querySelector<HTMLInputElement>('.pin-form input[type="checkbox"]')!;
-    sel.set(2000, 3000);
-    frames.splice(0).forEach((f) => f(0));
-    await settle();
-    box.checked = true;
-    box.dispatchEvent(new Event('change', { bubbles: true }));
+    const range = async (a: number, b: number): Promise<void> => {
+      sel.set(a, b);
+      frames.splice(0).forEach((f) => f(0));
+      await settle();
+    };
+    await range(2000, 3000);
+    button('Add pin').click();
     expect(rowTexts()[0]).toMatch(/–/);
-    sel.set(2500, 3500);
-    frames.splice(0).forEach((f) => f(0));
-    await settle();
+    await range(2500, 3500);
     expect(rowTexts()[0]).toMatch(/–/);
-    sel.set(2600, N - 5); // the end is in the hidden end radius
-    frames.splice(0).forEach((f) => f(0));
-    await settle();
+    await range(2600, N - 5); // the end is in the hidden end radius
     expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe(PIN_REFUSED);
+    expect(button('Add pin').disabled).toBe(true);
     await save();
-    expect(patches()).toEqual([{ pins: [{ ...pin(1000, 'mid'), start_at: at(2500), end_at: at(3500) }] }]); // still 2500 to 3500
+    expect(patches()).toEqual([{ pins: [{ ...pin(2500, ''), type: 'point_of_interest', end_at: at(3500) }] }]); // still 2500 to 3500
+  });
+
+  it('Move puts a point pin at the cursor; disabled without a usable cursor', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'mid')] });
+    await start();
+    document.querySelector<HTMLButtonElement>('.pin-row')!.click();
+    await pick(1500);
+    button('Move').click();
+    await save();
+    expect(patches()).toEqual([{ pins: [pin(1500, 'mid')] }]);
   });
 });
 
