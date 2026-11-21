@@ -1,6 +1,6 @@
 # F-62 Show my location on the map
 
-- **Status:** planned (user idea, 20 Nov 2026, "for the future"); no build-order position yet; OQ-285 to OQ-290 decided 20 Nov 2026; acceptance criteria written 21 Nov 2026
+- **Status:** planned (user idea, 20 Nov 2026, "for the future"); next in the build order (user, 21 Nov 2026); OQ-285 to OQ-290 decided 20 Nov 2026; acceptance criteria written 21 Nov 2026
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend (backend: the `Permissions-Policy: geolocation=(self)` header in the Caddyfile)
 - **Lane:** critical (the viewer's own location)
