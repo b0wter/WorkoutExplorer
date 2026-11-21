@@ -1,6 +1,6 @@
 # F-62 Show my location on the map
 
-- **Status:** planned (user idea, 20 Nov 2026, "for the future"); no build-order position yet; OQ-285 to OQ-290 decided 20 Nov 2026; acceptance criteria to write
+- **Status:** planned (user idea, 20 Nov 2026, "for the future"); no build-order position yet; OQ-285 to OQ-290 decided 20 Nov 2026; acceptance criteria written 21 Nov 2026
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend (backend: the `Permissions-Policy: geolocation=(self)` header in the Caddyfile)
 - **Lane:** critical (the viewer's own location)
@@ -31,6 +31,29 @@ A viewer standing on or near the route sees where they are on the map, for examp
 - **Secure context only.** Geolocation works only over HTTPS; production always serves HTTPS.
 - **Screenshots** of the page show the viewer's position; no technical fix and no on-page hint, the About sentence only.
 - **Not live tracking:** the dot is the viewer's own position on their own screen, not the athlete's; the non-goal is unaffected.
+
+## Assumptions
+- Returning to a hidden page while location is on resumes the updates (and follow mode, if it was on) without a new tap; reloading or reopening the page starts with location off.
+- Entering or leaving the fullscreen map (AP-15) keeps location, the dot and follow mode as they were.
+- How far the map zooms when it centres on the position is the engineer's call (checked by the user on the phone).
+
+## Acceptance criteria
+- [ ] The viewing page of a workout with a visible route shows the location button in the map controls, also in the fullscreen map; the edit page and a page without a map (no location data, route entirely hidden, AP-3) show none. The follow button appears only while location is on.
+- [ ] Every page load starts with location off; nothing asks for the position before the viewer taps the location button (test: no Geolocation call before the tap).
+- [ ] Tapping location, after the browser's permission is granted, shows the position as a dot with the reported accuracy, centres the map on it and starts follow mode; while follow mode is on, the map stays centred as the position moves.
+- [ ] A pan, drag or zoom by the viewer (touch, mouse, wheel or zoom buttons) stops follow mode; the dot keeps updating and the map no longer moves on its own. The app's own re-centring does not stop follow mode.
+- [ ] Tapping follow re-centres the map on the current position and resumes follow mode, every time it is tapped.
+- [ ] Tapping location again stops the updates, removes the dot and the follow button, and leaves the map where it is.
+- [ ] The map centres on the position only when location is turned on, on a follow tap and during follow mode; never otherwise (test).
+- [ ] Hiding or closing the page stops the position updates (test: the watch is cleared).
+- [ ] Denied permission, no position, a timeout or an insecure context: a short message, location stays off, the map and the rest of the page are unchanged. An error after the dot is shown gives the same message once and never breaks the page.
+- [ ] Test (network log and storage): with location on and moving, no request to our server carries a position (no request, header, cookie or beacon); nothing is written to `lib/prefs`, `localStorage`, `sessionStorage`, IndexedDB or cookies; the page URL and a range link (AP-19) contain no position; nothing is logged in the console.
+- [ ] The SH-5 and SH-12 preview images contain no viewer position (made without it, test).
+- [ ] Every response (pages, API, static files, errors) carries `Permissions-Policy: geolocation=(self)` and no other feature; a test pins the header; Copy link (clipboard) still works.
+- [ ] About page: one sentence says that the own position, if a viewer turns it on, is shown only in their browser and never sent to the server, and that turning it on or tapping follow centres the map there, so the map's tile host(s) see that area. No hint on the viewing page itself.
+- [ ] Button texts, accessible names and messages exist in all four languages (DS-6).
+- [ ] LCP and the entry bundle are unchanged (location code loads only on the first tap); with location on, scrubbing stays at 60 fps on the 12-hour ride (NFR Performance).
+- [ ] Checked by the user on the phone, in portrait and landscape and in the fullscreen map: the dot is clearly visible over the route in both themes and on Satellite (DS-7) if F-61 is built; walking along the route with follow on keeps the dot centred.
 
 ## Decisions (user, 20 Nov 2026)
 - OQ-285 changed: two buttons, location (dot on/off, starts follow mode) and follow (re-centre and resume follow mode, shown only while location is on); any pan, drag or zoom stops follow mode, the dot keeps updating.
