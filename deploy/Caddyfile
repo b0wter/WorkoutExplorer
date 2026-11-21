@@ -49,6 +49,8 @@
 		X-Content-Type-Options nosniff
 		Strict-Transport-Security max-age=31536000
 		X-Robots-Tag "noindex, nofollow, noarchive"
+		# F-62 LC-11: geolocation for our own pages only; no other feature listed (clipboard stays unrestricted, F-22 H-5).
+		Permissions-Policy "geolocation=(self)"
 		defer
 	}
 }

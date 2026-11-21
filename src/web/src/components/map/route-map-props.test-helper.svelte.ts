@@ -16,6 +16,7 @@ export interface RouteMapTestProps {
   scheme?: 'light' | 'dark';
   units?: UnitsStore;
   prefs?: MapLayerPrefs;
+  locate?: boolean;
   onmapready?: () => void;
   hidden?: readonly (readonly [number, number])[];
 }
@@ -54,6 +55,9 @@ export function routeMapHarness(initial: RouteMapTestProps): RouteMapHarness {
       },
       get prefs() {
         return current.prefs;
+      },
+      get locate() {
+        return current.locate;
       },
       get units() {
         return current.units;

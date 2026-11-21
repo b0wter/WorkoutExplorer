@@ -30,6 +30,7 @@ import type { CursorIndex, CursorStore } from '../../lib/cursor';
 import type { MapLayerPrefs } from '../../lib/prefs';
 import type { SelectionStore } from '../../lib/selection';
 import type { UnitsStore } from '../../lib/units';
+import type { LocationHandle } from './location';
 import { legs, sections } from '../../lib/sections';
 import { NO_CLASS, classify, colourScale, legend, metricLabel, metricValues, offeredMetrics, type ColourMetric } from '../../lib/colouring';
 import {
@@ -77,6 +78,10 @@ import {
   type Scheme,
 } from './map-style';
 
+// F-62 LC-2: location (crosshair) and follow (arrow).
+const LOC_SVG =
+  '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.94 3A9 9 0 0013 3.06V1h-2v2.06A9 9 0 003.06 11H1v2h2.06A9 9 0 0011 20.94V23h2v-2.06A9 9 0 0020.94 13H23v-2zM12 19a7 7 0 110-14 7 7 0 010 14z"/></svg>';
+const FOLLOW_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>';
 const SAT_SVG =
   '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27z"/></svg>';
 
@@ -110,6 +115,8 @@ export interface MountOptions {
   readonly units?: UnitsStore;
   /** F-61 SL-2: the page glue's lib/prefs, for the map layer; absent (tests, bench): Map, nothing stored. */
   readonly prefs?: MapLayerPrefs;
+  /** F-62 LC-1: the location controls; only the viewing page sets it (OQ-287). */
+  readonly locate?: boolean;
   readonly signal: AbortSignal;
 }
 
@@ -324,8 +331,17 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   };
   // F-26 FS-7: leaves fullscreen through the control's button; a no-op until the control exists.
   let exitFullscreen = swallow;
+  // F-62: the location chunk's stop (LC-9) and its message (LC-8).
+  let stopLocation = swallow;
+  let note: HTMLElement | null = null;
+  let noteTimer: ReturnType<typeof setTimeout> | undefined;
+  // F-13 D-20: true once the viewer (or F-62's first centring) moved the camera; no refit after.
+  let moved = false;
   const teardown = (): void => {
     exitFullscreen(); // FS-7: root class, scroll lock, listeners and history entry go before the map
+    stopLocation();
+    clearTimeout(noteTimer);
+    note?.remove();
     destroyed = true;
     clearTimeout(attribTimer);
     clearTimeout(rangeTimer);
@@ -391,10 +407,65 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     });
     satGroup.appendChild(satButton);
     map.addControl({ onAdd: () => satGroup, onRemove: () => satGroup.remove() }, 'top-right');
+    // ---- my location (F-62 LC-1, LC-2): the buttons here, everything else in the lazy ./location ----
+    let locLabel = swallow;
+    if (options.locate) {
+      const locGroup = document.createElement('div');
+      locGroup.className = 'maplibregl-ctrl maplibregl-ctrl-group wx-loc-group';
+      const button = (svg: string): HTMLButtonElement => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.innerHTML = svg;
+        b.setAttribute('aria-pressed', 'false');
+        locGroup.appendChild(b);
+        return b;
+      };
+      const toggle = button(LOC_SVG);
+      const follow = button(FOLLOW_SVG);
+      follow.hidden = true;
+      locLabel = (): void => {
+        for (const [b, k] of [[toggle, 'myLocation'], [follow, 'followLocation']] as const) {
+          b.title = t(k);
+          b.setAttribute('aria-label', t(k));
+        }
+      };
+      locLabel();
+      // A short message in the map box (so also in fullscreen) that clears itself (LC-8).
+      const say = (key: 'locDenied' | 'locFailed'): void => {
+        note?.remove();
+        clearTimeout(noteTimer);
+        note = document.createElement('div');
+        note.className = 'wx-loc-note';
+        note.setAttribute('role', 'status');
+        note.textContent = t(key);
+        container.appendChild(note);
+        noteTimer = setTimeout(() => note?.remove(), 4000);
+      };
+      // Taps while the chunk loads queue up in order, so a second tap turns it off again (one watch, LC-7).
+      let loc: Promise<LocationHandle | null> | null = null;
+      const located = (f: (h: LocationHandle) => void): void =>
+        void (loc ??= import('./location').then(
+          (m) => {
+            if (destroyed) return null;
+            const h = m.startLocation({ map, Marker, toggle, follow, say, centred: () => (moved = true) });
+            stopLocation = h.stop;
+            return h;
+          },
+          () => {
+            loc = null; // a later tap tries again
+            say('locFailed');
+            return null;
+          },
+        )).then((h) => h && f(h));
+      toggle.addEventListener('click', () => located((h) => h.tap()));
+      follow.addEventListener('click', () => located((h) => h.follow()));
+      map.addControl({ onAdd: () => locGroup, onRemove: () => locGroup.remove() }, 'top-right');
+    }
     const fsButton = container.querySelector<HTMLButtonElement>('button.maplibregl-ctrl-fullscreen');
     // F-54: a language change relabels MapLibre's controls in place (they read `locale` once).
     unsubscribeLabels = onLanguage(() => {
       satLabel();
+      locLabel();
       const loc = mapLocale();
       Object.assign((map as unknown as { _locale: Record<string, string> })._locale, loc);
       const label = (sel: string, text: string): void =>
@@ -667,7 +738,6 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     // afterwards a resize keeps centre and zoom. Events without originalEvent are not the viewer's.
     const [west, south, east, north] = route.bounds;
     if (!(west === east && south === north)) {
-      let moved = false;
       const onViewerMove = (e: { originalEvent?: unknown }): void => {
         if (e.originalEvent) moved = true;
       };

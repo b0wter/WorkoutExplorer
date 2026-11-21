@@ -159,3 +159,54 @@ html.wx-fs .maplibregl-pseudo-fullscreen {
   background: var(--accent);
   color: var(--on-accent);
 }
+
+/* F-62 LC-2: the location group comes after the satellite toggle, last in the stack. */
+.wx-loc-group {
+  order: 2;
+}
+.wx-loc-group button {
+  color: black; /* as .wx-sat */
+}
+.wx-loc-group svg {
+  display: block;
+  margin: auto;
+}
+.wx-loc-group button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.wx-loc-group button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+/* LC-6: the position dot over its accuracy circle; neither takes pointer input (route hover, pin taps). */
+.wx-loc-dot,
+.wx-loc-ring {
+  pointer-events: none;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.wx-loc-dot {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--marker-stroke);
+  background: var(--accent);
+}
+.wx-loc-ring {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid var(--accent);
+}
+/* LC-8: the message, centred at the top of the map box (also in fullscreen). */
+.wx-loc-note {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: calc(100% - 120px);
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.3 system-ui, sans-serif;
+}

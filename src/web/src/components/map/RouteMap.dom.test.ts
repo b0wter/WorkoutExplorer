@@ -151,6 +151,19 @@ describe('RouteMap: map layer (F-61 SL-2)', () => {
   });
 });
 
+describe('RouteMap: location controls (F-62 LC-1)', () => {
+  it('the flag reaches the map at mount', async () => {
+    setup(ride(), { load: true, locate: true });
+    await run();
+    expect(mv.calls[0].locate).toBe(true);
+  });
+  it('absent by default (bench, edit page)', async () => {
+    setup(ride(), { load: true });
+    await run();
+    expect(mv.calls[0].locate).toBeUndefined();
+  });
+});
+
 describe('RouteMap: to-be-hidden marks (F-19 E-9)', () => {
   it('the ranges reach the map after mount and on every change, without a remount; none is []', async () => {
     const m = setup(ride(), { load: true, hidden: [[0, 9]] });

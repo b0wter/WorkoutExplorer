@@ -2,7 +2,7 @@
 // design, Tests). MapLibre GL JS v6 needs WebGL2 and cannot run in jsdom.
 //
 // Mirrors the API of maplibre-gl 6.14.0, and only the members map-view.ts calls: LngLat,
-// Map (constructor, on, once, addControl, getCanvas, getZoom, unproject, setStyle, getLayer, getSource, setPaintProperty, setPixelRatio, remove,
+// Map (constructor, on, off, once, jumpTo, addControl, getCanvas, getZoom, unproject, setStyle, getLayer, getSource, setPaintProperty, setPixelRatio, remove,
 // touchZoomRotate.disableRotation, touchZoomRotate._tapDragZoom.disable), Marker (constructor, setLngLat, addTo, remove),
 // NavigationControl, FullscreenControl (pseudo path: onAdd, on, the button's click), setWorkerUrl. No logic beyond recording calls and emitting the events a
 // test triggers. unproject is a plain linear map of the point it receives (`recorder.view`,
@@ -127,6 +127,19 @@ export class FakeMap {
       listener(e);
     };
     return this.on(type, wrapped);
+  }
+
+  off(type: string, listener: Listener): this {
+    this.listeners.set(type, (this.listeners.get(type) ?? []).filter((l) => l !== listener));
+    return this;
+  }
+
+  /** Every jumpTo call (F-62): its options, copied. */
+  readonly jumps: Record<string, unknown>[] = [];
+  jumpTo(options: Record<string, unknown>): this {
+    this.jumps.push({ ...options });
+    if (typeof options.zoom === 'number') this.zoom = options.zoom;
+    return this;
   }
 
   /** Test helper: emits a map event to the registered listeners. */

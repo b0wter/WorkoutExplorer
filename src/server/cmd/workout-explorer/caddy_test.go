@@ -36,6 +36,7 @@ var securitySet = map[string]string{
 	"X-Content-Type-Options":    "nosniff",
 	"Strict-Transport-Security": "max-age=31536000",
 	"X-Robots-Tag":              "noindex, nofollow, noarchive", // OQ-89: every response
+	"Permissions-Policy":        "geolocation=(self)",           // F-62 LC-11: this feature only
 }
 
 const (

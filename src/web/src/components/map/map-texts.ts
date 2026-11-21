@@ -21,6 +21,11 @@ export const en = {
   mlTwoFingers: 'Use two fingers to move the map',
   /** F-61 SL-6: the satellite toggle's name and title; pressed = Satellite shown. */
   satellite: 'Satellite imagery',
+  /** F-62 LC-2, LC-8: the location toggle, the follow button and the two messages. */
+  myLocation: 'Show my location',
+  followLocation: 'Follow my location',
+  locDenied: 'Location access is not allowed.',
+  locFailed: 'Your location is not available.',
 };
 
 export const t = texts(en);

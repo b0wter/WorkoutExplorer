@@ -98,6 +98,8 @@ export interface MapProps {
   readonly hidden: readonly (readonly [number, number])[] | undefined;
   /** F-61 SL-2: the viewer's map layer choice. */
   readonly prefs: MapLayerPrefs;
+  /** F-62 LC-1: the location controls, viewing page only (no edit seam). */
+  readonly locate: boolean;
 }
 
 export function createMapProps(
@@ -119,6 +121,7 @@ export function createMapProps(
       units: look.store,
       onmapready,
       prefs,
+      locate: !edit,
       get scheme() {
         return look.scheme;
       },

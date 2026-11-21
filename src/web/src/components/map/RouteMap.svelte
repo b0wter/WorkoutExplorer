@@ -45,9 +45,11 @@
     hidden?: readonly (readonly [number, number])[];
     /** F-61 SL-2: the map layer preference (lib/prefs); read once per data value by the lazy map. */
     prefs?: MapLayerPrefs;
+    /** F-62 LC-1: the location controls; the viewing page only. Read once per data value. */
+    locate?: boolean;
   }
 
-  let { data, cursor, selection, load = false, height, fill = false, scheme = 'light', units, styleUrl, onmapready, hidden, prefs }: Props = $props();
+  let { data, cursor, selection, load = false, height, fill = false, scheme = 'light', units, styleUrl, onmapready, hidden, prefs, locate }: Props = $props();
 
   const MAP_HEIGHT = 320;
 
@@ -91,6 +93,7 @@
           scheme: untrack(() => scheme),
           units: untrack(() => units),
           prefs: untrack(() => prefs),
+          locate, // read after an await: untracked
           signal,
         });
         if (signal.aborted) {
