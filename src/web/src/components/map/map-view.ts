@@ -333,7 +333,6 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let exitFullscreen = swallow;
   // F-62: the location chunk's stop (LC-9) and its message (LC-8).
   let stopLocation = swallow;
-  let note: HTMLElement | null = null;
   let noteTimer: ReturnType<typeof setTimeout> | undefined;
   // F-13 D-20: true once the viewer (or F-62's first centring) moved the camera; no refit after.
   let moved = false;
@@ -341,7 +340,6 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     exitFullscreen(); // FS-7: root class, scroll lock, listeners and history entry go before the map
     stopLocation();
     clearTimeout(noteTimer);
-    note?.remove();
     destroyed = true;
     clearTimeout(attribTimer);
     clearTimeout(rangeTimer);
@@ -431,15 +429,15 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       };
       locLabel();
       // A short message in the map box (so also in fullscreen) that clears itself (LC-8).
+      // QA-62-r1-4: the live region exists empty before its text is set, so it is announced.
+      const note = document.createElement('div');
+      note.className = 'wx-loc-note';
+      note.setAttribute('role', 'status');
+      inner.appendChild(note); // removed with the map
       const say = (key: 'locDenied' | 'locFailed'): void => {
-        note?.remove();
         clearTimeout(noteTimer);
-        note = document.createElement('div');
-        note.className = 'wx-loc-note';
-        note.setAttribute('role', 'status');
         note.textContent = t(key);
-        container.appendChild(note);
-        noteTimer = setTimeout(() => note?.remove(), 4000);
+        noteTimer = setTimeout(() => (note.textContent = ''), 4000);
       };
       // Taps while the chunk loads queue up in order, so a second tap turns it off again (one watch, LC-7).
       let loc: Promise<LocationHandle | null> | null = null;

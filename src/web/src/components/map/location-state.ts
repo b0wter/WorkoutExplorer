@@ -13,10 +13,10 @@ export interface LocState {
 
 /**
  * tap: the location button; fix: a position; follow: the follow button; move: a viewer's pan,
- * drag or zoom; denied: permission denied; failed: no position, timeout, insecure context or no
- * API; off: page closed (pagehide) or map torn down.
+ * drag or zoom; denied: permission denied; failed: no position, insecure context or no API;
+ * timeout: no fix within the watch's timeout; off: page closed (pagehide) or map torn down.
  */
-export type LocEvent = 'tap' | 'fix' | 'follow' | 'move' | 'denied' | 'failed' | 'off';
+export type LocEvent = 'tap' | 'fix' | 'follow' | 'move' | 'denied' | 'failed' | 'timeout' | 'off';
 
 export interface LocStep {
   readonly state: LocState;
@@ -41,6 +41,10 @@ export function locStep(s: LocState, e: LocEvent): LocStep {
       return step({ ...s, following: false });
     case 'denied':
       return step(LOC_OFF, false, 'denied');
+    case 'timeout':
+      // QA-62-r1-3: some engines re-arm the timeout after each fix, so a viewer standing still
+      // times out; after the first fix the dot is still right: no message, nothing changes.
+      return s.phase === 'starting' ? step(LOC_OFF, false, 'failed') : step(s);
     case 'failed':
       if (s.phase === 'starting') return step(LOC_OFF, false, 'failed');
       return s.said ? step(s) : step({ ...s, said: true }, false, 'failed');

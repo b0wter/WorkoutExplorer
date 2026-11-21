@@ -59,7 +59,7 @@ export function startLocation({ map, Marker, toggle, follow, say, centred }: Loc
     if (s.phase === 'off' || watch !== null || !geo || document.visibilityState === 'hidden') return;
     watch = geo.watchPosition(
       (p) => send('fix', p.coords),
-      (e) => send(e.code === 1 ? 'denied' : 'failed'), // 1: PERMISSION_DENIED
+      (e) => send(e.code === 1 ? 'denied' : e.code === 3 ? 'timeout' : 'failed'), // 1: PERMISSION_DENIED, 3: TIMEOUT
       OPTIONS,
     );
   };

@@ -5,6 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCursorStore } from '../../lib/cursor';
+import { resetI18n, use } from '../../lib/i18n';
 import { positioned } from '../../lib/route/testing/fixtures';
 import { mountRouteMap, type RouteMapHandle } from './map-view';
 import { recorder, resetRecorder, type FakeMap, type FakeMarker } from './testing/maplibre-fake';
@@ -95,6 +96,18 @@ afterEach(() => {
 });
 
 describe('F-62 location controls (LC-1, LC-2)', () => {
+  it('a language change relabels both buttons (LC-12, QA-62-r1-2)', async () => {
+    await mount();
+    (map as unknown as { _locale: object })._locale = {}; // MapLibre's, which the relabel updates
+    try {
+      use('de', { myLocation: 'Standort (Test)', followLocation: 'Folgen (Test)' }, document);
+      expect([toggle().title, toggle().getAttribute('aria-label')]).toEqual(['Standort (Test)', 'Standort (Test)']);
+      expect([follow().title, follow().getAttribute('aria-label')]).toEqual(['Folgen (Test)', 'Folgen (Test)']);
+    } finally {
+      resetI18n();
+    }
+  });
+
   it('without the viewing-page flag (edit page, bench): no location control', async () => {
     await mount({});
     expect(container.querySelector('.wx-loc-group')).toBeNull();
@@ -162,6 +175,16 @@ describe('F-62 position, follow mode and turning off (LC-3 to LC-6)', () => {
     map.fire('movestart', { originalEvent: new MouseEvent('mousedown') });
     fix(8.3, 47.3);
     expect(map.jumps).toHaveLength(2);
+  });
+
+  it('a pan alone stops follow mode (QA-62-r1-1)', async () => {
+    await mount();
+    await turnOn();
+    fix(8, 47);
+    map.fire('movestart', { originalEvent: new MouseEvent('mousedown') });
+    expect(follow().getAttribute('aria-pressed')).toBe('false');
+    fix(8.1, 47.1);
+    expect(map.jumps).toHaveLength(1);
   });
 
   it('follow re-centres and resumes follow mode, every time it is tapped (AC 45)', async () => {
@@ -257,16 +280,36 @@ describe('F-62 lifecycle (LC-9, AC 48)', () => {
     expect(toggle().getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('map teardown: the watch is cleared and no listener is left', async () => {
+  it('map teardown: the watch is cleared and no listener is left (QA-62-r1-2)', async () => {
+    const added: string[] = [];
+    const removed: string[] = [];
+    for (const target of [window, document]) {
+      const add = target.addEventListener.bind(target);
+      const remove = target.removeEventListener.bind(target);
+      vi.spyOn(target, 'addEventListener').mockImplementation((type, fn, o) => (added.push(type), add(type, fn, o)));
+      vi.spyOn(target, 'removeEventListener').mockImplementation((type, fn, o) => (removed.push(type), remove(type, fn, o)));
+    }
     await mount();
     await turnOn();
     fix(8, 47);
+    const mapTypes = ['movestart', 'zoomstart', 'zoom'].map((k) => map.listeners.get(k)?.length ?? 0);
     handle!.destroy();
     expect(geo.clearWatch).toHaveBeenCalledWith(1);
-    window.dispatchEvent(new Event('pagehide'));
-    setVisibility('hidden');
-    setVisibility('visible');
-    expect(geo.watchPosition).toHaveBeenCalledTimes(1);
+    for (const type of ['visibilitychange', 'pagehide']) {
+      expect(added.filter((t) => t === type)).toHaveLength(1);
+      expect(removed.filter((t) => t === type)).toHaveLength(1);
+    }
+    // location's three map listeners are gone too
+    expect(['movestart', 'zoomstart', 'zoom'].map((k) => map.listeners.get(k)?.length ?? 0)).toEqual(mapTypes.map((n) => n - 1));
+  });
+
+  it('unmounted while the chunk loads: no watch outlives the map (QA-62-r1-2)', async () => {
+    await mount();
+    toggle().click();
+    handle!.destroy();
+    await tick();
+    await tick();
+    expect(geo.watchPosition).not.toHaveBeenCalled();
   });
 });
 
@@ -292,15 +335,22 @@ describe('F-62 errors (LC-8, AC 49)', () => {
       expect(toggle().getAttribute('aria-pressed')).toBe('false');
     });
 
-  it('after the first fix: unavailable keeps the dot and the watch, the message once; a denial turns off', async () => {
+  it('the status region exists empty before any message (QA-62-r1-4)', async () => {
+    await mount();
+    expect([note()?.getAttribute('role'), note()?.textContent]).toEqual(['status', '']);
+  });
+
+  it('after the first fix: a timeout says nothing (standing still, QA-62-r1-3); unavailable keeps the dot and the watch, the message once; a denial turns off', async () => {
     await mount();
     await turnOn();
     fix(8, 47);
     err({ code: 3 });
-    expect(note()?.textContent).toBe('Your location is not available.');
-    note()!.remove();
+    expect(note()?.textContent).toBe('');
     err({ code: 2 });
-    expect(note()).toBeNull();
+    expect(note()?.textContent).toBe('Your location is not available.');
+    note()!.textContent = '';
+    err({ code: 2 });
+    expect(note()?.textContent).toBe('');
     expect(shownMarkers()).toHaveLength(2);
     expect(geo.clearWatch).not.toHaveBeenCalled();
     err({ code: 1 });
@@ -315,9 +365,9 @@ describe('F-62 errors (LC-8, AC 49)', () => {
       toggle().click();
       await vi.waitFor(() => expect(geo.watchPosition).toHaveBeenCalled());
       err({ code: 2 });
-      expect(note()).not.toBeNull();
+      expect(note()?.textContent).not.toBe('');
       vi.advanceTimersByTime(5000);
-      expect(note()).toBeNull();
+      expect(note()?.textContent).toBe('');
     } finally {
       vi.useRealTimers();
     }

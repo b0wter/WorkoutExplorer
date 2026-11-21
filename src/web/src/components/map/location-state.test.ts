@@ -27,6 +27,8 @@ describe('locStep (F-62 LC-3)', () => {
     ['denied after the first fix: off with the message', FOLLOWING, 'denied', LOC_OFF, false, 'denied'],
     ['failed after the first fix: stays on, message once', FREE, 'failed', SAID, false, 'failed'],
     ['failed again: no second message', SAID, 'failed', SAID, false, null],
+    ['timeout before the first fix: off with the message', STARTING, 'timeout', LOC_OFF, false, 'failed'],
+    ['timeout after the first fix (standing still): nothing', FOLLOWING, 'timeout', FOLLOWING, false, null],
     ['pagehide or teardown: off', FOLLOWING, 'off', LOC_OFF, false, null],
   ];
   for (const [name, from, e, to, centre, message] of rows) {
@@ -35,7 +37,7 @@ describe('locStep (F-62 LC-3)', () => {
 
   it('the camera moves only on the first fix, a follow tap and a fix while following (AC 47)', () => {
     const states = [LOC_OFF, STARTING, FOLLOWING, FREE, SAID, { ...FOLLOWING, said: true }];
-    const events: LocEvent[] = ['tap', 'fix', 'follow', 'move', 'denied', 'failed', 'off'];
+    const events: LocEvent[] = ['tap', 'fix', 'follow', 'move', 'denied', 'failed', 'timeout', 'off'];
     for (const s of states)
       for (const e of events) {
         const allowed = (e === 'fix' && (s.phase === 'starting' || (s.phase === 'on' && s.following))) || (e === 'follow' && s.phase === 'on');
