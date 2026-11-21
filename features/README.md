@@ -75,7 +75,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-53](F-53-my-workouts.md) | My workouts on this device | — | frontend | F-20, F-29 | ready with conditions (QA r1, 20 Nov 2026) | user: browser checks (network view, phone portrait, Safari private/blocked storage, JavaScript off) |
 | [F-54](F-54-translated-interface.md) | Translated interface: German, Spanish, French | — | both (backend first) | all features with text; F-53 | ready with conditions (QA r2, 20 Nov 2026) | user: native-speaker review, browser/phone checks (network view, German throttled first view, LCP, Safari prefix read, portrait); minors QA-54-r2-1 to r2-3 fixed 21 Nov |
 | [F-61](F-61-satellite-map-layer.md) | Satellite map layer | — | frontend (backend: CSP) | F-06, F-14, F-22, F-26, F-29, F-36, F-56, F-54 | ready with conditions (QA r2, 20 Nov 2026) | user: phone and network checks (labels legible, no Esri with Map, 60 fps) |
-| [F-62](F-62-show-my-location.md) | Show my location on the map | — | frontend (backend: `Permissions-Policy`) | F-06, F-22, F-26, F-29; F-61 if built after it | architecture | — |
+| [F-62](F-62-show-my-location.md) | Show my location on the map | — | frontend (backend: `Permissions-Policy`) | F-06, F-22, F-26, F-29; F-61 if built after it | implementation | — |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-62.
 
