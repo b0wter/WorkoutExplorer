@@ -27,6 +27,7 @@ const SETTINGS: Settings = {
   zones_max_heart_rate: null,
   zones_threshold_power: null,
   pins: [],
+  added_lap_boundaries: [],
 };
 
 function setup(hash: string, respond: () => Response | Promise<Response> = () => Response.json(SETTINGS), path = '/edit/' + ID) {

@@ -160,10 +160,10 @@ describe('load failure (AC 9, D-13, OQ-10)', () => {
     resetI18n();
   });
 
-  it('a different format version (bytes 4 and 5 = 7): the text ends in "Reload the page."', async () => {
+  it('a different format version (bytes 4 and 5 = 8): the text ends in "Reload the page."', async () => {
     respond = () => {
       const b = RIDE.slice(0);
-      new DataView(b).setUint16(4, 7, true);
+      new DataView(b).setUint16(4, 8, true);
       return new Response(b, { status: 200 });
     };
     await open();

@@ -94,7 +94,7 @@ export interface Lap {
   readonly end: number;
   readonly start_index: number;
   readonly end_index: number;
-  /** Version 4 (ADR-046): button, time, distance, position, stop, equipment; '' or any other string = unknown. */
+  /** Version 4 (ADR-046): button, time, distance, position, stop, equipment; version 7 (ADR-060): added; '' or any other string = unknown. */
   readonly trigger: string;
   /** Version 5 (ADR-048 item 2): freestyle, backstroke, breaststroke, butterfly, drill, mixed, im; '' or any other string = unknown. */
   readonly stroke: string;

@@ -101,26 +101,17 @@ func (g pinGrid) judge(p lifecycle.Pin) (c lifecycle.PinCheck, from, to int) {
 	return
 }
 
-// CheckPins implements lifecycle.Trimmer (PN-4): from one parse, the verdict
-// on each pin against r's trim and hiding.
-func (a *Area) CheckPins(ctx context.Context, r lifecycle.Record, pins []lifecycle.Pin) ([]lifecycle.PinCheck, error) {
-	g, err := a.pinGridOf(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]lifecycle.PinCheck, len(pins))
-	for i, p := range pins {
-		out[i], _, _ = g.judge(p)
-	}
-	return out, nil
-}
-
 // pinGridOf parses the original and applies trim and the public transform.
 func (a *Area) pinGridOf(ctx context.Context, r lifecycle.Record) (pinGrid, error) {
 	w, err := a.parseOriginal(ctx, r)
 	if err != nil {
 		return pinGrid{}, err
 	}
+	return a.pinGridFrom(w, r)
+}
+
+// pinGridFrom applies trim and the public transform to the parsed w.
+func (a *Area) pinGridFrom(w workout.Workout, r lifecycle.Record) (pinGrid, error) {
 	wt, first, err := trimmed(w, r)
 	if err != nil {
 		return pinGrid{}, err

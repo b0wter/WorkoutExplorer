@@ -40,8 +40,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 10 {
-		t.Errorf("user_version = %d, want 10", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 11 {
+		t.Errorf("user_version = %d, want 11", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -76,7 +76,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 10 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 11 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -113,6 +113,7 @@ func TestSchema(t *testing.T) {
 		{"trim_start_at", "INTEGER", false}, {"trim_end_at", "INTEGER", false},
 		{"zones_max_heart_rate", "INTEGER", false}, {"zones_threshold_power", "INTEGER", false},
 		{"hide_start_m", "INTEGER", true}, {"hide_end_m", "INTEGER", true}, {"hiding_steps", "TEXT", false}, {"pins", "TEXT", false},
+		{"added_lap_boundaries", "TEXT", false},
 	}
 	rows, err := db.db.QueryContext(ctx, "PRAGMA table_info(workouts)")
 	if err != nil {
@@ -739,7 +740,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 10 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 11 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -1043,14 +1044,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 11} {
+	for _, v := range []int{4, 12} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (10)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (11)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}
@@ -1222,5 +1223,52 @@ func TestPinsColumn(t *testing.T) {
 	back, _, _ = db.WorkoutByPublicID(ctx, r2.PublicID)
 	if len(back.Pins) != 2 {
 		t.Error("UpdateDerived wrote pins")
+	}
+}
+
+// TestAddedLapBoundariesColumn (F-65 AL-1): the set round-trips as Unix
+// seconds through insert and update, none is NULL, text that is not JSON is
+// refused, and derived-column writes (regenerate, RG-4) never touch it.
+func TestAddedLapBoundariesColumn(t *testing.T) {
+	db, _ := openTemp(t)
+	r := record(7)
+	if err := db.InsertWorkout(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	if n := scalar[int](t, db, "SELECT added_lap_boundaries IS NULL FROM workouts"); n != 1 {
+		t.Error("none is not NULL")
+	}
+	laps := []time.Time{time.Date(2026, 6, 1, 6, 1, 0, 0, time.UTC), time.Date(2026, 6, 1, 6, 2, 5, 0, time.UTC)}
+	if _, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) { c.AddedLapBoundaries = laps; return c, nil }); err != nil {
+		t.Fatal(err)
+	}
+	if s := scalar[string](t, db, "SELECT added_lap_boundaries FROM workouts"); s != fmt.Sprintf("[%d,%d]", laps[0].Unix(), laps[1].Unix()) {
+		t.Errorf("column %s", s)
+	}
+	back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID)
+	if len(back.AddedLapBoundaries) != 2 || !back.AddedLapBoundaries[0].Equal(laps[0]) || !back.AddedLapBoundaries[1].Equal(laps[1]) {
+		t.Fatalf("%v", back.AddedLapBoundaries)
+	}
+	if _, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) { c.AddedLapBoundaries = nil; return c, nil }); err != nil {
+		t.Fatal(err)
+	}
+	if n := scalar[int](t, db, "SELECT added_lap_boundaries IS NULL FROM workouts"); n != 1 {
+		t.Error("cleared is not NULL")
+	}
+	if _, err := db.db.ExecContext(ctx, "UPDATE workouts SET added_lap_boundaries = 'not json'"); err == nil {
+		t.Error("accepted")
+	}
+	r2 := record(8)
+	r2.AddedLapBoundaries = laps
+	if err := db.InsertWorkout(ctx, r2); err != nil {
+		t.Fatal(err)
+	}
+	r2.AddedLapBoundaries = nil
+	if _, _, err := db.UpdateDerived(ctx, r2.ID, r2, r2.CreatedAt); err != nil {
+		t.Fatal(err)
+	}
+	back, _, _ = db.WorkoutByPublicID(ctx, r2.PublicID)
+	if len(back.AddedLapBoundaries) != 2 {
+		t.Error("UpdateDerived wrote the column")
 	}
 }

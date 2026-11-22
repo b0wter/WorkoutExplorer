@@ -39,6 +39,7 @@ export const en = {
   trigger_position: 'Position',
   trigger_stop: 'Stop',
   trigger_equipment: 'Equipment',
+  trigger_added: 'Added',
   stroke_freestyle: 'Freestyle',
   stroke_backstroke: 'Backstroke',
   stroke_breaststroke: 'Breaststroke',

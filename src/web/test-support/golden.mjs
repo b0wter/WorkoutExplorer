@@ -40,3 +40,13 @@ export function loadGolden() {
     return { name, bin, fixture };
   });
 }
+
+/**
+ * F-65's Go and browser agreement sample (src/server/testdata/datafile/added-laps.json): per case a
+ * golden name, the picked samples and the laps of the Go-built version 7 file.
+ *
+ * @returns {{ name: string, golden: string, at: number[], laps: unknown[] }[]}
+ */
+export function loadAddedLaps() {
+  return JSON.parse(fs.readFileSync(path.resolve(DIR, '../added-laps.json'), 'utf8'));
+}

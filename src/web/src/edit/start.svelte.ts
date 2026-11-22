@@ -26,7 +26,13 @@ import type { ChartDecorator } from '../components/charts/uplot-options';
 import type { Look } from '../page/map-props.svelte';
 import { openOwner, type OwnerClient, type OwnerLocation, type OwnerResult, type Settings, type SettingsPatch } from '../lib/owner';
 import { impressum } from '../lib/page/impressum';
-import { buildPageViewModel, defaultTitle } from '../lib/page/view';
+import { buildPageViewModel, defaultTitle, pageLaps } from '../lib/page/view';
+import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
+import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
+import { sectionRanges, sections } from '../lib/sections';
+import { enhanceLaps } from '../page/laps';
+import type { PinsView } from '../pins';
+import { createAddedLaps } from './laps';
 import { enhanceExpiry } from '../page/enhance';
 import { loadErrorText } from '../page/load-error';
 import { startPage } from '../page/start';
@@ -183,6 +189,57 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
 
   let settings = $state.raw(got.value);
   const ui = actions(doc, owner, mineList);
+  /** F-65 AL-8: the pins view (cursor, selection, units, map) once the pins chunk is in. */
+  let pinsView: PinsView | null = null;
+  /** F-65 AL-8: a new value rebuilds the laps module; set on every change of the added laps. */
+  let lapsKey = $state(0);
+  let relapsDue = false;
+  /** After the rebuild (Svelte's update): the laps enhancers start again on the new module, as
+   *  startPage started them, and the map's lap markers follow. */
+  // shortcut: the previous module's enhancers stay subscribed (detached, a little work per units or
+  // language change); upgrade if owners edit laps by the hundreds in one visit.
+  let refocus = -1;
+  const relaps = (): void => {
+    if (refocus >= 0) {
+      const xs = host.querySelectorAll<HTMLElement>('.lap-x-btn');
+      const h = host.querySelector<HTMLElement>('section.laps h2');
+      h?.setAttribute('tabindex', '-1');
+      (xs[Math.min(refocus, xs.length - 1)] ?? (h?.closest('[hidden]') ? null : h) ?? host.querySelector<HTMLElement>('.plus-button'))?.focus();
+      refocus = -1;
+    }
+    const v = pinsView;
+    relapsDue = !v;
+    if (!v || !data) return;
+    const seams = enhanceLaps(doc, data, v.selection, win);
+    seams.taps();
+    const secs = sections(data.meta);
+    if (secs) seams.legs(sectionRanges(secs, data.sampleCount));
+    const splits = distanceAdvances(data);
+    const fmt = [lapsGroup, codeWord, formatElapsed, formatSpeedOrPace, speedOrPaceUnit, isPaceSport] as const;
+    if (splits || data.meta.lengths.length) import('../splits').then((m) => m.startSplits(doc, data, v.units, seams, fmt, splits), () => console.warn('edit: splits chunk failed'));
+    v.map((m) => m.laps());
+    pinEditor?.refresh();
+  };
+  // The ×'s of the laps view (AL-8): before the rows' own tap (capture), never a row selection.
+  host.addEventListener(
+    'click',
+    (e) => {
+      const b = (e.target as Element).closest?.<HTMLElement>('.lap-x-btn');
+      if (!b || !added) return;
+      e.stopPropagation();
+      // The module is rebuilt, the × with it: focus goes to the × now at its place, else the heading.
+      refocus = [...host.querySelectorAll('.lap-x-btn')].indexOf(b);
+      added.remove(+b.dataset.at!);
+    },
+    true,
+  );
+  const added = data
+    ? createAddedLaps(data, Date.parse(data.meta.start_time) / 1000, got.value.added_lap_boundaries ?? [], () => cut, () => {
+        ui.status = '';
+        lapsKey++;
+        setTimeout(relaps); // after Svelte's update
+      })
+    : null;
   /** F-55 HR-8: the sliders' radii in metres, unsaved too; set at most once per animation frame. */
   let ends = $state.raw<readonly [number, number]>(radii(got.value));
   let pending: readonly [number, number] | null = null;
@@ -269,6 +326,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     settings = r.value;
     record(r.value);
     pinEditor?.saved(r.value.pins ?? []);
+    added?.saved(r.value.added_lap_boundaries ?? []);
     zones();
     void effortsRefresh?.then((refresh) => refresh?.());
     visibility = r.value.visibility;
@@ -286,7 +344,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const basemap = basemapJobs(owner);
 
   /** F-56 PN-12: the pins go with every Save, when they changed. */
-  const withPins = (patch: SettingsPatch): SettingsPatch => ({ ...patch, ...pinEditor?.patch(settings.pins ?? []) });
+  const withPins = (patch: SettingsPatch): SettingsPatch => ({ ...patch, ...pinEditor?.patch(settings.pins ?? []), ...added?.patch(settings.added_lap_boundaries ?? []) });
   const save = (panel: SettingsPatch): Promise<void> | void => {
     if (ui.busy) return;
     const patch = withPins(panel);
@@ -345,8 +403,18 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
         get model() {
           const m = model!;
           const s = strip(settings, data!.meta);
-          // Built here, in the look's units: enhanceUnits leaves the edit page's strip alone.
-          return { ...m, Summary: summaryItems(s.sport, s.summary, look?.units) };
+          void lapsKey; // F-65: the merged laps
+          // Built here, in the look's units: enhanceUnits leaves the edit page's strip and laps alone.
+          return { ...m, Summary: summaryItems(s.sport, s.summary, look?.units), Laps: pageLaps(data!, look?.units) };
+        },
+        get lapsKey() {
+          return lapsKey;
+        },
+        get remove() {
+          void lapsKey;
+          void cut; // the dimmed rows follow the live trim
+          void model; // and the language (the × names)
+          return added ? { rows: added.rows() } : undefined;
         },
         report: false,
         edit: true,
@@ -435,6 +503,8 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       onefforts: (start) => (effortsRefresh = start(zoneSource.window)),
       // F-56 PN-12: the editor over the pins view; the shading as the map's and charts' (E-9).
       onpins: (view) => {
+        pinsView = view;
+        if (relapsDue) relaps();
         const steps = (): Settings['hiding_steps'] => settings.hiding_steps;
         pinEditor = startPinEditor(
           {
@@ -447,6 +517,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
               return { a: cut[0], b: cut[1], from: st ? st.start[ends[0] / HIDE_STEP_M] : 0, to: st ? st.end[ends[1] / HIDE_STEP_M] : last };
             },
             onedit: () => (ui.status = ''),
+            items: added ? [added.item(() => view.cursor.get() ?? -1, () => [view.selection.start(), view.selection.end()])] : [],
           },
           settings.pins ?? [],
         );

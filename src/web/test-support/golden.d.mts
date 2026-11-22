@@ -8,3 +8,6 @@ export interface Golden {
 
 /** Every golden pair, sorted by name; throws on an unpaired file, another entry or an empty folder. */
 export function loadGolden(): Golden[];
+
+/** F-65: the added-laps agreement cases (Go-built laps per golden and picked samples). */
+export function loadAddedLaps(): { name: string; golden: string; at: number[]; laps: unknown[] }[];

@@ -40,7 +40,8 @@ const (
 	// The largest valid body: the title and description (1,100 code points)
 	// plus 50 pins of 560 code points each (F-56 PN-2), every code point at
 	// most 12 bytes escaped (a surrogate pair), plus keys and instants of
-	// at most 200 bytes a pin and 1 KiB of other fields: 357,900 bytes.
+	// at most 200 bytes a pin and 1 KiB of other fields: 357,900 bytes; plus
+	// 100 added lap boundaries of at most 30 bytes each (F-65 AL-2): 360,900.
 	maxPatchBytes = 360 << 10
 	codeInvalid   = "invalid_settings"
 	// F-36 MC-4 refusals.
@@ -93,6 +94,9 @@ type settingsBody struct {
 	// canonical order; [] without pins. The browser counts the pins a Save
 	// removed (trim) from this.
 	Pins []pinBody `json:"pins"`
+	// AddedLapBoundaries is F-65 AL-2: the stored set, RFC 3339 UTC whole
+	// seconds, ascending; [] without any.
+	AddedLapBoundaries []string `json:"added_lap_boundaries"`
 }
 
 // pinBody is one pin (F-56 PN-2); instants are RFC 3339 UTC whole seconds.
@@ -175,7 +179,11 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 		s := t.UTC().Format(time.RFC3339)
 		return &s
 	}
-	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed,
+	laps := make([]string, len(r.AddedLapBoundaries))
+	for i, t := range r.AddedLapBoundaries {
+		laps[i] = t.UTC().Format(time.RFC3339)
+	}
+	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed, AddedLapBoundaries: laps,
 		TrimStartAt: at(r.TrimStartAt), TrimEndAt: at(r.TrimEndAt),
 		ZonesMaxHeartRate: r.ZonesMaxHeartRate, ZonesThresholdPower: r.ZonesThresholdPower,
 		Title: r.Title, Description: r.Description, HideStartM: r.HideStartM, HideEndM: r.HideEndM,
@@ -496,6 +504,22 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 				return p, lifecycle.MsgBadPins
 			}
 			p.Pins = lifecycle.OptPins{Set: true, V: ps}
+			continue
+		case "added_lap_boundaries":
+			// The whole set (F-65 AL-2); null and more than the cap are refused.
+			var strs []string
+			if json.Unmarshal(v, &strs) != nil || strs == nil || len(strs) > workout.MaxAddedLapBoundaries {
+				return p, lifecycle.MsgBadLaps
+			}
+			ts := make([]time.Time, len(strs))
+			for i, str := range strs {
+				t, err := time.Parse(time.RFC3339, str)
+				if err != nil || t.Nanosecond() != 0 {
+					return p, lifecycle.MsgBadLaps
+				}
+				ts[i] = t.UTC()
+			}
+			p.AddedLapBoundaries = lifecycle.OptTimes{Set: true, V: ts}
 			continue
 		default:
 			return p, msgBadBody

@@ -79,7 +79,7 @@ export function summaryItems(sport: string, s: Summary, units: Units = 'metric')
 
 /** The known codes of the laps table's word columns: AP-8 triggers (F-46 LS-2), AP-13 strokes (ADR-048 item 2). */
 const CODES = {
-  trigger: ['button', 'time', 'distance', 'position', 'stop', 'equipment'],
+  trigger: ['button', 'time', 'distance', 'position', 'stop', 'equipment', 'added'],
   stroke: ['freestyle', 'backstroke', 'breaststroke', 'butterfly', 'drill', 'mixed', 'im'],
 };
 /** A known code's word ('Button', 'IM'); any other code is an empty cell. */

@@ -69,6 +69,10 @@ type Record struct {
 	// Pins are the map pins (F-56 PN-1), canonical order, never logged. The
 	// set may hold pins no public file shows (dimmed ones, PN-5 b).
 	Pins []Pin
+	// AddedLapBoundaries are the owner's lap boundaries (F-65 AL-1): instants
+	// of resolved samples, ascending, no repeats; nil for none. No
+	// coordinates; never logged. May hold an entry a build skips (AL-3).
+	AddedLapBoundaries []time.Time
 }
 
 // NewDraft is the row of a fresh upload: a draft with no hiding (both radii 0) and download off

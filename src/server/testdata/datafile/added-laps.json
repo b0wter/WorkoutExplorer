@@ -1,0 +1,594 @@
+[
+  {
+    "name": "device-laps",
+    "golden": "ride-lap-triggers",
+    "at": [
+      214,
+      500,
+      560
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 214,
+        "start_index": 0,
+        "end_index": 215,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 214,
+          "distance": 1608.8,
+          "ascent": 41.68,
+          "avg_speed": 7.518,
+          "avg_heart_rate": 142.056,
+          "avg_cadence": 88.851,
+          "avg_power": 250.86
+        }
+      },
+      {
+        "start": 214,
+        "end": 300,
+        "start_index": 214,
+        "end_index": 301,
+        "trigger": "button",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 86,
+          "distance": 646.74,
+          "ascent": 7.6,
+          "avg_speed": 7.52,
+          "avg_heart_rate": 149.023,
+          "avg_cadence": 89.115,
+          "avg_power": 273.598
+        }
+      },
+      {
+        "start": 300,
+        "end": 500,
+        "start_index": 300,
+        "end_index": 501,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 200,
+          "distance": 1504.2,
+          "ascent": 1.32,
+          "avg_speed": 7.521,
+          "avg_heart_rate": 153.642,
+          "avg_cadence": 88.831,
+          "avg_power": 240.139
+        }
+      },
+      {
+        "start": 500,
+        "end": 560,
+        "start_index": 500,
+        "end_index": 561,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 60,
+          "distance": 447.21,
+          "ascent": 0,
+          "avg_speed": 7.454,
+          "avg_heart_rate": 156.393,
+          "avg_cadence": 89.459,
+          "avg_power": 193.131
+        }
+      },
+      {
+        "start": 560,
+        "end": 600,
+        "start_index": 560,
+        "end_index": 601,
+        "trigger": "distance",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 40,
+          "distance": 299.9,
+          "ascent": 0,
+          "avg_speed": 7.498,
+          "avg_heart_rate": 156.829,
+          "avg_cadence": 89.122,
+          "avg_power": 174.634
+        }
+      },
+      {
+        "start": 600,
+        "end": 900,
+        "start_index": 600,
+        "end_index": 901,
+        "trigger": "position",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 300,
+          "timer_time": 300,
+          "distance": 2252.07,
+          "ascent": 8,
+          "descent": 7,
+          "avg_speed": 7.507,
+          "max_speed": 7.99,
+          "avg_heart_rate": 156,
+          "max_heart_rate": 159,
+          "avg_cadence": 89.117,
+          "max_cadence": 93,
+          "avg_power": 167,
+          "max_power": 208,
+          "avg_temperature": 19,
+          "max_temperature": 19
+        }
+      },
+      {
+        "start": 900,
+        "end": 1200,
+        "start_index": 900,
+        "end_index": 1201,
+        "trigger": "stop",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 300,
+          "timer_time": 300,
+          "distance": 2248.89,
+          "ascent": 40,
+          "descent": 0,
+          "avg_speed": 7.496,
+          "max_speed": 7.999,
+          "avg_heart_rate": 147,
+          "max_heart_rate": 154,
+          "avg_cadence": 88.961,
+          "max_cadence": 93,
+          "avg_power": 248,
+          "max_power": 289,
+          "avg_temperature": 19,
+          "max_temperature": 19
+        }
+      },
+      {
+        "start": 1200,
+        "end": 1499,
+        "start_index": 1200,
+        "end_index": 1500,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 299,
+          "timer_time": 299,
+          "distance": 2237.98,
+          "ascent": 5,
+          "descent": 17,
+          "avg_speed": 7.485,
+          "max_speed": 7.98,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 142,
+          "avg_cadence": 88.844,
+          "max_cadence": 93,
+          "avg_power": 236,
+          "max_power": 286,
+          "avg_temperature": 19,
+          "max_temperature": 20
+        }
+      }
+    ]
+  },
+  {
+    "name": "no-device-laps",
+    "golden": "ride-no-laps",
+    "at": [
+      225,
+      450
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 225,
+        "start_index": 0,
+        "end_index": 226,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 225,
+          "distance": 1692.2,
+          "ascent": 43,
+          "avg_speed": 7.521,
+          "avg_heart_rate": 142.31,
+          "avg_cadence": 88.854,
+          "avg_power": 252.04
+        }
+      },
+      {
+        "start": 225,
+        "end": 450,
+        "start_index": 225,
+        "end_index": 451,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 225,
+          "distance": 1691.72,
+          "ascent": 7.6,
+          "avg_speed": 7.519,
+          "avg_heart_rate": 151.774,
+          "avg_cadence": 89.013,
+          "avg_power": 257.872
+        }
+      },
+      {
+        "start": 450,
+        "end": 899,
+        "start_index": 450,
+        "end_index": 900,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 449,
+          "distance": 3367.33,
+          "ascent": 7.667,
+          "avg_speed": 7.5,
+          "avg_heart_rate": 155.787,
+          "avg_cadence": 89.107,
+          "avg_power": 175.591
+        }
+      }
+    ]
+  },
+  {
+    "name": "triathlon-t1",
+    "golden": "triathlon",
+    "at": [
+      630,
+      600,
+      3620
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 599,
+        "start_index": 0,
+        "end_index": 600,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 599,
+          "timer_time": 599,
+          "distance": 718.17,
+          "avg_speed": 1.199,
+          "max_speed": 1.3,
+          "avg_heart_rate": 143,
+          "max_heart_rate": 146,
+          "avg_cadence": 31.969,
+          "max_cadence": 34,
+          "avg_temperature": 17,
+          "max_temperature": 17
+        }
+      },
+      {
+        "start": 600,
+        "end": 630,
+        "start_index": 600,
+        "end_index": 631,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 30,
+          "distance": 45,
+          "avg_heart_rate": 133.452
+        }
+      },
+      {
+        "start": 630,
+        "end": 659,
+        "start_index": 630,
+        "end_index": 660,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 29,
+          "distance": 43.5,
+          "avg_heart_rate": 133.033
+        }
+      },
+      {
+        "start": 660,
+        "end": 2459,
+        "start_index": 660,
+        "end_index": 2460,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 1799,
+          "timer_time": 1799,
+          "distance": 13481.37,
+          "ascent": 67,
+          "descent": 96,
+          "avg_speed": 7.494,
+          "max_speed": 8,
+          "avg_heart_rate": 153,
+          "max_heart_rate": 156,
+          "avg_cadence": 90,
+          "max_cadence": 92,
+          "avg_power": 225,
+          "max_power": 240,
+          "avg_temperature": 20,
+          "max_temperature": 20
+        }
+      },
+      {
+        "start": 2460,
+        "end": 2519,
+        "start_index": 2460,
+        "end_index": 2520,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 59,
+          "timer_time": 59,
+          "distance": 88.5,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 136
+        }
+      },
+      {
+        "start": 2520,
+        "end": 3620,
+        "start_index": 2520,
+        "end_index": 3621,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 1100,
+          "distance": 3626.78,
+          "ascent": 45.4,
+          "avg_speed": 3.297,
+          "avg_heart_rate": 163.043,
+          "avg_cadence": 171
+        }
+      },
+      {
+        "start": 3620,
+        "end": 3719,
+        "start_index": 3620,
+        "end_index": 3720,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 99,
+          "distance": 328.08,
+          "ascent": 0,
+          "avg_speed": 3.314,
+          "avg_heart_rate": 162.99,
+          "avg_cadence": 171
+        }
+      }
+    ]
+  },
+  {
+    "name": "pool-snap",
+    "golden": "pool-swim",
+    "at": [
+      411,
+      615
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 120,
+        "start_index": 0,
+        "end_index": 121,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 29.898,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 120,
+        "end": 240,
+        "start_index": 120,
+        "end_index": 241,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 30.055,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 240,
+        "end": 360,
+        "start_index": 240,
+        "end_index": 361,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 30.094,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 360,
+        "end": 420,
+        "start_index": 360,
+        "end_index": 421,
+        "trigger": "added",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 60,
+          "distance": 50,
+          "avg_speed": 0.833,
+          "avg_heart_rate": 131.541,
+          "avg_cadence": 30.016
+        }
+      },
+      {
+        "start": 420,
+        "end": 480,
+        "start_index": 420,
+        "end_index": 481,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 60,
+          "distance": 50,
+          "avg_speed": 0.833,
+          "avg_heart_rate": 132.131,
+          "avg_cadence": 30.098
+        }
+      },
+      {
+        "start": 480,
+        "end": 600,
+        "start_index": 480,
+        "end_index": 601,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 30.133,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 600,
+        "end": 630,
+        "start_index": 600,
+        "end_index": 631,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 30,
+          "timer_time": 30,
+          "distance": 0,
+          "avg_speed": 0,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 135,
+          "avg_cadence": 28,
+          "max_cadence": 28
+        }
+      },
+      {
+        "start": 630,
+        "end": 750,
+        "start_index": 630,
+        "end_index": 751,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 29.977,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 750,
+        "end": 870,
+        "start_index": 750,
+        "end_index": 871,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 29.844,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 870,
+        "end": 990,
+        "start_index": 870,
+        "end_index": 991,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 30.102,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 990,
+        "end": 1110,
+        "start_index": 990,
+        "end_index": 1111,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 29.953,
+          "max_cadence": 32
+        }
+      },
+      {
+        "start": 1110,
+        "end": 1230,
+        "start_index": 1110,
+        "end_index": 1231,
+        "trigger": "",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 120,
+          "timer_time": 120,
+          "distance": 100,
+          "avg_speed": 0.833,
+          "max_speed": 0.833,
+          "avg_heart_rate": 132,
+          "max_heart_rate": 136,
+          "avg_cadence": 30.016,
+          "max_cadence": 32
+        }
+      }
+    ]
+  }
+]

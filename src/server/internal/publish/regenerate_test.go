@@ -178,9 +178,12 @@ func TestSameRecord(t *testing.T) {
 				}
 			}
 		case reflect.Slice:
-			if f.Type() == reflect.TypeOf([]lifecycle.Pin(nil)) { // F-56
+			switch f.Type() {
+			case reflect.TypeOf([]lifecycle.Pin(nil)): // F-56
 				f.Set(reflect.ValueOf([]lifecycle.Pin{{Type: "note"}}))
-			} else {
+			case reflect.TypeOf([]time.Time(nil)): // F-65
+				f.Set(reflect.ValueOf([]time.Time{time.Unix(1, 0)}))
+			default:
 				f.Set(reflect.ValueOf([][2]int{{1, 2}}))
 			}
 		case reflect.Struct:

@@ -4,6 +4,7 @@
 // reproduce the committed samples exactly.
 
 import type { WorkoutData } from '../datafile';
+import type { Units } from '../format';
 import { presentCharts } from '../charts';
 import { routePresence } from '../route/presence';
 import { formatDate, formatLocalStart, sportIcon, sportName } from '../format/dates';
@@ -17,10 +18,10 @@ import type { PageLaps, PageLapsLeg, PageSettings, PageViewModel } from './model
 const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Legs: [] };
 
 /** F-64 LL-2: one block per section with its own laps table, built for the section's sport. */
-function lapLegs(meta: WorkoutData['meta']): PageLapsLeg[] {
+function lapLegs(meta: WorkoutData['meta'], units?: Units): PageLapsLeg[] {
   const secs = sections(meta);
   return lapsBySection(secs, meta.laps).map((laps, k) => {
-    const g = lapsGroup(secs![k].sport, laps);
+    const g = lapsGroup(secs![k].sport, laps, units);
     return { Name: secs![k].name, Sport: secs![k].sport, Columns: g?.Columns ?? [], Rows: g?.Rows ?? [] };
   });
 }
@@ -52,7 +53,6 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
   const title = settings.title.trim() === '' ? settings.suggestedTitle || defaultTitle(meta.sport, meta.start_time, offset) : settings.title;
   const base = '/w/' + settings.publicId;
   const presence = routePresence(data);
-  const laps = lapsGroup(meta.sport, meta.laps);
   return {
     Page: { Title: title, ViewPath: base, DataURL: base + '/' + settings.dataFile },
     Header: {
@@ -75,8 +75,13 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
     },
     Pins: settings.pinsFile && (settings.pinCount ?? 0) > 0 ? { URL: base + '/' + settings.pinsFile, Count: String(settings.pinCount) } : { URL: '', Count: '' },
     ChartsClass: chartsClass(data),
-    Laps: laps
-      ? { ...laps, Legs: lapLegs(meta) }
-      : distanceAdvances(data) || meta.lengths.length > 0 ? NO_LAPS : null,
+    Laps: pageLaps(data),
   };
+}
+
+/** The laps module (AP-8, F-46 LS-3, F-64 LL-2); the edit page builds it in its units (F-65 AL-8). */
+export function pageLaps(data: WorkoutData, units?: Units): PageLaps | null {
+  const meta = data.meta;
+  const laps = lapsGroup(meta.sport, meta.laps, units);
+  return laps ? { ...laps, Legs: lapLegs(meta, units) } : distanceAdvances(data) || meta.lengths.length > 0 ? NO_LAPS : null;
 }

@@ -67,6 +67,7 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   zones_max_heart_rate: null,
   zones_threshold_power: null,
   pins: [],
+  added_lap_boundaries: [],
   ...over,
 });
 
@@ -1723,6 +1724,14 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
   const pin = (i: number, title: string) => ({ type: 'danger' as const, title, note: '', start_at: at(i), end_at: null });
   const rowTexts = (): string[] => [...document.querySelectorAll('.pin-row')].map((r) => r.textContent!);
   const button = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.pin-tools button, .wx-addpin button, .pin-form button')].find((b) => b.textContent === text)!;
+  /** F-65 AL-9: "+" opened (when it can be), then the item's disabled state; "+" disabled counts as off. */
+  const plusButton = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>('.plus-button')!;
+  const off = (text: string): boolean => {
+    const plus = plusButton();
+    if (plus.disabled) return true;
+    if (plus.getAttribute('aria-expanded') !== 'true') plus.click();
+    return button(text).getAttribute('aria-disabled') === 'true';
+  };
   async function start(): Promise<void> {
     await open();
     stubLog.chartStack[0].onready?.();
@@ -1739,13 +1748,13 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     settings = fresh({ ...ON, pins: [pin(10, 'start'), pin(1000, 'mid'), pin(N - 5, 'end')] });
     await start();
     expect(rowTexts()).toEqual(['startHidden by the start radius', expect.stringMatching(/^mid\d/), 'endHidden by the end radius']);
-    expect(button('Add pin').disabled).toBe(true); // no cursor
+    expect(off('Add pin')).toBe(true); // no cursor
     await pick(20); // in the hidden start radius: refused, nothing placed
-    expect(button('Add pin').disabled).toBe(true);
+    expect(off('Add pin')).toBe(true);
     button('Add pin').click();
     expect(rowTexts()).toHaveLength(3);
     await pick(2000);
-    expect(button('Add pin').disabled).toBe(false);
+    expect(off('Add pin')).toBe(false);
     button('Add pin').click();
     expect(rowTexts()).toHaveLength(4);
     const title = document.querySelector<HTMLInputElement>('.pin-form input:not([type])')!;
@@ -1773,7 +1782,10 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
   it('no visible route: no Add pin, stored pins listed dimmed (OQ-275)', async () => {
     settings = fresh({ hide_start_m: 2000, hiding_steps: { start: STEPS.start.map(() => -1), end: STEPS.end }, pins: [pin(1000, 'b')] });
     await start();
-    expect(button('Add pin').hidden).toBe(true);
+    await pick(1000);
+    plusButton().click();
+    expect((button('Add pin').parentElement as HTMLElement).hidden).toBe(true);
+    expect((button('Add lap').parentElement as HTMLElement).hidden).toBe(false); // OQ-305: only Add lap
     expect(rowTexts()[0]).toMatch(/Hidden by the start/);
   });
 
@@ -1793,50 +1805,50 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(rowTexts()[0]).toMatch(/–/);
     await range(2600, N - 5); // the end is in the hidden end radius
     expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe(PIN_REFUSED);
-    expect(button('Add pin').disabled).toBe(true);
+    expect(off('Add pin')).toBe(true);
     await save();
     expect(patches()).toEqual([{ pins: [{ ...pin(2500, ''), type: 'point_of_interest', end_at: at(3500) }] }]); // still 2500 to 3500
   });
 
-  it('PN-12: in the two-column layout Add pin and its reason dock on the map slot, one column keeps them in the tools row', async () => {
+  it('PN-12, AL-9: in the two-column layout "+" with Add pin and its reason docks on the map slot, one column keeps them in the tools row', async () => {
     let matches = true;
     const listeners: ((e: { matches: boolean }) => void)[] = [];
     vi.stubGlobal('matchMedia', () => ({ get matches() { return matches; }, addEventListener: (_: string, f: (e: { matches: boolean }) => void) => listeners.push(f), removeEventListener() {} }));
     settings = fresh({ ...ON, pins: [] });
     await start();
-    const add = button('Add pin');
+    const add = plusButton();
     expect(add.closest('#map-slot .wx-addpin')).not.toBeNull();
-    expect(add.nextElementSibling?.classList.contains('edit-small')).toBe(true);
+    expect(button('Add pin').closest('.wx-plus')).toBe(add.closest('.wx-plus'));
     matches = false;
     listeners.forEach((f) => f({ matches }));
     expect(add.closest('.pin-tools')).not.toBeNull();
     expect(document.querySelector('.pin-tools')?.classList.contains('on-map')).toBe(false);
   });
 
-  const why = (): string => document.querySelector('.pin-tools .edit-small, .wx-addpin .edit-small')!.textContent!.trim();
+  const why = (): string => (button('Add pin').nextElementSibling as HTMLElement).textContent!.trim();
 
   it('the button and its visible reason follow radius and trim changes; a twin is refused; Move refuses a hidden spot (r3-2 to r3-4)', async () => {
     settings = fresh({ ...ON, pins: [] });
     await start();
-    expect([button('Add pin').disabled, why()]).toEqual([true, '']);
+    expect([off('Add pin'), why()]).toEqual([true, '']);
     await pick(20); // inside the 300 m start radius
-    expect([button('Add pin').disabled, why()]).toEqual([true, 'This point is hidden or trimmed.']);
+    expect([off('Add pin'), why()]).toEqual([true, 'This point is hidden or trimmed.']);
     hideAt(0, 0); // radius off: the same cursor is public
     await settle();
-    expect([button('Add pin').disabled, why()]).toEqual([false, '']);
+    expect([off('Add pin'), why()]).toEqual([false, '']);
     hideAt(300, 300);
     await settle();
-    expect(button('Add pin').disabled).toBe(true);
+    expect(off('Add pin')).toBe(true);
     await pick(2000);
     type('trim_a', '3000'); // the cursor is now in the trimmed part
     await settle();
-    expect([button('Add pin').disabled, why()]).toEqual([true, 'This point is hidden or trimmed.']);
+    expect([off('Add pin'), why()]).toEqual([true, 'This point is hidden or trimmed.']);
     type('trim_a', '0');
     await settle();
-    expect(button('Add pin').disabled).toBe(false);
+    expect(off('Add pin')).toBe(false);
     button('Add pin').click();
     expect(rowTexts()).toHaveLength(1);
-    expect([button('Add pin').disabled, why()]).toEqual([true, 'There is a pin here already.']); // selected pin: no twin
+    expect([off('Add pin'), why()]).toEqual([true, 'There is a pin here already.']); // selected pin: no twin
     button('Add pin').click();
     expect(rowTexts()).toHaveLength(1);
     await pick(30); // Move into the hidden start: disabled, and a click changes nothing
@@ -1854,6 +1866,234 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     button('Move').click();
     await save();
     expect(patches()).toEqual([{ pins: [pin(1500, 'mid')] }]);
+  });
+});
+
+describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
+  const data = (() => {
+    const r = decodeDataFile(RIDE);
+    if (!r.ok) throw new Error('no ride');
+    return r.data;
+  })();
+  const startS = Date.parse(data.meta.start_time) / 1000;
+  const at = (i: number): string => new Date((startS + data.time[i]) * 1000).toISOString().slice(0, 19) + 'Z';
+  const plus = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>('.plus-button')!;
+  const item = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.plus-item')].find((b) => b.textContent === text)!;
+  const reason = (text: string): string => (item(text).nextElementSibling as HTMLElement).textContent!;
+  const rows = (): HTMLTableRowElement[] => [...document.querySelectorAll<HTMLTableRowElement>('section.laps .laps-scroll:not(.splits) tbody tr')];
+  const lastCells = (): string[] => rows().map((r) => r.cells[r.cells.length - 2]?.textContent ?? '');
+  async function start(): Promise<void> {
+    await open();
+    stubLog.chartStack[0].onready?.();
+    await vi.waitFor(() => expect(document.querySelector('.pin-tools')).not.toBeNull());
+    await settle();
+  }
+  const pick = async (i: number): Promise<void> => {
+    stubLog.chartStack[0].cursor.set(i);
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+  };
+  const addLap = async (): Promise<void> => {
+    if (plus().getAttribute('aria-expanded') !== 'true') plus().click();
+    item('Add lap').click();
+    await settle();
+  };
+
+  it('"+": disabled without a cursor; opens a list with Add lap and Add pin; Esc, outside and "+" again close it', async () => {
+    await start();
+    expect(plus().disabled).toBe(true);
+    await pick(1000);
+    expect([plus().disabled, plus().getAttribute('aria-expanded'), plus().getAttribute('aria-label')]).toEqual([false, 'false', 'Add a lap or pin']);
+    plus().click();
+    const menu = document.querySelector<HTMLElement>('.plus-menu')!;
+    expect([menu.hidden, plus().getAttribute('aria-expanded')]).toEqual([false, 'true']);
+    expect([...menu.querySelectorAll('.plus-item')].map((b) => b.textContent)).toEqual(['Add lap', 'Add pin']);
+    expect(plus().nextElementSibling).toBe(menu); // Tab reaches the items after "+"
+    item('Add lap').focus();
+    item('Add lap').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect([menu.hidden, document.activeElement]).toEqual([true, plus()]);
+    plus().click();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(menu.hidden).toBe(true);
+    plus().click();
+    plus().click();
+    expect(menu.hidden).toBe(true);
+    plus().click();
+    stubLog.chartStack[0].cursor.set(null);
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    expect([menu.hidden, plus().disabled]).toEqual([true, true]);
+  });
+
+  it('Add lap splits the lap at the cursor: one more row, "Added" then the device trigger, × only there; Save sends the set once', async () => {
+    await start();
+    expect(rows()).toHaveLength(16);
+    await pick(1000);
+    await addLap();
+    expect(rows()).toHaveLength(17);
+    const x = [...document.querySelectorAll<HTMLButtonElement>('.lap-x-btn')];
+    expect(x.map((b) => b.getAttribute('aria-label'))).toEqual(['Remove the added lap boundary at the end of lap 2']);
+    expect(rows()[1].querySelector('.lap-x-btn')).toBe(x[0]);
+    expect(rows()[1].cells[0].textContent).toBe('2');
+    expect(rows()[1].textContent).toContain('Added');
+    expect(rows()[2].textContent).not.toContain('Added');
+    expect(data.meta.laps).toHaveLength(16); // the test's own decode is untouched
+    // On the boundary now: nothing to add, with the reason.
+    plus().click();
+    plus().click();
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    expect(item('Add lap').getAttribute('aria-describedby')).toBe((item('Add lap').nextElementSibling as HTMLElement).id);
+    await save();
+    expect(patches()).toEqual([{ added_lap_boundaries: [at(1000)] }]);
+    await save();
+    expect(patches()).toHaveLength(1);
+    // The × removes it, the row goes, and the next Save clears the set.
+    x[0].click();
+    await settle();
+    expect(rows()).toHaveLength(16);
+    expect(document.querySelector('.lap-x-btn')).toBeNull();
+    await save();
+    expect(patches().at(-1)).toEqual({ added_lap_boundaries: [] });
+  });
+
+  it('with a range: both ends (OQ-304); an end on a device boundary adds nothing', async () => {
+    await start();
+    const sel = stubLog.chartStack[0].selection!;
+    sel.set(1000, 1200);
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    await addLap();
+    sel.set(1100, 1800); // 1800 is a device lap end
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    await addLap();
+    await save();
+    expect(patches()).toEqual([{ added_lap_boundaries: [at(1000), at(1100), at(1200)] }]);
+    expect(rows()).toHaveLength(19);
+  });
+
+  it('a stored boundary shows at once; a trimmed one is refused, dimmed "Removed on Save" and not sent; an invalid stored one is dropped', async () => {
+    settings = fresh({ added_lap_boundaries: ['2000-01-01T00:00:00Z', at(500), at(5000)] });
+    await start();
+    expect(rows()).toHaveLength(18);
+    type('trim_a', '3000');
+    await settle();
+    expect(rows()[0].classList.contains('dim')).toBe(true);
+    expect(rows()[0].querySelector('.lap-x')?.textContent).toBe('×Removed on Save');
+    await pick(2000);
+    plus().click();
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'This point is in the trimmed part.']);
+    await save();
+    expect(patches()[0].added_lap_boundaries).toEqual([at(5000)]);
+  });
+
+  it('a lap boundary in a hidden start is allowed (no position check)', async () => {
+    settings = fresh(ON);
+    await start();
+    await pick(20); // inside the 300 m start radius
+    await addLap();
+    await save();
+    expect(patches()[0].added_lap_boundaries).toEqual([at(20)]);
+  });
+
+  it('at 100 added boundaries Add lap is off with its reason', async () => {
+    settings = fresh({ added_lap_boundaries: Array.from({ length: 100 }, (_, k) => at(11 + 10 * k)) });
+    await start();
+    await pick(5003);
+    plus().click();
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There are 100 added laps already.']);
+  });
+
+  it('without device laps: the first boundary brings the laps view, removing it returns to splits only', async () => {
+    const plain = golden('ride-no-laps');
+    draft = () => new Response(plain.slice(0), { status: 200 });
+    await start();
+    const section = document.querySelector<HTMLElement>('section.laps')!;
+    expect(section.querySelector('.laps-scroll:not(.splits)')).toBeNull();
+    await pick(300);
+    await addLap();
+    await vi.waitFor(() => expect(rows()).toHaveLength(2));
+    expect(lastCells()).toEqual(['Added', '']);
+    await vi.waitFor(() => expect(document.querySelector<HTMLElement>('section.laps')?.hidden).toBe(false));
+    document.querySelector<HTMLButtonElement>('.lap-x-btn')!.click();
+    await settle();
+    expect(rows()).toHaveLength(0);
+  });
+
+  it('QA-65-r1-2: the live trim end is a boundary; focus leaving the group closes the list; a choice returns focus to "+"', async () => {
+    await start();
+    type('trim_b', '5000');
+    await settle();
+    await pick(5000);
+    plus().click();
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    const menu = document.querySelector<HTMLElement>('.plus-menu')!;
+    item('Add lap').dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: field('title') }));
+    expect(menu.hidden).toBe(true);
+    await pick(1000);
+    plus().click();
+    item('Add lap').focus();
+    item('Add lap').click();
+    expect([menu.hidden, document.activeElement]).toEqual([true, plus()]);
+  });
+
+  it('QA-65-r1-2: after a change the map lap markers, the splits chunk (its switch) and the row taps start again', async () => {
+    await start();
+    const laps = vi.fn();
+    const handle = { setScheme() {}, setHidden() {}, marker: () => () => {}, marks() {}, laps, control() {}, sampleAt: () => -1, destroy() {} };
+    (stubLog.routeMap[0] as unknown as { onmapready(h: typeof handle): void }).onmapready(handle);
+    await settle();
+    await pick(1000);
+    await addLap();
+    await vi.waitFor(() => expect(laps).toHaveBeenCalledTimes(1));
+    const section = document.querySelector<HTMLElement>('section.laps')!;
+    await vi.waitFor(() => expect(section.querySelector('#laps-slot')!.childElementCount).toBeGreaterThan(0)); // the switch
+    expect(section.classList.contains('live')).toBe(true);
+    rows()[1].click(); // the new first part: samples 900 to 1000
+    frames.splice(0).forEach((f) => f(0));
+    const sel = stubLog.chartStack[0].selection!;
+    expect([sel.start(), sel.end()]).toEqual([900, 1000]);
+    // ×: the module is rebuilt and focus lands on the laps heading (no other ×).
+    document.querySelector<HTMLButtonElement>('.lap-x-btn')!.click();
+    await settle();
+    expect(laps).toHaveBeenCalledTimes(2);
+    expect(document.activeElement).toBe(document.querySelector('section.laps h2'));
+  });
+
+  it('QA-65-r1-5: boundaries the live trim removes do not count towards the 100', async () => {
+    settings = fresh({ added_lap_boundaries: Array.from({ length: 100 }, (_, k) => at(11 + 10 * k)) });
+    await start();
+    type('trim_a', '500');
+    await settle();
+    await pick(5003);
+    plus().click();
+    expect(item('Add lap').getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('QA-65-r1-3: on a multisport workout the × names the lap number its leg table shows', async () => {
+    draft = () => new Response(golden('triathlon').slice(0), { status: 200 });
+    await start();
+    const tri = decodeDataFile(golden('triathlon'));
+    if (!tri.ok) throw new Error('no triathlon');
+    const bike = tri.data.meta.sessions.find((x) => x.sport === 'cycling')!;
+    const firstBikeLap = tri.data.meta.laps.find((l) => l.start_index >= bike.start_index)!;
+    await pick(firstBikeLap.start_index + 10);
+    await addLap();
+    const x = document.querySelector<HTMLButtonElement>('.lap-x-btn')!;
+    expect(x.closest('tr')!.cells[0].textContent).toBe('1');
+    expect(x.getAttribute('aria-label')).toBe('Remove the added lap boundary at the end of lap 1');
+  });
+
+  it('no visible route (OQ-305): "+" sits below the no-location hint and offers only Add lap', async () => {
+    const indoor = golden('indoor-no-gps');
+    draft = () => new Response(indoor.slice(0), { status: 200 });
+    settings = fresh({ hiding_steps: null });
+    await start();
+    const hint = document.querySelector('p.hint')!;
+    expect(hint.compareDocumentPosition(plus()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await pick(100);
+    plus().click();
+    expect([...document.querySelectorAll<HTMLElement>('.plus-row')].map((r) => r.hidden)).toEqual([false, true]);
   });
 });
 

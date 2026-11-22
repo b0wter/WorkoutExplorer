@@ -30,8 +30,8 @@ func (f *fakeTrimmer) ResolveTrim(_ context.Context, _ Record, s, e *time.Time) 
 	return s, e, nil
 }
 
-func (f *fakeTrimmer) CheckPins(context.Context, Record, []Pin) ([]PinCheck, error) {
-	return nil, errors.New("not used")
+func (f *fakeTrimmer) CheckEdits(context.Context, Record, []Pin, []time.Time) ([]PinCheck, []LapCheck, error) {
+	return nil, nil, errors.New("not used")
 }
 
 func (f *fakeTrimmer) TrimmedView(context.Context, Record) (OwnerView, error) { return f.view, f.err }

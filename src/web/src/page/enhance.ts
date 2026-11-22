@@ -18,16 +18,15 @@ import { en, t } from './texts';
  *  existing nodes, matched by `data-k` (the view model's Key) and by position. Text only; no node
  *  is added, removed or replaced. A markup that does not match is left untouched and logged.
  *  Runs once for the store's current value when it is not metric, then on every change. */
-export function enhanceUnits(root: ParentNode, meta: WorkoutMeta, store: UnitsStore, strip = true): void {
+export function enhanceUnits(root: ParentNode, meta: WorkoutMeta, store: UnitsStore): void {
   const apply = (): void => {
     const units = store.get();
     const writes: [Node, string][] = [];
     // F-54 LG-4: the viewing page's header, device line and leg rows from the metadata (the edit
     // page renders its own); a lazy chunk, loaded once the page is not English.
-    if (strip && (lang() !== 'en' || headerChunk)) void loadHeader().then((m) => m.header(root, meta));
-    // The edit page renders its strip itself (F-47 TR-9: it may show the trimmed summary).
-    const items = strip ? summaryItems(meta.sport, meta.summary, units) : [];
-    const cells = strip ? root.querySelectorAll('.summary > .metric') : [];
+    if (lang() !== 'en' || headerChunk) void loadHeader().then((m) => m.header(root, meta));
+    const items = summaryItems(meta.sport, meta.summary, units);
+    const cells = root.querySelectorAll('.summary > .metric');
     let ok = cells.length === items.length;
     items.forEach((item, i) => {
       const cell = cells[i];

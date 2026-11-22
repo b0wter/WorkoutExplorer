@@ -210,6 +210,9 @@ func TestPatchBody(t *testing.T) {
 		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00.5Z","end_at":null}]}`,
 		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"x","end_at":null}]}`,
 		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00Z","end_at":5}]}`,
+		`{"added_lap_boundaries":null}`, `{"added_lap_boundaries":{}}`, `{"added_lap_boundaries":[1]}`, `{"added_lap_boundaries":[null]}`, // F-65 AL-2
+		`{"added_lap_boundaries":["x"]}`, `{"added_lap_boundaries":["2026-06-01T06:00:00.5Z"]}`, `{"added_lap_boundaries":"2026-06-01T06:00:00Z"}`,
+		`{"added_lap_boundaries":[` + strings.TrimSuffix(strings.Repeat(`"2026-06-01T06:00:00Z",`, 101), ",") + `]}`,
 		`{"zones_max_heart_rate":190.5}`, `{"zones_max_heart_rate":"190"}`, `{"zones_threshold_power":1e2}`, `{"zones_threshold_power":true}`, // F-49
 		`{"title":"` + strings.Repeat("a", maxPatchBytes) + `"}`,
 	}
@@ -327,12 +330,39 @@ func TestPatchPins(t *testing.T) {
 	pair := `\ud83d\ude00`
 	one := `{"type":"difficult_section","title":"` + strings.Repeat(pair, 60) + `","note":"` + strings.Repeat(pair, 500) + `","start_at":"2026-06-01T06:00:00Z","end_at":"2026-06-01T06:05:00Z"}`
 	body := `{"title":"` + strings.Repeat(pair, 100) + `","description":"` + strings.Repeat(pair, 1000) + `","pins":[` + strings.TrimSuffix(strings.Repeat(one+",", 50), ",") + `]}`
+	// F-65 AL-2: plus 100 added lap boundaries with offsets (25 bytes and a comma each).
+	body = strings.TrimSuffix(body, "}") + `,"added_lap_boundaries":[` + strings.TrimSuffix(strings.Repeat(`"2026-06-01T08:00:00+02:00",`, 100), ",") + `]}`
 	if len(body) > maxPatchBytes {
 		t.Fatalf("largest valid body %d exceeds the cap %d", len(body), maxPatchBytes)
 	}
 	o := &fakeOwner{}
 	h := NewHandler(Config{MaxConcurrentUploads: 1, Owner: o})
-	if rec := ownerDo(h, "PATCH", "/api/workouts/"+pid, "Bearer "+strings.Repeat("t", 22), body); rec.Code != 200 || len(o.patch.Pins.V) != 50 {
+	if rec := ownerDo(h, "PATCH", "/api/workouts/"+pid, "Bearer "+strings.Repeat("t", 22), body); rec.Code != 200 || len(o.patch.Pins.V) != 50 || len(o.patch.AddedLapBoundaries.V) != 100 {
 		t.Errorf("%d %.200s", rec.Code, rec.Body)
+	}
+}
+
+// TestPatchAddedLapBoundaries (F-65 AL-2): instants parse to UTC, [] is a
+// clear, the settings object answers RFC 3339 UTC, [] without any.
+func TestPatchAddedLapBoundaries(t *testing.T) {
+	p, msg := parsePatch([]byte(`{"added_lap_boundaries":["2026-06-01T08:00:00+02:00","2026-06-01T06:00:05Z"]}`))
+	if msg != "" || !p.AddedLapBoundaries.Set || len(p.AddedLapBoundaries.V) != 2 || !p.AddedLapBoundaries.V[0].Equal(time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)) || p.AddedLapBoundaries.V[0].Location() != time.UTC {
+		t.Fatalf("%q %+v", msg, p.AddedLapBoundaries)
+	}
+	if p, msg = parsePatch([]byte(`{"added_lap_boundaries":[]}`)); msg != "" || !p.AddedLapBoundaries.Set || len(p.AddedLapBoundaries.V) != 0 {
+		t.Fatalf("%q %+v", msg, p.AddedLapBoundaries)
+	}
+	if _, msg = parsePatch([]byte(`{"added_lap_boundaries":null}`)); msg != lifecycle.MsgBadLaps {
+		t.Errorf("null: %q", msg)
+	}
+	r := (&fakeOwner{}).rec()
+	r.AddedLapBoundaries = []time.Time{time.Date(2026, 6, 1, 6, 4, 0, 0, time.UTC), time.Date(2026, 6, 1, 6, 9, 0, 0, time.UTC)}
+	out, _ := json.Marshal(settingsOf(r, lifecycle.OwnerView{}))
+	if !strings.Contains(string(out), `"added_lap_boundaries":["2026-06-01T06:04:00Z","2026-06-01T06:09:00Z"]`) {
+		t.Errorf("%s", out)
+	}
+	r.AddedLapBoundaries = nil
+	if out, _ = json.Marshal(settingsOf(r, lifecycle.OwnerView{})); !strings.Contains(string(out), `"added_lap_boundaries":[]`) {
+		t.Errorf("none is not []: %s", out)
 	}
 }

@@ -60,6 +60,8 @@ import {
   DIVERGING,
   HIDDEN_SOURCE,
   MARKS_SOURCE,
+  MARKER_SOURCE,
+  markersData,
   NO_VALUE,
   RANGE_SOURCE,
   baseStyle,
@@ -130,6 +132,8 @@ export interface RouteMapHandle {
   marker(el: HTMLElement, i: number): () => void;
   /** lines over these inclusive sample ranges, above the hidden marks and below the range; */
   marks(ranges: readonly (readonly [number, number])[]): void;
+  /** F-65 AL-8: data.meta.laps changed (the edit page's added laps): the lap markers follow; */
+  laps(): void;
   /** an element in the map box (it stays in fullscreen), bottom left; */
   control(el: HTMLElement): void;
   /** the route sample within a touch's radius of a client point, or -1 (PN-12's tap). */
@@ -143,7 +147,7 @@ const WORLD_PX = 512;
 type MutableInput = { -readonly [K in keyof RouteGestureInput]: RouteGestureInput[K] };
 
 const swallow = (): void => {};
-const inertHandle: RouteMapHandle = { setScheme: swallow, setHidden: swallow, marker: () => swallow, marks: swallow, control: swallow, sampleAt: () => -1, destroy: swallow };
+const inertHandle: RouteMapHandle = { setScheme: swallow, setHidden: swallow, marker: () => swallow, marks: swallow, laps: swallow, control: swallow, sampleAt: () => -1, destroy: swallow };
 
 export async function mountRouteMap(options: MountOptions): Promise<RouteMapHandle> {
   const { container, data, cursor, selection, whenQuiet, signal } = options;
@@ -190,7 +194,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let range: { readonly features: readonly unknown[] } = linesData(initialRange);
   // F-42 MS-8: a leg marker at each section start after the first (multisport only).
   const secs = sections(data.meta);
-  const markers = routeMarkers(data, route, secs ? legs(secs, data.sampleCount).filter((g) => g.start > 0) : []);
+  const markersNow = () => routeMarkers(data, route, secs ? legs(secs, data.sampleCount).filter((g) => g.start > 0) : []);
+  const markers = markersNow();
   const lat = position.latitude;
   const lon = position.longitude;
   // F-25 C-8: only which metrics are offered; no classes until the viewer picks one.
@@ -294,6 +299,11 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   };
   const applyMarks = (): void => {
     (map.getSource(MARKS_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(marked);
+  };
+  // F-65 AL-8: the edit page's lap markers after a change of data.meta.laps; kept for a style swap.
+  let lapMarkers: unknown = null;
+  const applyLaps = (): void => {
+    if (lapMarkers) (map.getSource(MARKER_SOURCE) as { setData(d: unknown): unknown } | undefined)?.setData(lapMarkers);
   };
   const rangesData = (ranges: readonly (readonly [number, number])[]): typeof hidden => {
     const lines = { recorded: [] as [number, number][][], bridges: [] as [[number, number], [number, number]][] };
@@ -577,6 +587,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     }
     map.on('style.load', applyHidden);
     map.on('style.load', applyMarks);
+    map.on('style.load', applyLaps);
     map.on('style.load', applyColour);
 
     // ---- route colouring (F-25 C-6, C-8): a select and its legend; work only on a selection ----
@@ -853,6 +864,11 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       if (destroyed) return;
       marked = rangesData(ranges);
       applyMarks();
+    },
+    laps(): void {
+      if (destroyed) return;
+      lapMarkers = markersData(markersNow());
+      applyLaps();
     },
     control(el): void {
       if (!destroyed) map.addControl({ onAdd: () => el, onRemove: () => el.remove() }, 'bottom-left');

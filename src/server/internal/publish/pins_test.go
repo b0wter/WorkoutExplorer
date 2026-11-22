@@ -31,6 +31,12 @@ const (
 	dimNote  = "DIMMED-NOTE-43219"
 )
 
+// checkPins is CheckEdits for pins only.
+func checkPins(ctx context.Context, a *Area, r lifecycle.Record, pins []lifecycle.Pin) ([]lifecycle.PinCheck, error) {
+	pcs, _, err := a.CheckEdits(ctx, r, pins, nil)
+	return pcs, err
+}
+
 func pinFixture(t *testing.T, w workout.Workout) *fixture {
 	t.Helper()
 	return newFixtureWith(t, []byte("trk"), fakeParser{"trk": w})
@@ -131,7 +137,7 @@ func TestPinPredicatesAgreeWithTheDataFile(t *testing.T) {
 					pins = append(pins, point(w, i, ""))
 				}
 				pins = append(pins, point(w, len(w.Samples.Offset)-1, ""))
-				checks, err := fx.a.CheckPins(context.Background(), d, pins)
+				checks, err := checkPins(context.Background(), fx.a, d, pins)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -143,7 +149,7 @@ func TestPinPredicatesAgreeWithTheDataFile(t *testing.T) {
 				}
 				// Sections: both ends must be public; one end hidden or trimmed is not.
 				for i := lo; i+40 <= hi; i += 37 {
-					cs, _ := fx.a.CheckPins(context.Background(), d, []lifecycle.Pin{section(w, i, i+40, "")})
+					cs, _ := checkPins(context.Background(), fx.a, d, []lifecycle.Pin{section(w, i, i+40, "")})
 					want := at(i) && at(i+40)
 					if cs[0].Public != want || cs[0].Kept != true {
 						t.Fatalf("section %d: %+v want public %v", i, cs[0], want)
@@ -151,7 +157,7 @@ func TestPinPredicatesAgreeWithTheDataFile(t *testing.T) {
 				}
 				// An end in the trimmed part: not kept, never clipped.
 				if trim {
-					cs, _ := fx.a.CheckPins(context.Background(), d, []lifecycle.Pin{section(w, lo-10, lo+50, ""), section(w, hi-50, hi+10, "")})
+					cs, _ := checkPins(context.Background(), fx.a, d, []lifecycle.Pin{section(w, lo-10, lo+50, ""), section(w, hi-50, hi+10, "")})
 					if cs[0].Kept || cs[0].Public || cs[1].Kept || cs[1].Public {
 						t.Fatalf("a clipped section is kept: %+v", cs)
 					}
@@ -177,7 +183,7 @@ func TestPinFirstVisibleFixAndDropout(t *testing.T) {
 	if first <= 0 {
 		t.Fatalf("first visible fix %d", first)
 	}
-	cs, err := fx.a.CheckPins(context.Background(), d, []lifecycle.Pin{
+	cs, err := checkPins(context.Background(), fx.a, d, []lifecycle.Pin{
 		section(w, first, first+10, ""), section(w, first-1, first+10, ""), point(w, 410, ""), section(w, 300, 410, ""), point(w, 500, ""),
 	})
 	if err != nil {
@@ -193,12 +199,12 @@ func TestPinFirstVisibleFixAndDropout(t *testing.T) {
 	w2 := trimTrack(false)
 	w2.Samples.Lat, w2.Samples.Lon = nil, nil // indoor
 	fx2 := pinFixture(t, w2)
-	cs, _ = fx2.a.CheckPins(context.Background(), d, []lifecycle.Pin{point(w2, 10, "")})
+	cs, _ = checkPins(context.Background(), fx2.a, d, []lifecycle.Pin{point(w2, 10, "")})
 	if cs[0].Public || !cs[0].Kept {
 		t.Errorf("indoor: %+v", cs[0])
 	}
 	// Outside the recording.
-	cs, _ = fx.a.CheckPins(context.Background(), d, []lifecycle.Pin{{Type: "note", StartAt: w.StartTime.Add(-time.Second)}, {Type: "note", StartAt: *instant(w, 899), EndAt: ptrTime(w.StartTime.Add(time.Hour))}})
+	cs, _ = checkPins(context.Background(), fx.a, d, []lifecycle.Pin{{Type: "note", StartAt: w.StartTime.Add(-time.Second)}, {Type: "note", StartAt: *instant(w, 899), EndAt: ptrTime(w.StartTime.Add(time.Hour))}})
 	if !cs[0].Outside || !cs[1].Outside {
 		t.Errorf("%+v", cs)
 	}
@@ -486,7 +492,7 @@ func TestPinsEditWithHidingChangeRebuildsRemoveFirst(t *testing.T) {
 func TestPinsMergedSection(t *testing.T) {
 	w := trimTrack(false)
 	fx := pinFixture(t, w)
-	checks, err := fx.a.CheckPins(context.Background(), draft(), []lifecycle.Pin{section(w, 40, 40, "x"), section(w, 40, 41, "y")})
+	checks, err := checkPins(context.Background(), fx.a, draft(), []lifecycle.Pin{section(w, 40, 40, "x"), section(w, 40, 41, "y")})
 	if err != nil || !checks[0].Merged || checks[1].Merged {
 		t.Fatalf("%+v %v", checks, err)
 	}
