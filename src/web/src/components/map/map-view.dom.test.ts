@@ -1238,6 +1238,25 @@ describe('to-be-hidden marks (F-19 E-9, ADR-030)', () => {
     handle.destroy();
     expect(handle.sampleAt(0, 0)).toBe(-1);
   });
+
+  it('F-65 AL-8: laps() redraws the lap markers from data.meta.laps (only at positioned samples); style.load re-applies', async () => {
+    const s = setup();
+    const p = mountRouteMap({ container: s.container, data: s.data, cursor: s.cursor, whenQuiet: s.whenQuiet, signal: s.abort.signal });
+    await quietUntilMap(s);
+    const handle = await p;
+    handles.push(handle);
+    const map = recorder.maps[recorder.maps.length - 1];
+    const lap = (a: number, b: number) => ({ start: a, end: b, start_index: a, end_index: b + 1, trigger: '', stroke: '', totals: {} });
+    (s.data.meta as { laps: readonly unknown[] }).laps = [lap(0, 1), lap(1, 3), lap(3, 5), lap(5, 7)];
+    handle.laps();
+    type Points = { features: { properties: { kind: string; lap?: number } }[] };
+    const writes = () => map.sourceData.filter(([id]) => id === 'wx-markers') as [string, Points][];
+    expect(writes()).toHaveLength(1);
+    expect(writes()[0][1].features.filter((f) => f.properties.kind === 'lap').map((f) => f.properties.lap)).toEqual([2, 4]); // sample 3 has no position
+    map.fire('style.load');
+    expect(writes()).toHaveLength(2);
+    expect(writes()[1]).toEqual(writes()[0]);
+  });
 });
 
 describe('route colouring control (F-25 C-6, C-7, C-8)', () => {

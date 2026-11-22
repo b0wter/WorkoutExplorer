@@ -6,6 +6,7 @@
   // the same glue (page/start.ts) mounts the islands into them and attaches the enhancers.
   // The viewing entry never imports this folder.
   import type { PageViewModel } from '../../lib/page';
+  import type { ComponentProps } from 'svelte';
   import LapsTable from './LapsTable.svelte';
   import PageFooter from './PageFooter.svelte';
   import PageHeader from './PageHeader.svelte';
@@ -20,8 +21,12 @@
     edit?: boolean;
     /** false while the edited workout is a draft: no Copy link (PageHeader). */
     copy?: boolean;
+    /** F-65 AL-8, edit page: a new value rebuilds the laps module (its enhancers start again), and
+     *  the × of the added rows. */
+    lapsKey?: number;
+    remove?: ComponentProps<typeof LapsTable>['remove'];
   }
-  let { model, report = false, edit = false, copy = true }: Props = $props();
+  let { model, report = false, edit = false, copy = true, lapsKey = 0, remove }: Props = $props();
 </script>
 
 <div class="page" class:has-map={model.Route.Map !== ""}>
@@ -31,12 +36,13 @@
   <SummaryStrip items={model.Summary} device={model.Device} trim={model.Trim} />
   {#if model.Route.Map}<div id="map-slot" class="map-slot"></div>{/if}
   {#if model.Pins.URL}<div class="pins-slot" data-url={model.Pins.URL} data-count={model.Pins.Count} hidden></div>{/if}
-  {#if edit}<div class="pins-slot"></div>{/if}
   {#if model.Route.NoLocation}<p class="hint">{tm('noLocation')}</p>{/if}
   {#if model.Route.Hidden}<p class="hint">{t('routeHidden')}</p>{/if}
+  <!-- F-65 OQ-305: below the no-location hint, so without a route "+" sits there. -->
+  {#if edit}<div class="pins-slot"></div>{/if}
   {#if model.ChartsClass}<div id="charts-slot" class={'charts ' + model.ChartsClass}></div>{/if}
   <div id="range-slot" class="range-slot"></div>
-  <LapsTable laps={model.Laps} />
+  {#key lapsKey}<LapsTable laps={model.Laps} {remove} />{/key}
   <div id="zones-slot" class="zones-slot" hidden></div>
   <div id="efforts-slot" class="efforts-slot" hidden></div>
   <PageFooter {report} />

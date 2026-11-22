@@ -14,7 +14,7 @@ import { distanceUnit, formatDistance } from '../lib/format';
 import { PIN_TYPES, typeName, pinName, readPins, type PinType, type ShownPin } from '../lib/pins';
 
 // The pin editor's helpers (owner chunk), re-exported: see src/edit/pins.ts.
-export { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed, typeName, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi } from '../lib/pins';
+export { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed, typeName, dimReason, fromApi, hasVisibleRoute, indexAt, instantAt, snap, sortPins, toApi } from '../lib/pins';
 export type { ApiPin, PinType, Shade, ShownPin } from '../lib/pins';
 
 /** The lazy map module's seam for pins (ADR-013): nothing pin-specific lives there. */
@@ -23,6 +23,8 @@ export interface PinMap {
   marker(el: HTMLElement, i: number): () => void;
   /** Section lines (inclusive sample ranges), above the route, below the range. */
   marks(ranges: readonly (readonly [number, number])[]): void;
+  /** F-65 AL-8: the lap markers follow data.meta.laps again. */
+  laps(): void;
   /** An element inside the map box (stays in fullscreen), bottom left. */
   control(el: HTMLElement): void;
   /** The route sample near a client point, or -1. */
@@ -48,6 +50,9 @@ export interface PinsView {
   readonly slot: HTMLElement;
   readonly cursor: CursorStore;
   readonly selection: SelectionStore;
+  /** F-65 AL-8: the page's units store and, once ready, the map (the edit page's lap editor). */
+  readonly units: UnitsStore;
+  map(cb: (m: PinMap) => void): void;
   /** Replaces the pins; `keep` stays selected (an index into the new list). */
   set(pins: readonly ShownPin[], keep?: number | null): void;
   /** The selected pin's index, or null. */
@@ -209,6 +214,7 @@ export function startPins(env: PinsEnv): PinsView {
   const cardNote = card.appendChild(el(doc, 'p', 'pin-note'));
   const legend = el(doc, 'div', 'maplibregl-ctrl pin-legend');
   let map: PinMap | null = null;
+  const waiting: ((m: PinMap) => void)[] = [];
   let removals: (() => void)[] = [];
   const renderMap = (): void => {
     for (const r of removals) r();
@@ -252,6 +258,7 @@ export function startPins(env: PinsEnv): PinsView {
     m.control(card);
     renderMap();
     paint();
+    for (const f of waiting.splice(0)) f(m);
   });
 
   const set = (next: readonly ShownPin[], keep: number | null = null): void => {
@@ -277,6 +284,8 @@ export function startPins(env: PinsEnv): PinsView {
     slot,
     cursor,
     selection,
+    units,
+    map: (cb) => (map ? cb(map) : void waiting.push(cb)),
     set,
     selected: () => sel,
     select,

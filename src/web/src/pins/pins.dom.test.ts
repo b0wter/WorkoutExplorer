@@ -79,6 +79,7 @@ function fakeMap() {
       };
     },
     marks: (r) => void m.marked.push(r),
+    laps: () => {},
     control: (el) => void controls.push(el),
     sampleAt: () => 7,
   };

@@ -306,9 +306,6 @@
       bottom: calc(10px + 100lvh - 100svh);
     }
   }
-  .wx-addpin:has(button[hidden]) {
-    display: none;
-  }
   .wx-addpin .edit-button {
     height: 29px;
     padding: 0 10px;
@@ -336,4 +333,69 @@
   .wx-addpin .edit-small:empty {
     display: none;
   }
+}
+
+/* F-65 AL-9: "+" and its list, an overlay under it (over it as a map control): no layout change. */
+.wx-plus {
+  position: relative;
+  display: inline-block;
+}
+.plus-button {
+  min-width: 36px;
+  font-weight: 600;
+}
+.plus-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.wx-addpin .plus-menu {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+.plus-menu[hidden],
+.plus-row[hidden],
+.plus-row .edit-small:empty {
+  display: none;
+}
+.plus-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.plus-item[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* F-65 AL-8: the × of an added lap row; a row the trim removes is dimmed with its reason. */
+.laps .lap-x {
+  width: 1%;
+  white-space: nowrap;
+}
+.lap-x-btn {
+  padding: 0 8px;
+  font: inherit;
+  color: var(--fg);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.lap-x .edit-small {
+  margin-left: 6px;
+}
+.laps tr.dim > td:not(.lap-x) {
+  opacity: 0.55;
 }

@@ -25,7 +25,7 @@ const mv = vi.hoisted(() => ({
 vi.mock('./map-view', () => ({
   mountRouteMap: (o: MountOptions): Promise<RouteMapHandle> => {
     mv.calls.push(o);
-    const handle = { destroy: vi.fn(), setScheme: vi.fn(), setHidden: vi.fn(), marker: vi.fn(), marks: vi.fn(), control: vi.fn(), sampleAt: vi.fn() };
+    const handle = { destroy: vi.fn(), setScheme: vi.fn(), setHidden: vi.fn(), marker: vi.fn(), marks: vi.fn(), laps: vi.fn(), control: vi.fn(), sampleAt: vi.fn() };
     mv.handles.push(handle);
     if (mv.mode === 'reject') return Promise.reject(new Error('GPUInitializationError (test)'));
     if (mv.mode === 'defer') {

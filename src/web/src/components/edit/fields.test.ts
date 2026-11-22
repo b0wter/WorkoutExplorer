@@ -23,6 +23,7 @@ const STORED: Settings = {
   zones_max_heart_rate: null,
   zones_threshold_power: null,
   pins: [],
+  added_lap_boundaries: [],
 };
 
 afterEach(() => {

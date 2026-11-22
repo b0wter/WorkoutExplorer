@@ -81,7 +81,7 @@ describe('F-03 §8 worked example, written byte by byte', () => {
     const meta = enc.encode(json);
     const length = offsets[4] + 5;
     const b = new Uint8Array(length);
-    b.set([0x57, 0x45, 0x58, 0x44, 0x06, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
+    b.set([0x57, 0x45, 0x58, 0x44, 0x07, 0x00, 0x05, 0x00, 0x00, 0x00], 0);
     new DataView(b.buffer).setUint32(10, meta.length, true);
     b.set(meta, 14);
     const int32le = (vals: number[]) => new Uint8Array(new Int32Array(vals).buffer);

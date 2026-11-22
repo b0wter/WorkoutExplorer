@@ -1,0 +1,106 @@
+// The "+" control of the edit page (F-65 AL-9; F-56 PN-12): a disclosure, not an ARIA menu. A
+// button with aria-expanded, followed in the DOM by its item buttons, so Tab reaches them; a
+// disabled item is aria-disabled with its one-line reason linked by aria-describedby. The list is
+// an overlay (CSS), so opening never changes the layout. Item states are computed on open and,
+// while open, on every refresh; nothing runs per cursor flush while closed.
+
+import { t } from './texts';
+
+export interface PlusItem {
+  label(): string;
+  /** hidden: not offered; off: disabled with `why` (may be ''). */
+  state(): { readonly hidden?: boolean; readonly off: boolean; readonly why: string };
+  run(): void;
+}
+
+export interface Plus {
+  readonly group: HTMLElement;
+  readonly button: HTMLButtonElement;
+  /** `usable`: a cursor or range is set ("+" is disabled without); open item states follow. */
+  refresh(usable: boolean): void;
+  label(): void;
+}
+
+let seq = 0;
+
+export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
+  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string): HTMLElementTagNameMap[K] => {
+    const e = doc.createElement(tag);
+    e.className = cls;
+    return e;
+  };
+  const group = make('div', 'wx-plus');
+  const button = group.appendChild(make('button', 'edit-button plus-button'));
+  button.type = 'button';
+  button.textContent = '+';
+  button.setAttribute('aria-expanded', 'false');
+  const menu = group.appendChild(make('div', 'plus-menu'));
+  menu.hidden = true;
+  const rows = items.map((item) => {
+    const row = menu.appendChild(make('div', 'plus-row'));
+    const b = row.appendChild(make('button', 'edit-button plus-item'));
+    b.type = 'button';
+    const why = row.appendChild(make('span', 'edit-small'));
+    why.id = 'wx-plus-why-' + ++seq;
+    b.addEventListener('click', () => {
+      if (item.state().off) return paint(); // the state now, not the one painted on open
+      close(false);
+      item.run();
+    });
+    return { item, row, b, why };
+  });
+  const paint = (): void => {
+    for (const { item, row, b, why } of rows) {
+      const s = item.state();
+      row.hidden = !!s.hidden;
+      b.setAttribute('aria-disabled', String(s.off));
+      why.textContent = s.off ? s.why : '';
+      if (why.textContent) b.setAttribute('aria-describedby', why.id);
+      else b.removeAttribute('aria-describedby');
+    }
+  };
+  const outside = (e: Event): void => {
+    if (!group.contains(e.target as Node)) close(false);
+  };
+  const open = (): void => {
+    paint();
+    menu.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    doc.addEventListener('pointerdown', outside, true);
+  };
+  function close(focus: boolean): void {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    doc.removeEventListener('pointerdown', outside, true);
+    if (focus) button.focus();
+  }
+  button.addEventListener('click', () => (menu.hidden ? !button.disabled && open() : close(false)));
+  group.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) {
+      e.stopPropagation(); // not the fullscreen map's Esc
+      close(true);
+    }
+  });
+  group.addEventListener('focusout', (e) => {
+    const to = (e as FocusEvent).relatedTarget as Node | null;
+    if (to && !group.contains(to)) close(false);
+  });
+  const label = (): void => {
+    button.setAttribute('aria-label', t('plus'));
+    button.title = t('plus');
+    for (const { item, b } of rows) b.textContent = item.label();
+    if (!menu.hidden) paint();
+  };
+  label();
+  return {
+    group,
+    button,
+    refresh: (usable) => {
+      button.disabled = !usable;
+      if (!usable) close(false);
+      else if (!menu.hidden) paint();
+    },
+    label,
+  };
+}

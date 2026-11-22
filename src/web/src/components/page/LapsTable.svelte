@@ -6,19 +6,29 @@
   // in one block per leg, heading and own table (F-64 LL-2).
   import type { PageLaps } from '../../lib/page';
 
+  /** F-65 AL-8, edit page only: per lap in DOM order, its added boundary (a sample index, the ×'s
+   *  data-at; the edit glue handles its click), the ×'s accessible name and the dimmed reason
+   *  ('' = kept); null = a row without ×. */
+  type LapRemoval = { readonly at: number; readonly name: string; readonly dim: string } | null;
+
   interface Props {
     laps: PageLaps | null;
+    remove?: { readonly rows: readonly LapRemoval[] };
   }
-  let { laps }: Props = $props();
+  let { laps, remove }: Props = $props();
+  const x = $derived(!!remove?.rows.some((r) => r));
+  /** The first lap of each leg block (L-2's DOM order). */
+  const offsets = $derived(laps?.Legs.reduce<number[]>((o, l, k) => [...o, (o[k - 1] ?? 0) + (laps!.Legs[k - 1]?.Rows.length ?? 0)], []) ?? []);
 </script>
 
-{#snippet table(columns: readonly { Key: string; Label: string }[], rows: readonly (readonly string[])[])}
+{#snippet table(columns: readonly { Key: string; Label: string }[], rows: readonly (readonly string[])[], offset: number)}
   <div class="laps-scroll">
     <table>
-      <thead><tr>{#each columns as column (column.Key)}<th data-k={column.Key}>{column.Label}</th>{/each}</tr></thead>
+      <thead><tr>{#each columns as column (column.Key)}<th data-k={column.Key}>{column.Label}</th>{/each}{#if x}<th class="lap-x"></th>{/if}</tr></thead>
       <tbody>
         {#each rows as row, i (i)}
-          <tr>{#each row as cell, j (j)}<td>{cell}</td>{/each}</tr>
+          {@const r = x ? remove!.rows[offset + i] : null}
+          <tr class:dim={!!r?.dim}>{#each row as cell, j (j)}<td>{cell}</td>{/each}{#if x}<td class="lap-x">{#if r}<button type="button" class="lap-x-btn" data-at={r.at} aria-label={r.name} title={r.name}>×</button>{#if r.dim}<span class="edit-small">{r.dim}</span>{/if}{/if}</td>{/if}</tr>
         {/each}
       </tbody>
     </table>
@@ -34,12 +44,12 @@
           {#each laps.Legs as leg, k (k)}
             <div class="laps-leg" data-sport={leg.Sport}>
               <h3>{leg.Name}</h3>
-              {#if leg.Columns.length}{@render table(leg.Columns, leg.Rows)}{/if}
+              {#if leg.Columns.length}{@render table(leg.Columns, leg.Rows, offsets[k])}{/if}
             </div>
           {/each}
         </div>
       {:else}
-        {@render table(laps.Columns, laps.Rows)}
+        {@render table(laps.Columns, laps.Rows, 0)}
       {/if}
     {/if}
   </section>

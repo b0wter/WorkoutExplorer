@@ -13,6 +13,7 @@ import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedTex
 import { onLanguage } from '../lib/i18n';
 import { t } from './texts';
 import { TWO_COLUMN_QUERY } from '../page/splitter';
+import { createPlus, type PlusItem } from './plus';
 
 export interface PinEditorEnv {
   /** The pins slot: the tools and form go first, the view's list after them. */
@@ -25,10 +26,12 @@ export interface PinEditorEnv {
   shade(): Shade;
   /** Any pin change (the panel's status clears). */
   onedit(): void;
+  /** F-65 AL-9: the "+" items before Add pin (Add lap). */
+  readonly items?: readonly PlusItem[];
 }
 
 export interface PinEditor {
-  /** The shading changed (sliders, trim): dimmed states and "Add pin" follow. */
+  /** The shading changed (sliders, trim) or the laps: dimmed states and the "+" items follow. */
   refresh(): void;
   /** `{ pins }` when the set to send differs from the stored one, else {} (E-6). */
   patch(stored: readonly ApiPin[]): { pins?: ApiPin[] };
@@ -59,24 +62,34 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     return b;
   };
 
-  // ---- tools: Add pin (at the cursor or the selected range), one message line ----
+  // ---- tools: "+" with Add lap and Add pin (at the cursor or the selected range), one message line ----
   const tools = make('div', 'edit-row pin-tools');
-  const add = tools.appendChild(button(''));
-  // The reason Add pin is off, in the row (touch has no tooltip); empty it takes no space.
-  const why = tools.appendChild(make('span', 'edit-small'));
+  const addPin: PlusItem = {
+    label: () => t('addPin'),
+    // F-56's rules: no Add pin without a visible route or at the cap; its reason when refused.
+    state: () => {
+      if (list.length >= MAX_PINS || !hasVisibleRoute(env.shade(), lat)) return { hidden: true, off: true, why: '' };
+      const sp = spot();
+      const twin = sp !== null && list.some((p) => p.from === sp[0] && p.to === sp[1]);
+      return { off: sp === null || twin, why: sp === null ? t('pinHiddenSpot') : twin ? t('pinHere') : '' };
+    },
+    run: () => placePin(),
+  };
+  const plus = createPlus(doc, [...(env.items ?? []), addPin]);
+  tools.append(plus.group);
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
-  // Two-column layout (the page's own switch): Add pin and its reason sit on the map, bottom left
-  // (PN-12); one column: in the tools row. Same elements, so name, focus order and texts are kept.
+  // Two-column layout (the page's own switch): "+" sits on the map, bottom left (PN-12, AL-9);
+  // one column: in the tools row. Same elements, so name, focus order and texts are kept.
   const mapSlot = doc.getElementById('map-slot');
   const onMap = mapSlot ? make('div', 'wx-addpin') : null;
   const mq = doc.defaultView?.matchMedia?.(TWO_COLUMN_QUERY);
   const dock = (): void => {
     const map = onMap !== null && !!mq?.matches;
     if (map) {
-      onMap.append(add, why);
+      onMap.append(plus.group);
       if (!onMap.isConnected) mapSlot!.append(onMap);
-    } else tools.prepend(add, why);
+    } else tools.prepend(plus.group);
     tools.classList.toggle('on-map', map);
   };
   dock();
@@ -107,7 +120,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   slot.prepend(tools, form);
   /** Every fixed text, again on a language change (F-54). */
   const label = (): void => {
-    add.textContent = t('addPin');
+    plus.label();
     PIN_TYPES.forEach((p, i) => (type.options[i].text = typeName(p)));
     typeLabel.data = t('pinType');
     titleLabel.data = t('pinTitle');
@@ -134,19 +147,14 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   };
   const controls = (): void => {
     const k = view.selected();
-    // Hidden (not disabled) only when no pin can be added at all; never a layout change while scrubbing.
-    add.hidden = list.length >= MAX_PINS || !hasVisibleRoute(env.shade(), lat);
     form.hidden = k === null;
     if (k !== null) move.hidden = list[k].to !== undefined;
     enable();
   };
-  /** Add pin and Move need a usable spot; light enough for every cursor step. */
+  /** "+" needs a cursor or range, Move a usable spot; light enough for every cursor step (the
+   *  item states run only while the list is open). */
   const enable = (): void => {
-    const sp = spot();
-    const none = selection.start() < 0 && (cursor.get() ?? -1) < 0;
-    const twin = sp !== null && list.some((p) => p.from === sp[0] && p.to === sp[1]);
-    add.disabled = sp === null || twin;
-    why.textContent = add.hidden || none ? '' : sp === null ? t('pinHiddenSpot') : twin ? t('pinHere') : '';
+    plus.refresh(selection.start() >= 0 || (cursor.get() ?? -1) >= 0);
     const k = view.selected();
     move.disabled = k === null || place(cursor.get() ?? -1) < 0;
   };
@@ -221,15 +229,15 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   cursor.subscribe(enable);
 
   // ---- placing: at the selected point or range (OQ-272, revised 21 Nov 2026); no waiting mode ----
-  add.addEventListener('click', () => {
-    if (add.disabled) return;
-    const sp = spot()!;
+  const placePin = (): void => {
+    const sp = spot();
+    if (!sp) return;
     say('');
     const p: Pin = { type: 'point_of_interest', title: '', note: '', from: sp[0], ...(sp[1] !== undefined && { to: sp[1] }) };
     list.push(p);
     changed(list.indexOf(p));
     view.select(list.indexOf(p));
-  });
+  };
   move.addEventListener('click', () => {
     const k = view.selected();
     const s = place(cursor.get() ?? -1);

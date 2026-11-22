@@ -220,6 +220,16 @@ export function rangeData(classed: readonly [number, number][][][], bridges: Rou
   return { type: 'FeatureCollection', features: [...colourData(classed).features, ...linesData({ recorded: [], bridges }).features] };
 }
 
+/** The wx-markers source data. */
+export const markersData = (markers: readonly RouteMarker[]) => ({
+  type: 'FeatureCollection' as const,
+  features: markers.map((m) => ({
+    type: 'Feature' as const,
+    properties: m.lap !== undefined ? { kind: m.kind, lap: m.lap } : m.name !== undefined ? { kind: m.kind, name: m.name } : { kind: m.kind },
+    geometry: { type: 'Point' as const, coordinates: [m.lon, m.lat] },
+  })),
+});
+
 /** Local style: background, glyphs URL, sources wx-route and wx-markers (inline GeoJSON), and
  *  the wx- layers. wx-route (v1.4) is a FeatureCollection of at most two MultiLineStrings,
  *  kind 'recorded' (solid) and kind 'bridge' (dashed), each only if non-empty; the source and
@@ -233,17 +243,7 @@ export function baseStyle(
   classes: readonly string[] = CLASS_COLOURS,
 ): StyleSpecification {
   const sources: Record<string, SourceSpecification> = {
-    [MARKER_SOURCE]: {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: markers.map((m) => ({
-          type: 'Feature',
-          properties: m.lap !== undefined ? { kind: m.kind, lap: m.lap } : m.name !== undefined ? { kind: m.kind, name: m.name } : { kind: m.kind },
-          geometry: { type: 'Point', coordinates: [m.lon, m.lat] },
-        })),
-      },
-    },
+    [MARKER_SOURCE]: { type: 'geojson', data: markersData(markers) },
   };
   const layers: LayerSpecification[] = [{ id: 'background', type: 'background', paint: { 'background-color': colours.background } }];
   const routeData = linesData(lines);

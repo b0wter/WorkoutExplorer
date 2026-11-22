@@ -3,7 +3,7 @@
 // imported by app code.
 
 import { decodeDataFile, type WorkoutData } from '../datafile';
-import { loadGolden } from '../../../test-support/golden.mjs';
+import { loadAddedLaps, loadGolden } from '../../../test-support/golden.mjs';
 import { fileHash } from '../../../test-support/samples.mjs';
 import { buildPageViewModel } from './view';
 import type { PageViewModel } from './model';
@@ -74,6 +74,13 @@ export function withTriggers(data: WorkoutData): WorkoutData {
   return { ...data, meta: { ...data.meta, laps } };
 }
 
+/** F-65 AL-6: the laps of added-laps.json's "device-laps" case, as the Go build makes them (Go: addedLaps). */
+export function addedLaps(data: WorkoutData): WorkoutData {
+  const c = loadAddedLaps()[0];
+  if (c.name !== 'device-laps') throw new Error('added-laps.json: no device-laps case first');
+  return { ...data, meta: { ...data.meta, laps: c.laps as WorkoutData['meta']['laps'] } };
+}
+
 /** F-44 PS-5: a pool swim whose session recorded no lengths count: "Pool" only. */
 export function withoutLengths(data: WorkoutData): WorkoutData {
   const summary = { ...data.meta.summary };
@@ -115,6 +122,7 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'pool-swim-no-lengths', golden: 'pool-swim', title: '', description: '', transform: withoutLengths },
   { name: 'ride-no-laps', golden: 'ride-no-laps', title: '', description: '' },
   { name: 'ride-lap-triggers', golden: 'ride-lap-triggers', title: '', description: '' },
+  { name: 'ride-added-laps', golden: 'ride-lap-triggers', title: '', description: '', transform: addedLaps }, // F-65: the Added trigger
   { name: 'pool-swim-33m', golden: 'pool-swim-33m', title: '', description: '' },
   { name: 'pool-swim-mixed', golden: 'pool-swim-mixed', title: '', description: '' },
   // F-49: zones are client-owned (ZN-8), so the view model carries none.

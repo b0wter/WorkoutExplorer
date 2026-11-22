@@ -184,7 +184,9 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   const enhance = (meta: WorkoutMeta): void => {
     if (enhanced) return;
     enhanced = true;
-    enhanceUnits(root, meta, units, !edit);
+    // The viewing page only: the edit page builds its strip (F-47 TR-9: it may show the trimmed
+    // summary) and its laps (F-65 AL-8) in its units itself.
+    if (!edit) enhanceUnits(root, meta, units);
   };
 
   const url = edit ? '' : dataFileUrl(root);
