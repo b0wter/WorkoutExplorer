@@ -30,6 +30,8 @@
 | Published workout page `/w/{id}` | The `index.html` source, filled before it is parsed as the template, by `serve` and `regenerate` (P-10) | the next `regenerate` (OQ-120); an owner change rebuilds its own page at once |
 | Footers the edit page draws in the browser (page footer, published view, not-found view) | The owner chunk copies the link from its own shell (frontend chooses the element); no extra request | restart of `app` |
 
+F-63 reuses this fill for the upload page's iOS Shortcut hint: `upload.html` carries the About page's `<!--wx:shortcut-->…<!--/wx:shortcut-->` block once, with `<!--wx:shortcut-url-->` inside (package `shell`, `CutBlock` shared with `about`). Unset → block and markers dropped, so the page is today's bytes; a missing or broken block exits 1 like a missing footer marker.
+
 ## Verification focus
 
 - AC 3: a marker string from the file in no response but `/api/impressum`, over every page type through Caddy.

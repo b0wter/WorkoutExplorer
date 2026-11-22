@@ -464,6 +464,9 @@
   "chooseFile": "Elegir un archivo",
   "mineLink": "{link}: los entrenamientos subidos desde este navegador",
   "mineLinkText": "Mis entrenamientos",
+  "shortcutHint": "¿En un iPhone o iPad? Sube desde el menú de compartir con {link}. {more}",
+  "shortcutLink": "este atajo",
+  "shortcutMore": "Más",
   "uploadAbout": "Acerca de"
  },
  "markup/static": {
@@ -509,6 +512,7 @@
   "ab_whenAWorkout2": "Cuando se denuncia un entrenamiento, el operador recibe un aviso a través de Pushover. Pushover conoce el número de la denuncia, el motivo y el enlace de visualización del entrenamiento (que abre la página pública), además de un enlace de un solo uso para eliminar el entrenamiento, válido hasta 30 días. Nunca conoce el mensaje de quien denuncia ni el título del entrenamiento. Cualquiera con acceso a la cuenta de Pushover del operador o a su teléfono desbloqueado podría usar ese enlace una vez para eliminar el entrenamiento denunciado.",
   "ab_uploadFromYour": "Subir desde el iPhone",
   "ab_theOperatorOffers": "El operador ofrece un atajo para iPhone que sube un archivo FIT desde el menú de compartir y abre su página de edición en Safari. Añádelo desde este enlace: {link}",
+  "ab_theLinkOpens": "El enlace abre el sitio de iCloud de Apple, que entonces ve tu dirección IP. Este sitio no envía nada a Apple antes de que lo toques.",
   "ab_softwareUpdates": "Actualizaciones de software",
   "ab_thisServerDownloads": "Este servidor descarga las actualizaciones de software de GitHub; no se envía ningún dato de entrenamientos ni de visitantes.",
   "ab_whatTheOperator": "Qué puede hacer el operador",

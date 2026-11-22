@@ -464,6 +464,9 @@
   "chooseFile": "Datei auswählen",
   "mineLink": "{link}: die von diesem Browser hochgeladenen Trainings",
   "mineLinkText": "Meine Trainings",
+  "shortcutHint": "Auf einem iPhone oder iPad? Lade mit {link} direkt aus dem Teilen-Menü hoch. {more}",
+  "shortcutLink": "diesem Kurzbefehl",
+  "shortcutMore": "Mehr",
   "uploadAbout": "Über"
  },
  "markup/static": {
@@ -509,6 +512,7 @@
   "ab_whenAWorkout2": "Wird ein Training gemeldet, erhält der Betreiber eine Benachrichtigung über Pushover. Pushover erfährt die Meldungsnummer, den Grund und den Ansichtslink des Trainings (der die öffentliche Seite öffnet) sowie einen einmal nutzbaren Link zum Löschen des Trainings, der bis zu 30 Tage gilt. Es erfährt nie die Nachricht der meldenden Person oder den Titel des Trainings. Wer Zugriff auf das Pushover-Konto oder das entsperrte Telefon des Betreibers hat, könnte diesen Link einmal nutzen, um das gemeldete Training zu löschen.",
   "ab_uploadFromYour": "Hochladen vom iPhone",
   "ab_theOperatorOffers": "Der Betreiber bietet einen Kurzbefehl für das iPhone an, der eine FIT-Datei aus dem Teilen-Menü hochlädt und ihre Bearbeitungsseite in Safari öffnet. Füge ihn über diesen Link hinzu: {link}",
+  "ab_theLinkOpens": "Der Link öffnet Apples iCloud-Website, die dann deine IP-Adresse sieht. Diese Website sendet vor dem Tippen nichts an Apple.",
   "ab_softwareUpdates": "Software-Updates",
   "ab_thisServerDownloads": "Dieser Server lädt Software-Updates von GitHub herunter; dabei werden keine Trainings- oder Besucherdaten gesendet.",
   "ab_whatTheOperator": "Was der Betreiber tun kann",

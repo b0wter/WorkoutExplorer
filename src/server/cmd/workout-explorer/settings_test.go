@@ -157,9 +157,11 @@ func TestAutoUpdateSetting(t *testing.T) {
 // TestAboutRoute (F-29 AB-4): GET and HEAD /about, values filled and escaped,
 // the Pushover block only with both secrets, other methods not served.
 func TestAboutRoute(t *testing.T) {
+	var dir string // the last call's data directory
 	get := func(s settings, method string) *httptest.ResponseRecorder {
 		s.webDir, s.baseURL, s.maxConcurrentUploads = testWeb, testBaseURL, 4
-		h, closeApp, err := newApp(context.Background(), t.TempDir(), s, slog.New(slog.DiscardHandler))
+		dir = t.TempDir()
+		h, closeApp, err := newApp(context.Background(), dir, s, slog.New(slog.DiscardHandler))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -189,6 +191,10 @@ func TestAboutRoute(t *testing.T) {
 	}
 	if sc := get(settings{iosShortcutURL: "https://www.icloud.com/shortcuts/x?a=1&b=2"}, "GET").Body.String(); !strings.Contains(sc, `<a href="https://www.icloud.com/shortcuts/x?a=1&amp;b=2">SC</a>`) {
 		t.Errorf("Shortcut section: %q", sc)
+	}
+	// F-63 (QA-63-r1-1): serve passes the same link to the upload page's hint.
+	if b, err := os.ReadFile(filepath.Join(dir, "site", "upload.html")); err != nil || !strings.Contains(string(b), `href="https://www.icloud.com/shortcuts/x?a=1&amp;b=2"`) {
+		t.Errorf("upload hint: %v %s", err, b)
 	}
 	if strings.Contains(rec.Body.String(), "UPDATES") {
 		t.Error("updates block present with automatic updates off")
