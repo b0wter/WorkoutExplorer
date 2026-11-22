@@ -97,7 +97,6 @@
   "noChanges": "Aucune modification",
   "saved": "Enregistré",
   "addPin": "Ajouter un repère",
-  "addPinHint": "Sélectionnez d'abord un point sur la carte ou un graphique.",
   "pinHiddenSpot": "Ce point est masqué ou coupé.",
   "pinHere": "Il y a déjà un repère ici.",
   "pinType": "Type",

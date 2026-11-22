@@ -59,7 +59,6 @@ export const en = {
   noChanges: 'No changes',
   saved: 'Saved',
   addPin: 'Add pin',
-  addPinHint: 'Select a point on the map or a chart first.',
   pinHiddenSpot: 'This point is hidden or trimmed.',
   pinHere: 'There is a pin here already.',
   pinType: 'Type',

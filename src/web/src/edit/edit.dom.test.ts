@@ -1818,7 +1818,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
   it('the button and its visible reason follow radius and trim changes; a twin is refused; Move refuses a hidden spot (r3-2 to r3-4)', async () => {
     settings = fresh({ ...ON, pins: [] });
     await start();
-    expect([button('Add pin').disabled, why()]).toEqual([true, 'Select a point on the map or a chart first.']);
+    expect([button('Add pin').disabled, why()]).toEqual([true, '']);
     await pick(20); // inside the 300 m start radius
     expect([button('Add pin').disabled, why()]).toEqual([true, 'This point is hidden or trimmed.']);
     hideAt(0, 0); // radius off: the same cursor is public

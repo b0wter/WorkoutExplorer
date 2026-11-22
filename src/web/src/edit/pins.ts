@@ -62,7 +62,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   // ---- tools: Add pin (at the cursor or the selected range), one message line ----
   const tools = make('div', 'edit-row pin-tools');
   const add = tools.appendChild(button(''));
-  // The reason Add pin is off, in the row (touch has no tooltip); a no-break space keeps the line's height.
+  // The reason Add pin is off, in the row (touch has no tooltip); empty it takes no space.
   const why = tools.appendChild(make('span', 'edit-small'));
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
@@ -146,8 +146,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const none = selection.start() < 0 && (cursor.get() ?? -1) < 0;
     const twin = sp !== null && list.some((p) => p.from === sp[0] && p.to === sp[1]);
     add.disabled = sp === null || twin;
-    why.textContent = add.hidden ? '\u00a0' : none ? t('addPinHint') : sp === null ? t('pinHiddenSpot') : twin ? t('pinHere') : '\u00a0';
-    why.classList.toggle('blank', why.textContent === '\u00a0');
+    why.textContent = add.hidden || none ? '' : sp === null ? t('pinHiddenSpot') : twin ? t('pinHere') : '';
     const k = view.selected();
     move.disabled = k === null || place(cursor.get() ?? -1) < 0;
   };
