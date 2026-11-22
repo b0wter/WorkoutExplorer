@@ -47,7 +47,7 @@ Top level an array; `to` only for sections (`to` > `from`). No coordinate, insta
 | --- | --- |
 | Activity entry (static) | Slot read, `import()` and `fetch` call site, slot reserve and layout CSS: ceiling **250 bytes gzip** from the ADR-011 reserve (2,397 after F-57). The engineer records the figure in ADR-011 item 4; above: stop and report |
 | Lazy `src/pins/` | About 6,000 bytes gzip JS and CSS with six icons; above: report |
-| Owner chunk | Editor and form; F-19's 15,000 ceiling for the whole chunk; report the figure |
+| Owner chunk | Editor and form; F-19's ceiling for the whole chunk; report the figure |
 | Server | One parse per pin-relevant `PATCH` (PN-5); pins file under 200 KB at 50 maximal pins, a few hundred bytes typical |
 
 ## Verification (QA high for PN-3 to PN-6)

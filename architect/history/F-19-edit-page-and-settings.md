@@ -2,6 +2,11 @@
 
 History of [architect/F-19-edit-page-and-settings.md](../F-19-edit-page-and-settings.md). Read it only when you need the history.
 
+## Version 0.4 (22 Nov 2026, QA-65-r1-1): text replaced
+
+- Header version line: "0.3 (30 Oct 2026: no first-open marker, `/published/` served by the same page, no visibility control; built with F-20 v0.2)"
+- Budget, owner chunk: "Above 15,000 gzip: stop and report (it delays the edit page by its size)"
+
 ## Version 0.3 (30 Oct 2026, F-20 design v0.2): text replaced
 
 - E-1: Caddy and Vite served `edit.html` for `/edit/*` only ("the engineer chooses how" in development).

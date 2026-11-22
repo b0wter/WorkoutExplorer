@@ -1,6 +1,6 @@
 # F-19 Edit page: draft view and settings panel: architecture
 
-- **Version:** 0.3 (30 Oct 2026: no first-open marker, `/published/` served by the same page, no visibility control; built with F-20 v0.2)
+- **Version:** 0.4 (22 Nov 2026: owner chunk ceiling 20,000, QA-65-r1-1)
 - **Status:** accepted (29 Oct 2026). Normal lane plus critical checks (edit token). OQ-81 and OQ-82 resolved
 - **History:** [history/F-19-edit-page-and-settings.md](history/F-19-edit-page-and-settings.md)
 - **Date:** 29 Oct 2026
@@ -44,7 +44,7 @@ ADR-030: the upload computes the to-be-hidden ranges with the publish rule and s
 | --- | --- |
 | Activity entry (CI line, ADR-002) | **F-19 share 400 bytes gzip**, from the reserve: the page switch, the `import()` call site (the helper is already paid, ADR-011 rev. 4), the glue's data seam and the marks prop in `RouteMap`. Above 400: stop and report. Measured 374 at QA r1 (ADR-011 rev. 10) |
 | `edit.html` entry | Same counted set as the activity entry, plus at most the marker. QA reads both lines |
-| Owner chunk (lazy, not counted) | Reported in each QA round. Above 15,000 gzip: stop and report (it delays the edit page by its size) |
+| Owner chunk (lazy, not counted) | Reported in each QA round. Above **20,000** gzip: stop and report (it delays the edit page by its size). Raised from 15,000 at F-65 (QA-65-r1-1, 16,745): owner-only, never on a viewer's page; a further split would add a request on the same page for ~3 KB. Above 20,000, split feature code into its own lazy chunk rather than raise again |
 
 ## Verification (critical lane: QA at effort high)
 

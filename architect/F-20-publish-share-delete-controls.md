@@ -56,7 +56,7 @@ Removal of the built private state, as decided in [ADR-019](ADR-019-sqlite-store
 | --- | --- |
 | Activity entry (CI line, ADR-002) | **F-20 share: 0 planned, ceiling 100 bytes gzip**, against 56,360 at F-20 start. Measured: ADR-011 ledger. v0.2 adds nothing static: the page kind is read in the lazy chunk. Above 100: stop and report |
 | `edit.html` entry | The same counted set as the activity entry |
-| Owner chunk (lazy, not counted) | **15,000 gzip.** 7,629 at QA r1. Reported in each QA round; above the limit, stop and report |
+| Owner chunk (lazy, not counted) | F-19's ceiling (Budget). 7,629 at QA r1 |
 
 ## Verification (critical lane: QA at effort high)
 

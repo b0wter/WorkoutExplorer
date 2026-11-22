@@ -34,7 +34,7 @@
 | What | Limit |
 | --- | --- |
 | Activity entry | The code `added` and its word in `lib/page`: estimate +20 bytes gzip, **ceiling 50** from the ADR-011 reserve; the engineer records the figure in item 4. Viewers load no new chunk or file |
-| Owner chunk | Mirror, "+" disclosure, ×, reasons: estimate 2,000 bytes gzip within F-19's chunk ceiling; report the figure |
+| Owner chunk | Mirror, "+" disclosure, ×, reasons: estimate 2,000 bytes gzip within F-19's chunk ceiling; measured +2,857 → 16,745 at QA r1, ceiling raised to 20,000 (F-19 v0.4, QA-65-r1-1) |
 | Data file | About 150 bytes of metadata per added lap before compression; at 100 boundaries a few KB brotli, within the F-03 budget |
 | Server | One shared parse per relevant `PATCH` (AL-5); the merge is O(N) per build |
 
