@@ -139,6 +139,24 @@ func TestAddedLapsTrimAndRadius(t *testing.T) {
 	}
 }
 
+// AL-5: a stored entry sent again in a patch whose trim removes it is
+// deleted, not refused.
+func TestAddedLapsSentStoredDeletedByTrim(t *testing.T) {
+	s, _, _, _, c, _ := owned(t, nil)
+	s.d.Trimmer = &gridTrimmer{}
+	ctx := context.Background()
+	if _, err := s.Update(ctx, c.PublicID, c.EditToken, lapSet(100, 600)); err != nil {
+		t.Fatal(err)
+	}
+	b := at(500)
+	p := lapSet(100, 600)
+	p.TrimEnd = OptTime{Set: true, At: &b}
+	rec, err := s.Update(ctx, c.PublicID, c.EditToken, p)
+	if err != nil || !slices.Equal(secs(rec), []int{100}) {
+		t.Fatalf("%v %v", secs(rec), err)
+	}
+}
+
 // AL-3's last rule: a stored entry that is no longer valid (a parser change)
 // is dropped by the next judging when not sent; sent, it is refused.
 func TestAddedLapsStoredInvalidDropped(t *testing.T) {

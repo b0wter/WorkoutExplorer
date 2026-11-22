@@ -295,6 +295,29 @@ func TestCheckEditsLaps(t *testing.T) {
 	}
 }
 
+// AL-3 at the real port, where a device lap end and a window end are not also
+// each other: the check must flag each on its own.
+func TestCheckEditsLapBoundaryKinds(t *testing.T) {
+	t0 := time.Date(2026, 6, 1, 6, 0, 0, 0, time.UTC)
+	at := func(i int) time.Time { return t0.Add(time.Duration(i) * time.Second) }
+	recs := make([]workout.RawRecord, 900)
+	for i := range recs {
+		recs[i] = workout.RawRecord{At: at(i), Lat: math.NaN(), Lon: math.NaN(), Cadence: math.NaN(), Power: math.NaN(), Temperature: math.NaN(), Distance: float64(i) * 3}
+	}
+	w := workout.Normalise(workout.Recording{FileType: "activity", Records: recs,
+		Laps: []workout.RawLap{{Start: at(0), End: at(300), Trigger: "time"}, {Start: at(301), End: at(899), Trigger: "time"}}})
+	fx := pinFixture(t, w)
+	d := draft()
+	d.TrimStartAt, d.TrimEndAt = instant(w, 100), instant(w, 800)
+	_, cs, err := fx.a.CheckEdits(context.Background(), d, nil, []time.Time{*instant(w, 300), *instant(w, 100), *instant(w, 800), *instant(w, 500)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cs[0].OnBoundary || !cs[0].Kept || !cs[1].OnBoundary || !cs[2].OnBoundary || cs[3].OnBoundary || !cs[3].Kept {
+		t.Errorf("%+v", cs)
+	}
+}
+
 func mustRead(t *testing.T, p string) []byte {
 	t.Helper()
 	b, err := os.ReadFile(p)

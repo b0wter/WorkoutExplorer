@@ -92,9 +92,3 @@ func (a *Area) CheckEdits(ctx context.Context, r lifecycle.Record, pins []lifecy
 	}
 	return pcs, lcs, nil
 }
-
-// CheckPins is CheckEdits for pins only.
-func (a *Area) CheckPins(ctx context.Context, r lifecycle.Record, pins []lifecycle.Pin) ([]lifecycle.PinCheck, error) {
-	pcs, _, err := a.CheckEdits(ctx, r, pins, nil)
-	return pcs, err
-}
