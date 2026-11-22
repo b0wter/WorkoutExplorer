@@ -19,6 +19,7 @@ import { sectionRanges, sections } from '../lib/sections';
 import { createRangeStats, emptyValues } from '../lib/range';
 import { presetBounds, splitChoice } from '../lib/splits';
 import { lapCrossing, legWithoutLaps, runRideRun } from '../lib/page/samples';
+import { resetI18n, use } from '../lib/i18n';
 
 function golden(name: string): WorkoutData {
   const g = loadGolden().find((x) => x.name === name);
@@ -519,6 +520,32 @@ describe('laps per leg (F-64 LL-2, LL-3; AC 1, 3, 8, 9)', () => {
     expect([p.selection.start(), p.selection.end()]).toEqual([laps[laps.length - 1].start_index, laps[laps.length - 1].end_index - 1]);
   });
 
+  it('QA-64-r1-1: units and language reach the laps view\'s tables and headings after the splits view is built', async () => {
+    resetI18n(); // earlier tests' pages left their language listeners
+    const warn = vi.spyOn(console, 'warn');
+    const p = open(golden('triathlon'), 'metric', true);
+    p.button('Splits')?.click();
+    p.units.set('imperial');
+    expect(blocks(p)[2].querySelector('th[data-k="distance"]')?.textContent).toBe('Distance (mi)');
+    try {
+      use('de', { swimming: 'Schwimmen (Test)', cycling: 'Rad (Test)', running: 'Lauf (Test)' }, document);
+      await vi.waitFor(() => expect(blocks(p).map(legName)).toEqual(['Schwimmen (Test)', 'T1', 'Rad (Test)', 'T2', 'Lauf (Test)']));
+      expect(blocks(p, 'splits').map(legName)[4]).toBe('Lauf (Test)');
+    } finally {
+      resetI18n();
+    }
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('QA-64-r1-1: leg blocks that do not hold every lap are left as served', () => {
+    const warn = vi.spyOn(console, 'warn');
+    const p = open(golden('triathlon'), 'metric', true);
+    blocks(p)[4].remove();
+    p.units.set('imperial');
+    expect(blocks(p)[2].querySelector('th[data-k="distance"]')?.textContent).toBe('Distance (km)');
+    expect(warn).toHaveBeenCalled();
+  });
+
   it('AC 3: a lap crossing a leg start is listed once, in the leg it starts in', () => {
     const p = open(lapCrossing(golden('triathlon')));
     expect(blocks(p).map((b) => legRows(b).length)).toEqual([1, 1, 1, 1, 1]);
@@ -673,6 +700,17 @@ describe('splits per leg (F-64 LL-4 to LL-7; AC 2, 4 to 7, 10, 13)', () => {
     };
     expect(options(lap)).toEqual(['100 m', '200 m', '400 m', '500 m']);
     expect(options(golden('triathlon'))).toEqual(['50 m', '100 m', '200 m', '500 m']);
+    // QA-64-r1-1: a pool length in the summary alone does not make an open-water leg a pool swim.
+    expect(options({ ...lap, meta: { ...lap.meta, sessions: data.meta.sessions } })).toEqual(['50 m', '100 m', '200 m', '500 m']);
+  });
+
+  it('QA-64-r1-1: a leg\'s drop-down redraws its chart with the new splits', () => {
+    const p = triathlon();
+    const run = blocks(p, 'splits')[4];
+    pick(run, '400 m');
+    const chart = run.querySelector('.compare')!;
+    expect(chart.querySelector('.compare-foot')?.firstChild?.textContent).toBe('400 m splits');
+    expect(chart.querySelectorAll('rect.bar')).toHaveLength(legRows(run).length);
   });
 
   it('AC 7: run, ride, run gives three tables per view; the two runs are set independently', () => {
