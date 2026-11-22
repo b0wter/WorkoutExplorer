@@ -44,21 +44,29 @@ export function enhanceUnits(root: ParentNode, meta: WorkoutMeta, store: UnitsSt
       if (item.Unit) writes.push([unit[0], item.Unit]);
       if (item.Max) writes.push([max[0], tp('max', { v: item.Max })]);
     });
-    const laps = lapsGroup(meta.sport, meta.laps, units);
-    // The server table only, not the bundle's splits table (F-18 L-6); lap rows only, not the
-    // separator rows (F-42 MS-6: a leg name has no unit).
-    const heads = root.querySelectorAll('.laps-scroll:not(.splits) thead th');
-    const rows = root.querySelectorAll('.laps-scroll:not(.splits) tbody tr:not(.laps-section)');
-    if (laps === null ? heads.length > 0 : heads.length !== laps.Columns.length || rows.length !== laps.Rows.length) ok = false;
-    laps?.Columns.forEach((c, j) => {
-      if (heads[j]?.getAttribute('data-k') === c.Key) writes.push([heads[j], c.Label]);
-      else ok = false;
-    });
-    laps?.Rows.forEach((row, i) => {
-      const tds = rows[i]?.children;
-      if (tds?.length !== row.length) ok = false;
-      else row.forEach((t, j) => writes.push([tds[j], t]));
-    });
+    // The server tables only, not the bundle's splits (F-18 L-6). F-64 LL-3: a multisport page has
+    // one table per leg block, built for the block's sport from its next r laps (a leg name has no unit).
+    const blocks = [...root.querySelectorAll('.laps-legs:not(.splits) > .laps-leg')];
+    let k = 0;
+    const tables = blocks.length
+      ? blocks.map((b) => [b.getAttribute('data-sport') ?? '', b, meta.laps.slice(k, (k += b.querySelectorAll('tbody tr').length))] as const)
+      : [[meta.sport, root, meta.laps] as const];
+    if (blocks.length && k !== meta.laps.length) ok = false;
+    for (const [sport, box, ls] of tables) {
+      const laps = lapsGroup(sport, ls, units);
+      const heads = box.querySelectorAll('.laps-scroll:not(.splits) thead th');
+      const rows = box.querySelectorAll('.laps-scroll:not(.splits) tbody tr');
+      if (laps === null ? heads.length > 0 : heads.length !== laps.Columns.length || rows.length !== laps.Rows.length) ok = false;
+      laps?.Columns.forEach((c, j) => {
+        if (heads[j]?.getAttribute('data-k') === c.Key) writes.push([heads[j], c.Label]);
+        else ok = false;
+      });
+      laps?.Rows.forEach((row, i) => {
+        const tds = rows[i]?.children;
+        if (tds?.length !== row.length) ok = false;
+        else row.forEach((t, j) => writes.push([tds[j], t]));
+      });
+    }
     if (!ok) {
       console.warn('page: summary or laps markup does not match the view model; units not applied');
       return;

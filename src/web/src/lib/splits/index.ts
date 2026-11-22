@@ -1,8 +1,7 @@
-// Split presets and rules (F-46 LS-5, LS-6; AP-20). Pure; imports only lib/range's boundary
-// function. Lists and defaults are metric in both unit systems; a pool swim splits in its pool's unit.
+// Split presets and rules (F-46 LS-5, LS-6; F-64 LL-4, LL-6; AP-20). Pure, lazy (the splits chunk
+// only, so the boundary rule stays out of the entry). Lists and defaults are metric in both unit systems; a pool swim splits in its pool's unit.
 
 import type { WorkoutMeta } from '../datafile';
-import { splitBounds } from '../range';
 
 export interface Pool {
   /** Shown length P in the pool's unit; 33 is taken as exactly 100/3 (OQ-165). */
@@ -75,19 +74,39 @@ export function splitChoice(meta: Pick<WorkoutMeta, 'sport' | 'summary'>, advanc
   return { presets, index: presets.indexOf(all[d]), pool };
 }
 
-/** Split boundaries for a preset (F-18 L-4; LS-6: a pool split ends within 1 % of a recorded length). */
-export function presetBounds(d: Float64Array, p: Preset, pool: Pool | null): number[] {
-  return splitBounds(d, p.length, tolerance(pool));
+/** Split boundaries over d̄ (F-18 L-4) for splits of `length` metres within the sample window
+ *  [a, b] (F-64 LL-4; the whole stream by default): boundary 0 is a, boundary k the first sample
+ *  with d̄ − d̄[a] ≥ k·length − tol (k·length per k, never accumulated), and split k is
+ *  [boundary k−1, boundary k]. A last partial split ends at b when its distance is > tol; a tail
+ *  without advance is in no split. A sample that crosses several multiples ends one split only, so
+ *  no split is empty. O(b − a). The default tol absorbs float error only, far below the 0.1 m
+ *  quantisation; a pool split passes 1 % of a recorded length (F-46 LS-6). */
+export function splitBounds(d: Float64Array, length: number, tol = 1e-6, a = 0, b = d.length - 1): number[] {
+  const out = [a];
+  const d0 = d[a];
+  let k = 1;
+  for (let i = a + 1; i <= b; i++) {
+    if (d[i] - d0 < k * length - tol) continue;
+    out.push(i);
+    while (d[i] - d0 >= k * length - tol) k++;
+  }
+  if (d[b] - d[out[out.length - 1]] > tol) out.push(b);
+  return out;
+}
+
+/** Split boundaries for a preset (F-18 L-4; LS-6: a pool split ends within 1 % of a recorded length), within [a, b]. */
+export function presetBounds(d: Float64Array, p: Preset, pool: Pool | null, a?: number, b?: number): number[] {
+  return splitBounds(d, p.length, tolerance(pool), a, b);
 }
 
 const tolerance = (pool: Pool | null): number => (pool ? 0.01 * pool.recorded : 1e-6);
 
 /** True when the last split of `bounds` is partial (F-51 SC-4): it reaches no further multiple of
- *  the preset than the boundary before it, so splitBounds ended it at the workout's end. */
+ *  the preset than the boundary before it, so splitBounds ended it at the window's end. */
 export function partialLast(d: Float64Array, bounds: readonly number[], p: Preset, pool: Pool | null): boolean {
   const n = bounds.length;
   const tol = tolerance(pool);
-  const multiples = (i: number): number => Math.floor((d[i] - d[0] + tol) / p.length);
+  const multiples = (i: number): number => Math.floor((d[i] - d[bounds[0]] + tol) / p.length);
   return n > 1 && multiples(bounds[n - 1]) <= multiples(bounds[n - 2]);
 }
 

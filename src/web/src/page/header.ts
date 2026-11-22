@@ -27,7 +27,7 @@ export function header(root: ParentNode, meta: WorkoutMeta): void {
   const legs = [...meta.sessions].sort((a, b) => a.start - b.start);
   let k = 0;
   const names = legs.map((s) => (s.sport === 'transition' ? 'T' + ++k : sportName(s.sport)));
-  const rows = root.querySelectorAll('.laps-section th');
+  const rows = root.querySelectorAll('.laps-legs:not(.splits) h3'); // F-64 LL-3: the laps view's leg headings
   if (rows.length === names.length) rows.forEach((th, i) => writes.push([th, names[i]]));
   enhanceExpiry(root, Date.now());
   for (const [node, text] of writes) node.textContent = text;

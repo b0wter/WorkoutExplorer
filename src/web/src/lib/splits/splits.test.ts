@@ -119,3 +119,34 @@ describe('partial last split (F-51 SC-4)', () => {
     expect(partialLast(x, b.slice(0, 3), c.presets[0], c.pool)).toBe(false);
   });
 });
+
+describe('windowed boundaries (F-64 LL-4)', () => {
+  // 0 … 1200 m in 100 m steps, a standstill, then 300 m more: samples 0 … 16.
+  const x = Float64Array.from([0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1200, 1300, 1400, 1500]);
+  const km = { label: '1 km', length: 1000 };
+  const m500 = { label: '500 m', length: 500 };
+
+  it('the whole stream is the default window', () => {
+    expect(presetBounds(x, km, null, 0, x.length - 1)).toEqual(presetBounds(x, km, null));
+  });
+
+  it('starts at a, measures from d̄[a], ends at b with a partial split; no split leaves the window', () => {
+    const b = presetBounds(x, m500, null, 3, 12);
+    expect(b).toEqual([3, 8, 12]);
+    expect(partialLast(x, b, m500, null)).toBe(true);
+    expect(presetBounds(x, m500, null, 12, 16)).toEqual([12, 16]); // shorter than the preset: one partial split
+    expect(partialLast(x, [12, 16], m500, null)).toBe(true);
+  });
+
+  it('adjacent windows share their boundary sample; their distances sum to the whole', () => {
+    const sum = (a: number, b: number): number => {
+      const s = presetBounds(x, km, null, a, b);
+      return x[s[s.length - 1]] - x[s[0]];
+    };
+    expect(sum(0, 8) + sum(8, 16)).toBe(x[16] - x[0]);
+  });
+
+  it('a tail without advance is in no split', () => {
+    expect(presetBounds(x, m500, null, 7, 13)).toEqual([7, 12]);
+  });
+});

@@ -1,6 +1,6 @@
 // Multisport sections in the browser (F-42 MS-6, MS-7, MS-9; AP-12). LAZY: reached only through the
 // page glue's import(), after the charts' first paint, for a workout whose sessions hold two or more
-// sports. Gives the separator rows their ranges and the charts their leg lines and names.
+// sports. Gives the laps view's leg headings their ranges (F-64 LL-3) and the charts their leg lines and names.
 
 import './sections.css';
 import type { WorkoutData } from '../lib/datafile';
@@ -35,12 +35,12 @@ export function decorator(secs: readonly Section[], n: number): ChartDecorator {
   };
 }
 
-/** The chunk's entry: separator ranges into the laps enhancer (MS-6), the decorator into the charts. */
+/** The chunk's entry: leg heading ranges into the laps enhancer (MS-6, F-64 LL-3), the decorator into the charts. */
 export function startSections(data: WorkoutData, look: { decorator(key: string, f: ChartDecorator): void }, rows: (pairs: readonly number[]) => void): void {
   const secs = sections(data.meta);
   if (!secs) return;
   rows(sectionRanges(secs, data.sampleCount));
   look.decorator('legs', decorator(secs, data.sampleCount));
-  // F-54: leg names follow the language (the separator rows are the language pass's).
+  // F-54: leg names follow the language (the leg headings are the language pass's).
   onLanguage(() => look.decorator('legs', decorator(sections(data.meta)!, data.sampleCount)));
 }

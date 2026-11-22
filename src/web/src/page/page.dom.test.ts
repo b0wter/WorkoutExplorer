@@ -251,13 +251,13 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(charts.selection?.start()).toBe(0);
   });
 
-  it('F-42 MS-9: a multisport workout loads the sections chunk after the charts\' first paint: decorator and separator taps', async () => {
+  it('F-42 MS-9: a multisport workout loads the sections chunk after the charts\' first paint: decorator and leg heading taps (F-64 LL-3)', async () => {
     const g = loadGolden().find((x) => x.name === 'triathlon');
     if (!g) throw new Error('no golden triathlon');
     respond = () => new Response(g.bin.slice(0), { status: 200 });
     await open('triathlon');
     const [charts] = stubLog.chartStack;
-    const sep = document.querySelector<HTMLElement>('section.laps tr.laps-section');
+    const sep = document.querySelector<HTMLElement>('section.laps .laps-legs h3');
     await settle();
     expect(charts.decorate).toBeUndefined();
     charts.onready?.();
@@ -267,7 +267,7 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(charts.selection?.end()).toBe(charts.data.meta.sessions[1].start_index);
   });
 
-  it('F-42 MS-9, QA-42-r1-4: a failed sections chunk warns once; separators stay without taps', async () => {
+  it('F-42 MS-9, QA-42-r1-4: a failed sections chunk warns once; leg headings stay without taps', async () => {
     const g = loadGolden().find((x) => x.name === 'triathlon');
     if (!g) throw new Error('no golden triathlon');
     respond = () => new Response(g.bin.slice(0), { status: 200 });

@@ -56,12 +56,19 @@ export function lapCrossing(data: WorkoutData): WorkoutData {
   return { ...data, meta: { ...data.meta, laps } };
 }
 
-/** F-42 MS-3: T2 has no lap, so its separator row stands alone before Run's. */
+/** F-42 MS-3, F-64 LL-2: T2 has no lap, so its block is its heading alone. */
 export function legWithoutLaps(data: WorkoutData): WorkoutData {
   return { ...data, meta: { ...data.meta, laps: data.meta.laps.filter((_, i) => i !== 3) } };
 }
 
-/** QA-46-r1-2 LS-2: lap triggers on a multisport file, so the Trigger column meets the leg separator rows. */
+/** F-64 AC 7: run, ride, run without transitions; the swim becomes a run, T1 and T2 join the leg before them. */
+export function runRideRun(data: WorkoutData): WorkoutData {
+  const s = data.meta.sessions;
+  const sessions = [{ ...s[0], sport: 'running', sub_sport: 'generic', end: s[1].end, end_index: s[1].end_index }, { ...s[2], end: s[3].end, end_index: s[3].end_index }, s[4]];
+  return { ...data, meta: { ...data.meta, sessions } };
+}
+
+/** QA-46-r1-2 LS-2: lap triggers on a multisport file, so the Trigger column shows per leg table (F-64 LL-2). */
 export function withTriggers(data: WorkoutData): WorkoutData {
   const laps = data.meta.laps.map((l, i) => (i === 0 ? { ...l, trigger: 'manual' } : i === 1 ? { ...l, trigger: 'distance' } : l));
   return { ...data, meta: { ...data.meta, laps } };
@@ -101,6 +108,7 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'triathlon-leg-without-laps', golden: 'triathlon', title: '', description: '', transform: legWithoutLaps },
   { name: 'triathlon-triggers', golden: 'triathlon', title: '', description: '', transform: withTriggers },
   { name: 'triathlon-cut', golden: 'triathlon-cut-90', title: '', description: '' },
+  { name: 'run-ride-run', golden: 'triathlon', title: '', description: '', transform: runRideRun },
   { name: 'two-rides', golden: 'chained-ride-ride', title: '', description: '' },
   { name: 'pool-swim', golden: 'pool-swim', title: '', description: '' },
   { name: 'pool-swim-25yd', golden: 'pool-swim-25yd', title: '', description: '' },

@@ -60,6 +60,15 @@ func legWithoutLaps(f *datafile.File) {
 	f.Meta.Laps = slices.Delete(slices.Clone(f.Meta.Laps), 3, 4)
 }
 
+// runRideRun mirrors samples.ts runRideRun (F-64 AC 7): the swim becomes a run, T1 and T2 join the leg before them.
+func runRideRun(f *datafile.File) {
+	s := f.Meta.Sessions
+	run, ride := s[0], s[2]
+	run.Sport, run.SubSport, run.End, run.EndIndex = "running", "generic", s[1].End, s[1].EndIndex
+	ride.End, ride.EndIndex = s[3].End, s[3].EndIndex
+	f.Meta.Sessions = []datafile.Session{run, ride, s[4]}
+}
+
 // withTriggers mirrors samples.ts withTriggers (QA-46-r1-2).
 func withTriggers(f *datafile.File) {
 	laps := slices.Clone(f.Meta.Laps)
@@ -95,6 +104,7 @@ var samples = []sampleSpec{
 	{"triathlon-leg-without-laps", "triathlon", "", "", legWithoutLaps, false, "", ""},
 	{"triathlon-triggers", "triathlon", "", "", withTriggers, false, "", ""},
 	{"triathlon-cut", "triathlon-cut-90", "", "", nil, false, "", ""},
+	{"run-ride-run", "triathlon", "", "", runRideRun, false, "", ""}, // F-64 AC 7
 	{"two-rides", "chained-ride-ride", "", "", nil, false, "", ""},
 	{"pool-swim", "pool-swim", "", "", nil, false, "", ""},
 	{"pool-swim-25yd", "pool-swim-25yd", "", "", nil, false, "", ""},

@@ -7,6 +7,7 @@ export const en = {
   viewLengths: 'Lengths',
   splitDistance: 'Split distance',
   splitsCaption: '{preset} splits',
+  noSplits: 'No splits',
   colStrokes: 'Strokes',
   colSwolf: 'SWOLF',
   rest: 'Rest',

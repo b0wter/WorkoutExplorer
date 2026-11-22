@@ -372,6 +372,7 @@
   "viewLengths": "Largos",
   "splitDistance": "Distancia del parcial",
   "splitsCaption": "Parciales de {preset}",
+  "noSplits": "Sin parciales",
   "colStrokes": "Brazadas",
   "colSwolf": "SWOLF",
   "rest": "Descanso",
