@@ -9,7 +9,7 @@
 //	<!--wx:operator-->       serve: the operator file as <h2>, <p> and <ul> (exactly once; AB-8), or the placeholder paragraph
 //	<!--wx:version-->        serve: the binary's version, HTML-escaped (any number of times, also inside the list)
 //	<!--wx:pushover-->...<!--/wx:pushover-->  exactly one pair; kept (markers dropped) only when notifications are on
-//	<!--wx:shortcut-->...<!--/wx:shortcut-->  exactly one pair; kept only when the iOS Shortcut link is set (F-34, INF-5)
+//	<!--wx:shortcut-->...<!--/wx:shortcut-->  exactly one pair; kept only when the iOS Shortcut link is set (F-34, INF-5; package shell)
 //	<!--wx:updates-->...<!--/wx:updates-->    exactly one pair; kept only when automatic updates are on (F-52 AU-12, PT-9a)
 //	<!--wx:shortcut-url-->   serve: inside that pair, the link, HTML-escaped (also usable in an href)
 //	<!--wx:impressum-->      serve: exactly once, the footer's Impressum link or nothing (F-38 IM-7, package shell)
@@ -39,9 +39,6 @@ const (
 	markerVersion = "<!--wx:version-->"
 	markerPushOn  = "<!--wx:pushover-->"
 	markerPushOff = "<!--/wx:pushover-->"
-	markerSCOn    = "<!--wx:shortcut-->"
-	markerSCOff   = "<!--/wx:shortcut-->"
-	markerSCURL   = "<!--wx:shortcut-url-->"
 	markerUpOn    = "<!--wx:updates-->"
 	markerUpOff   = "<!--/wx:updates-->"
 )
@@ -141,14 +138,14 @@ func fill(src []byte, v Values) ([]byte, error) {
 		return nil, errors.New("about page: needs exactly one operator marker")
 	}
 	// The blocks first, so nothing inserted later is ever scanned again.
-	s, ok := cutBlock(s, markerPushOn, markerPushOff, v.Notifications)
+	s, ok := shell.CutBlock(s, markerPushOn, markerPushOff, v.Notifications)
 	if !ok {
 		return nil, errors.New("about page: the pushover block is missing or malformed")
 	}
-	if s, ok = cutBlock(s, markerSCOn, markerSCOff, v.Shortcut != ""); !ok {
+	if s, ok = shell.CutBlock(s, shell.ShortcutOn, shell.ShortcutOff, v.Shortcut != ""); !ok {
 		return nil, errors.New("about page: the shortcut block is missing or malformed")
 	}
-	if s, ok = cutBlock(s, markerUpOn, markerUpOff, v.Updates); !ok {
+	if s, ok = shell.CutBlock(s, markerUpOn, markerUpOff, v.Updates); !ok {
 		return nil, errors.New("about page: the updates block is missing or malformed")
 	}
 	s, err := shell.Fill("about page", s, v.Impressum)
@@ -161,21 +158,7 @@ func fill(src []byte, v Values) ([]byte, error) {
 	}
 	// One pass: an inserted value that contains a marker is not expanded.
 	return []byte(strings.NewReplacer(MarkerDone, "", markerOp, op, markerVersion, html.EscapeString(v.Version),
-		markerSCURL, html.EscapeString(v.Shortcut)).Replace(s)), nil
-}
-
-// cutBlock drops the markers of the one on...off pair in s, and its content
-// unless keep. ok is false unless each marker occurs once, in order.
-func cutBlock(s, on, off string, keep bool) (string, bool) {
-	i, j := strings.Index(s, on), strings.Index(s, off)
-	if i < 0 || j < i || strings.Count(s, on) != 1 || strings.Count(s, off) != 1 {
-		return s, false
-	}
-	inner := s[i+len(on) : j]
-	if !keep {
-		inner = ""
-	}
-	return s[:i] + inner + s[j+len(off):], true
+		shell.ShortcutURL, html.EscapeString(v.Shortcut)).Replace(s)), nil
 }
 
 // Handler answers GET and HEAD (register as "GET /about") with the page.

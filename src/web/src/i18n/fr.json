@@ -464,6 +464,9 @@
   "chooseFile": "Choisir un fichier",
   "mineLink": "{link} : les entraînements importés depuis ce navigateur",
   "mineLinkText": "Mes entraînements",
+  "shortcutHint": "Sur un iPhone ou un iPad ? Importez depuis le menu de partage avec {link}. {more}",
+  "shortcutLink": "ce raccourci",
+  "shortcutMore": "En savoir plus",
   "uploadAbout": "À propos"
  },
  "markup/static": {
@@ -509,6 +512,7 @@
   "ab_whenAWorkout2": "Quand un entraînement est signalé, l'exploitant reçoit une notification via Pushover. Pushover apprend le numéro du signalement, le motif et le lien de consultation de l'entraînement (qui ouvre la page publique), ainsi qu'un lien à usage unique pour supprimer l'entraînement, valable jusqu'à 30 jours. Il n'apprend jamais le message de la personne qui signale ni le titre de l'entraînement. Toute personne ayant accès au compte Pushover de l'exploitant ou à son téléphone déverrouillé pourrait utiliser ce lien une fois pour supprimer l'entraînement signalé.",
   "ab_uploadFromYour": "Importer depuis l'iPhone",
   "ab_theOperatorOffers": "L'exploitant propose un raccourci pour iPhone qui importe un fichier FIT depuis le menu de partage et ouvre sa page de modification dans Safari. Ajoutez-le depuis ce lien : {link}",
+  "ab_theLinkOpens": "Le lien ouvre le site iCloud d'Apple, qui voit alors votre adresse IP. Ce site n'envoie rien à Apple avant que vous ne le touchiez.",
   "ab_softwareUpdates": "Mises à jour logicielles",
   "ab_thisServerDownloads": "Ce serveur télécharge les mises à jour logicielles depuis GitHub ; aucune donnée d'entraînement ou de visiteur n'est envoyée.",
   "ab_whatTheOperator": "Ce que l'exploitant peut faire",

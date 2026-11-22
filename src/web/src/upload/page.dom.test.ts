@@ -3,6 +3,8 @@
 // fetch, XMLHttpRequest and navigation are fakes. Synthetic data only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HTML from '../../upload.html?raw';
+// @ts-expect-error no @types/node here; vitest runs in node
+import { readFileSync } from 'node:fs';
 import { start, type Env } from './page';
 import { resetI18n, use } from '../lib/i18n';
 import { MAX_UPLOAD_BYTES } from '../lib/upload';
@@ -135,6 +137,18 @@ describe('page text (U-3)', () => {
     expect(HTML.match(/<script(?![^>]*\bsrc=)/g)).toHaveLength(1);
     expect(HTML).not.toMatch(/<style|\sstyle=/);
     expect(input().hasAttribute('accept')).toBe(false);
+  });
+
+  it('F-63: the Shortcut hint (source with its block) links to the Shortcut and the About section, same tab; CSS hides it while busy or paused', () => {
+    const hint = document.querySelector('p.shortcut')!;
+    expect(hint.textContent).toBe('On an iPhone or iPad? Upload from the share sheet with this Shortcut. More');
+    expect(hint.querySelector('a[data-p=link]')!.getAttribute('href')).toBe('<!--wx:shortcut-url-->');
+    expect(hint.querySelector('a[data-p=more]')!.getAttribute('href')).toBe('/about#shortcut');
+    expect(hint.querySelector('a[target]')).toBeNull();
+    expect(hint.previousElementSibling!.id).toBe('message');
+    const css: string = readFileSync('src/upload/upload.css', 'utf8'); // from src/web; this file's URL global is faked
+    const hidden = [...css.matchAll(/\[data-state='(\w+)'\] \.shortcut/g)].map((m) => m[1]).sort();
+    expect(hidden).toEqual(['opening', 'paused', 'processing', 'uploading']);
   });
 });
 
