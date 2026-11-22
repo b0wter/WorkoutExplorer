@@ -15,7 +15,7 @@
   cursor: pointer;
 }
 .efforts tbody tr.on,
-.efforts tbody tr.on:nth-child(even of :not(.laps-section)) {
+.efforts tbody tr.on:nth-child(even) {
   background: var(--range-shade);
 }
 .efforts .curve {

@@ -79,12 +79,24 @@ func TestSamplePages(t *testing.T) {
 				}
 			}
 			if laps, ok := vm["Laps"].(map[string]any); ok {
-				for _, c := range laps["Columns"].([]any) {
-					has("lap column", c.(map[string]any)["Label"].(string))
+				// F-64: a multisport page prints its legs' tables, not the workout-wide one.
+				tables := []map[string]any{laps}
+				if legs := laps["Legs"].([]any); len(legs) > 0 {
+					tables = nil
+					for _, l := range legs {
+						leg := l.(map[string]any)
+						has("leg name", leg["Name"].(string))
+						tables = append(tables, leg)
+					}
 				}
-				for _, row := range laps["Rows"].([]any) {
-					for _, cell := range row.([]any) {
-						has("lap cell", cell.(string))
+				for _, tb := range tables {
+					for _, c := range tb["Columns"].([]any) {
+						has("lap column", c.(map[string]any)["Label"].(string))
+					}
+					for _, row := range tb["Rows"].([]any) {
+						for _, cell := range row.([]any) {
+							has("lap cell", cell.(string))
+						}
 					}
 				}
 			} else if strings.Contains(page, `class="laps"`) {

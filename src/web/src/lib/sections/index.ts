@@ -11,14 +11,6 @@ export interface Section {
   readonly sport: string;
 }
 
-/** A separator row of the laps table and the lap rows under it (MS-3, MS-6): name and column span
- *  as strings, as the template prints them. */
-export interface LapsSection {
-  readonly Name: string;
-  readonly Span: string;
-  readonly Rows: readonly (readonly string[])[];
-}
-
 /** MS-1, MS-2: null unless the sessions hold two or more distinct sports; else one section per
  *  session in start order (file order on ties), the first starting at sample 0, transitions
  *  named T1, T2, … in order. */
@@ -43,25 +35,13 @@ export function sectionOf(secs: readonly Section[], lap: Pick<Lap, 'start_index'
   return k;
 }
 
-/** MS-3: lap rows (one per lap) grouped by section, every section in order, a section without laps
- *  with no rows; a lap out of order stays under the separator above it. Empty without sections or
- *  laps. */
-export function lapSections(
-  secs: readonly Section[] | null,
-  laps: readonly Lap[],
-  rows: readonly (readonly string[])[],
-  span: number,
-): LapsSection[] {
-  const out: { Name: string; Span: string; Rows: (readonly string[])[] }[] = [];
-  if (!secs || laps.length === 0) return out;
-  const upTo = (k: number) => {
-    while (out.length <= k) out.push({ Name: secs[out.length].name, Span: String(span), Rows: [] });
-  };
-  laps.forEach((l, i) => {
-    upTo(sectionOf(secs, l));
-    out[out.length - 1].Rows.push(rows[i]);
-  });
-  upTo(secs.length - 1);
+/** F-64 LL-2 (MS-3): the laps grouped by section, every section in order, a section without laps
+ *  with none; a lap out of order stays in the block above it. Empty without sections or laps. */
+export function lapsBySection<T extends Pick<Lap, 'start_index'>>(secs: readonly Section[] | null, laps: readonly T[]): T[][] {
+  if (!secs || laps.length === 0) return [];
+  const out: T[][] = secs.map(() => []);
+  let cur = 0;
+  for (const l of laps) cur = Math.max(cur, sectionOf(secs, l)), out[cur].push(l);
   return out;
 }
 

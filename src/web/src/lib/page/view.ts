@@ -7,14 +7,23 @@ import type { WorkoutData } from '../datafile';
 import { presentCharts } from '../charts';
 import { routePresence } from '../route/presence';
 import { formatDate, formatLocalStart, sportIcon, sportName } from '../format/dates';
-import { sections, lapSections } from '../sections';
+import { sections, lapsBySection } from '../sections';
 import { distanceAdvances, lapsGroup, summaryItems } from './build';
 import { deviceLine } from './device';
 import { t } from './device-texts';
-import type { PageLaps, PageSettings, PageViewModel } from './model';
+import type { PageLaps, PageLapsLeg, PageSettings, PageViewModel } from './model';
 
 /** The hidden module of a file without laps but with an advancing distance (F-46 LS-3) or lengths (F-48 PL-7). */
-const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Sections: [] };
+const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Legs: [] };
+
+/** F-64 LL-2: one block per section with its own laps table, built for the section's sport. */
+function lapLegs(meta: WorkoutData['meta']): PageLapsLeg[] {
+  const secs = sections(meta);
+  return lapsBySection(secs, meta.laps).map((laps, k) => {
+    const g = lapsGroup(secs![k].sport, laps);
+    return { Name: secs![k].name, Sport: secs![k].sport, Columns: g?.Columns ?? [], Rows: g?.Rows ?? [] };
+  });
+}
 
 /** The default title of an untitled workout (UP-4): "Ride, 9 Oct 2026". */
 export function defaultTitle(sport: string, startTime: string, offsetSeconds: number): string {
@@ -67,7 +76,7 @@ export function buildPageViewModel(data: WorkoutData, settings: PageSettings): P
     Pins: settings.pinsFile && (settings.pinCount ?? 0) > 0 ? { URL: base + '/' + settings.pinsFile, Count: String(settings.pinCount) } : { URL: '', Count: '' },
     ChartsClass: chartsClass(data),
     Laps: laps
-      ? { ...laps, Sections: lapSections(sections(meta), meta.laps, laps.Rows, laps.Columns.length) }
+      ? { ...laps, Legs: lapLegs(meta) }
       : distanceAdvances(data) || meta.lengths.length > 0 ? NO_LAPS : null,
   };
 }

@@ -8,16 +8,10 @@ import (
 	"workout-explorer/internal/datafile"
 )
 
-// LapsSection is one separator row of the laps table and the lap rows under
-// it (F-42 MS-3, MS-6): name and column span as the template prints them.
-type LapsSection struct {
-	Name, Span string
-	Rows       [][]string
-}
-
 // section is one section of a multisport workout: its name and first sample.
 type section struct {
 	name  string
+	sport string
 	start int
 }
 
@@ -46,36 +40,38 @@ func sections(m datafile.Meta) []section {
 		if i == 0 {
 			s.StartIndex = 0
 		}
-		out[i] = section{name, s.StartIndex}
+		out[i] = section{name, s.Sport, s.StartIndex}
 	}
 	return out
 }
 
-// lapSections is F-42 MS-3: rows (one per lap) grouped by section, every
-// section in order, a section without laps with no rows. A lap belongs to
-// the last section whose start ≤ its start_index; a lap out of order stays
-// under the separator above it. Empty without sections or laps.
-func lapSections(secs []section, laps []datafile.Lap, rows [][]string, span int) []LapsSection {
-	out := []LapsSection{}
+// lapLegs is F-64 LL-2 (F-42 MS-3): one block per section, every section in
+// order, each with its own laps table built for the section's sport (speed or
+// pace, cadence unit, columns, trigger per leg); a section without laps keeps
+// its heading alone. A lap belongs to the last section whose start <= its
+// start_index; a lap out of order stays in the block above it. Empty without
+// sections or laps.
+func lapLegs(secs []section, laps []datafile.Lap) []LapsLeg {
 	if secs == nil || len(laps) == 0 {
-		return out
+		return []LapsLeg{}
 	}
-	sp := strconv.Itoa(span)
-	upTo := func(k int) {
-		for len(out) <= k {
-			out = append(out, LapsSection{Name: secs[len(out)].name, Span: sp, Rows: [][]string{}})
-		}
-	}
-	for i, l := range laps {
-		k := 0
+	per := make([][]datafile.Lap, len(secs))
+	cur := 0
+	for _, l := range laps {
 		for j, s := range secs {
 			if s.start <= l.StartIndex {
-				k = j
+				cur = max(cur, j)
 			}
 		}
-		upTo(k)
-		out[len(out)-1].Rows = append(out[len(out)-1].Rows, rows[i])
+		per[cur] = append(per[cur], l)
 	}
-	upTo(len(secs) - 1)
+	out := make([]LapsLeg, len(secs))
+	for k, s := range secs {
+		leg := LapsLeg{Name: s.name, Sport: s.sport, Columns: []Column{}, Rows: [][]string{}}
+		if g := lapsGroup(s.sport, per[k]); g != nil {
+			leg.Columns, leg.Rows = g.Columns, g.Rows
+		}
+		out[k] = leg
+	}
 	return out
 }

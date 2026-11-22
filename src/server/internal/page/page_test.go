@@ -388,15 +388,14 @@ func TestSections(t *testing.T) {
 			[]s{{Sport: "swimming"}, {Sport: "cycling", Start: 5, StartIndex: 5}, {Sport: "running", Start: 9, StartIndex: 9}},
 			[]l{{StartIndex: 6}, {StartIndex: 1}}, "Swim[] Ride[1 2] Run[]"},
 	} {
-		rows := make([][]string, len(c.laps))
-		for i := range rows {
-			rows[i] = []string{strconv.Itoa(i + 1)}
+		for i := range c.laps {
+			c.laps[i].Totals = datafile.Totals{ElapsedTime: json.Number(strconv.Itoa(i + 1))} // shown as the "Time" column
 		}
 		var got []string
-		for _, x := range lapSections(sections(datafile.Meta{Sessions: c.sessions}), c.laps, rows, 3) {
+		for _, x := range lapLegs(sections(datafile.Meta{Sessions: c.sessions}), c.laps) {
 			n := []string{}
 			for _, r := range x.Rows {
-				n = append(n, r[0])
+				n = append(n, strings.TrimPrefix(r[1], "0:0")) // r[0] restarts per leg
 			}
 			got = append(got, x.Name+"["+strings.Join(n, " ")+"]")
 		}

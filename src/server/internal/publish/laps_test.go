@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -107,10 +106,10 @@ func TestNoLapsModule(t *testing.T) {
 	}
 }
 
-// TestSectionRows (F-42 MS-6, AC 2, AC 8): the published triathlon has one
-// separator row per leg before its lap, spanning every column; a two-ride
-// file has none.
-func TestSectionRows(t *testing.T) {
+// TestLegBlocks (F-64 LL-2, AC 1, no JavaScript): the published triathlon has
+// one block per leg with its own heading and table, numbered from 1, and no
+// separator rows; a two-ride file has a single plain table.
+func TestLegBlocks(t *testing.T) {
 	for _, c := range []struct {
 		file string
 		want []string
@@ -124,20 +123,28 @@ func TestSectionRows(t *testing.T) {
 			fx.change(t, d, published(d))
 			_, html := fx.complete(t)
 			laps := lapsSection(html)
-			if n := strings.Count(laps, `<tr class="laps-section">`); n != len(c.want) {
-				t.Fatalf("%d separator rows, want %d:\n%s", n, len(c.want), laps)
+			if strings.Contains(laps, "laps-section") {
+				t.Errorf("separator rows remain:\n%s", laps)
 			}
-			// QA-42-r1-2, r1-3: one tbody per leg, the separator heads its row group.
-			if n := strings.Count(laps, "<tbody>"); n != max(len(c.want), 1) {
-				t.Errorf("%d tbody, want one per leg", n)
+			if n := strings.Count(laps, `<div class="laps-leg"`); n != len(c.want) {
+				t.Fatalf("%d leg blocks, want %d:\n%s", n, len(c.want), laps)
 			}
-			cols := strings.Count(laps, "<th data-k=")
-			for i, name := range c.want {
-				row := `<tbody><tr class="laps-section"><th colspan="` + strconv.Itoa(cols) + `" scope="rowgroup">` + name + "</th></tr>"
-				next := "<td>" + strconv.Itoa(i+1) + "</td>"
-				at := strings.Index(laps, row)
-				if at < 0 || !strings.HasPrefix(strings.TrimSpace(laps[at+len(row):]), "<tr>"+next) {
-					t.Errorf("no %q directly before lap %d:\n%s", name, i+1, laps)
+			if n := strings.Count(laps, "<table>"); n != max(len(c.want), 1) {
+				t.Errorf("%d tables, want one per leg", n)
+			}
+			for _, name := range c.want {
+				if !strings.Contains(laps, "<h3>"+name+"</h3>") {
+					t.Errorf("no heading %q:\n%s", name, laps)
+				}
+			}
+			if len(c.want) > 0 {
+				if n := strings.Count(laps, "<tr><td>1</td>"); n != len(c.want) {
+					t.Errorf("%d tables start at lap 1, want %d", n, len(c.want))
+				}
+				// Speed or pace follows the leg (OQ-300): the swim table shows pace.
+				swim := laps[:strings.Index(laps, "<h3>T1</h3>")]
+				if !strings.Contains(swim, `data-sport="swimming"`) || !strings.Contains(swim, "Pace (/100 m)") {
+					t.Errorf("swim block lacks its sport or pace column:\n%s", swim)
 				}
 			}
 		})
@@ -145,8 +152,7 @@ func TestSectionRows(t *testing.T) {
 }
 
 // TestSectionsHidden (F-42 AC 7, SH-4, QA-42-r1-1): the triathlon published
-// with start and end hiding keeps its sessions (the leg lines) and separator
-// rows, and a leg start inside a hidden part has no public position, so the
+// with start and end hiding keeps its sessions (the leg lines) and leg blocks, and a leg start inside a hidden part has no public position, so the
 // browser draws no leg marker there (routeMarkers reads public positions only).
 // The swim and T1 are folded onto the start, so T1 and the ride begin inside
 // the hidden start.
@@ -169,8 +175,8 @@ func TestSectionsHidden(t *testing.T) {
 	d.HideStartM, d.HideEndM = 300, 300
 	fx.change(t, d, published(d))
 	o := fx.read(t)
-	if n := strings.Count(lapsSection(o.page), `<tr class="laps-section">`); n != 5 {
-		t.Errorf("%d separator rows with hiding on, want 5", n)
+	if n := strings.Count(lapsSection(o.page), `<div class="laps-leg"`); n != 5 {
+		t.Errorf("%d leg blocks with hiding on, want 5", n)
 	}
 	if n := len(o.file.Meta.Sessions); n != 5 {
 		t.Fatalf("%d sessions with hiding on, want 5", n)

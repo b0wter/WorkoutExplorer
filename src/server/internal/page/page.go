@@ -61,10 +61,18 @@ type Laps struct {
 	Columns []Column
 	Rows    [][]string
 	None    string
-	// Sections are Rows grouped under their separator rows (F-42 MS-3,
-	// MS-6), empty without sections; when set, the template prints them
-	// instead of Rows.
-	Sections []LapsSection
+	// Legs is F-64 LL-2: a multisport workout's laps as one block per
+	// section (heading and its own table); empty otherwise. When set, the
+	// template prints them instead of Columns and Rows.
+	Legs []LapsLeg
+}
+
+// LapsLeg is one block of the laps view: the section's name and session
+// sport, and its table (no columns and rows when the section has no laps).
+type LapsLeg struct {
+	Name, Sport string
+	Columns     []Column
+	Rows        [][]string
 }
 
 // Settings are the workout's settings besides the data file (lib/page PageSettings).
@@ -186,7 +194,7 @@ func Build(f datafile.File, s Settings) ViewModel {
 		Laps:        lapsOrNone(f),
 	}
 	if vm.Laps != nil && vm.Laps.None == "" {
-		vm.Laps.Sections = lapSections(sections(m), m.Laps, vm.Laps.Rows, len(vm.Laps.Columns))
+		vm.Laps.Legs = lapLegs(sections(m), m.Laps)
 	}
 	desc := make([]string, 0, 3)
 	for _, i := range CardItems(f, vm) {
@@ -269,7 +277,7 @@ func lapsOrNone(f datafile.File) *Laps {
 		return l
 	}
 	if distanceAdvances(f) || len(f.Meta.Lengths) > 0 {
-		return &Laps{Columns: []Column{}, Rows: [][]string{}, None: "yes", Sections: []LapsSection{}}
+		return &Laps{Columns: []Column{}, Rows: [][]string{}, None: "yes", Legs: []LapsLeg{}}
 	}
 	return nil
 }
@@ -430,7 +438,7 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 		showTrigger = showTrigger || words[l.Trigger] != ""
 		showStroke = showStroke || strokeWords[l.Stroke] != "" // F-48 PL-7
 	}
-	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps)), Sections: []LapsSection{}}
+	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps)), Legs: []LapsLeg{}}
 	for _, c := range shown {
 		out.Columns = append(out.Columns, Column{Key: c.key, Label: c.label})
 	}
