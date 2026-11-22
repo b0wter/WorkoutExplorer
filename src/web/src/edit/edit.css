@@ -299,6 +299,13 @@
     gap: 4px;
     max-width: calc(100% - 20px);
   }
+  /* The map is 100lvh tall (page.css), so Safari's toolbars can cover its bottom strip: lift the
+     control by the difference to the small viewport (0 on desktop and where units are equal). */
+  @supports (height: 1svh) {
+    .wx-addpin {
+      bottom: calc(10px + 100lvh - 100svh);
+    }
+  }
   .wx-addpin:has(button[hidden]) {
     display: none;
   }
