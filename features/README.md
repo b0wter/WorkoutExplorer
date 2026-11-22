@@ -77,7 +77,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-61](F-61-satellite-map-layer.md) | Satellite map layer | — | frontend (backend: CSP) | F-06, F-14, F-22, F-26, F-29, F-36, F-56, F-54 | ready with conditions (QA r2, 20 Nov 2026) | user: phone and network checks (labels legible, no Esri with Map, 60 fps) |
 | [F-62](F-62-show-my-location.md) | Show my location on the map | — | frontend (backend: `Permissions-Policy`) | F-06, F-22, F-26, F-29; F-61 if built after it | ready with conditions (QA r1, 21 Nov 2026), minors fixed | user: phone checks (qa/F-62-show-my-location-r1.md: network log, standing still, pan/follow incl. fullscreen, app switch, dot in both themes and Satellite, 60 fps) |
 | [F-63](F-63-ios-shortcut-hint-on-upload-page.md) | iOS Shortcut hint on the upload page | — | both (backend first) | F-34, F-11, F-38, F-54 | implementation | — |
-| [F-64](F-64-laps-and-splits-per-multisport-leg.md) | Laps and splits per multisport leg | — | both (backend first) | F-42, F-46, F-47, F-48, F-51, F-54 | architecture | — |
+| [F-64](F-64-laps-and-splits-per-multisport-leg.md) | Laps and splits per multisport leg | — | both (backend first) | F-42, F-46, F-47, F-48, F-51, F-54 | implementation | — |
 | [F-65](F-65-owner-added-laps.md) | Owner-added laps | — | both (backend first) | F-18, F-46, F-47, F-48, F-51, F-54, F-55, F-56; F-64 if built first | planned, after F-64 | — |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-65.
