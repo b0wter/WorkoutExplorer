@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { loadGolden } from '../../../test-support/golden.mjs';
 import { decodeDataFile } from '../datafile';
 import { M_PER_MILE } from '../format';
-import { carriedDistance, createRangeStats, emptyValues, splitBounds } from './index';
+import { carriedDistance, createRangeStats, emptyValues } from './index';
+import { splitBounds } from '../splits'; // F-64 LL-4: moved out of the entry's module
 
 const N = Number.NaN;
 

@@ -614,11 +614,11 @@ html:not(.wx-fs) .wx-strip,
   font-size: 16px;
 }
 /* Rows select their range (F-18 L-3); the selected row is marked by its background only. */
-.laps.live tbody tr:not(.laps-section) {
+.laps.live tbody tr {
   cursor: pointer;
 }
 .laps tbody tr.on,
-.laps tbody tr.on:nth-child(even of :not(.laps-section)) {
+.laps tbody tr.on:nth-child(even) {
   background: var(--range-shade);
 }
 .laps-scroll {
@@ -645,13 +645,22 @@ th:first-child,
 td:first-child {
   text-align: left;
 }
-/* Separator rows don't count (F-42 MS-6); one tbody per leg restarts the stripes. */
-tbody tr:nth-child(even of :not(.laps-section)) {
+tbody tr:nth-child(even) {
   background: var(--card);
 }
-.laps-section th {
-  color: var(--fg);
+/* One block per leg of a multisport workout, heading and own table (F-64 LL-2); the heading selects
+   the leg and is marked like a row (LL-3), its text in line with the first column. */
+.laps-leg h3 {
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  margin: 16px 0 4px;
+  padding: 0 8px;
+  font-size: 15px;
   font-weight: 600;
+}
+.laps-leg h3.on {
+  background: var(--range-shade);
 }
 
 /* Footer (INF-1, INF-2) */

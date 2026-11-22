@@ -24,6 +24,16 @@
   font: inherit;
   font-size: 13px;
 }
+/* F-64 LL-5: a leg heading's own drop-down, and the line of a leg without distance. */
+.laps-leg h3 .split-select {
+  font-weight: 400;
+}
+.no-splits {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
 
 /* The comparison chart under the table (F-51 SC-8, SC-9): colours by class, so a theme switch needs
    no redraw; geometry in the SVG's attributes (no style attributes, ADR-032). */

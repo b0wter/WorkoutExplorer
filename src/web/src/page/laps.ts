@@ -15,10 +15,11 @@ export interface LapsSeams {
    *  the L-7 flush always runs after the panel's slot listener: a tap before that would move the row
    *  uncompensated (QA-18-r1-3). */
   taps(): void;
-  /** Gives the separator rows (F-42 MS-6) their ranges, flat pairs in row order. */
+  /** Gives the laps view's leg headings (F-42 MS-6, F-64 LL-3) their ranges, flat pairs in order. */
   legs(pairs: Ranges): void;
-  /** LS-8: the splits chunk's current table container and its row ranges; a marked row in the
-   *  previous one is unmarked. */
+  /** LS-8: the splits chunk's current view container and the ranges of its leg headings and rows
+   *  in DOM order (F-64 LL-5); a marked row in the previous container, or one no longer in the page
+   *  (a rebuilt table), is unmarked. */
   splits(container: Element, pairs: Ranges): void;
   /** F-51 SC-7: `f` hears every mark step (the marked row, or null), at once with the current one. */
   marked(f: (row: Element | null) => void): void;
@@ -28,13 +29,16 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
   const section = root.querySelector<HTMLElement>('section.laps');
   if (!section) return { taps: () => {}, legs: () => {}, splits: () => {}, marked: () => {} };
   // L-2: lap rows map to meta.laps by DOM order (a = start_index, b = end_index − 1, the shared
-  // boundary sample included), only when the counts agree. A separator row's pair is NaN (not
+  // boundary sample included), only when the counts agree. F-64 LL-3: a view's leg headings and
+  // rows form one list in DOM order (rowIndex restarts per leg table); a heading's pair is NaN (not
   // selectable) until legs fills the NaNs in order.
   const meta = data.meta.laps;
+  const items = (box: ParentNode): Element[] => [...box.querySelectorAll('.laps-leg h3, tbody tr')];
+  const lapItems = items(section);
   let laps: number[] = [];
   let k = 0;
-  section.querySelectorAll('.laps-scroll tbody tr').forEach((r) => {
-    const l = r.matches('.laps-section') ? null : meta[k++];
+  lapItems.forEach((r) => {
+    const l = r.matches('h3') ? null : meta[k++];
     laps.push(l ? l.start_index : NaN, l ? l.end_index - 1 : NaN);
   });
   if (k !== meta.length) {
@@ -44,7 +48,7 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
   let j = 0;
   const legs = (pairs: Ranges): void => {
     laps.forEach((a, i) => a !== a && (laps[i] = pairs[j++]));
-    // QA-42-r1-4: separator rows look tappable only once they are.
+    // QA-42-r1-4: leg headings look tappable only once they are.
     if (laps.length) section.classList.add('legs');
   };
   let splitsBox: Element | null = null;
@@ -70,17 +74,19 @@ export function enhanceLaps(root: ParentNode, data: WorkoutData, selection: Sele
   const taps = (): void => {
     section.classList.add('live');
     section.addEventListener('click', (event) => {
-      const row = (event.target as Element).closest<HTMLTableRowElement>('tbody tr');
-      if (!row) return;
-      const ranges = splitsBox?.contains(row) ? splitRanges : laps;
-      const i = 2 * (row.rowIndex - 1); // one thead row; a multisport table has one tbody per leg
+      const target = event.target as Element;
+      const row = target.closest('tbody tr, .laps-leg h3');
+      if (!row || target.closest('select')) return; // LL-3: a heading's drop-down never selects
+      const split = splitsBox?.contains(row);
+      const ranges = split ? splitRanges : laps;
+      const i = 2 * (split ? items(splitsBox!) : lapItems).indexOf(row);
       const a = ranges[i];
       const b = ranges[i + 1];
       if (selectRow(row, a, b, selection, win)) mark(row, a, b);
     });
   };
   const splits = (container: Element, pairs: Ranges): void => {
-    if (marked && splitsBox?.contains(marked)) mark(null);
+    if (marked && (!marked.isConnected || (container !== splitsBox && splitsBox?.contains(marked)))) mark(null);
     splitsBox = container;
     splitRanges = pairs;
   };

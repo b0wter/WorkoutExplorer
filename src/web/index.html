@@ -54,13 +54,17 @@
       <div id="range-slot" class="range-slot"></div>
       {{with .Laps}}<section class="laps" {{if .None}}hidden{{end}}>
         <div class="laps-head">{{if .None}}<h2 data-t="headSplits">Splits</h2>{{else}}<h2 data-t="headLaps">Laps</h2>{{end}}<span class="laps-slot" id="laps-slot"></span></div>
-        {{if .Columns}}<div class="laps-scroll"><table>
+        {{if .Legs}}<div class="laps-legs">{{range .Legs}}<div class="laps-leg" data-sport="{{.Sport}}"><h3>{{.Name}}</h3>
+          {{if .Columns}}<div class="laps-scroll"><table>
           <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
-          {{if .Sections}}{{range .Sections}}<tbody><tr class="laps-section"><th colspan="{{.Span}}" scope="rowgroup">{{.Name}}</th></tr>
-          {{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
-          {{end}}</tbody>{{end}}{{else}}<tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
-          {{end}}</tbody>{{end}}
-        </table></div>{{end}}
+          <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+          {{end}}</tbody>
+          </table></div>{{end}}</div>{{end}}</div>
+        {{else}}{{if .Columns}}<div class="laps-scroll"><table>
+          <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
+          <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+          {{end}}</tbody>
+        </table></div>{{end}}{{end}}
       </section>{{end}}
       <div id="zones-slot" class="zones-slot" hidden></div>
       <div id="efforts-slot" class="efforts-slot" hidden></div>

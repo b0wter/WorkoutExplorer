@@ -18,7 +18,8 @@ import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '
 import { sectionRanges, sections } from '../lib/sections';
 import { createRangeStats, emptyValues } from '../lib/range';
 import { presetBounds, splitChoice } from '../lib/splits';
-import { legWithoutLaps } from '../lib/page/samples';
+import { lapCrossing, legWithoutLaps, runRideRun } from '../lib/page/samples';
+import { resetI18n, use } from '../lib/i18n';
 
 function golden(name: string): WorkoutData {
   const g = loadGolden().find((x) => x.name === name);
@@ -447,62 +448,289 @@ describe('lengths view (F-48 PL-8; AP-13)', () => {
   });
 });
 
-describe('transition laps (AC 6, L-1)', () => {
-  it('a lap in a transition shows "–" for speed, cadence and power; its other columns are filled', () => {
+/** F-64: a view's leg blocks (the server's laps view, or the splits chunk's). */
+const blocks = (p: Page, view: 'laps' | 'splits' = 'laps'): HTMLElement[] => [...(p.section?.querySelectorAll<HTMLElement>(`.laps-legs${view === 'laps' ? ':not(.splits)' : '.splits'} > .laps-leg`) ?? [])];
+const legName = (b: HTMLElement): string => b.querySelector('h3')?.firstChild?.textContent ?? '';
+const legRows = (b: HTMLElement): HTMLTableRowElement[] => [...b.querySelectorAll<HTMLTableRowElement>('tbody tr')];
+const legSelect = (b: HTMLElement): HTMLSelectElement | null => b.querySelector('h3 select');
+const pick = (b: HTMLElement, label: string): void => {
+  const sel = legSelect(b)!;
+  sel.value = [...sel.options].find((o) => o.text === label)!.value;
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+describe('transition laps (AC 6, L-1; F-64 LL-2)', () => {
+  it('a transition is a table of its own: speed, cadence and power absent or "–"; its other columns are filled', () => {
     const p = open(golden('triathlon'));
-    const heads = [...(p.section?.querySelectorAll('thead th') ?? [])].map((t) => t.getAttribute('data-k'));
-    const col = (k: string): number => heads.indexOf(k);
-    const transitions = p.rows().filter((r) => r.cells[col('avg_speed')]?.textContent === '–');
-    expect(transitions.length).toBeGreaterThan(0);
-    for (const r of transitions) {
-      expect(r.cells[col('avg_power')].textContent).toBe('–');
-      expect(r.cells[col('avg_cadence')].textContent).toBe('–');
-      for (const k of ['elapsed_time', 'distance', 'avg_heart_rate']) expect(r.cells[col(k)].textContent).not.toBe('–');
-    }
+    const t1 = blocks(p).find((b) => legName(b) === 'T1')!;
+    const heads = [...t1.querySelectorAll('thead th')].map((t) => t.getAttribute('data-k'));
+    const rows = legRows(t1);
+    expect(rows).toHaveLength(1);
+    for (const k of ['avg_speed', 'avg_power', 'avg_cadence']) if (heads.includes(k)) expect(rows[0].cells[heads.indexOf(k)].textContent).toBe('–');
+    for (const k of ['elapsed_time', 'distance', 'avg_heart_rate']) expect(rows[0].cells[heads.indexOf(k)].textContent).not.toBe('–');
   });
 });
 
-describe('separator rows (F-42 MS-6; AC 2, AC 3)', () => {
-  const names = (p: Page): string[] => p.rows().map((r) => (r.className === 'laps-section' ? r.textContent ?? '' : '#' + r.cells[0].textContent));
-
-  it('one before each leg\'s laps, a leg without laps alone; units rewrite the lap rows only', () => {
+describe('laps per leg (F-64 LL-2, LL-3; AC 1, 3, 8, 9)', () => {
+  it('one table per leg, headed by its name, a leg without laps heading only; numbers restart; units rewrite each table by its sport', () => {
     const warn = vi.spyOn(console, 'warn');
     const p = open(legWithoutLaps(golden('triathlon')), 'imperial', true);
-    expect(names(p)).toEqual(['Swim', '#1', 'T1', '#2', 'Ride', '#3', 'T2', 'Run', '#4']);
-    expect(p.rows()[0].cells[0].colSpan).toBe(p.section?.querySelectorAll('thead th').length);
-    expect([...(p.section?.querySelectorAll('thead th') ?? [])].map((t) => t.textContent)).toContain('Distance (mi)');
+    expect(blocks(p).map((b) => [legName(b), legRows(b).map((r) => r.cells[0].textContent)])).toEqual([
+      ['Swim', ['1']],
+      ['T1', ['1']],
+      ['Ride', ['1']],
+      ['T2', []],
+      ['Run', ['1']],
+    ]);
+    expect(p.section?.querySelector('.laps-section')).toBeNull();
+    const speed = (name: string): string | null | undefined => blocks(p).find((b) => legName(b) === name)?.querySelector('th[data-k="avg_speed"]')?.textContent;
+    expect([speed('Swim'), speed('Ride'), speed('Run')]).toEqual(['Pace (/100 yd)', 'Speed (mph)', 'Pace (/mi)']);
+    expect(blocks(p)[2].querySelector('th[data-k="distance"]')?.textContent).toBe('Distance (mi)');
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('a separator selects nothing until the chunk gives its range; then its leg, marked like a lap', () => {
+  it('rows map to their laps by DOM position across the tables; a heading selects nothing until the chunk gives its range, then its leg', () => {
     const p = open(golden('triathlon'));
     const secs = sections(p.data.meta);
     if (!secs) throw new Error('no sections');
-    const sep = p.rows().filter((r) => r.className === 'laps-section');
-    expect(sep).toHaveLength(5);
-    // QA-42-r1-2, r1-3: one tbody per leg, each headed by its separator.
-    expect(sep.map((r) => [r.parentElement?.firstElementChild === r, r.cells[0].getAttribute('scope')])).toEqual(Array(5).fill([true, 'rowgroup']));
-    expect(p.section?.querySelectorAll('.laps-scroll tbody')).toHaveLength(5);
-    sep[2].click();
+    const laps = p.data.meta.laps;
+    const ride = blocks(p)[2];
+    legRows(ride)[0].click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([laps[2].start_index, laps[2].end_index - 1]);
+    p.selection.clear();
+    const hs = blocks(p).map((b) => b.querySelector<HTMLElement>('h3')!);
+    expect(hs).toHaveLength(5);
+    hs[2].click();
     expect(p.selection.start()).toBe(-1);
     expect(p.section?.classList.contains('legs')).toBe(false); // QA-42-r1-4: no pointer before the ranges
     p.legs(sectionRanges(secs, p.data.sampleCount));
     expect(p.section?.classList.contains('legs')).toBe(true);
-    sep[2].querySelector('th')?.click();
+    hs[2].click();
     expect([p.selection.start(), p.selection.end()]).toEqual([secs[2].start, secs[3].start]);
     p.frame();
-    expect(sep[2].classList.contains('on')).toBe(true);
-    sep[2].click(); // the selected leg again clears
+    expect(hs[2].classList.contains('on')).toBe(true);
+    hs[2].click(); // the selected leg again clears
     p.frame();
-    expect([p.selection.start(), sep[2].classList.contains('on')]).toEqual([-1, false]);
-    sep[4].click();
+    expect([p.selection.start(), hs[2].classList.contains('on')]).toEqual([-1, false]);
+    hs[4].click();
     expect([p.selection.start(), p.selection.end()]).toEqual([secs[4].start, p.data.sampleCount - 1]);
-    // A lap row still maps to its lap by DOM order past the separators.
-    const laps = p.data.meta.laps;
     const last = p.rows()[p.rows().length - 1];
     p.selection.clear(); // the last lap may equal the last leg, whose second tap would clear
     last.click();
     expect([p.selection.start(), p.selection.end()]).toEqual([laps[laps.length - 1].start_index, laps[laps.length - 1].end_index - 1]);
+  });
+
+  it('QA-64-r1-1: units and language reach the laps view\'s tables and headings after the splits view is built', async () => {
+    resetI18n(); // earlier tests' pages left their language listeners
+    const warn = vi.spyOn(console, 'warn');
+    const p = open(golden('triathlon'), 'metric', true);
+    p.button('Splits')?.click();
+    p.units.set('imperial');
+    expect(blocks(p)[2].querySelector('th[data-k="distance"]')?.textContent).toBe('Distance (mi)');
+    try {
+      use('de', { swimming: 'Schwimmen (Test)', cycling: 'Rad (Test)', running: 'Lauf (Test)' }, document);
+      await vi.waitFor(() => expect(blocks(p).map(legName)).toEqual(['Schwimmen (Test)', 'T1', 'Rad (Test)', 'T2', 'Lauf (Test)']));
+      expect(blocks(p, 'splits').map(legName)[4]).toBe('Lauf (Test)');
+    } finally {
+      resetI18n();
+    }
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('QA-64-r1-1: leg blocks that do not hold every lap are left as served', () => {
+    const warn = vi.spyOn(console, 'warn');
+    const p = open(golden('triathlon'), 'metric', true);
+    blocks(p)[4].remove();
+    p.units.set('imperial');
+    expect(blocks(p)[2].querySelector('th[data-k="distance"]')?.textContent).toBe('Distance (km)');
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('AC 3: a lap crossing a leg start is listed once, in the leg it starts in', () => {
+    const p = open(lapCrossing(golden('triathlon')));
+    expect(blocks(p).map((b) => legRows(b).length)).toEqual([1, 1, 1, 1, 1]);
+    legRows(blocks(p)[0])[0].click();
+    expect(p.selection.end()).toBe(629);
+  });
+});
+
+describe('splits per leg (F-64 LL-4 to LL-7; AC 2, 4 to 7, 10, 13)', () => {
+  const triathlon = (): Page => {
+    const p = open(golden('triathlon'));
+    p.button('Splits')?.click();
+    return p;
+  };
+  const km = (rows: HTMLTableRowElement[], b: HTMLElement): number[] => {
+    const j = [...b.querySelectorAll('thead th')].findIndex((t) => t.getAttribute('data-k') === 'distance');
+    return rows.map((r) => Number(r.cells[j].textContent));
+  };
+
+  it('Swim, T1 and T2 as headings, Ride, Run in order; each sport leg preselects its AP-20 default; no workout-wide drop-down', () => {
+    const p = triathlon();
+    const t = p.data.time;
+    const secs = sections(p.data.meta)!;
+    const el = (k: number): string => formatElapsed(t[secs[k + 1].start] - t[secs[k].start]);
+    expect(blocks(p, 'splits').map(legName)).toEqual(['Swim', `T1 · ${el(1)}`, 'Ride', `T2 · ${el(3)}`, 'Run']);
+    expect(el(1)).toMatch(/^\d+:\d\d$/);
+    expect(blocks(p, 'splits').map((b) => legSelect(b)?.selectedOptions[0].text ?? null)).toEqual(['100 m', null, '5 km', null, '1 km']);
+    expect(blocks(p, 'splits').map((b) => !!b.querySelector('table'))).toEqual([true, false, true, false, true]);
+    expect(p.select()).toBeNull();
+    expect(p.button('Splits')?.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('no split crosses a leg: each table runs from the leg start to its end, numbers restart, a partial last split, distances sum to the leg', () => {
+    const p = triathlon();
+    const secs = sections(p.data.meta)!;
+    const ranges = sectionRanges(secs, p.data.sampleCount);
+    const stats = createRangeStats(p.data);
+    for (const k of [0, 2, 4]) {
+      const b = blocks(p, 'splits')[k];
+      const rows = legRows(b);
+      expect(rows[0].cells[0].textContent).toBe('1');
+      rows[0].click();
+      expect(p.selection.start()).toBe(ranges[2 * k]);
+      p.selection.clear();
+      rows[rows.length - 1].click();
+      expect(p.selection.end()).toBe(ranges[2 * k + 1]);
+      p.selection.clear();
+      const leg = stats.query(ranges[2 * k], ranges[2 * k + 1], emptyValues()).distance;
+      // Shown in km to 2 decimals: within 5 m per row.
+      const sum = km(rows, b).reduce((x, y) => x + y, 0) * 1000;
+      expect(Math.abs(sum - leg)).toBeLessThan(rows.length * 5);
+    }
+  });
+
+  it('a heading selects its leg, a transition heading its window; a second tap clears; the drop-down never selects', () => {
+    const p = triathlon();
+    const secs = sections(p.data.meta)!;
+    const [swim, t1] = blocks(p, 'splits');
+    t1.querySelector<HTMLElement>('h3')!.click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([secs[1].start, secs[2].start]);
+    p.frame();
+    expect(t1.querySelector('h3')?.classList.contains('on')).toBe(true);
+    t1.querySelector<HTMLElement>('h3')!.click();
+    expect(p.selection.start()).toBe(-1);
+    legSelect(swim)!.click();
+    expect(p.selection.start()).toBe(-1);
+    swim.querySelector<HTMLElement>('h3')!.click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([0, secs[1].start]);
+  });
+
+  it('a leg\'s drop-down rebuilds its table only and keeps the range; a marked row elsewhere stays marked', () => {
+    const p = triathlon();
+    const [, , ride, , run] = blocks(p, 'splits');
+    const rideTable = ride.querySelector('table');
+    const runTable = run.querySelector('table');
+    legRows(ride)[1].click();
+    p.frame();
+    const range = [p.selection.start(), p.selection.end()];
+    const set = vi.spyOn(p.selection, 'set');
+    pick(run, '400 m');
+    p.frame();
+    expect(run.querySelector('table')).not.toBe(runTable);
+    expect(ride.querySelector('table')).toBe(rideTable);
+    expect(legSelect(ride)?.selectedOptions[0].text).toBe('5 km');
+    expect(legRows(run).length).toBeGreaterThan(9);
+    expect([p.selection.start(), p.selection.end()]).toEqual(range);
+    expect(legRows(ride)[1].classList.contains('on')).toBe(true);
+    pick(ride, '1 km');
+    p.frame();
+    expect(set).not.toHaveBeenCalled();
+    expect([p.selection.start(), p.selection.end()]).toEqual(range);
+    expect(p.section?.querySelector('tr.on')).toBeNull();
+    // Rows of the rebuilt tables select their own splits.
+    legRows(run)[0].click();
+    expect(p.selection.start()).toBe(sections(p.data.meta)![4].start);
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+  });
+
+  it('units rebuild every leg with its own choice; pace or speed by the leg\'s sport (OQ-300)', () => {
+    const p = triathlon();
+    const [swim, , ride, , run] = blocks(p, 'splits');
+    pick(run, '400 m');
+    const n = legRows(run).length;
+    p.units.set('imperial');
+    expect(legRows(run)).toHaveLength(n);
+    expect(legSelect(run)?.selectedOptions[0].text).toBe('400 m');
+    const head = (b: HTMLElement): string | null | undefined => b.querySelector('th[data-k="avg_speed"]')?.textContent;
+    expect([head(swim), head(ride), head(run)]).toEqual(['Pace (/100 yd)', 'Speed (mph)', 'Pace (/mi)']);
+  });
+
+  it('a comparison chart per sport leg table, last in its block, laps and splits alike; none for transitions or the section', () => {
+    const p = open(golden('triathlon'));
+    const charts = (bs: HTMLElement[]): boolean[] => bs.map((b) => b.lastElementChild?.classList.contains('compare') ?? false);
+    expect(charts(blocks(p))).toEqual([true, false, true, false, true]);
+    p.button('Splits')?.click();
+    expect(charts(blocks(p, 'splits'))).toEqual([true, false, true, false, true]);
+    expect(p.section?.querySelector(':scope > .compare')).toBeNull();
+    const ride = blocks(p, 'splits')[2].querySelector<HTMLElement>('.compare')!;
+    expect(ride.hidden).toBe(false);
+    expect(ride.querySelectorAll('rect.bar')).toHaveLength(legRows(blocks(p, 'splits')[2]).length);
+    expect(ride.querySelector('.compare-foot')?.firstChild?.textContent).toBe('5 km splits');
+    // SC-7 fanned out: a row tap highlights its bar in its own chart only.
+    legRows(blocks(p, 'splits')[2])[0].click();
+    p.frame();
+    expect(ride.querySelectorAll('rect.sel')).toHaveLength(1);
+    expect(p.section?.querySelectorAll('rect.sel')).toHaveLength(1);
+  });
+
+  it('a sport leg without distance: heading and "No splits", no drop-down, no chart; its heading selects the leg', () => {
+    const data = golden('triathlon');
+    const secs = sections(data.meta)!;
+    const dist = Float64Array.from(data.metrics.distance!);
+    dist.fill(dist[secs[4].start], secs[4].start);
+    const p = open({ ...data, metrics: { ...data.metrics, distance: dist } });
+    p.button('Splits')?.click();
+    const run = blocks(p, 'splits')[4];
+    expect([legName(run), run.querySelector('.no-splits')?.textContent, legSelect(run), run.querySelector('table, .compare')]).toEqual(['Run', 'No splits', null, null]);
+    run.querySelector<HTMLElement>('h3')!.click();
+    expect([p.selection.start(), p.selection.end()]).toEqual([secs[4].start, p.data.sampleCount - 1]);
+  });
+
+  it('AC 6: a lap-swimming leg with one pool length splits by whole lengths; without, the open-water list', () => {
+    const data = golden('triathlon');
+    const lap = { ...data, meta: { ...data.meta, summary: { ...data.meta.summary, pool_length_m: 25, pool_length_recorded_m: 25 }, sessions: data.meta.sessions.map((s, i) => (i ? s : { ...s, sub_sport: 'lap_swimming' })) } };
+    const options = (d: WorkoutData): string[] => {
+      const p = open(d);
+      p.button('Splits')?.click();
+      const out = [...legSelect(blocks(p, 'splits')[0])!.options].map((o) => o.text);
+      cleanup?.();
+      return out;
+    };
+    expect(options(lap)).toEqual(['100 m', '200 m', '400 m', '500 m']);
+    expect(options(golden('triathlon'))).toEqual(['50 m', '100 m', '200 m', '500 m']);
+    // QA-64-r1-1: a pool length in the summary alone does not make an open-water leg a pool swim.
+    expect(options({ ...lap, meta: { ...lap.meta, sessions: data.meta.sessions } })).toEqual(['50 m', '100 m', '200 m', '500 m']);
+  });
+
+  it('QA-64-r1-1: a leg\'s drop-down redraws its chart with the new splits', () => {
+    const p = triathlon();
+    const run = blocks(p, 'splits')[4];
+    pick(run, '400 m');
+    const chart = run.querySelector('.compare')!;
+    expect(chart.querySelector('.compare-foot')?.firstChild?.textContent).toBe('400 m splits');
+    expect(chart.querySelectorAll('rect.bar')).toHaveLength(legRows(run).length);
+  });
+
+  it('AC 7: run, ride, run gives three tables per view; the two runs are set independently', () => {
+    const p = open(runRideRun(golden('triathlon')));
+    expect(blocks(p).map(legName)).toEqual(['Run', 'Ride', 'Run']);
+    p.button('Splits')?.click();
+    const legs = blocks(p, 'splits');
+    expect(legs.map(legName)).toEqual(['Run', 'Ride', 'Run']);
+    expect(legs.map((b) => legSelect(b)?.selectedOptions[0].text)).toEqual(['1 km', '5 km', '1 km']);
+    pick(legs[2], '400 m');
+    expect(legs.map((b) => legSelect(b)?.selectedOptions[0].text)).toEqual(['1 km', '5 km', '400 m']);
+  });
+
+  it('a ride, ride workout (one sport) keeps its single tables and one drop-down', () => {
+    const p = open(golden('chained-ride-ride'));
+    expect(p.section?.querySelector('.laps-legs')).toBeNull();
+    p.button('Splits')?.click();
+    expect(p.select()?.selectedOptions[0].text).toBe('5 km');
+    expect(p.section?.querySelector('.laps-legs')).toBeNull();
+    expect(p.section?.querySelectorAll(':scope > .compare')).toHaveLength(1);
   });
 });
 
@@ -688,7 +916,7 @@ describe('comparison chart (F-51; AP-23)', () => {
     expect(chart(p)?.querySelector('.compare-foot')?.firstChild?.textContent).toBe('Lengths');
   });
 
-  it('a lap without speed keeps an empty slot; fewer than 2 bars, multisport: no chart', () => {
+  it('a lap without speed keeps an empty slot; fewer than 2 bars: no chart; multisport: none under the section', () => {
     const laps = ride().meta.laps;
     const p = open(withLaps(ride(), laps.map((l, i) => (i === 1 ? { ...l, totals: { ...l.totals, avg_speed: undefined } } : l))));
     expect(bars(p).map((b) => b.dataset.i)).toEqual(['0', '2', '3', '4', '5']);
@@ -697,6 +925,6 @@ describe('comparison chart (F-51; AP-23)', () => {
     expect(chart(q)?.hidden).toBe(true);
     cleanup?.();
     const r = open(golden('triathlon'));
-    expect(chart(r)).toBeNull();
+    expect(r.section?.querySelector(':scope > .compare')).toBeNull(); // F-64 LL-7: charts per leg instead
   });
 });

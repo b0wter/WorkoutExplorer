@@ -169,45 +169,117 @@
       ]
     ],
     "None": "",
-    "Sections": [
+    "Legs": [
       {
         "Name": "Swim",
-        "Span": "8",
+        "Sport": "swimming",
+        "Columns": [
+          {
+            "Key": "number",
+            "Label": "#"
+          },
+          {
+            "Key": "elapsed_time",
+            "Label": "Time"
+          },
+          {
+            "Key": "distance",
+            "Label": "Distance (km)"
+          },
+          {
+            "Key": "avg_speed",
+            "Label": "Pace (/100 m)"
+          },
+          {
+            "Key": "avg_heart_rate",
+            "Label": "HR (bpm)"
+          },
+          {
+            "Key": "avg_cadence",
+            "Label": "Cadence (spm)"
+          }
+        ],
         "Rows": [
           [
             "1",
             "9:59",
             "0.72",
-            "4.3",
-            "–",
+            "1:23",
             "143",
-            "–",
             "32"
           ]
         ]
       },
       {
         "Name": "T1",
-        "Span": "8",
+        "Sport": "transition",
+        "Columns": [
+          {
+            "Key": "number",
+            "Label": "#"
+          },
+          {
+            "Key": "elapsed_time",
+            "Label": "Time"
+          },
+          {
+            "Key": "distance",
+            "Label": "Distance (km)"
+          },
+          {
+            "Key": "avg_heart_rate",
+            "Label": "HR (bpm)"
+          }
+        ],
         "Rows": [
           [
-            "2",
+            "1",
             "0:59",
             "0.09",
-            "–",
-            "–",
-            "133",
-            "–",
-            "–"
+            "133"
           ]
         ]
       },
       {
         "Name": "Ride",
-        "Span": "8",
+        "Sport": "cycling",
+        "Columns": [
+          {
+            "Key": "number",
+            "Label": "#"
+          },
+          {
+            "Key": "elapsed_time",
+            "Label": "Time"
+          },
+          {
+            "Key": "distance",
+            "Label": "Distance (km)"
+          },
+          {
+            "Key": "avg_speed",
+            "Label": "Speed (km/h)"
+          },
+          {
+            "Key": "ascent",
+            "Label": "Gain (m)"
+          },
+          {
+            "Key": "avg_heart_rate",
+            "Label": "HR (bpm)"
+          },
+          {
+            "Key": "avg_power",
+            "Label": "Power (W)"
+          },
+          {
+            "Key": "avg_cadence",
+            "Label": "Cadence (rpm)"
+          }
+        ],
         "Rows": [
           [
-            "3",
+            "1",
             "29:59",
             "13.48",
             "27.0",
@@ -220,21 +292,51 @@
       },
       {
         "Name": "T2",
-        "Span": "8",
+        "Sport": "transition",
+        "Columns": [],
         "Rows": []
       },
       {
         "Name": "Run",
-        "Span": "8",
+        "Sport": "running",
+        "Columns": [
+          {
+            "Key": "number",
+            "Label": "#"
+          },
+          {
+            "Key": "elapsed_time",
+            "Label": "Time"
+          },
+          {
+            "Key": "distance",
+            "Label": "Distance (km)"
+          },
+          {
+            "Key": "avg_speed",
+            "Label": "Pace (/km)"
+          },
+          {
+            "Key": "ascent",
+            "Label": "Gain (m)"
+          },
+          {
+            "Key": "avg_heart_rate",
+            "Label": "HR (bpm)"
+          },
+          {
+            "Key": "avg_cadence",
+            "Label": "Cadence (spm)"
+          }
+        ],
         "Rows": [
           [
-            "4",
+            "1",
             "19:59",
             "3.95",
-            "11.9",
+            "5:03",
             "45",
             "163",
-            "–",
             "171"
           ]
         ]

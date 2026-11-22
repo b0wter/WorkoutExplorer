@@ -48,5 +48,5 @@ var probe = page.ViewModel{
 	Pins:        page.PinsGroup{URL: "u", Count: "1"},
 	ChartsClass: "charts-1 cells-2",
 	Laps: &page.Laps{Columns: []page.Column{{Key: "number", Label: "#"}}, Rows: [][]string{{"1"}},
-		Sections: []page.LapsSection{{Name: "Swim", Span: "1", Rows: [][]string{{"1"}}}}},
+		Legs: []page.LapsLeg{{Name: "Swim", Sport: "swimming", Columns: []page.Column{{Key: "number", Label: "#"}}, Rows: [][]string{{"1"}}}}},
 }

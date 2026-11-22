@@ -372,6 +372,7 @@
   "viewLengths": "Bahnen",
   "splitDistance": "Split-Distanz",
   "splitsCaption": "{preset}-Splits",
+  "noSplits": "Keine Splits",
   "colStrokes": "Züge",
   "colSwolf": "SWOLF",
   "rest": "Pause",

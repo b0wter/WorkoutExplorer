@@ -2,4 +2,3 @@
 // builder is './view', imported by path: re-exported here it would join the activity entry (F-19).
 export { distanceAdvances, codeWord, lapsGroup, summaryItems } from './build';
 export type { HeaderGroup, LapsGroup, PageGroup, PageLaps, PageSettings, PageViewModel, SummaryItem } from './model';
-export type { LapsSection } from '../sections';

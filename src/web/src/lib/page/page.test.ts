@@ -166,7 +166,7 @@ describe('modules (AP-3, D-5, D-10)', () => {
   });
 
   it('LS-3: without laps but with an advancing distance the module is the hidden splits-only one', () => {
-    expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes', Sections: [] });
+    expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes', Legs: [] });
     expect(byName('ride-12h').Laps?.None).toBe('');
   });
 

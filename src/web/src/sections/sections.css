@@ -28,7 +28,7 @@
 .wx-leg-line + .wx-leg-name {
   padding-left: 4px;
 }
-/* Separator rows are tappable once their ranges are in (MS-6, QA-42-r1-4). */
-.laps.legs tr.laps-section {
+/* The laps view's leg headings are tappable once their ranges are in (MS-6, QA-42-r1-4, F-64 LL-3). */
+.laps.legs .laps-legs h3 {
   cursor: pointer;
 }

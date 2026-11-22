@@ -3,18 +3,20 @@
 // the workout has lengths. Fills the laps heading slot (the Laps / Splits / Lengths switch when two
 // or more exist, the split-distance drop-down in the splits view) and builds the splits and lengths
 // tables on demand; on a page without laps it shows the first view at once and reveals the module.
-// Under the tables, the comparison chart of the shown view's rows (F-51, ./chart).
+// Under the tables, the comparison chart of the shown view's rows (F-51, ./chart). A multisport
+// workout's splits and charts are per leg (F-64).
 
 import './splits.css';
-import type { Length, Totals, WorkoutData } from '../lib/datafile';
+import type { Lap, Length, Totals, WorkoutData } from '../lib/datafile';
 import type { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit, Units } from '../lib/format';
 import type { codeWord, lapsGroup } from '../lib/page';
 import { hasStrokeCounts, lengthRows } from '../lib/lengths';
 import { createRangeStats, emptyValues, type RangeStats } from '../lib/range';
-import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset } from '../lib/splits';
+import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset, type SplitChoice } from '../lib/splits';
+import { sectionRanges, sections } from '../lib/sections';
 import type { UnitsStore } from '../lib/units';
 import type { LapsSeams } from '../page/laps';
-import { createChart, type Slot } from './chart';
+import { createChart, type Chart, type Slot } from './chart';
 import { t } from './texts';
 import { onLanguage } from '../lib/i18n';
 
@@ -104,15 +106,42 @@ function splitsTable(laps: Fmt[0], doc: Document, sport: string, totals: { total
 type View = 'Laps' | 'Splits' | 'Lengths';
 const viewName = (v: View): string => t(`view${v}`);
 
+/** A comparison chart with the slots and caption it draws (F-51; one per sport leg table, F-64 LL-7). */
+interface Drawn {
+  readonly chart: Chart;
+  slots: Slot[];
+  caption(): string;
+}
+
+/** One block of a multisport splits view (F-64 LL-5): a section's window [a, b] (MS-6) and heading;
+ *  a sport leg whose distance advances also its drop-down, table and chart. */
+interface Leg {
+  readonly sport: string;
+  readonly a: number;
+  readonly b: number;
+  readonly block: HTMLElement;
+  readonly name: Text;
+  /** LL-6: the leg's list and default, made again on every build (preset names follow the language). */
+  readonly pick: (() => SplitChoice) | null;
+  readonly select: HTMLSelectElement | null;
+  readonly note: HTMLElement | null;
+  wrap?: HTMLElement;
+  drawn?: Drawn;
+  /** The heading's range, then each split's, flat. */
+  pairs: number[];
+}
+
 /** The chunk's entry. `seams` are the laps enhancer's (LS-8): the rows of the shown splits or lengths
- *  table tap through its one listener; the chart mirrors its mark (F-51 SC-7). `splits`: the
- *  distance advances (F-18 L-6). */
+ *  table tap through its one listener; the charts mirror its mark (F-51 SC-7). `splits`: the
+ *  distance advances (F-18 L-6). A multisport workout (F-42 MS-1) gets its laps and splits per leg
+ *  (F-64 LL-4 to LL-7). */
 export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsStore, seams: Pick<LapsSeams, 'splits' | 'marked'>, fmt: Fmt, splits: boolean): void {
   const section = root.querySelector<HTMLElement>('section.laps');
   const slot = section?.querySelector('#laps-slot');
   if (!section || !slot || slot.firstChild) return;
   const doc = section.ownerDocument;
-  const server = section.querySelector<HTMLElement>('.laps-scroll');
+  const secs = sections(data.meta);
+  const server = section.querySelector<HTMLElement>(secs ? '.laps-legs' : '.laps-scroll');
   const lengths = data.meta.lengths;
   const stats = splits ? createRangeStats(data) : null;
   const d = stats?.distance;
@@ -122,48 +151,153 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   let current: View = views[0];
   const boxes: Partial<Record<View, HTMLElement>> = server ? { Laps: server } : {};
   const pairs: Partial<Record<View, number[]>> = {};
-  let choice = d ? splitChoice(data.meta, d[d.length - 1] - d[0]) : null;
+  // LL-5: a multisport workout has no workout-wide drop-down.
+  let choice = d && !secs ? splitChoice(data.meta, d[d.length - 1] - d[0]) : null;
   let preset = choice?.presets[choice.index];
   const seam = seams.splits;
-  // F-51 SC-4: no chart for a multisport workout (AP-12). Slots per view, from the rows its table is built from (SC-3).
-  const chart = data.meta.sport === 'multisport' ? null : createChart(section, data.meta.sport, [fmt[3], fmt[4], fmt[5]], seams.marked);
-  const slots: Partial<Record<View, Slot[]>> = {};
+  // SC-7, LL-7: the enhancer's one mark notification, fanned out to every chart (a chart without the
+  // row's bar clears its highlight).
+  const marks: ((row: Element | null) => void)[] = [];
+  let markedRow: Element | null = null;
+  seams.marked((row) => {
+    markedRow = row;
+    for (const f of marks) f(row);
+  });
+  const newChart = (parent: HTMLElement, sport: string): Chart =>
+    createChart(parent, sport, [fmt[3], fmt[4], fmt[5]], (f) => {
+      marks.push(f);
+      f(markedRow);
+    });
+  // SC-4: a single-sport workout has one chart, last in the section, redrawn per view; a multisport
+  // one a chart per sport leg table (LL-7). Slots from the rows each table is built from (SC-3).
+  const chart = secs ? null : newChart(section, data.meta.sport);
+  const charts: Partial<Record<View, Drawn[]>> = {};
   // F-51 SC-6: elevation gain per lap or split row (samples a … b inclusive), as the range panel shows it (AP-7).
-  const gs = chart && data.metrics.altitude ? (stats ?? createRangeStats(data)) : null;
+  const gs = data.metrics.altitude ? (stats ?? createRangeStats(data)) : null;
   const gv = emptyValues();
   const net = (a: number, b: number): { elevation?: number } => (gs?.fields.includes('gain') ? { elevation: gs.query(a, b, gv).gain } : {});
-  if (server) {
-    const rows = [...server.querySelectorAll('tbody tr:not(.laps-section)')];
-    const laps = data.meta.laps;
-    slots.Laps = rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1), ...net(laps[i].start_index, laps[i].end_index - 1) })) : [];
+  const lapSlots = (rows: Element[], laps: readonly Lap[]): Slot[] =>
+    rows.length === laps.length ? rows.map((row, i) => ({ row, totals: laps[i].totals, label: String(i + 1), ...net(laps[i].start_index, laps[i].end_index - 1) })) : [];
+  const lapsCaption = (): string => viewName('Laps');
+  if (server && chart) charts.Laps = [{ chart, slots: lapSlots([...server.querySelectorAll('tbody tr')], data.meta.laps), caption: lapsCaption }];
+  if (server && secs) {
+    // LL-2, LL-7: each leg block holds the next r laps (L-2's DOM order); no chart for transitions.
+    let k = 0;
+    charts.Laps = [...server.querySelectorAll<HTMLElement>('.laps-leg')].flatMap((block) => {
+      const rows = [...block.querySelectorAll('tbody tr')];
+      const laps = data.meta.laps.slice(k, (k += rows.length));
+      const sport = block.dataset.sport ?? '';
+      return sport === 'transition' || !rows.length ? [] : [{ chart: newChart(block, sport), slots: lapSlots(rows, laps), caption: lapsCaption }];
+    });
   }
-  const draw = (): void => chart?.draw(slots[current]!, current === 'Splits' ? t('splitsCaption', { preset: preset!.label }) : viewName(current), units.get(), current);
+  const drawOne = (c: Drawn): void => c.chart.draw(c.slots, c.caption(), units.get(), current);
+  const draw = (): void => charts[current]?.forEach(drawOne);
+
+  // LL-4 to LL-6: the multisport splits view, one block per section in order, built on its first show.
+  const ranges = secs ? sectionRanges(secs, data.sampleCount) : [];
+  const sorted = [...data.meta.sessions].sort((x, y) => x.start - y.start); // MS-2's order
+  let names = secs?.map((s) => s.name) ?? [];
+  const out = emptyValues();
+  const legs: Leg[] = (secs ?? []).map((s, k) => {
+    const [a, b] = [ranges[2 * k], ranges[2 * k + 1]];
+    const block = doc.createElement('div');
+    block.className = 'laps-leg';
+    block.dataset.sport = s.sport;
+    const h3 = block.appendChild(doc.createElement('h3'));
+    const name = h3.appendChild(doc.createTextNode(''));
+    // A sport leg splits when its distance advances over its window; the pool rule only for a lap swim (PS-1).
+    const advance = d && b > a ? d[b] - d[a] : 0;
+    const summary = sorted[k]?.sub_sport === 'lap_swimming' ? data.meta.summary : {};
+    const pick = s.sport !== 'transition' && advance > 0 ? () => splitChoice({ sport: s.sport, summary }, advance) : null;
+    const select = pick ? h3.appendChild(doc.createElement('select')) : null;
+    const note = !pick && s.sport !== 'transition' ? block.appendChild(doc.createElement('p')) : null;
+    const leg: Leg = { sport: s.sport, a, b, block, name, pick, select, note, pairs: [] };
+    if (note) note.className = 'no-splits';
+    if (pick && select) {
+      const c = pick();
+      select.className = 'split-select';
+      select.append(...c.presets.map((p, i) => new Option(p.label, String(i))));
+      select.value = String(c.index);
+      // LL-6: rebuilds this leg's table and chart only; the selection store is untouched.
+      select.addEventListener('change', () => {
+        buildLeg(leg, k);
+        pairs.Splits = legs.flatMap((l) => l.pairs);
+        seam(boxes.Splits!, pairs.Splits);
+        drawOne(leg.drawn!);
+      });
+    }
+    return leg;
+  });
+  /** One leg's heading text and, for a sport leg with splits, its table and chart (LL-5, LL-7). */
+  const buildLeg = (leg: Leg, k: number): void => {
+    const { a, b } = leg;
+    // OQ-297: a transition reads "T1 · 1:12", the elapsed time of the window it selects.
+    leg.name.data = leg.sport === 'transition' && b > a ? names[k] + ' · ' + fmt[2](stats!.query(a, b, out).elapsed) : names[k];
+    if (leg.note) leg.note.textContent = t('noSplits');
+    leg.pairs = [a, b];
+    if (!leg.pick || !leg.select) return;
+    const c = leg.pick();
+    leg.select.setAttribute('aria-label', t('splitDistance'));
+    c.presets.forEach((p, i) => (leg.select!.options[i].text = p.label));
+    const p = c.presets[+leg.select.value];
+    const bounds = presetBounds(d!, p, c.pool, a, b);
+    const totals = splitTotals(stats!, bounds);
+    const wrap = doc.createElement('div');
+    wrap.className = 'laps-scroll splits';
+    wrap.appendChild(splitsTable(fmt[0], doc, leg.sport, totals, units.get(), p, c.pool));
+    if (leg.wrap) leg.wrap.replaceWith(wrap);
+    else leg.block.appendChild(wrap);
+    leg.wrap = wrap;
+    leg.pairs.push(...bounds.slice(1).flatMap((x, i) => [bounds[i], x]));
+    const partial = partialLast(d!, bounds, p, c.pool);
+    const rows = wrap.querySelectorAll('tbody tr');
+    const slots = totals.map((x, i) => ({ row: rows[i], totals: x.totals, label: String(i + 1), partial: partial && i === totals.length - 1, ...net(bounds[i], bounds[i + 1]) }));
+    leg.drawn ??= { chart: newChart(leg.block, leg.sport), slots, caption: () => '' }; // SC-9: last in its block
+    leg.drawn.slots = slots;
+    leg.drawn.caption = () => t('splitsCaption', { preset: p.label });
+  };
+
   // LS-9, PL-8: built only on arrival, a change, a switch to it or a units change; the selection is untouched (LS-7).
   const build = (view: View): void => {
-    const wrap = doc.createElement('div');
-    wrap.className = view === 'Splits' ? 'laps-scroll splits' : 'laps-scroll splits lengths';
-    wrap.hidden = view !== current;
-    if (view === 'Splits') {
+    let wrap: HTMLElement;
+    if (view === 'Splits' && secs) {
+      legs.forEach(buildLeg);
+      wrap = boxes.Splits ?? doc.createElement('div');
+      if (!wrap.firstChild) {
+        wrap.className = 'laps-legs splits';
+        wrap.append(...legs.map((l) => l.block));
+      }
+      pairs.Splits = legs.flatMap((l) => l.pairs);
+      charts.Splits = legs.flatMap((l) => (l.drawn ? [l.drawn] : []));
+    } else if (view === 'Splits') {
+      wrap = doc.createElement('div');
+      wrap.className = 'laps-scroll splits';
       const bounds = presetBounds(d!, preset!, choice!.pool);
       const totals = splitTotals(stats!, bounds);
       wrap.appendChild(splitsTable(fmt[0], doc, data.meta.sport, totals, units.get(), preset!, choice!.pool));
       pairs.Splits = bounds.slice(1).flatMap((b, i) => [bounds[i], b]);
       const partial = partialLast(d!, bounds, preset!, choice!.pool);
       const rows = wrap.querySelectorAll('tbody tr');
-      slots.Splits = totals.map((t, i) => ({ row: rows[i], totals: t.totals, label: String(i + 1), partial: partial && i === totals.length - 1, ...net(bounds[i], bounds[i + 1]) }));
+      const slots = totals.map((t, i) => ({ row: rows[i], totals: t.totals, label: String(i + 1), partial: partial && i === totals.length - 1, ...net(bounds[i], bounds[i + 1]) }));
+      charts.Splits = [{ chart: chart!, slots, caption: () => t('splitsCaption', { preset: preset!.label }) }];
     } else {
+      wrap = doc.createElement('div');
+      wrap.className = 'laps-scroll splits lengths';
       wrap.appendChild(lengthsTable(fmt, doc, lengths, units.get()));
       // L-2: a length selects start_index … end_index − 1, rest lengths too.
       pairs.Lengths = lengths.flatMap((l) => [l.start_index, l.end_index - 1]);
-      // SC-4: rest lengths take no slot.
+      // SC-4: rest lengths take no slot; no lengths chart for a multisport workout (LL-7: legs only).
       const rows = wrap.querySelectorAll('tbody tr');
-      slots.Lengths = lengthRows(lengths).flatMap((r, i) => (lengths[i].rest ? [] : [{ row: rows[i], totals: { avg_speed: lengths[i].avg_speed }, label: String(r.number) }]));
+      const slots = lengthRows(lengths).flatMap((r, i) => (lengths[i].rest ? [] : [{ row: rows[i], totals: { avg_speed: lengths[i].avg_speed }, label: String(r.number) }]));
+      charts.Lengths = chart ? [{ chart, slots, caption: () => viewName('Lengths') }] : [];
     }
-    if (view === current) seam(wrap, pairs[view]!);
+    wrap.hidden = view !== current;
     const old = boxes[view];
-    if (old) old.replaceWith(wrap);
-    else section.insertBefore(wrap, section.querySelector('.compare')); // SC-9: the chart stays last
+    if (old && old !== wrap) old.replaceWith(wrap);
+    else if (!old) section.insertBefore(wrap, section.querySelector(':scope > .compare')); // SC-9: the chart stays last
     boxes[view] = wrap;
+    // After the swap: the enhancer unmarks a row only when it left the page (LL-6).
+    if (view === current) seam(wrap, pairs[view]!);
   };
   const select = doc.createElement('select');
   const buttons: HTMLButtonElement[] = [];
@@ -222,6 +356,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
       choice.presets.forEach((p, i) => (select.options[i].text = p.label));
       preset = choice.presets[+select.value];
     }
+    names = sections(data.meta)?.map((s) => s.name) ?? []; // leg names (sportName follows the language)
     redraw();
   });
   heading();
