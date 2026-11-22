@@ -75,7 +75,7 @@ Each path's guide says where `.env` lives and how to create it. Edit `.env`. Uns
 | `WORKOUT_EXPLORER_PUSHOVER_USER` | unset (off) | Pushover user key, "Notifications". **A secret** |
 | `WORKOUT_EXPLORER_OPERATOR_FILE` | unset (placeholder) | Absolute path of your About page text, see "The About page: operator file" above. `WX_OPERATOR` (default `/srv/workout-explorer/operator`) is the host folder mounted for it |
 | `WORKOUT_EXPLORER_IMPRESSUM_FILE` | unset (no Impressum) | Absolute path of your Impressum text, see "Impressum (optional)" above. Set but missing or invalid stops the server at start |
-| `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section) | `https://` link to your iPhone upload Shortcut, shown on the About page, "iPhone upload Shortcut". Anything that is not an absolute `https://` link stops the server at start |
+| `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` | unset (no section, no hint) | `https://` link to your iPhone upload Shortcut, usually `https://www.icloud.com/shortcuts/…`; shown on the About page and as a hint on the upload page, "iPhone upload Shortcut". Anything that is not an absolute `https://` link stops the server at start |
 | `COMPOSE_FILE` | unset | With notifications: `compose.yaml:compose.notify.yaml` (DOCKER.md section 5). Self-builders: DOCKER.md section 9 |
 | `WX_UPDATE_PUBLIC_KEY` | none, **required by `update.sh`** | The release signing key you pinned ("Updates", step 1). Every release is installed by `update.sh`, which refuses to run without it. Read by `update.sh` only; no deploy ever writes it |
 | `WORKOUT_EXPLORER_AUTO_UPDATE` | unset (off) | `on`: the nightly timer installs every newer signed release ("Updates"). Anything else stops the server at start (exit code 2) and `update.sh` refuses to run. When on, the About page says that this server downloads updates from GitHub |
@@ -105,7 +105,7 @@ Without that route the server has no internet access at all. With it, the server
 
 ## iPhone upload Shortcut (optional)
 
-You can offer iPhone users an Apple Shortcut that uploads a FIT file from the share sheet (for example from a watch app or Files) and opens its edit page. The project ships no Shortcut: you build one for your site with the steps below and share it as an iCloud link. With `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` set, the About page shows a section "Upload from your iPhone" with that link; unset, there is no section. The Shortcut uses the normal upload, with the same limits (20 MB, uploads per hour per address); the site stores nothing new.
+You can offer iPhone users an Apple Shortcut that uploads a FIT file from the share sheet (for example from a watch app or Files) and opens its edit page. The project ships no Shortcut: you build one for your site with the steps below and share it as an iCloud link. With `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` set, the About page shows a section "Upload from your iPhone" with that link, and the upload page shows a one-line hint linking to it; unset, there is neither. A changed link takes effect at the next restart of `app`. The Shortcut uses the normal upload, with the same limits (20 MB, uploads per hour per address); the site stores nothing new.
 
 Build it in the Shortcuts app (replace `https://workouts.example.org` with your `WORKOUT_EXPLORER_BASE_URL`):
 

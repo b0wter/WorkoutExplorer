@@ -37,7 +37,8 @@ describe('About page', () => {
     expect(html.indexOf('<!--wx:pushover-->')).toBeLessThan(html.indexOf('<!--/wx:pushover-->'));
     // F-34: the Shortcut link is filled only inside its block.
     const sc = html.slice(html.indexOf('<!--wx:shortcut-->'), html.indexOf('<!--/wx:shortcut-->'));
-    expect(sc).toMatch(/<h2 data-t="\w+">Upload from your iPhone<\/h2>/);
+    expect(sc).toMatch(/<h2 id="shortcut" data-t="\w+">Upload from your iPhone<\/h2>/); // F-63: the upload hint's "More" target
+    expect(sc).toContain("The link opens Apple's iCloud site, which then sees your IP address."); // F-63
     expect(sc).toContain('<a href="<!--wx:shortcut-url-->" data-p="link"><!--wx:shortcut-url--></a>');
     expect(count('<!--wx:shortcut-url-->')).toBe(2);
     // F-52 PT-9a (OQ-216): the update sentence only inside its block.

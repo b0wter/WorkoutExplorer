@@ -213,6 +213,9 @@ func (r *rig) siteFile(name string) []byte {
 		r.t.Fatal(err)
 	}
 	src := string(r.webFile(name))
+	if s, ok := shell.CutBlock(src, shell.ShortcutOn, shell.ShortcutOff, false); ok { // the rig sets no Shortcut link (F-63)
+		src = s
+	}
 	on := strings.Contains(string(b), shell.Link)
 	if want, err := shell.Fill(name, src, on); err != nil || want != string(b) {
 		r.t.Fatalf("site/%s is not the filled build file: %v", name, err)

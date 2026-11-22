@@ -82,3 +82,17 @@
 .message:empty {
   display: none;
 }
+/* F-63: the iOS Shortcut hint, in the page only while serve has the link; shown without JavaScript. */
+.shortcut {
+  color: var(--muted);
+  font-size: 14px;
+}
+.shortcut a {
+  color: inherit;
+}
+[data-state='opening'] .shortcut,
+[data-state='uploading'] .shortcut,
+[data-state='processing'] .shortcut,
+[data-state='paused'] .shortcut {
+  display: none;
+}

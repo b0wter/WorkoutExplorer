@@ -39,6 +39,7 @@
 ## Consequences
 
 - On a phone, switching apps during "processing" can lose the response. The draft is then stored but unreachable, and it expires (AC-1, OQ-45). No mitigation in the MVP.
+- F-63: the iOS Shortcut hint below the drop zone is plain markup filled by `serve` (F-38 note), hidden by CSS in the `opening`, `uploading`, `processing` and `paused` states and shown in `checking`, so it also shows without JavaScript. No device detection, no script change.
 - Until F-19 exists, a successful upload lands on an address with no page behind it: Caddy has no `/edit/*` route yet, and Vite's dev server falls back to the activity entry. What F-11 verifies is that the browser goes to the new draft's edit link (OQ-56).
 
 ## Hand-offs
