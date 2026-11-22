@@ -2020,6 +2020,70 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     expect(rows()).toHaveLength(0);
   });
 
+  it('QA-65-r1-2: the live trim end is a boundary; focus leaving the group closes the list; a choice returns focus to "+"', async () => {
+    await start();
+    type('trim_b', '5000');
+    await settle();
+    await pick(5000);
+    plus().click();
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    const menu = document.querySelector<HTMLElement>('.plus-menu')!;
+    item('Add lap').dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: field('title') }));
+    expect(menu.hidden).toBe(true);
+    await pick(1000);
+    plus().click();
+    item('Add lap').focus();
+    item('Add lap').click();
+    expect([menu.hidden, document.activeElement]).toEqual([true, plus()]);
+  });
+
+  it('QA-65-r1-2: after a change the map lap markers, the splits chunk (its switch) and the row taps start again', async () => {
+    await start();
+    const laps = vi.fn();
+    const handle = { setScheme() {}, setHidden() {}, marker: () => () => {}, marks() {}, laps, control() {}, sampleAt: () => -1, destroy() {} };
+    (stubLog.routeMap[0] as unknown as { onmapready(h: typeof handle): void }).onmapready(handle);
+    await settle();
+    await pick(1000);
+    await addLap();
+    await vi.waitFor(() => expect(laps).toHaveBeenCalledTimes(1));
+    const section = document.querySelector<HTMLElement>('section.laps')!;
+    await vi.waitFor(() => expect(section.querySelector('#laps-slot')!.childElementCount).toBeGreaterThan(0)); // the switch
+    expect(section.classList.contains('live')).toBe(true);
+    rows()[1].click(); // the new first part: samples 900 to 1000
+    frames.splice(0).forEach((f) => f(0));
+    const sel = stubLog.chartStack[0].selection!;
+    expect([sel.start(), sel.end()]).toEqual([900, 1000]);
+    // ×: the module is rebuilt and focus lands on the laps heading (no other ×).
+    document.querySelector<HTMLButtonElement>('.lap-x-btn')!.click();
+    await settle();
+    expect(laps).toHaveBeenCalledTimes(2);
+    expect(document.activeElement).toBe(document.querySelector('section.laps h2'));
+  });
+
+  it('QA-65-r1-5: boundaries the live trim removes do not count towards the 100', async () => {
+    settings = fresh({ added_lap_boundaries: Array.from({ length: 100 }, (_, k) => at(11 + 10 * k)) });
+    await start();
+    type('trim_a', '500');
+    await settle();
+    await pick(5003);
+    plus().click();
+    expect(item('Add lap').getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('QA-65-r1-3: on a multisport workout the × names the lap number its leg table shows', async () => {
+    draft = () => new Response(golden('triathlon').slice(0), { status: 200 });
+    await start();
+    const tri = decodeDataFile(golden('triathlon'));
+    if (!tri.ok) throw new Error('no triathlon');
+    const bike = tri.data.meta.sessions.find((x) => x.sport === 'cycling')!;
+    const firstBikeLap = tri.data.meta.laps.find((l) => l.start_index >= bike.start_index)!;
+    await pick(firstBikeLap.start_index + 10);
+    await addLap();
+    const x = document.querySelector<HTMLButtonElement>('.lap-x-btn')!;
+    expect(x.closest('tr')!.cells[0].textContent).toBe('1');
+    expect(x.getAttribute('aria-label')).toBe('Remove the added lap boundary at the end of lap 1');
+  });
+
   it('no visible route (OQ-305): "+" sits below the no-location hint and offers only Add lap', async () => {
     const indoor = golden('indoor-no-gps');
     draft = () => new Response(indoor.slice(0), { status: 200 });

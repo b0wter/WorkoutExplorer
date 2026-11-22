@@ -198,7 +198,15 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
    *  startPage started them, and the map's lap markers follow. */
   // shortcut: the previous module's enhancers stay subscribed (detached, a little work per units or
   // language change); upgrade if owners edit laps by the hundreds in one visit.
+  let refocus = -1;
   const relaps = (): void => {
+    if (refocus >= 0) {
+      const xs = host.querySelectorAll<HTMLElement>('.lap-x-btn');
+      const h = host.querySelector<HTMLElement>('section.laps h2');
+      h?.setAttribute('tabindex', '-1');
+      (xs[Math.min(refocus, xs.length - 1)] ?? (h?.closest('[hidden]') ? null : h) ?? host.querySelector<HTMLElement>('.plus-button'))?.focus();
+      refocus = -1;
+    }
     const v = pinsView;
     relapsDue = !v;
     if (!v || !data) return;
@@ -219,6 +227,8 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       const b = (e.target as Element).closest?.<HTMLElement>('.lap-x-btn');
       if (!b || !added) return;
       e.stopPropagation();
+      // The module is rebuilt, the × with it: focus goes to the × now at its place, else the heading.
+      refocus = [...host.querySelectorAll('.lap-x-btn')].indexOf(b);
       added.remove(+b.dataset.at!);
     },
     true,

@@ -46,6 +46,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       if (item.state().off) return paint(); // the state now, not the one painted on open
       close(false);
       item.run();
+      button.focus(); // the list hid the focused item: back to "+", as Esc does
     });
     return { item, row, b, why };
   });

@@ -7,6 +7,7 @@
 import type { Lap, WorkoutData } from '../lib/datafile';
 import { addLaps, lapEnds, MAX_ADDED_LAPS, snapLapBoundary } from '../lib/addedlaps';
 import { createRangeStats } from '../lib/range';
+import { lapsBySection, sections } from '../lib/sections';
 import { indexAt, instantAt, removed } from '../pins';
 import type { PlusItem } from './plus';
 import { t } from './texts';
@@ -59,7 +60,12 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
   const kept = (k: number): boolean => k > cut()[0] && k < cut()[1];
 
   return {
-    rows: () => data.meta.laps.map((l, i) => (l.trigger === 'added' && set.includes(l.end_index - 1) ? { at: l.end_index - 1, name: t('removeLap', { n: i + 1 }), dim: kept(l.end_index - 1) ? '' : removed() } : null)),
+    rows: () => {
+      // The number the row shows: per leg block on a multisport workout (F-64 LL-2), else overall.
+      const legs = lapsBySection(sections(data.meta), data.meta.laps);
+      const shown = legs.length ? legs.flatMap((ls) => ls.map((_, k) => k + 1)) : data.meta.laps.map((_, i) => i + 1);
+      return data.meta.laps.map((l, i) => (l.trigger === 'added' && set.includes(l.end_index - 1) ? { at: l.end_index - 1, name: t('removeLap', { n: shown[i] }), dim: kept(l.end_index - 1) ? '' : removed() } : null));
+    },
     remove: (at) => {
       set = set.filter((k) => k !== at);
       change();
@@ -73,7 +79,8 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
         if (ts.some((k) => k < lo || k > hi)) return t('lapTrimmed');
         const add = [...new Set(ts.filter((k) => k !== lo && k !== hi && !ends.has(k) && !set.includes(k)))];
         if (add.length === 0) return t('lapHere');
-        return set.length + add.length > MAX_ADDED_LAPS ? t('lapMax') : add;
+        // Only what Save would send counts: boundaries the live trim removes do not (AL-8).
+        return set.filter(kept).length + add.length > MAX_ADDED_LAPS ? t('lapMax') : add;
       };
       return {
         label: () => t('addLap'),
