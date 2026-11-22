@@ -1,8 +1,8 @@
 # F-03 Workout data file writer: architecture
 
-- **Version:** 1.10
+- **Version:** 1.11
 - **Status:** accepted
-- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044); v1.7 of 12 Nov 2026 (format version 4, F-46, ADR-046); v1.8 of 13 Nov 2026 (format version 5, F-48, ADR-048); v1.9 of 13 Nov 2026 (format version 6, F-49, ADR-049); v1.10 of 14 Nov 2026 (version 6 amended in place before its release: `basis` may sit next to `from`, §5.9)
+- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044); v1.7 of 12 Nov 2026 (format version 4, F-46, ADR-046); v1.8 of 13 Nov 2026 (format version 5, F-48, ADR-048); v1.9 of 13 Nov 2026 (format version 6, F-49, ADR-049); v1.10 of 14 Nov 2026 (version 6 amended in place before its release: `basis` may sit next to `from`, §5.9); v1.11 of 22 Nov 2026 (format version 7, F-65, ADR-060)
 - **History:** [architect/history/F-03-workout-data-file-writer.md](history/F-03-workout-data-file-writer.md) (change log, closed questions)
 - **Feature:** [`features/F-03-workout-data-file-writer.md`](../features/F-03-workout-data-file-writer.md)
 - **Depends on:** TD (system-wide picture), [F-02 design](F-02-fit-parsing-and-normalisation.md) v1.6, [ADR-001](ADR-001-repository-layout-and-build-entry-point.md), [ADR-002](ADR-002-bundle-size-budget-measurement.md) (decimal KB), [ADR-004](ADR-004-parser-corpus-and-golden-reports.md) rev. 3, [ADR-005](ADR-005-workout-data-file-format-v1.md), [ADR-006](ADR-006-brotli-pre-compression.md)
@@ -122,9 +122,9 @@ func Brotli(src []byte) ([]byte, error)
 
 ---
 
-## Data file format, version 6 (normative)
+## Data file format, version 7 (normative)
 
-(v1.5) Version 2 adds the streams 11 and 12 of §2 and nothing else; the header, the metadata schema and every other rule are those of version 1. (v1.6) Version 3 adds the top-level `device` (§5.1, §5.7) and the summary's pool keys (§5.2) and nothing else (ADR-044). (v1.7) Version 4 adds the lap's `trigger` (§5.3) and the summary's `pool_length_recorded_m` (§5.2) and nothing else (ADR-046). (v1.8) Version 5 adds the top-level `lengths` (§5.1, §5.8), the lap's `stroke` (§5.3) and the summary's `stroke` (§5.2) and nothing else (ADR-048). (v1.9) Version 6 adds the top-level `zones` (§5.1, §5.9) and nothing else (ADR-049).
+(v1.5) Version 2 adds the streams 11 and 12 of §2 and nothing else; the header, the metadata schema and every other rule are those of version 1. (v1.6) Version 3 adds the top-level `device` (§5.1, §5.7) and the summary's pool keys (§5.2) and nothing else (ADR-044). (v1.7) Version 4 adds the lap's `trigger` (§5.3) and the summary's `pool_length_recorded_m` (§5.2) and nothing else (ADR-046). (v1.8) Version 5 adds the top-level `lengths` (§5.1, §5.8), the lap's `stroke` (§5.3) and the summary's `stroke` (§5.2) and nothing else (ADR-048). (v1.9) Version 6 adds the top-level `zones` (§5.1, §5.9) and nothing else (ADR-049). (v1.11) Version 7 adds the lap trigger code `added` (§5.3) and nothing else (ADR-060).
 
 This section is the format description required by the feature's scope. It is written for an independent decoder in any language. Terms: *N* is the sample count; *L* is the metadata length; `align4(x)` is the smallest multiple of 4 that is ≥ x. All multi-byte integers are **little-endian two's complement**. Byte positions count from 0 at the start of the file.
 
@@ -133,7 +133,7 @@ This section is the format description required by the feature's scope. It is wr
 | Bytes | Type | Field | Value |
 | --- | --- | --- | --- |
 | 0–3 | 4 × ASCII | magic | `WEXD` (`57 45 58 44`) |
-| 4–5 | uint16 | format version | `6` |
+| 4–5 | uint16 | format version | `7` |
 | 6–9 | uint32 | sample count *N* | ≥ 1 |
 | 10–13 | uint32 | metadata length *L* | length of the JSON in bytes |
 | 14 … 14+L−1 | UTF-8 | metadata | one JSON object (§5), no BOM, no trailing newline |
@@ -200,7 +200,7 @@ Every intermediate `acc` is a valid stored value, so it stays within ±1,000,000
 - Every `byte_offset` is a multiple of 4. A reader can therefore create `Int32Array`, `Uint16Array`, `Uint8Array` or `Int8Array` views directly on the `ArrayBuffer` of the whole file, without copying. Readers must use `byte_offset` and must not compute positions themselves.
 - Typed arrays use the platform's byte order. Every browser platform in scope is little-endian. A reader may assert this once and otherwise fall back to `DataView`.
 
-### 5. Metadata JSON (closed; version 3 adds `device` and the pool keys; version 4 the lap `trigger` and `pool_length_recorded_m`; version 5 `lengths` and the two `stroke` keys; version 6 `zones`)
+### 5. Metadata JSON (closed; version 3 adds `device` and the pool keys; version 4 the lap `trigger` and `pool_length_recorded_m`; version 5 `lengths` and the two `stroke` keys; version 6 `zones`; version 7 the trigger code `added`)
 
 One JSON object with exactly these keys, in this order. Readers use a standard JSON parser. Numbers are JSON numbers. Unknown keys do not occur.
 
@@ -260,7 +260,7 @@ An object whose keys are a subset of the list below, in this order. **A key that
 | `sport`, `sub_sport` | string | yes | — | As `sport` above (`""` when not recorded) |
 | `start`, `end` | integer | yes | yes | Time offsets in seconds (F-02 E-2). `end ≥ start` |
 | `start_index`, `end_index` | integer | yes | yes | Half-open sample range (§5.4) |
-| `trigger` | string | — | yes | (v1.7) What ended the lap: `button`, `time`, `distance`, `position`, `stop`, `equipment`, or `""` when missing, invalid or any other FIT value ([F-46](F-46-laps-and-splits.md) LS-1, ADR-046 item 2). Readers check the type only; an unlisted string shows as unknown |
+| `trigger` | string | — | yes | (v1.7) What ended the lap: `button`, `time`, `distance`, `position`, `stop`, `equipment`, (v1.11, [F-65](F-65-owner-added-laps.md) AL-3, ADR-060) `added` for a part that ends at an owner-added lap boundary, or `""` when missing, invalid or any other FIT value ([F-46](F-46-laps-and-splits.md) LS-1, ADR-046 item 2). Readers check the type only; an unlisted string shows as unknown |
 | `stroke` | string | — | yes | (v1.8) Stroke code: `freestyle`, `backstroke`, `breaststroke`, `butterfly`, `drill`, `mixed`, `im`, or `""` when missing, invalid, any other FIT value, or the lap is outside a pool swim (ADR-048 items 2, 3). Readers check the type only; an unlisted string shows as unknown |
 | `totals` | Totals | yes | yes | Session: device values as recorded (AP-2). Lap: the device value where recorded, else computed as for a range over the lap's samples ([F-18](F-18-laps-and-splits-table.md) L-1; AP-8 columns only) |
 
@@ -324,7 +324,7 @@ Keys `heart_rate`, then `power`, each absent when the workout has no zone values
 A reader rejects the file, with an error and never a crash, when any of these holds:
 
 1. Fewer than 14 bytes, or magic ≠ `WEXD`.
-2. Version ≠ the reader's version (exactly `6`; there are no readers for other versions, TD Versioning).
+2. Version ≠ the reader's version (exactly `7`; there are no readers for other versions, TD Versioning).
 3. *N* = 0, or `14 + L` > file length.
 4. The metadata is not valid UTF-8 JSON, or a key from §5.1 is missing or has the wrong type. **Nested keys (v1.3):** a nested value of the wrong type (for example a lap `start` that is a string) is rejected by every reader. A **missing or `null`** nested key (a key of `time_zone`, §5.3, §5.5, §5.7 or the four always-present keys of §5.8, or a `null` array element) is not covered by the writer's output, since the writer always emits every key; Go `Decode` zero-fills it, F-04 rejects it. Both are allowed by this format; neither affects a file the writer produced. (v1.9) A `zones` entry with an unknown kind, neither `from` nor `basis`, or a value outside §5.9 is rejected by both readers (v1.10: both keys together are valid).
 5. `streams` is empty, its first entry is not `time_offset`, a name is unknown or repeated, the names are not in §2 order (v1.2), exactly one of `latitude` and `longitude` is present (v1.2), or a descriptor differs from its §2 row.
@@ -544,7 +544,7 @@ cd $(SERVER_DIR) && go test ./internal/ingest -run '^TestCorpus$$' -update && go
 | 3 Round trip within resolution, sentinels where missing | `TestRoundTripCorpus`; unit tests Round trip, Delta, Quantisation |
 | 4 Indoor: no latitude/longitude | `TestRoundTripCorpus` on the three files without positions; `testdata/datafile/synthetic/indoor-no-gps.json` has no position entries |
 | 5 4-hour ride under 500 KB as `.br`; sizes recorded | `TestSizeBudget4h` in CI; `MEASUREMENTS.md` section for synthetic files; real-file sizes by manufacturer in the QA report |
-| 6 Format description exists and matches the writer | This document, section "Data file format, version 6", which `Decode` implements; the golden files in `testdata/datafile/synthetic/`. **The cross-language check ("checked by the F-04 decoder tests") completes in F-04** (F-04 AC 2 reads these fixtures). F-03 QA verifies that the description, `Decode` and the fixtures agree, and does not block on F-04's tests |
+| 6 Format description exists and matches the writer | This document, section "Data file format, version 7", which `Decode` implements; the golden files in `testdata/datafile/synthetic/`. **The cross-language check ("checked by the F-04 decoder tests") completes in F-04** (F-04 AC 2 reads these fixtures). F-03 QA verifies that the description, `Decode` and the fixtures agree, and does not block on F-04's tests |
 
 ## Open questions
 

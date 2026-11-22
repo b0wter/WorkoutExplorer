@@ -5,7 +5,7 @@
 - **Features:** F-46 (laps and splits); F-19 (`draft.bin`), F-30 (regenerate)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 4 under its item 9; narrows [ADR-044](ADR-044-device-and-pool-values-in-the-data-file.md) item 4 (one pool key that is not whole and is never printed)
 - **Requirements:** AP-8, AP-20, AP-16, UP-9, I-2; NFR Privacy
-- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-6-normative) §5.2, §5.3
+- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-7-normative) §5.2, §5.3
 
 ## Context
 
@@ -23,7 +23,7 @@ Rejected:
 ## Decision
 
 1. **Format version 4**, one bump for both keys. Old workouts are rebuilt by `regenerate`; losses accepted (decision log 11–12 Nov 2026).
-2. **`trigger` on every lap**, a string from the closed set `button`, `time`, `distance`, `position`, `stop`, `equipment`, or `""` for a missing, invalid or unlisted value. `ingest`, the anti-corruption layer, maps FIT `lap_trigger` to this set (AP-8 mapping); the raw value never leaves `ingest`. The builders print the AP-8 word for the six codes and an empty cell for anything else.
+2. **`trigger` on every lap**, a string from the closed set `button`, `time`, `distance`, `position`, `stop`, `equipment`, or `""` for a missing, invalid or unlisted value. `ingest`, the anti-corruption layer, maps FIT `lap_trigger` to this set (AP-8 mapping); the raw value never leaves `ingest`. The builders print the AP-8 word for the six codes and an empty cell for anything else. (22 Nov 2026, [ADR-060](ADR-060-added-lap-boundaries-merged-into-the-data-file.md), format version 7) The set gains `added`, set by the public build (not `ingest`) on a part that ends at an owner-added lap boundary; a new code is a version bump.
 3. **`pool_length_recorded_m` in `summary`**: the first pool swim's recorded length in metres (3 decimals), present exactly when `pool_length_m` or `pool_length_yd` is. Used only to locate whole lengths in the distance stream. No renderer prints it; `CardItems` and `summaryItems` ignore it.
 
 ## Consequences

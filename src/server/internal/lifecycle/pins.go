@@ -11,7 +11,7 @@ import (
 )
 
 // Map pins (F-56, ADR-057). The row holds the whole set; the public rule
-// (kept, public) is publish's, reached through Trimmer.CheckPins.
+// (kept, public) is publish's, reached through Trimmer.CheckEdits.
 
 // Limits of PN-2 (OQ-238), in Unicode code points.
 const (
@@ -44,7 +44,7 @@ type OptPins struct {
 	V   []Pin
 }
 
-// PinCheck is the verdict of Trimmer.CheckPins on one pin: Resolved has the
+// PinCheck is the verdict of Trimmer.CheckEdits on one pin: Resolved has the
 // instants of the nearest samples; Kept: every sample of the pin lies in the
 // trim window; Public: kept, and each such sample has a position in the
 // output of trim then hiding (PN-4). Outside: an instant is outside the recording.
@@ -154,38 +154,34 @@ func DecodePins(s string) ([]Pin, error) {
 	return out, nil
 }
 
-// resolvePins is PN-5 (under the O-7 lock), against eff, the record with the
-// patch applied: the pins to store, or an *InvalidSettingsError. Parses once
-// (through the Trimmer) and only when pins are sent, or a radius or the trim
-// changes on a row with pins.
-func (s *Service) resolvePins(ctx context.Context, rec, eff Record, p SettingsPatch) ([]Pin, error) {
+// pinCandidates is the first half of PN-5: the pins to judge, and whether
+// they need judging (a parse). They do only when pins are sent, or a radius
+// or the trim changes on a row with pins; otherwise the stored set stays.
+func pinCandidates(rec Record, p SettingsPatch) (cand []Pin, judge bool, err error) {
 	settingsChanged := p.HideStartM != nil || p.HideEndM != nil || p.TrimStart.Set || p.TrimEnd.Set
 	if !p.Pins.Set && (len(rec.Pins) == 0 || !settingsChanged) {
-		return rec.Pins, nil
+		return rec.Pins, false, nil
 	}
-	cand := rec.Pins
+	cand = rec.Pins
 	if p.Pins.Set {
 		cand = slices.Clone(p.Pins.V)
 		if len(cand) > MaxPins {
-			return nil, invalid(MsgBadPins)
+			return nil, false, invalid(MsgBadPins)
 		}
 		for i, q := range cand {
 			cand[i].Title = trimSpace(q.Title) // as the workout title (UP-4)
 			if err := checkPinShape(cand[i]); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 	}
-	if len(cand) == 0 {
-		return nil, nil
-	}
-	if s.d.Trimmer == nil {
-		return nil, s.ownerFail("pins", rec.ID, errors.New("no trimmer"))
-	}
-	checks, err := s.d.Trimmer.CheckPins(ctx, eff, cand)
-	if err != nil {
-		return nil, s.ownerFail("pins", rec.ID, err)
-	}
+	return cand, len(cand) > 0, nil
+}
+
+// judgePins is the second half of PN-5 (under the O-7 lock): the pins to
+// store from the verdicts on cand against the record with the patch
+// applied, or an *InvalidSettingsError.
+func judgePins(rec Record, p SettingsPatch, checks []PinCheck) ([]Pin, error) {
 	var out []Pin
 	for _, c := range checks {
 		if c.Outside || c.Merged {
@@ -205,4 +201,60 @@ func (s *Service) resolvePins(ctx context.Context, rec, eff Record, p SettingsPa
 	}
 	sortPins(out)
 	return out, nil
+}
+
+// resolveEdits is PN-5 and F-65 AL-5 (under the O-7 lock), against eff, the
+// record with the patch applied: the pins and added lap boundaries to
+// store, or an *InvalidSettingsError. Both are judged from one parse
+// (through the Trimmer), and only when one of them needs it.
+func (s *Service) resolveEdits(ctx context.Context, rec, eff Record, p SettingsPatch) ([]Pin, []time.Time, error) {
+	pins, judgeP, err := pinCandidates(rec, p)
+	if err != nil {
+		return nil, nil, err
+	}
+	laps, judgeL, err := lapCandidates(rec, p)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !judgeP && !judgeL {
+		if p.Pins.Set { // sent empty
+			pins = nil
+		}
+		if p.AddedLapBoundaries.Set {
+			laps = nil
+		}
+		return pins, laps, nil
+	}
+	if s.d.Trimmer == nil {
+		return nil, nil, s.ownerFail("edits", rec.ID, errors.New("no trimmer"))
+	}
+	var pc []Pin
+	var lc []time.Time
+	if judgeP {
+		pc = pins
+	}
+	if judgeL {
+		lc = laps
+	}
+	pcs, lcs, err := s.d.Trimmer.CheckEdits(ctx, eff, pc, lc)
+	if err != nil {
+		return nil, nil, s.ownerFail("edits", rec.ID, err)
+	}
+	switch {
+	case judgeP:
+		if pins, err = judgePins(rec, p, pcs); err != nil {
+			return nil, nil, err
+		}
+	case p.Pins.Set:
+		pins = nil
+	}
+	switch {
+	case judgeL:
+		if laps, err = judgeLaps(rec, p, lcs); err != nil {
+			return nil, nil, err
+		}
+	case p.AddedLapBoundaries.Set:
+		laps = nil
+	}
+	return pins, laps, nil
 }

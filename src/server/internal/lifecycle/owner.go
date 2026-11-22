@@ -65,6 +65,8 @@ type SettingsPatch struct {
 	ZonesMaxHeartRate, ZonesThresholdPower OptInt
 	// Pins replaces the whole set (F-56 PN-2).
 	Pins OptPins
+	// AddedLapBoundaries replaces the whole set (F-65 AL-2).
+	AddedLapBoundaries OptTimes
 }
 
 // OptInt is an optional integer that may be sent as null.
@@ -261,12 +263,13 @@ func (s *Service) Update(ctx context.Context, publicID, token string, p Settings
 			return Record{}, err
 		}
 	}
-	// PN-5: pins are judged against the settings the patch produces.
+	// PN-5, AL-5: pins and added lap boundaries are judged against the
+	// settings the patch produces.
 	eff, err := ApplyPatch(rec, p, s.d.Now())
 	if err != nil {
 		return Record{}, err
 	}
-	pins, err := s.resolvePins(sctx, rec, eff, p)
+	pins, laps, err := s.resolveEdits(sctx, rec, eff, p)
 	if err != nil {
 		return Record{}, err
 	}
@@ -278,7 +281,7 @@ func (s *Service) Update(ctx context.Context, publicID, token string, p Settings
 			return Record{}, ErrNotFound
 		}
 		next, err := ApplyPatch(cur, p, now)
-		next.Pins = pins
+		next.Pins, next.AddedLapBoundaries = pins, laps
 		return next, err
 	})
 	var ie *InvalidSettingsError

@@ -1,8 +1,8 @@
 // Package datafile encodes a normalised workout as the binary data file the
-// browser reads (format version 6, magic WEXD) and decodes it again.
+// browser reads (format version 7, magic WEXD) and decodes it again.
 //
 // The normative format description is architect/F-03-workout-data-file-writer.md,
-// section "Data file format, version 6"; the decisions behind it are in
+// section "Data file format, version 7"; the decisions behind it are in
 // ADR-005. The package is pure: it depends on package workout and the
 // standard library only, does no I/O and never logs (Technical Design,
 // Code structure: Dependency rules).
@@ -20,7 +20,7 @@ const Magic = "WEXD"
 
 // Version is the only format version this package writes and reads
 // (Format §9, ADR-005 item 9).
-const Version uint16 = 6
+const Version uint16 = 7
 
 // headerSize is magic, version, sample count and metadata length (Format §1).
 const headerSize = 14
@@ -142,7 +142,7 @@ type Lap struct {
 	End        int32  `json:"end"`
 	StartIndex int    `json:"start_index"`
 	EndIndex   int    `json:"end_index"`
-	Trigger    string `json:"trigger"` // version 4, §5.3
+	Trigger    string `json:"trigger"` // version 4, §5.3; "added" since version 7 (ADR-060)
 	Stroke     string `json:"stroke"`  // version 5, §5.3
 	Totals     Totals `json:"totals"`
 }

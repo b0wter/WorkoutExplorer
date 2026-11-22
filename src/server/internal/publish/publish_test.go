@@ -337,6 +337,8 @@ func TestHidesMore(t *testing.T) {
 		{"nothing", p, p, false},
 		{"title", p, with(p, func(r *lifecycle.Record) { r.Title = "x" }), false},
 		{"description", p, with(p, func(r *lifecycle.Record) { r.Description = "x" }), false},
+		{"added lap boundaries", p, with(p, func(r *lifecycle.Record) { r.AddedLapBoundaries = []time.Time{time.Unix(1, 0)} }), false}, // F-65 AL-7
+		{"added lap boundaries removed", with(p, func(r *lifecycle.Record) { r.AddedLapBoundaries = []time.Time{time.Unix(1, 0)} }), p, false},
 		{"lifetime", p, with(p, func(r *lifecycle.Record) { r.ExpiresAt = r.ExpiresAt.Add(time.Hour) }), false},
 		{"publish", d, p, false},
 		{"hiding off", hidden, p, false},

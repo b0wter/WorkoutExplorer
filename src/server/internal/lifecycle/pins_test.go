@@ -21,8 +21,13 @@ type gridTrimmer struct {
 	pinCalls int
 }
 
-func (g *gridTrimmer) CheckPins(_ context.Context, r Record, pins []Pin) ([]PinCheck, error) {
+// CheckEdits is one parse; lap boundaries are judged by lapStandIn (laps_test.go).
+func (g *gridTrimmer) CheckEdits(_ context.Context, r Record, pins []Pin, laps []time.Time) ([]PinCheck, []LapCheck, error) {
 	g.pinCalls++
+	return g.checkPins(r, pins), lapStandIn(r, laps), nil
+}
+
+func (g *gridTrimmer) checkPins(r Record, pins []Pin) []PinCheck {
 	lo, hi := 0, 999
 	if r.TrimStartAt != nil {
 		lo = int(r.TrimStartAt.Sub(pinBase) / time.Second)
@@ -48,7 +53,7 @@ func (g *gridTrimmer) CheckPins(_ context.Context, r Record, pins []Pin) ([]PinC
 		}
 		out = append(out, c)
 	}
-	return out, nil
+	return out
 }
 
 func pt(i int, title string) Pin { return Pin{Type: "danger", Title: title, StartAt: at(i)} }

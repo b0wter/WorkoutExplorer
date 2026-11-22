@@ -76,6 +76,24 @@ func withTriggers(f *datafile.File) {
 	f.Meta.Laps = laps
 }
 
+// addedLaps (F-65 AL-6) takes the laps of the "device-laps" case of
+// testdata/datafile/added-laps.json, as the Go build makes them; samples.ts
+// must do the same.
+func addedLaps(f *datafile.File) {
+	b, err := os.ReadFile("../../testdata/datafile/added-laps.json")
+	if err != nil {
+		panic(err)
+	}
+	var cases []struct {
+		Name string
+		Laps []datafile.Lap
+	}
+	if err := json.Unmarshal(b, &cases); err != nil || cases[0].Name != "device-laps" {
+		panic("added-laps.json: no device-laps case first")
+	}
+	f.Meta.Laps = cases[0].Laps
+}
+
 // withoutLengths mirrors samples.ts withoutLengths (F-44 PS-5).
 func withoutLengths(f *datafile.File) { f.Meta.Summary.Lengths = "" }
 
@@ -111,6 +129,7 @@ var samples = []sampleSpec{
 	{"pool-swim-no-lengths", "pool-swim", "", "", withoutLengths, false, "", ""},
 	{"ride-no-laps", "ride-no-laps", "", "", nil, false, "", ""},
 	{"ride-lap-triggers", "ride-lap-triggers", "", "", nil, false, "", ""},
+	{"ride-added-laps", "ride-lap-triggers", "", "", addedLaps, false, "", ""}, // F-65: the Added trigger
 	{"pool-swim-33m", "pool-swim-33m", "", "", nil, false, "", ""},
 	{"pool-swim-mixed", "pool-swim-mixed", "", "", nil, false, "", ""}, // F-48 PL-7: mixed strokes, a lap without one
 	{"zones-ride", "zones-wahoo-ride", "", "", nil, false, "", ""},     // F-49: zones are client-owned (ZN-8)

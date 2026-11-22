@@ -316,6 +316,7 @@ func HidesMore(before, after lifecycle.Record) bool {
 		}
 		switch t.Field(i).Name {
 		case "Title", "Description", "ExpiresAt", "PublishedAt", "ZonesMaxHeartRate", "ZonesThresholdPower": // F-49 ZN-4: read by the public build, stay here
+		case "AddedLapBoundaries": // F-65 AL-7, ADR-060 item 3: no text, no position; lap values are public anyway
 		// The fields below are derived from the original, never read by the
 		// public build (F-30 RG-6); a build that starts reading one must take
 		// it off this list.
@@ -365,7 +366,9 @@ func (a *Area) front(ctx context.Context, r lifecycle.Record) (bin []byte, f dat
 		return nil, f, false, pg, fmt.Errorf("publish: parse original: %w", err)
 	}
 	orig = nil
-	wt, first, err := trimmed(w, r)
+	// F-65 AL-6: added lap boundaries split the laps before trim and hiding;
+	// samples are untouched, so the pin grid below is unchanged.
+	wt, first, err := trimmed(withAddedLaps(w, r), r)
 	if err != nil {
 		return nil, f, false, pg, err
 	}

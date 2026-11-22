@@ -5,7 +5,7 @@
 - **Features:** F-48 (pool strokes); F-19 (`draft.bin`), F-30 (regenerate), F-47 (trim)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 5 under its item 9; narrows [F-44](F-44-pool-summary.md) PS-4 ("the summary stays all numbers"); keeps [ADR-046](ADR-046-lap-trigger-and-recorded-pool-length-in-the-data-file.md) item 3
 - **Requirements:** AP-13, AP-16, AP-8, UP-6, I-2; NFR Performance
-- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-6-normative) §5.1 to §5.3, §5.8
+- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-7-normative) §5.1 to §5.3, §5.8
 
 ## Context
 

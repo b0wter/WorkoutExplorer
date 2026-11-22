@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -159,7 +160,7 @@ func TestExpiryEndToEnd(t *testing.T) {
 	pub, token, _ := a.upload("ride-30min.fit")
 	other, otherToken, _ := a.upload("run-30min.fit")
 	id := idOf(a.app, pub)
-	a.setTexts(pub, token)
+	texts := a.setTexts(pub, token)
 	for _, w := range [][2]string{{pub, token}, {other, otherToken}} {
 		if rec := a.owner("POST", "/api/workouts/"+w[0]+"/publish", w[1], ""); rec.Code != 200 {
 			t.Fatal(rec.Code)
@@ -224,14 +225,19 @@ func (a *app) startAt(pub string) string {
 	return ""
 }
 
-func (a *app) setTexts(pub, token string) {
+// setTexts stores the texts, a pin and an added lap boundary (F-65 AC 12),
+// and returns the texts plus the boundary column's text to search for.
+func (a *app) setTexts(pub, token string) []string {
 	a.t.Helper()
-	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"title":"`+texts[0]+`","description":"`+texts[1]+`","pins":[{"type":"note","title":"`+texts[2]+`","note":"`+texts[3]+`","start_at":"`+a.startAt(pub)+`","end_at":null}]}`); rec.Code != 200 {
+	start, _ := time.Parse(time.RFC3339, a.startAt(pub))
+	lap := start.Add(601 * time.Second)
+	if rec := a.owner("PATCH", "/api/workouts/"+pub, token, `{"title":"`+texts[0]+`","description":"`+texts[1]+`","pins":[{"type":"note","title":"`+texts[2]+`","note":"`+texts[3]+`","start_at":"`+a.startAt(pub)+`","end_at":null}],"added_lap_boundaries":["`+lap.Format(time.RFC3339)+`"]}`); rec.Code != 200 {
 		a.t.Fatalf("patch: %d %s", rec.Code, rec.Body)
 	}
-	if rec := a.owner("GET", "/api/workouts/"+pub, token, ""); !strings.Contains(rec.Body.String(), texts[2]) {
-		a.t.Fatalf("the pin was not stored: %s", rec.Body)
+	if rec := a.owner("GET", "/api/workouts/"+pub, token, ""); !strings.Contains(rec.Body.String(), texts[2]) || !strings.Contains(rec.Body.String(), lap.Format(time.RFC3339)) {
+		a.t.Fatalf("the pin or lap boundary was not stored: %s", rec.Body)
 	}
+	return append(slices.Clone(texts), "["+strconv.FormatInt(lap.Unix(), 10)+"]")
 }
 
 // TestOwnerDeleteLeavesNoBytes (AC-4, QA-21-r1-1): after the owner's delete
@@ -241,12 +247,18 @@ func TestOwnerDeleteLeavesNoBytes(t *testing.T) {
 	a := openStorageApp(t, dir, 0)
 	pub, token, _ := a.upload("ride-30min.fit")
 	id := idOf(a.app, pub)
-	a.setTexts(pub, token)
+	texts := a.setTexts(pub, token)
 	if rec := a.owner("POST", "/api/workouts/"+pub+"/publish", token, ""); rec.Code != 200 {
 		t.Fatal(rec.Code)
 	}
 	if left := dataLeft(t, dir, id, pub, texts...); !slices.ContainsFunc(left, func(s string) bool { return strings.HasPrefix(s, "bytes in ") }) {
 		t.Fatalf("before the delete the search finds nothing: %v", left)
+	}
+	lapMarker := []byte(texts[len(texts)-1]) // F-65: the search would find the boundary column
+	if db, _ := os.ReadFile(filepath.Join(dir, "workouts.db")); !bytes.Contains(db, lapMarker) {
+		if wal, _ := os.ReadFile(filepath.Join(dir, "workouts.db-wal")); !bytes.Contains(wal, lapMarker) {
+			t.Fatalf("the boundary column %s is not in the database files", lapMarker)
+		}
 	}
 	if rec := a.owner("DELETE", "/api/workouts/"+pub, token, ""); rec.Code != 204 {
 		t.Fatal(rec.Code)
@@ -268,7 +280,7 @@ func TestRecoverRowLeavesNoBytes(t *testing.T) {
 	a := openStorageApp(t, dir, 0)
 	pub, token, _ := a.upload("ride-30min.fit")
 	id := idOf(a.app, pub)
-	a.setTexts(pub, token)
+	texts := a.setTexts(pub, token)
 	a.close()
 	if err := os.RemoveAll(filepath.Join(dir, "private", id)); err != nil {
 		t.Fatal(err)
@@ -317,7 +329,7 @@ func TestDraftExpiry(t *testing.T) {
 	base := a.st.Used()
 	pub, token, _ := a.upload("ride-30min.fit")
 	id := idOf(a.app, pub)
-	a.setTexts(pub, token)
+	texts := a.setTexts(pub, token)
 	now := time.Now().Unix()
 	a.setTimes(pub, now-2*day+60, now+5*day+60, 0)
 	if err := a.svc.Expire(context.Background()); err != nil {

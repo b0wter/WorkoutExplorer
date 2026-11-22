@@ -432,7 +432,7 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 	}
 	// F-46 LS-2: the last column, when at least one lap has a known trigger.
 	words := map[string]string{"button": "Button", "time": "Time", "distance": "Distance",
-		"position": "Position", "stop": "Stop", "equipment": "Equipment"}
+		"position": "Position", "stop": "Stop", "equipment": "Equipment", "added": "Added"} // added: F-65 AL-10
 	showTrigger, showStroke := false, false
 	for _, l := range laps {
 		showTrigger = showTrigger || words[l.Trigger] != ""

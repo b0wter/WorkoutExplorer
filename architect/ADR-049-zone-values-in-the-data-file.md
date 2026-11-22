@@ -5,7 +5,7 @@
 - **Features:** F-49 (zones); F-12 (settings object), F-15 (public build, P-7), F-19 (edit page), F-30 (regenerate)
 - **Supersedes:** none. Bumps [ADR-005](ADR-005-workout-data-file-format-v1.md) to version 6 under its item 9
 - **Requirements:** AP-10, AP-7, UP-6, UP-9, I-2; NFR Privacy; decision log 13 Nov 2026 (OQ-186 to OQ-191)
-- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-6-normative) §5.1, §5.9
+- **Normative bytes:** [F-03 design](F-03-workout-data-file-writer.md#data-file-format-version-7-normative) §5.1, §5.9
 
 ## Context
 
