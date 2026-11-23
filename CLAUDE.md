@@ -34,7 +34,8 @@ When unsure, take the lower lane and move up if the work turns out riskier.
 1. **Architecture** - `senior-architect` (global agent) writes decisions and constraints to `architect/`: module boundaries, data formats, trade-offs, things a later reader might question. It does **not** write test names, helper signatures, value lists or step-by-step work orders; that is the engineer's job. Effort: high for a feature's first design, medium for revisions.
 2. **Implementation** - the engineer named by the feature's **Owner** (`senior-backend-engineer`, `senior-frontend-engineer`, both for `both`, backend first when the frontend depends on it). The architecture docs set the decisions; on details the engineer decides, and lists every deviation and open choice in the report instead of stopping. The engineer stops only when a decision itself is wrong or missing and the choice matters (privacy, data format, public behaviour). For a backend-only feature with a clear spec and no real design question, one engineer at model Opus may replace the architect step.
 3. **QA** - `senior-qa-engineer` checks the acceptance criteria, runs the build and tests, and writes a report to `qa/` with a row in `qa/INDEX.md`. Effort medium, high in the critical lane. A follow-up round reviews only the diff and the routed findings.
-4. **Decision**
+4. **UI review (on request)** - `senior-ui-designer` reviews how pages and controls look and behave and writes a design proposal to `architect/UI-<topic>.md`; the frontend engineer builds it. Use it when the UI feels inconsistent or before a feature with a lot of new UI.
+5. **Decision**
    - **Ready** means no Blocker or Major finding open. Minor findings stay listed in the QA report and the Waiting on column, and are fixed in the small lane, next time the feature is touched or in a batch.
    - Otherwise route each Blocker or Major finding to its **Route** and run a follow-up QA round.
 
