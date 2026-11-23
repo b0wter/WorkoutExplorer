@@ -11,7 +11,7 @@
 A viewer who wonders why a number differs from their watch, or from a selected range, can read how the summary values come about: device totals or computed values, moving time, transitions, trim and hiding.
 
 ## Scope
-- A second dialog, styled like the "How to use this page" dialog (AP-22), titled e.g. "About these numbers", opened from the summary strip (trigger: OQ-251) and positioned over it on wide screens (OQ-258).
+- A second dialog, styled like the "How to use this page" dialog (AP-22), titled e.g. "About these numbers", opened from a bar directly above the summary strip (trigger: OQ-251) and positioned over it on wide screens (OQ-258).
 - One short line or block per topic, only for what the workout shows (OQ-254):
   - **Totals:** the values the device recorded; computed on the server where the device recorded none (AP-2).
   - **Moving time:** counted while the speed is above a small threshold; pauses count as stopped (rule as built, F-02).
@@ -32,7 +32,7 @@ A viewer who wonders why a number differs from their watch, or from a selected r
 - Formulas or per-sample detail; editing values; a glossary of every chart.
 
 ## Acceptance criteria
-- [ ] The summary strip has the ⓘ button on the viewing and edit pages; without JavaScript there is none (OQ-257).
+- [ ] A one-line bar that looks exactly like the How to use bar (ⓘ icon, "How these numbers are computed", no accent colour) sits directly under the How to use bar on the viewing page and directly above the summary strip on the edit page; the summary strip has no ⓘ; the How to use dialog's line points to this bar; without JavaScript there is none (OQ-251, OQ-252, OQ-257).
 - [ ] Opening it shows the dialog in the how-to dialog's style, over the summary strip on wide screens and as the same full dialog on a phone; it closes with ×, Esc and a tap outside, and adds no history entry.
 - [ ] Only topics for metrics and features this workout has are listed: no pool line on a ride, no transition line without multisport, no trim line on an untrimmed workout (OQ-254).
 - [ ] The dialog shows each topic's general line and, where the workout has a value for it, this workout's example; on a trimmed workout the example says so and that the totals were recomputed.
@@ -42,8 +42,8 @@ A viewer who wonders why a number differs from their watch, or from a selected r
 - [ ] Both themes (DS-4); the units setting is used in any value shown (DS-1).
 
 ## Decisions (user, 14 Nov 2026)
-- **OQ-251:** a small "ⓘ" button at the summary strip's top-right corner, tooltip "How these numbers are computed"; no accent colour, no first-visit emphasis.
-- **OQ-252:** one dialog component shared with the How to use dialog; the How to use dialog gets one line pointing to the ⓘ.
+- **OQ-251 (changed 23 Nov 2026):** a one-line bar styled exactly like the "How to use this page" bar (ⓘ icon + "How these numbers are computed", no accent colour, no first-visit emphasis); on the viewing page directly under the How to use bar, above the summary strip; on the edit page (no How to use bar) directly above the strip. Replaces the small ⓘ in the strip's corner.
+- **OQ-252:** one dialog component shared with the How to use dialog; the How to use dialog gets one line pointing to the "How these numbers are computed" bar (OQ-251).
 - **OQ-253 (changed):** general description plus this workout's actual state as an example; on the viewing page never whether or how far start or end are hidden (a radius roughly reveals how far home is from the visible start); everything else may be shown.
 - **OQ-254:** only topics this workout has; totals, moving and elapsed time, and ranges and laps versus totals always.
 - **OQ-255:** not per metric; one general line on device and computed totals.
