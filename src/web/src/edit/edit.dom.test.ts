@@ -245,9 +245,10 @@ async function save(): Promise<void> {
 }
 const patches = (): Record<string, unknown>[] => calls.filter((c) => c.init.method === 'PATCH').map((c) => JSON.parse(c.init.body as string));
 
-/** The map is ready: its bottom-left control stack is #map-slot here, so a "+" control is in the document (no real MapLibre). */
+/** The map is ready: its control stacks are #map-slot here, so a "+" control is in the document (no real MapLibre). */
+const controlPos: string[] = [];
 const mapReady = (): void => {
-  const handle = { setScheme() {}, setHidden() {}, marker: () => () => {}, marks() {}, laps() {}, control: (el: HTMLElement) => document.getElementById('map-slot')!.append(el), sampleAt: () => -1, destroy() {} };
+  const handle = { setScheme() {}, setHidden() {}, marker: () => () => {}, marks() {}, laps() {}, control: (el: HTMLElement, pos?: string) => (controlPos.push(pos ?? ''), document.getElementById('map-slot')!.append(el)), sampleAt: () => -1, destroy() {} };
   (stubLog.routeMap[0] as unknown as { onmapready(h: typeof handle): void } | undefined)?.onmapready(handle);
 };
 
@@ -1828,6 +1829,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await start();
     const add = plusButton();
     expect(add.closest('#map-slot .wx-addpin')).not.toBeNull();
+    expect(controlPos).toContain('top-right'); // the right-hand column, below the other map buttons (F-65 AL-9)
     expect(button('Add pin').closest('.wx-plus')).toBe(add.closest('.wx-plus'));
     matches = false;
     listeners.forEach((f) => f({ matches }));

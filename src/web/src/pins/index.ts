@@ -25,8 +25,8 @@ export interface PinMap {
   marks(ranges: readonly (readonly [number, number])[]): void;
   /** F-65 AL-8: the lap markers follow data.meta.laps again. */
   laps(): void;
-  /** An element inside the map box (stays in fullscreen), bottom left. */
-  control(el: HTMLElement): void;
+  /** An element inside the map box (stays in fullscreen); bottom left unless `position` says otherwise. */
+  control(el: HTMLElement, position?: 'bottom-left' | 'top-right'): void;
   /** The route sample near a client point, or -1. */
   sampleAt(x: number, y: number): number;
 }

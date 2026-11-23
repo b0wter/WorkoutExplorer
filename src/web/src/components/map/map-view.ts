@@ -135,7 +135,7 @@ export interface RouteMapHandle {
   /** F-65 AL-8: data.meta.laps changed (the edit page's added laps): the lap markers follow; */
   laps(): void;
   /** an element in the map box (it stays in fullscreen), bottom left; */
-  control(el: HTMLElement): void;
+  control(el: HTMLElement, position?: 'bottom-left' | 'top-right'): void;
   /** the route sample within a touch's radius of a client point, or -1 (PN-12's tap). */
   sampleAt(x: number, y: number): number;
   destroy(): void;
@@ -870,8 +870,8 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       lapMarkers = markersData(markersNow());
       applyLaps();
     },
-    control(el): void {
-      if (!destroyed) map.addControl({ onAdd: () => el, onRemove: () => el.remove() }, 'bottom-left');
+    control(el, position = 'bottom-left'): void {
+      if (!destroyed) map.addControl({ onAdd: () => el, onRemove: () => el.remove() }, position);
     },
     sampleAt(x, y): number {
       if (destroyed) return -1;

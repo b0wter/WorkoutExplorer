@@ -94,16 +94,16 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   tools.append(plus.group);
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
-  // Two-column layout (the page's own switch): "+" is a control of the map's bottom-left stack (PN-12,
+  // Two-column layout (the page's own switch): "+" is a control of the map's top-right stack, under the location button (PN-12,
   // AL-9); one column: in the tools row. Same elements, so name, focus order and texts are kept.
   const mapSlot = doc.getElementById('map-slot');
-  const onMap = mapSlot ? make('div', 'wx-addpin') : null;
+  const onMap = mapSlot ? make('div', 'wx-addpin maplibregl-ctrl') : null;
   const mq = doc.defaultView?.matchMedia?.(TWO_COLUMN_QUERY);
   const dock = (): void => {
     const map = onMap !== null && (mq?.matches ?? true); // no matchMedia (tests): two columns
     if (map) {
       onMap.append(plus.group);
-      if (!onMapAdded) (onMapAdded = true), view.map((m) => m.control(onMap)); // empty (CSS: hidden) in one column
+      if (!onMapAdded) (onMapAdded = true), view.map((m) => m.control(onMap, 'top-right')); // empty (CSS: hidden) in one column
     } else tools.prepend(plus.group);
     plus.setFlat(!map);
   };

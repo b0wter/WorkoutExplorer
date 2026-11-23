@@ -279,10 +279,11 @@
   opacity: 0.35;
 }
 
-/* F-56 PN-12: in the two-column layout the "+" is a control of MapLibre's bottom-left stack (map.control,
-   so it shares the corner handling), light in both themes as MapLibre's own buttons; the reason sits
-   under it. Not with a mouse (hover and fine pointer: the right-click menu does it; known edge: touch
-   laptops, whose primary pointer is the mouse), not in fullscreen, not while one column holds it. */
+/* F-56 PN-12, F-65 AL-9: in the two-column layout the "+" is a control of MapLibre's top-right stack,
+   its own group under the location button (order 3, after .wx-sat-group 1 and .wx-loc-group 2), looking
+   as their buttons (29 px, white, 4 px radius, 2 px shadow, light in both themes); its list opens to the
+   left, inside the map. Not with a mouse (hover and fine pointer: the right-click menu does it; known
+   edge: touch laptops), not in fullscreen, not while one column holds it. */
 .wx-addpin {
   display: none;
 }
@@ -291,28 +292,23 @@
   display: none;
 }
 @media (min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
-  /* The "+" at the corner, the pin legend (if any) above it, whatever the order they were added in. */
-  .route-map .maplibregl-ctrl-bottom-left {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
   .wx-addpin {
-    order: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    max-width: calc(100% - 20px);
+    order: 3;
+    display: block;
   }
-  /* The map is 100lvh tall (page.css), so Safari's toolbars can cover its bottom strip: lift the
-     whole stack by the difference to the small viewport (0 on desktop and where units are equal). */
-  @supports (height: 1svh) {
-    html:not(.wx-fs) .route-map .maplibregl-ctrl-bottom-left {
-      bottom: calc(100lvh - 100svh);
-    }
+  .wx-addpin .plus-button {
+    width: 29px;
+    height: 29px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: #fff;
+    color: black;
+    font: 400 22px/29px system-ui, sans-serif;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
   }
-  .wx-addpin .edit-button {
+  .wx-addpin .edit-button:not(.plus-button) {
     height: 29px;
     padding: 0 10px;
     border: 0;
@@ -327,6 +323,19 @@
   .wx-addpin .edit-button:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: -2px;
+  }
+  /* The list opens to the left of the button, right edges aligned with it. */
+  .wx-addpin .plus-menu {
+    top: 0;
+    bottom: auto;
+    left: auto;
+    right: calc(100% + 8px);
+    align-items: flex-end;
+    max-width: calc(100vw - 100px);
+  }
+  .wx-addpin .plus-row {
+    align-items: flex-end;
+    animation-name: plus-in-x;
   }
   .wx-addpin .edit-small {
     padding: 2px 6px;
@@ -384,10 +393,6 @@ html.wx-fs .wx-addpin,
   width: auto;
   max-width: none;
 }
-.wx-addpin .plus-menu {
-  top: auto;
-  bottom: calc(100% + 4px);
-}
 .plus-menu[hidden],
 .plus-button[hidden],
 .plus-row[hidden],
@@ -400,6 +405,12 @@ html.wx-fs .wx-addpin,
 }
 .plus-row:nth-child(2) {
   animation-delay: 40ms;
+}
+@keyframes plus-in-x {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
 }
 @keyframes plus-in {
   from {
@@ -464,17 +475,16 @@ html.wx-fs .wx-addpin,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* One column: rows 32 px with a mouse, 44 px on touch; the "+" and its items on the map likewise. */
+/* One column: rows 32 px with a mouse, 44 px on touch; the list items on the map likewise (the "+" itself is 29 px as the map's buttons). */
 .wx-plus.flat .plus-item {
   min-height: 32px;
 }
 @media (pointer: coarse) {
   .wx-plus.flat .plus-item,
-  .wx-addpin .edit-button,
+  .wx-addpin .plus-item,
   .lap-x-btn {
     min-height: 44px;
   }
-  .wx-addpin .edit-button,
   .lap-x-btn {
     min-width: 44px;
   }
