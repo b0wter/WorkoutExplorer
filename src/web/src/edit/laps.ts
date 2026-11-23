@@ -89,6 +89,7 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
       };
       return {
         label: () => t('addLap'),
+        short: () => t('addLapShort'),
         state: () => {
           const f = fresh();
           return typeof f === 'string' ? { off: true, why: f } : { off: false, why: '' };

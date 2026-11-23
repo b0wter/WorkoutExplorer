@@ -66,6 +66,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   const tools = make('div', 'edit-row pin-tools');
   const addPin: PlusItem = {
     label: () => t('addPin'),
+    short: () => t('addPinShort'),
     // F-56's rules: no Add pin without a visible route or at the cap; its reason when refused.
     state: () => {
       if (list.length >= MAX_PINS || !hasVisibleRoute(env.shade(), lat)) return { hidden: true, off: true, why: '' };

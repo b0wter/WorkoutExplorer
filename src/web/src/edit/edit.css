@@ -393,7 +393,7 @@
   align-items: flex-start;
   gap: 2px;
 }
-/* One column: no "+"; the items sit side by side under the map, wrapping only when too narrow. */
+/* One column: no "+"; the items sit open in a box. */
 .wx-plus.flat {
   display: block;
   box-sizing: border-box;
@@ -403,30 +403,35 @@
   border: 1px solid var(--line);
   border-radius: 6px;
 }
-/* One reason line per item: always one line high, never wraps. */
-.plus-notes {
-  margin-top: 6px;
-  min-width: 0;
+/* Two rows, [button] reason: the rows dissolve into one grid, so both buttons are as wide as the
+   wider one and the reasons line up. A reason is one line (ellipsis) and keeps its height empty;
+   a hidden row (Add pin without a visible route) stays as space so nothing jumps. */
+.wx-plus.flat .plus-menu {
+  position: static;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 8px;
 }
-.plus-note {
-  height: 1.3em;
+.wx-plus.flat .plus-row,
+.wx-plus.flat .plus-row[hidden] {
+  display: contents;
+  animation: none;
+}
+.wx-plus.flat .plus-row[hidden] {
+  visibility: hidden;
+}
+.wx-plus.flat .plus-row .edit-small,
+.wx-plus.flat .plus-row .edit-small:empty {
+  display: block;
   min-width: 0;
+  height: 1.3em;
+  padding: 0;
+  background: none;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.plus-notes[hidden],
-.wx-plus.flat .plus-row .edit-small {
-  display: none;
-}
-.wx-plus.flat .plus-menu {
-  position: static;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-.wx-plus.flat .plus-row {
-  animation: none;
 }
 .plus-item[aria-disabled='true'] {
   opacity: 0.6;

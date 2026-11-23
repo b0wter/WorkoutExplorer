@@ -1825,25 +1825,26 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(document.querySelector('.pin-tools')?.classList.contains('on-map')).toBe(false);
     // one column: no "+", both items open side by side; back in two columns the "+" returns closed
     expect([add.hidden, document.querySelector<HTMLElement>('.plus-menu')!.hidden]).toEqual([true, false]);
-    expect([...document.querySelectorAll<HTMLElement>('.plus-item')].map((b) => b.textContent)).toEqual(['Add lap', 'Add pin']);
+    expect([...document.querySelectorAll<HTMLElement>('.plus-item')].map((b) => [b.textContent, b.getAttribute('aria-label')])).toEqual([['+ Lap', 'Add lap'], ['+ Pin', 'Add pin']]);
     matches = true;
     listeners.forEach((f) => f({ matches }));
     expect([add.hidden, add.getAttribute('aria-expanded'), document.querySelector<HTMLElement>('.plus-menu')!.hidden]).toEqual([false, 'false', true]);
+    expect([...document.querySelectorAll<HTMLElement>('.plus-item')].map((b) => [b.textContent, b.getAttribute('aria-label')])).toEqual([['Add lap', null], ['Add pin', null]]);
   });
 
-  it('one column: two reserved reason lines under the buttons, one per item, items keep their own reason for assistive tech', async () => {
+  it('one column: each row is the short button and its reason on one line, the row keeps its place when empty, full texts for assistive tech', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
     settings = fresh({ ...ON, pins: [] });
     await start();
-    const notes = [...document.querySelectorAll<HTMLElement>('.plus-note')];
-    expect(document.querySelector<HTMLElement>('.plus-notes')!.hidden).toBe(false);
-    expect(notes.map((n) => n.textContent)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]); // one line per item, in order
-    expect(notes.map((n) => n.title)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]);
+    const whys = [...document.querySelectorAll<HTMLElement>('.plus-row .edit-small')];
+    expect(whys.map((n) => n.textContent)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]); // in item order
+    expect(whys.map((n) => n.title)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]);
     const add = document.querySelector<HTMLButtonElement>('.plus-item')!;
-    expect(document.getElementById(add.getAttribute('aria-describedby')!)!.textContent).toBe(editTexts.lapHere);
+    expect(add.getAttribute('aria-describedby')).toBe(whys[0].id);
+    expect(add.getAttribute('aria-label')).toBe('Add lap');
     await pick(2000);
-    expect(notes.map((n) => n.textContent)).toEqual(['', '']); // still in the DOM: the lines are reserved
-    expect(notes.every((n) => n.isConnected)).toBe(true);
+    expect(whys.map((n) => n.textContent)).toEqual(['', '']); // still in the DOM, the CSS keeps their height
+    expect(whys.every((n) => n.isConnected)).toBe(true);
   });
 
   it('one column: the items are disabled, as "+" is, until a cursor or range is set', async () => {
@@ -1862,7 +1863,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await start();
     expect([off('Add pin'), why()]).toEqual([true, '']);
     await pick(20); // inside the 300 m start radius
-    expect([off('Add pin'), why()]).toEqual([true, 'This point is hidden or trimmed.']);
+    expect([off('Add pin'), why()]).toEqual([true, 'Hidden or trimmed']);
     hideAt(0, 0); // radius off: the same cursor is public
     await settle();
     expect([off('Add pin'), why()]).toEqual([false, '']);
@@ -1872,13 +1873,13 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await pick(2000);
     type('trim_a', '3000'); // the cursor is now in the trimmed part
     await settle();
-    expect([off('Add pin'), why()]).toEqual([true, 'This point is hidden or trimmed.']);
+    expect([off('Add pin'), why()]).toEqual([true, 'Hidden or trimmed']);
     type('trim_a', '0');
     await settle();
     expect(off('Add pin')).toBe(false);
     button('Add pin').click();
     expect(rowTexts()).toHaveLength(1);
-    expect([off('Add pin'), why()]).toEqual([true, 'There is a pin here already.']); // selected pin: no twin
+    expect([off('Add pin'), why()]).toEqual([true, 'Already a pin here']); // selected pin: no twin
     button('Add pin').click();
     expect(rowTexts()).toHaveLength(1);
     await pick(30); // Move into the hidden start: disabled, and a click changes nothing
@@ -1968,7 +1969,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     };
     await pick(near);
     plus().click();
-    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'Already a lap here']);
     await range(e, near); // both ends at or near the same end
     expect(item('Add lap').getAttribute('aria-disabled')).toBe('true');
     await range(near, far); // the far end is new: only it is added
@@ -1996,7 +1997,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     // On the boundary now: nothing to add, with the reason.
     plus().click();
     plus().click();
-    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'Already a lap here']);
     expect(item('Add lap').getAttribute('aria-describedby')).toBe((item('Add lap').nextElementSibling as HTMLElement).id);
     await save();
     expect(patches()).toEqual([{ added_lap_boundaries: [at(1000)] }]);
@@ -2037,7 +2038,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     expect(rows()[0].querySelector('.lap-x')?.textContent).toBe('×Removed on Save');
     await pick(2000);
     plus().click();
-    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'This point is in the trimmed part.']);
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'In the trimmed part']);
     await save();
     expect(patches()[0].added_lap_boundaries).toEqual([at(5000)]);
   });
@@ -2056,7 +2057,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     await start();
     await pick(5003);
     plus().click();
-    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There are 100 added laps already.']);
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'Max. 100 added laps']);
   });
 
   it('without device laps: the first boundary brings the laps view, removing it returns to splits only', async () => {
@@ -2081,7 +2082,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     await settle();
     await pick(5000);
     plus().click();
-    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'Already a lap here']);
     const menu = document.querySelector<HTMLElement>('.plus-menu')!;
     item('Add lap').dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: field('title') }));
     expect(menu.hidden).toBe(true);

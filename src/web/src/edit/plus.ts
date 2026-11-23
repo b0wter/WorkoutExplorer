@@ -8,6 +8,8 @@ import { t } from './texts';
 
 export interface PlusItem {
   label(): string;
+  /** The one-column button text. */
+  short(): string;
   /** hidden: not offered; off: disabled with `why` (may be ''). */
   state(): { readonly hidden?: boolean; readonly off: boolean; readonly why: string };
   run(): void;
@@ -40,9 +42,6 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   button.setAttribute('aria-expanded', 'false');
   const menu = group.appendChild(make('div', 'plus-menu'));
   menu.hidden = true;
-  // Flat mode: one reserved line per item under the buttons, in item order (the per-item ones are hidden by CSS).
-  const notes = group.appendChild(make('div', 'plus-notes'));
-  notes.hidden = true;
   const rows = items.map((item) => {
     const row = menu.appendChild(make('div', 'plus-row'));
     const b = row.appendChild(make('button', 'edit-button plus-item'));
@@ -55,17 +54,16 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       item.run();
       if (!flat) button.focus(); // the list hid the focused item: back to "+", as Esc does
     });
-    const note = notes.appendChild(make('div', 'edit-small plus-note'));
-    return { item, row, b, why, note };
+    return { item, row, b, why };
   });
   const paint = (): void => {
-    for (const { item, row, b, why, note } of rows) {
+    for (const { item, row, b, why } of rows) {
       const s = item.state();
       row.hidden = !!s.hidden;
       b.setAttribute('aria-disabled', String(s.off));
       b.disabled = flat && button.disabled; // flat: no cursor or range, as the disabled "+"
       why.textContent = s.off ? s.why : '';
-      note.textContent = note.title = why.textContent; // a hidden item keeps its (empty) line: hiding toggles at runtime
+      why.title = why.textContent; // flat: one ellipsized line, the full text here
       if (why.textContent) b.setAttribute('aria-describedby', why.id);
       else b.removeAttribute('aria-describedby');
     }
@@ -100,7 +98,12 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   const label = (): void => {
     button.setAttribute('aria-label', t('plus'));
     button.title = t('plus');
-    for (const { item, b } of rows) b.textContent = item.label();
+    for (const { item, b } of rows) {
+      // flat: the short "+ Lap" with the full name for assistive tech
+      b.textContent = flat ? item.short() : item.label();
+      if (flat) b.setAttribute('aria-label', item.label());
+      else b.removeAttribute('aria-label');
+    }
     if (!menu.hidden) paint();
   };
   label();
@@ -120,7 +123,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       button.hidden = f;
       button.setAttribute('aria-expanded', 'false');
       menu.hidden = !f;
-      notes.hidden = !f;
+      label();
       if (f) paint();
     },
   };
