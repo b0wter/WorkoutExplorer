@@ -73,3 +73,5 @@ Synthetic files only (ADR-004).
 | F-12 | Settings table row `pins` (edited in place), including PN-5's same-anchor rule |
 | F-15 | P-7 row for `pins`: no rebuild when the public projection is unchanged, else remove-first (PN-8) |
 | F-54 | Type names, the refusal line, the removal count line, the two dimmed reasons and "Removed on Save", the How to use line, the About sentence |
+
+- **Note (23 Nov 2026, UI fixes, [UI review](UI-edit-page-add-controls.md)):** the "+" is a control of MapLibre's bottom-left stack (below the pin legend), hidden with `(hover: hover) and (pointer: fine)` (mouse users use the right-click menu; edge: touch laptops), and the right-click menu is a themed panel mounted in `.route-map` so it also works in fullscreen. An enabled item's reason slot shows where it acts ("at 12.4 km", "12.4–13.1 km", elapsed time without distance); one column shows "Select a point or range first" once, in the first row, when nothing is selected; no Add pin item at all without positions; after Add pin the form scrolls into view and its Title is focused.

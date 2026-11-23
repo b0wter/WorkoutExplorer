@@ -25,16 +25,21 @@ export interface Plus {
   setFlat(flat: boolean): void;
 }
 
+/** The reason slot's text: nothing without a cursor or range; the refusal; else where the item will act. */
+export const reasonOf = (s: { readonly off: boolean; readonly why: string }, usable: boolean, where: () => string): string => (!usable ? '' : s.off ? s.why : where());
+
 let seq = 0;
 // Items are always open and "+" is hidden in flat mode (the one-column layout).
 
-export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
+/** `where`: the target of an enabled item ("at 12.4 km"), shown in its reason slot. */
+export function createPlus(doc: Document, items: readonly PlusItem[], where: () => string): Plus {
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string): HTMLElementTagNameMap[K] => {
     const e = doc.createElement(tag);
     e.className = cls;
     return e;
   };
   let flat = false;
+  let usable = false;
   const group = make('div', 'wx-plus');
   const button = group.appendChild(make('button', 'edit-button plus-button'));
   button.type = 'button';
@@ -52,17 +57,20 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       if (item.state().off) return paint(); // the state now, not the one painted on open
       close(false);
       item.run();
-      if (!flat) button.focus(); // the list hid the focused item: back to "+", as Esc does
+      // the list hid the focused item: back to "+", as Esc does, unless the item moved focus (Add pin: the Title)
+      if (!flat && (doc.activeElement === doc.body || group.contains(doc.activeElement))) button.focus();
     });
     return { item, row, b, why };
   });
   const paint = (): void => {
+    let hint = flat && !usable; // one column, nothing selected: one line, in the first shown row
     for (const { item, row, b, why } of rows) {
       const s = item.state();
       row.hidden = !!s.hidden;
       b.setAttribute('aria-disabled', String(s.off));
       b.disabled = flat && button.disabled; // flat: no cursor or range, as the disabled "+"
-      why.textContent = s.off ? s.why : '';
+      why.textContent = hint && !s.hidden ? t('selectFirst') : reasonOf(s, usable, where);
+      if (!s.hidden) hint = false;
       why.title = why.textContent; // flat: one ellipsized line, the full text here
       if (why.textContent) b.setAttribute('aria-describedby', why.id);
       else b.removeAttribute('aria-describedby');
@@ -97,7 +105,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   });
   const label = (): void => {
     button.setAttribute('aria-label', t('plus'));
-    button.title = t('plus');
+    button.title = usable ? t('plus') : t('selectFirst'); // the disabled "+" says what it needs
     for (const { item, b } of rows) {
       // flat: the short "+ Lap" with the full name for assistive tech
       b.textContent = flat ? item.short() : item.label();
@@ -110,9 +118,11 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   return {
     group,
     button,
-    refresh: (usable) => {
-      button.disabled = !usable;
-      if (!usable) close(false);
+    refresh: (u) => {
+      usable = u;
+      button.disabled = !u;
+      button.title = u ? t('plus') : t('selectFirst');
+      if (!u) close(false);
       if (!menu.hidden) paint();
     },
     label,

@@ -279,20 +279,26 @@
   opacity: 0.35;
 }
 
-/* F-56 PN-12: in the two-column layout Add pin is a map control, bottom left, as MapLibre's own
-   buttons (light in both themes); the reason sits under it. Absolute: no layout shift. */
+/* F-56 PN-12: in the two-column layout the "+" is a control of MapLibre's bottom-left stack (map.control,
+   so it shares the corner handling), light in both themes as MapLibre's own buttons; the reason sits
+   under it. Not with a mouse (hover and fine pointer: the right-click menu does it; known edge: touch
+   laptops, whose primary pointer is the mouse), not in fullscreen, not while one column holds it. */
 .wx-addpin {
   display: none;
 }
-.pin-tools.on-map {
-  min-height: 20px; /* the status line's height: the column does not jump when the buttons leave the row */
+/* The status line (pin refused, pins removed) has no reserved height: it appears after an action. */
+.pin-tools .edit-status:empty {
+  display: none;
 }
 @media (min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  /* The "+" at the corner, the pin legend (if any) above it, whatever the order they were added in. */
+  .route-map .maplibregl-ctrl-bottom-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
   .wx-addpin {
-    position: absolute;
-    left: 10px;
-    bottom: 10px;
-    z-index: 2;
+    order: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -300,10 +306,10 @@
     max-width: calc(100% - 20px);
   }
   /* The map is 100lvh tall (page.css), so Safari's toolbars can cover its bottom strip: lift the
-     control by the difference to the small viewport (0 on desktop and where units are equal). */
+     whole stack by the difference to the small viewport (0 on desktop and where units are equal). */
   @supports (height: 1svh) {
-    .wx-addpin {
-      bottom: calc(10px + 100lvh - 100svh);
+    html:not(.wx-fs) .route-map .maplibregl-ctrl-bottom-left {
+      bottom: calc(100lvh - 100svh);
     }
   }
   .wx-addpin .edit-button {
@@ -333,6 +339,15 @@
   .wx-addpin .edit-small:empty {
     display: none;
   }
+}
+@media (hover: hover) and (pointer: fine) {
+  .wx-addpin {
+    display: none;
+  }
+}
+html.wx-fs .wx-addpin,
+.wx-addpin:empty {
+  display: none;
 }
 
 /* F-65 AL-9: "+" and its list, an overlay under it (over it as a map control): no layout change. */
@@ -449,6 +464,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* One column: rows 32 px with a mouse, 44 px on touch; the "+" and its items on the map likewise. */
+.wx-plus.flat .plus-item {
+  min-height: 32px;
+}
+@media (pointer: coarse) {
+  .wx-plus.flat .plus-item,
+  .wx-addpin .edit-button,
+  .lap-x-btn {
+    min-height: 44px;
+  }
+  .wx-addpin .edit-button,
+  .lap-x-btn {
+    min-width: 44px;
+  }
+}
 .plus-item[aria-disabled='true'] {
   opacity: 0.6;
   cursor: default;
@@ -460,6 +490,8 @@
   white-space: nowrap;
 }
 .lap-x-btn {
+  min-width: 32px;
+  min-height: 32px; /* the hit area; the glyph stays small */
   padding: 0 8px;
   font: inherit;
   color: var(--fg);
@@ -475,14 +507,54 @@
   opacity: 0.55;
 }
 
-/* Right-click menu on the map (mapmenu.ts): the "+" items at the pointer, inside the map box. */
+/* Right-click menu on the map (mapmenu.ts): a themed panel at the pointer, inside the map box (also
+   the fullscreen one); full-width rows, the reason as a small line under the label. */
 .map-menu {
   position: absolute;
   z-index: 6;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  box-sizing: border-box;
   width: max-content;
+  min-width: 160px;
   max-width: calc(100% - 20px);
+  padding: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  text-align: left;
+}
+.map-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px 12px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+.map-menu-item:not([aria-disabled='true']):hover,
+.map-menu-item:focus-visible {
+  background: var(--range-shade);
+}
+.map-menu-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.map-menu-item[aria-disabled='true'] {
+  color: var(--muted);
+  cursor: default;
+}
+.map-menu-why {
+  font-size: 12px;
+  color: var(--muted);
 }

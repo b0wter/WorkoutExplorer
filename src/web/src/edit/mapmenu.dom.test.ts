@@ -23,21 +23,22 @@ const menu = (): HTMLElement | null => host.querySelector('.map-menu');
 const entries = (): HTMLElement[] => [...host.querySelectorAll<HTMLElement>('[role=menuitem]')];
 
 beforeEach(() => {
-  document.body.innerHTML = '<div id="map-slot"><canvas></canvas></div>';
+  document.body.innerHTML = '<div id="map-slot"><div class="route-map"><canvas></canvas></div></div>';
   host = document.getElementById('map-slot')!;
   canvas = host.querySelector('canvas')!;
   cursor.set(42);
   off = false;
   run.mockClear();
   selection.clear();
-  startMapMenu({ host, cursor, selection, items });
+  startMapMenu({ host, cursor, selection, items, where: () => 'at 4.2 km' });
 });
 
 describe('map right-click menu', () => {
   it('opens on a mouse right-click, acting on the existing cursor; first entry focused', () => {
     down('mouse');
     expect(right()).toBe(false); // default prevented
-    expect(entries().map((e) => e.textContent)).toEqual(['Add lap', 'Add pin']);
+    expect(entries().map((e) => [e.firstChild!.textContent, e.querySelector('.map-menu-why')?.textContent])).toEqual([['Add lap', 'at 4.2 km'], ['Add pin', 'at 4.2 km']]); // where it will act
+    expect(menu()!.parentElement).toBe(host.querySelector('.route-map')); // inside the box that goes fullscreen
     expect(menu()!.getAttribute('role')).toBe('menu');
     expect(entries().map((e) => e.getAttribute('aria-disabled'))).toEqual(['false', 'false']);
     expect(document.activeElement).toBe(entries()[0]);
@@ -56,6 +57,7 @@ describe('map right-click menu', () => {
     down('mouse');
     right();
     expect(entries().map((e) => e.getAttribute('aria-disabled'))).toEqual(['true', 'true']);
+    expect(menu()!.querySelector('.map-menu-why')).toBeNull(); // no reason without a target
     entries()[1].click();
     expect(run).not.toHaveBeenCalled();
   });
@@ -66,7 +68,7 @@ describe('map right-click menu', () => {
     right();
     const lap = entries()[0];
     expect(lap.getAttribute('aria-disabled')).toBe('true');
-    expect(host.querySelector('#' + lap.getAttribute('aria-describedby'))!.textContent).toBe('Already a lap here');
+    expect(lap.querySelector('.map-menu-why')!.textContent).toBe('Already a lap here');
     lap.click();
     expect(run).not.toHaveBeenCalled();
     expect(menu()).not.toBeNull();

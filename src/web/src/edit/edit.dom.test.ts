@@ -242,6 +242,12 @@ async function save(): Promise<void> {
 }
 const patches = (): Record<string, unknown>[] => calls.filter((c) => c.init.method === 'PATCH').map((c) => JSON.parse(c.init.body as string));
 
+/** The map is ready: its bottom-left control stack is #map-slot here, so a "+" control is in the document (no real MapLibre). */
+const mapReady = (): void => {
+  const handle = { setScheme() {}, setHidden() {}, marker: () => () => {}, marks() {}, laps() {}, control: (el: HTMLElement) => document.getElementById('map-slot')!.append(el), sampleAt: () => -1, destroy() {} };
+  (stubLog.routeMap[0] as unknown as { onmapready(h: typeof handle): void } | undefined)?.onmapready(handle);
+};
+
 describe('AC 1: a fresh upload, the token only in a header', () => {
   it('loads settings and draft.bin in parallel, renders the page with the panel first, leaves the address alone', async () => {
     await open('#' + TOKEN + '&x');
@@ -262,12 +268,12 @@ describe('AC 1: a fresh upload, the token only in a header', () => {
     expectNoTokenOutsideTheFragment();
   });
 
-  it("F-39 AC 9: today's hint, even after the viewer's hint is done, and no How to use button", async () => {
+  it("F-39 AC 9: today's hint, even after the viewer's hint is done; the How to use bar is there (as on the viewing page)", async () => {
     document.documentElement.dataset.hint = 'done';
     try {
       await open();
       expect(stubLog.chartStack[0].hint).toBe('plain');
-      expect($('[data-howto]')).toBeNull();
+      expect($('.howto-row:has([data-howto]) + .howto-row [data-summary-info]')).not.toBeNull();
     } finally {
       delete document.documentElement.dataset.hint;
     }
@@ -1737,6 +1743,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     stubLog.chartStack[0].onready?.();
     await vi.waitFor(() => expect(document.querySelector('.pin-tools')).not.toBeNull());
     await settle();
+    mapReady();
   }
   const pick = async (i: number): Promise<void> => {
     stubLog.chartStack[0].cursor.set(i);
@@ -1837,14 +1844,47 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     settings = fresh({ ...ON, pins: [] });
     await start();
     const whys = [...document.querySelectorAll<HTMLElement>('.plus-row .edit-small')];
-    expect(whys.map((n) => n.textContent)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]); // in item order
-    expect(whys.map((n) => n.title)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]);
+    expect(whys.map((n) => n.textContent)).toEqual([editTexts.selectFirst, '']); // one line for the box, in the first row
+    expect(whys.map((n) => n.title)).toEqual([editTexts.selectFirst, '']);
     const add = document.querySelector<HTMLButtonElement>('.plus-item')!;
     expect(add.getAttribute('aria-describedby')).toBe(whys[0].id);
     expect(add.getAttribute('aria-label')).toBe('Add lap');
     await pick(2000);
-    expect(whys.map((n) => n.textContent)).toEqual(['', '']); // still in the DOM, the CSS keeps their height
+    expect(whys.map((n) => n.textContent)).toEqual([expect.stringMatching(/^at [\d.]+ (mi|km)$/), expect.stringMatching(/^at /)]); // where each acts
     expect(whys.every((n) => n.isConnected)).toBe(true);
+  });
+
+  it('PN-12: Add pin brings the form into view and focuses its Title (smooth, none under reduced motion); a point or range names where it acts', async () => {
+    const scroll = vi.fn();
+    (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView = scroll;
+    let calm = false;
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduced-motion') ? calm : true, addEventListener() {}, removeEventListener() {} }));
+    try {
+      settings = fresh({ ...ON, pins: [] });
+      await start();
+      await pick(2000);
+      const sel = stubLog.chartStack[0].selection!;
+      plusButton().click();
+      expect(why()).toMatch(/^at [\d.]+ (mi|km)$/);
+      sel.set(2000, 3000);
+      frames.splice(0).forEach((f) => f(0));
+      await settle();
+      expect(why()).toMatch(/^[\d.]+–[\d.]+ (mi|km)$/);
+      sel.clear();
+      frames.splice(0).forEach((f) => f(0));
+      await settle();
+      button('Add pin').click();
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'smooth' });
+      expect(document.activeElement).toBe(document.querySelector('.pin-form input:not([type])'));
+      calm = true;
+      button('Add pin').click(); // twin: refused, nothing moves
+      await pick(2500);
+      plusButton().click();
+      button('Add pin').click();
+      expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'auto' });
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   });
 
   it('one column: the items are disabled, as "+" is, until a cursor or range is set', async () => {
@@ -1866,7 +1906,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect([off('Add pin'), why()]).toEqual([true, 'Hidden or trimmed']);
     hideAt(0, 0); // radius off: the same cursor is public
     await settle();
-    expect([off('Add pin'), why()]).toEqual([false, '']);
+    expect([off('Add pin'), why()]).toEqual([false, expect.stringMatching(/^at [\d.]+ (mi|km)$/)]); // where it will act
     hideAt(300, 300);
     await settle();
     expect(off('Add pin')).toBe(true);
@@ -1918,6 +1958,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     stubLog.chartStack[0].onready?.();
     await vi.waitFor(() => expect(document.querySelector('.pin-tools')).not.toBeNull());
     await settle();
+    mapReady();
   }
   const pick = async (i: number): Promise<void> => {
     stubLog.chartStack[0].cursor.set(i);
@@ -2149,7 +2190,7 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     expect(hint.compareDocumentPosition(plus()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await pick(100);
     plus().click();
-    expect([...document.querySelectorAll<HTMLElement>('.plus-row')].map((r) => r.hidden)).toEqual([false, true]);
+    expect([...document.querySelectorAll<HTMLElement>('.plus-row')].map((r) => r.hidden)).toEqual([false]); // no Add pin item at all (no positions)
   });
 });
 

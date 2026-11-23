@@ -15,6 +15,7 @@
 </script>
 
 <!-- F-58 OQ-251 (user, 23 Nov 2026): a bar like How to use this page (page.css .howto), under it. -->
+<div class="howto-row"><button type="button" class="howto" data-howto><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>{t('howto')}</span></button></div>
 <div class="howto-row"><button type="button" class="howto" data-summary-info data-trim={trim}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>{t('summaryInfo')}</span></button></div>
 <section class="summary">
   {#each items as item (item.Key)}

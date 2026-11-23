@@ -63,6 +63,8 @@ export const en = {
   plus: 'Add a lap or pin',
   addLap: 'Add lap',
   addLapShort: '+ Lap',
+  selectFirst: 'Select a point or range first',
+  whereAt: 'at {v}',
   lapHere: 'Already a lap here',
   lapTrimmed: 'In the trimmed part',
   lapMax: 'Max. 100 added laps',

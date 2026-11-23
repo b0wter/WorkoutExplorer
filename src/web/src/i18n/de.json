@@ -29,6 +29,7 @@
  },
  "components/page": {
   "copyLink": "Link kopieren",
+  "howto": "So nutzt du diese Seite",
   "summaryInfo": "Wie diese Zahlen berechnet werden",
   "privacyNotice": "Teile der Route, etwa Start und Ziel, können aus Datenschutzgründen ausgeblendet sein. Die Summen enthalten sie.",
   "routeHidden": "Die gesamte Route wurde von der hochladenden Person ausgeblendet.",
@@ -101,6 +102,8 @@
   "plus": "Runde oder Pin hinzufügen",
   "addLap": "Runde hinzufügen",
   "addLapShort": "+ Runde",
+  "selectFirst": "Wähle zuerst einen Punkt oder Bereich",
+  "whereAt": "bei {v}",
   "lapHere": "Schon eine Rundengrenze hier",
   "lapTrimmed": "Im gekürzten Teil",
   "lapMax": "Max. 100 eigene Runden",
@@ -467,7 +470,6 @@
   "estimatedFtp": "Geschätzt aus Schwellenleistung {v} W"
  },
  "markup/view": {
-  "howto": "So nutzt du diese Seite",
   "gpx": "Route herunterladen (GPX)"
  },
  "markup/upload": {

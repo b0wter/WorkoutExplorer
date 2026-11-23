@@ -29,6 +29,7 @@
  },
  "components/page": {
   "copyLink": "Copier le lien",
+  "howto": "Comment utiliser cette page",
   "summaryInfo": "Comment ces chiffres sont calculés",
   "privacyNotice": "Des parties de l'itinéraire, comme le départ et l'arrivée, peuvent être masquées pour la confidentialité. Les totaux les incluent.",
   "routeHidden": "Tout l'itinéraire a été masqué par la personne qui l'a importé.",
@@ -101,6 +102,8 @@
   "plus": "Ajouter un tour ou un repère",
   "addLap": "Ajouter un tour",
   "addLapShort": "+ Tour",
+  "selectFirst": "Sélectionnez d'abord un point ou une plage",
+  "whereAt": "à {v}",
   "lapHere": "Déjà une limite ici",
   "lapTrimmed": "Dans la partie rognée",
   "lapMax": "Max. 100 tours",
@@ -467,7 +470,6 @@
   "estimatedFtp": "Estimées à partir d'une puissance seuil de {v} W"
  },
  "markup/view": {
-  "howto": "Comment utiliser cette page",
   "gpx": "Télécharger l'itinéraire (GPX)"
  },
  "markup/upload": {
