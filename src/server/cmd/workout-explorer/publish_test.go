@@ -85,7 +85,7 @@ func TestPublishEndToEnd(t *testing.T) {
 	}
 	rec := a.owner("POST", "/api/workouts/"+pub+"/publish", token, "")
 	var s map[string]any
-	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 19 {
+	if rec.Code != 200 || json.Unmarshal(rec.Body.Bytes(), &s) != nil || s["visibility"] != "unlisted" || s["view_url"] != "/w/"+pub || len(s) != 20 {
 		t.Fatalf("publish: %d %s", rec.Code, rec.Body)
 	}
 	row := a.rows()[0]

@@ -73,6 +73,9 @@ type Record struct {
 	// of resolved samples, ascending, no repeats; nil for none. No
 	// coordinates; never logged. May hold an entry a build skips (AL-3).
 	AddedLapBoundaries []time.Time
+	// RemoveAutoLaps is F-66 RA-1: the build removes the device's automatic
+	// laps before the added boundaries merge. No coordinates.
+	RemoveAutoLaps bool
 }
 
 // NewDraft is the row of a fresh upload: a draft with no hiding (both radii 0) and download off

@@ -191,7 +191,7 @@ func TestOwnerSettings(t *testing.T) {
 		t.Fatal(rec.Code, rec.Body)
 	}
 	if s["visibility"] != "draft" || s["lifetime_days"] != float64(7) || s["hide_start_m"] != float64(0) || s["hide_end_m"] != float64(0) ||
-		s["view_url"] != "/w/"+pub || s["title"] != "" || len(s) != 19 || s["hiding_steps"] == nil || s["suggested_title"] != "Morning ride near Luzern" {
+		s["view_url"] != "/w/"+pub || s["title"] != "" || len(s) != 20 || s["hiding_steps"] == nil || s["suggested_title"] != "Morning ride near Luzern" {
 		t.Errorf("%v", s)
 	}
 	if _, err := time.Parse(time.RFC3339, s["expires_at"].(string)); err != nil {

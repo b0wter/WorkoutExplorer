@@ -67,6 +67,8 @@ type SettingsPatch struct {
 	Pins OptPins
 	// AddedLapBoundaries replaces the whole set (F-65 AL-2).
 	AddedLapBoundaries OptTimes
+	// RemoveAutoLaps is F-66 RA-2.
+	RemoveAutoLaps *bool
 }
 
 // OptInt is an optional integer that may be sent as null.
@@ -134,6 +136,9 @@ func ApplyPatch(r Record, p SettingsPatch, now time.Time) (Record, error) {
 			return r, invalid("The threshold power must be a whole number from 50 to 1,000 W.")
 		}
 		r.ZonesThresholdPower = p.ZonesThresholdPower.V
+	}
+	if p.RemoveAutoLaps != nil {
+		r.RemoveAutoLaps = *p.RemoveAutoLaps
 	}
 	if p.LifetimeDays != nil {
 		days := *p.LifetimeDays

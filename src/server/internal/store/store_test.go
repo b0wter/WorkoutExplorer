@@ -40,8 +40,8 @@ func scalar[T any](t *testing.T, db *DB, q string) T {
 
 func TestOpen(t *testing.T) {
 	db, path := openTemp(t)
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 11 {
-		t.Errorf("user_version = %d, want 11", v)
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 12 {
+		t.Errorf("user_version = %d, want 12", v)
 	}
 	if m := scalar[string](t, db, "PRAGMA journal_mode"); m != "wal" {
 		t.Errorf("journal_mode = %q", m)
@@ -76,7 +76,7 @@ func TestOpen(t *testing.T) {
 	if n := scalar[int](t, db2, "SELECT count(*) FROM sqlite_master WHERE name = 'marker'"); n != 1 {
 		t.Errorf("reopening dropped data")
 	}
-	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 11 {
+	if v := scalar[int](t, db2, "PRAGMA user_version"); v != 12 {
 		t.Errorf("user_version = %d after reopening", v)
 	}
 }
@@ -113,7 +113,7 @@ func TestSchema(t *testing.T) {
 		{"trim_start_at", "INTEGER", false}, {"trim_end_at", "INTEGER", false},
 		{"zones_max_heart_rate", "INTEGER", false}, {"zones_threshold_power", "INTEGER", false},
 		{"hide_start_m", "INTEGER", true}, {"hide_end_m", "INTEGER", true}, {"hiding_steps", "TEXT", false}, {"pins", "TEXT", false},
-		{"added_lap_boundaries", "TEXT", false},
+		{"added_lap_boundaries", "TEXT", false}, {"remove_auto_laps", "INTEGER", true},
 	}
 	rows, err := db.db.QueryContext(ctx, "PRAGMA table_info(workouts)")
 	if err != nil {
@@ -740,7 +740,7 @@ func TestMigrateV1(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	if v := scalar[int](t, db, "PRAGMA user_version"); v != 11 {
+	if v := scalar[int](t, db, "PRAGMA user_version"); v != 12 {
 		t.Errorf("user_version = %d", v)
 	}
 	got, ok, err := db.WorkoutByPublicID(ctx, r.PublicID)
@@ -1044,14 +1044,14 @@ func TestOpenExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 	ok.Close()
-	for _, v := range []int{4, 12} {
+	for _, v := range []int{4, 13} {
 		raw, err := sql.Open("sqlite", "file:"+path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		raw.Exec(fmt.Sprintf("PRAGMA user_version = %d", v))
 		raw.Close()
-		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (11)", v)) {
+		if _, err := OpenExisting(ctx, path); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("schema %d is not this binary's (12)", v)) {
 			t.Errorf("version %d: %v", v, err)
 		}
 	}
@@ -1269,6 +1269,36 @@ func TestAddedLapBoundariesColumn(t *testing.T) {
 	}
 	back, _, _ = db.WorkoutByPublicID(ctx, r2.PublicID)
 	if len(back.AddedLapBoundaries) != 2 {
+		t.Error("UpdateDerived wrote the column")
+	}
+}
+
+// TestRemoveAutoLapsColumn (F-66 RA-1): 0 by default, round-trips through
+// insert and update, the CHECK refuses other values, and derived-column
+// writes (regenerate, RG-4) never touch it.
+func TestRemoveAutoLapsColumn(t *testing.T) {
+	db, _ := openTemp(t)
+	r := record(9)
+	if err := db.InsertWorkout(ctx, r); err != nil {
+		t.Fatal(err)
+	}
+	if back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID); back.RemoveAutoLaps {
+		t.Fatal("default is on")
+	}
+	if _, _, err := db.UpdateWorkout(ctx, r.ID, func(c lifecycle.Record) (lifecycle.Record, error) { c.RemoveAutoLaps = true; return c, nil }); err != nil {
+		t.Fatal(err)
+	}
+	if n := scalar[int](t, db, "SELECT remove_auto_laps FROM workouts"); n != 1 {
+		t.Errorf("column %d", n)
+	}
+	if _, err := db.db.ExecContext(ctx, "UPDATE workouts SET remove_auto_laps = 2"); err == nil {
+		t.Error("accepted 2")
+	}
+	r.RemoveAutoLaps = false
+	if _, _, err := db.UpdateDerived(ctx, r.ID, r, r.CreatedAt); err != nil {
+		t.Fatal(err)
+	}
+	if back, _, _ := db.WorkoutByPublicID(ctx, r.PublicID); !back.RemoveAutoLaps {
 		t.Error("UpdateDerived wrote the column")
 	}
 }

@@ -121,12 +121,12 @@ func (d *DB) InsertWorkout(ctx context.Context, r lifecycle.Record) error {
 	_, err := d.db.ExecContext(ctx, `INSERT INTO workouts
 		(id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
 		 visibility, hide_start_m, hide_end_m, summary_json, data_end_s, created_at, published_at, expires_at,
-		 hiding_steps, trim_start_at, trim_end_at, zones_max_heart_rate, zones_threshold_power, pins, added_lap_boundaries)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		 hiding_steps, trim_start_at, trim_end_at, zones_max_heart_rate, zones_threshold_power, pins, added_lap_boundaries, remove_auto_laps)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		r.ID, r.PublicID, r.EditTokenHash[:], r.Title, r.Description, r.Sport, unixPtr(r.StartTime), intPtr(r.TimeZoneOffsetS),
 		string(r.Visibility), r.HideStartM, r.HideEndM, r.SummaryJSON, intPtr(r.DataEndS),
 		unix(r.CreatedAt), unixPtr(r.PublishedAt), unix(r.ExpiresAt), stepsColumn(r.HidingSteps), unixPtr(r.TrimStartAt), unixPtr(r.TrimEndAt),
-		intPtr(r.ZonesMaxHeartRate), intPtr(r.ZonesThresholdPower), pinsColumn(r.Pins), lapsColumn(r.AddedLapBoundaries))
+		intPtr(r.ZonesMaxHeartRate), intPtr(r.ZonesThresholdPower), pinsColumn(r.Pins), lapsColumn(r.AddedLapBoundaries), r.RemoveAutoLaps)
 	if err != nil {
 		return fmt.Errorf("store: insert workout: %w", err)
 	}
@@ -233,7 +233,7 @@ func (d *DB) DeleteWorkout(ctx context.Context, id string) (deleted bool, err er
 
 const columns = `id, public_id, edit_token_hash, title, description, sport, start_time, time_zone_offset_s,
 	visibility, hide_start_m, hide_end_m, summary_json, data_end_s, created_at, published_at, expires_at,
-	hiding_steps, trim_start_at, trim_end_at, zones_max_heart_rate, zones_threshold_power, pins, added_lap_boundaries`
+	hiding_steps, trim_start_at, trim_end_at, zones_max_heart_rate, zones_threshold_power, pins, added_lap_boundaries, remove_auto_laps`
 
 // lapsColumn is the added_lap_boundaries column (F-65 AL-1): JSON, NULL for none.
 func lapsColumn(ts []time.Time) any {
@@ -287,7 +287,7 @@ func scanRecord(sc scanner) (lifecycle.Record, error) {
 	)
 	if err := sc.Scan(&r.ID, &r.PublicID, &hash, &r.Title, &r.Description, &r.Sport, &start, &off,
 		&vis, &r.HideStartM, &r.HideEndM, &r.SummaryJSON, &end, &created, &p, &expires,
-		&steps, &trimA, &trimB, &zoneHR, &zonePower, &pins, &laps); err != nil {
+		&steps, &trimA, &trimB, &zoneHR, &zonePower, &pins, &laps, &r.RemoveAutoLaps); err != nil {
 		return lifecycle.Record{}, err
 	}
 	if steps.Valid {
@@ -380,10 +380,10 @@ func (d *DB) UpdateWorkout(ctx context.Context, id string, apply func(lifecycle.
 	if _, err := tx.ExecContext(ctx, `UPDATE workouts SET title = ?, description = ?, visibility = ?,
 		hide_start_m = ?, hide_end_m = ?, published_at = ?, expires_at = ?,
 		trim_start_at = ?, trim_end_at = ?, zones_max_heart_rate = ?, zones_threshold_power = ?, pins = ?,
-		added_lap_boundaries = ? WHERE id = ?`,
+		added_lap_boundaries = ?, remove_auto_laps = ? WHERE id = ?`,
 		next.Title, next.Description, string(next.Visibility), next.HideStartM, next.HideEndM,
 		unixPtr(next.PublishedAt), unix(next.ExpiresAt), unixPtr(next.TrimStartAt), unixPtr(next.TrimEndAt),
-		intPtr(next.ZonesMaxHeartRate), intPtr(next.ZonesThresholdPower), pinsColumn(next.Pins), lapsColumn(next.AddedLapBoundaries), id); err != nil {
+		intPtr(next.ZonesMaxHeartRate), intPtr(next.ZonesThresholdPower), pinsColumn(next.Pins), lapsColumn(next.AddedLapBoundaries), next.RemoveAutoLaps, id); err != nil {
 		return lifecycle.Record{}, false, fmt.Errorf("store: update workout: %w", err)
 	}
 	if err := tx.Commit(); err != nil {

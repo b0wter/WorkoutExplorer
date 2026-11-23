@@ -210,7 +210,7 @@ func TestPatchBody(t *testing.T) {
 		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00.5Z","end_at":null}]}`,
 		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"x","end_at":null}]}`,
 		`{"pins":[{"type":"danger","title":"t","note":"","start_at":"2026-06-01T06:00:00Z","end_at":5}]}`,
-		`{"added_lap_boundaries":null}`, `{"added_lap_boundaries":{}}`, `{"added_lap_boundaries":[1]}`, `{"added_lap_boundaries":[null]}`, // F-65 AL-2
+		`{"remove_auto_laps":null}`, `{"remove_auto_laps":1}`, `{"remove_auto_laps":"true"}`, `{"added_lap_boundaries":null}`, `{"added_lap_boundaries":{}}`, `{"added_lap_boundaries":[1]}`, `{"added_lap_boundaries":[null]}`, // F-65 AL-2
 		`{"added_lap_boundaries":["x"]}`, `{"added_lap_boundaries":["2026-06-01T06:00:00.5Z"]}`, `{"added_lap_boundaries":"2026-06-01T06:00:00Z"}`,
 		`{"added_lap_boundaries":[` + strings.TrimSuffix(strings.Repeat(`"2026-06-01T06:00:00Z",`, 101), ",") + `]}`,
 		`{"zones_max_heart_rate":190.5}`, `{"zones_max_heart_rate":"190"}`, `{"zones_threshold_power":1e2}`, `{"zones_threshold_power":true}`, // F-49
