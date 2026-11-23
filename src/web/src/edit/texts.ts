@@ -80,10 +80,9 @@ export const en = {
   pinType: 'Type',
   pinTitle: 'Title',
   pinNote: 'Note',
-  movePin: 'Move',
   deletePin: 'Delete pin',
-  donePin: 'Done',
-  pinRefused: 'This pin is in a hidden or trimmed part of the route.',
+  editPin: 'Edit pin',
+  ok: 'OK',
   pinsRemoved: { one: '{n} pin in the trimmed part removed.', other: '{n} pins in the trimmed part removed.' },
 };
 

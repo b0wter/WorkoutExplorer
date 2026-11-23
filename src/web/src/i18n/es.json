@@ -119,10 +119,9 @@
   "pinType": "Tipo",
   "pinTitle": "Título",
   "pinNote": "Nota",
-  "movePin": "Mover",
   "deletePin": "Eliminar marcador",
-  "donePin": "Listo",
-  "pinRefused": "Este marcador está en una parte oculta o recortada de la ruta.",
+  "editPin": "Editar marcador",
+  "ok": "Aceptar",
   "pinsRemoved": {
    "one": "{n} marcador eliminado de la parte recortada.",
    "other": "{n} marcadores eliminados de la parte recortada."

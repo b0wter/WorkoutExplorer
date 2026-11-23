@@ -611,3 +611,58 @@ html.wx-fs .wx-addpin,
   font-size: 12px;
   color: var(--muted);
 }
+
+/* The pin dialog (UI-pin-dialog; shell: src/dialog). Phones: top-aligned so the fields stay above the keyboard;
+   from 1024 px openDialog anchors it (inline margin and inset win). */
+.pin-dlg {
+  max-width: 480px;
+  margin: 8px auto auto;
+}
+.pin-dlg .pin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pin-dlg .edit-small {
+  margin-bottom: 8px;
+}
+.pin-dlg .dlg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.pin-dlg .pin-del {
+  margin-right: auto;
+}
+html.wx-fs .pin-dlg {
+  visibility: visible; /* the page body is hidden in the fullscreen map */
+}
+/* The pins list: the row and its × side by side (the × is never inside the row button). */
+.pin-list > .pin-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pin-list > .pin-item > .pin-row {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+@media (pointer: coarse) {
+  .pin-list > .pin-item > .pin-row {
+    height: auto;
+    min-height: 44px;
+  }
+  .pin-dlg .edit-button,
+  .pin-dlg .edit-save,
+  .pin-dlg select,
+  .pin-dlg input {
+    min-height: 44px;
+  }
+  .pin-dlg .edit-field input,
+  .pin-dlg .edit-field select,
+  .pin-dlg .edit-field textarea {
+    font-size: 16px; /* 15 px makes iOS zoom on focus */
+  }
+}

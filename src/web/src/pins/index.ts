@@ -14,7 +14,7 @@ import { distanceUnit, formatDistance } from '../lib/format';
 import { PIN_TYPES, typeName, pinName, readPins, type PinType, type ShownPin } from '../lib/pins';
 
 // The pin editor's helpers (owner chunk), re-exported: see src/edit/pins.ts.
-export { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed, typeName, dimReason, fromApi, hasVisibleRoute, indexAt, instantAt, snap, sortPins, toApi } from '../lib/pins';
+export { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed, typeName, dimReason, fromApi, hasVisibleRoute, indexAt, instantAt, pinName, snap, sortPins, toApi } from '../lib/pins';
 export type { ApiPin, PinType, Shade, ShownPin } from '../lib/pins';
 
 /** The lazy map module's seam for pins (ADR-013): nothing pin-specific lives there. */
@@ -42,7 +42,7 @@ export interface PinsEnv {
   /** Calls back once with the map's seam, when (if ever) the map is ready. */
   map(cb: (m: PinMap) => void): void;
   /** The edit page's seam: it gets the view and no file is read; a new range never deselects a
-   *  section there (its editor moves it, OQ-273). */
+   *  section there (the dialog keeps it selected while open). */
   readonly edit?: { onpins?(view: PinsView): void };
 }
 
@@ -61,6 +61,8 @@ export interface PinsView {
   select(i: number | null): void;
   /** Called on every selection change. */
   onselect(fn: (i: number | null) => void): void;
+  /** The edit page: called with each list row (li) and its index whenever the list is rebuilt. */
+  onrow(fn: (li: HTMLElement, k: number) => void): void;
   /** The map's route sample near a client point, or -1 (no map yet: -1). */
   sampleAt(x: number, y: number): number;
 }
@@ -108,6 +110,7 @@ export function startPins(env: PinsEnv): PinsView {
   let sel: number | null = null;
   const off = new Set<PinType>(); // legend: memory only (OQ-239)
   const listeners: ((i: number | null) => void)[] = [];
+  let rowFn: ((li: HTMLElement, k: number) => void) | undefined;
   const dist = data.metrics.distance;
 
   const head = el(doc, 'h2', 'pins-head', t('pins'));
@@ -179,6 +182,7 @@ export function startPins(env: PinsEnv): PinsView {
         row.append(icon(doc, p.type), el(doc, 'span', 'pin-t', pinName(p)), el(doc, 'span', 'pin-d', p.dim || where(p)));
         row.addEventListener('click', () => tap(k));
         if (p.note) li.append(el(doc, 'p', 'pin-note', p.note));
+        rowFn?.(li, k);
         return li;
       }),
     );
@@ -290,6 +294,7 @@ export function startPins(env: PinsEnv): PinsView {
     selected: () => sel,
     select,
     onselect: (fn) => void listeners.push(fn),
+    onrow: (fn) => ((rowFn = fn), renderList(), paint()),
     sampleAt: (x, y) => (map ? map.sampleAt(x, y) : -1),
   };
   if (env.edit) env.edit.onpins?.(view);
