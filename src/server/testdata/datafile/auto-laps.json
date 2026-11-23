@@ -292,12 +292,486 @@
     "name": "pool-swim-mixed",
     "golden": "pool-swim-mixed",
     "at": [],
-    "laps": []
+    "laps": [
+      {
+        "start": 0,
+        "end": 118,
+        "start_index": 0,
+        "end_index": 119,
+        "trigger": "button",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 118,
+          "distance": 100,
+          "avg_speed": 0.847,
+          "avg_heart_rate": 124.975,
+          "avg_cadence": 27.966
+        }
+      },
+      {
+        "start": 118,
+        "end": 438,
+        "start_index": 118,
+        "end_index": 439,
+        "trigger": "",
+        "stroke": "mixed",
+        "totals": {
+          "elapsed_time": 320,
+          "distance": 250,
+          "avg_speed": 0.781,
+          "avg_heart_rate": 125.181,
+          "avg_cadence": 27.917
+        }
+      }
+    ]
   },
   {
     "name": "ride-no-laps",
     "golden": "ride-no-laps",
     "at": [],
     "laps": []
+  },
+  {
+    "name": "chained-ride-ride",
+    "golden": "chained-ride-ride",
+    "at": [],
+    "laps": [
+      {
+        "start": 0,
+        "end": 599,
+        "start_index": 0,
+        "end_index": 600,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 599,
+          "distance": 2998.65,
+          "ascent": 50.6,
+          "avg_speed": 5.006,
+          "avg_heart_rate": 149.35,
+          "avg_cadence": 88.995,
+          "avg_power": 239.88
+        }
+      },
+      {
+        "start": 899,
+        "end": 1498,
+        "start_index": 600,
+        "end_index": 1200,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 599,
+          "distance": 2997.62,
+          "ascent": 50.6,
+          "avg_speed": 5.004,
+          "avg_heart_rate": 149.383,
+          "avg_cadence": 89.16,
+          "avg_power": 239.053
+        }
+      }
+    ]
+  },
+  {
+    "name": "chained-ride-run",
+    "golden": "chained-ride-run",
+    "at": [],
+    "laps": [
+      {
+        "start": 0,
+        "end": 1199,
+        "start_index": 0,
+        "end_index": 1200,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 1199,
+          "distance": 9000.23,
+          "ascent": 98.533,
+          "avg_speed": 7.506,
+          "avg_heart_rate": 150.228,
+          "avg_cadence": 89.011,
+          "avg_power": 223.465
+        }
+      },
+      {
+        "start": 2099,
+        "end": 2998,
+        "start_index": 1200,
+        "end_index": 2100,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 899,
+          "timer_time": 899,
+          "distance": 2974.23,
+          "ascent": 59,
+          "descent": 22,
+          "avg_speed": 3.308,
+          "max_speed": 3.499,
+          "avg_heart_rate": 151,
+          "max_heart_rate": 159,
+          "avg_cadence": 171,
+          "max_cadence": 170,
+          "avg_temperature": 18,
+          "max_temperature": 19
+        }
+      }
+    ]
+  },
+  {
+    "name": "chained-ride-run-added",
+    "golden": "chained-ride-run",
+    "at": [
+      420,
+      1050,
+      1680
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 420,
+        "start_index": 0,
+        "end_index": 421,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 420,
+          "distance": 3158.39,
+          "ascent": 50.6,
+          "avg_speed": 7.52,
+          "avg_heart_rate": 146.47,
+          "avg_cadence": 88.936,
+          "avg_power": 256.722
+        }
+      },
+      {
+        "start": 420,
+        "end": 1050,
+        "start_index": 420,
+        "end_index": 1051,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 630,
+          "distance": 4723.67,
+          "ascent": 28.36,
+          "avg_speed": 7.498,
+          "avg_heart_rate": 154.355,
+          "avg_cadence": 89.097,
+          "avg_power": 190.574
+        }
+      },
+      {
+        "start": 1050,
+        "end": 1199,
+        "start_index": 1050,
+        "end_index": 1200,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 149,
+          "distance": 1118.17,
+          "ascent": 19.573,
+          "avg_speed": 7.504,
+          "avg_heart_rate": 143.407,
+          "avg_cadence": 88.887,
+          "avg_power": 268.78
+        }
+      },
+      {
+        "start": 2099,
+        "end": 2579,
+        "start_index": 1200,
+        "end_index": 1681,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 480,
+          "distance": 1588.9,
+          "ascent": 50.6,
+          "avg_speed": 3.31,
+          "avg_heart_rate": 147.636,
+          "avg_cadence": 171
+        }
+      },
+      {
+        "start": 2579,
+        "end": 2998,
+        "start_index": 1680,
+        "end_index": 2100,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 419,
+          "distance": 1385.33,
+          "ascent": 7.667,
+          "avg_speed": 3.306,
+          "avg_heart_rate": 155.902,
+          "avg_cadence": 171
+        }
+      }
+    ]
+  },
+  {
+    "name": "pool-swim-25yd",
+    "golden": "pool-swim-25yd",
+    "at": [],
+    "laps": []
+  },
+  {
+    "name": "pool-swim-33m",
+    "golden": "pool-swim-33m",
+    "at": [],
+    "laps": []
+  },
+  {
+    "name": "pool-swim-added",
+    "golden": "pool-swim",
+    "at": [
+      307,
+      615
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 300,
+        "start_index": 0,
+        "end_index": 301,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 300,
+          "distance": 250,
+          "avg_speed": 0.833,
+          "avg_heart_rate": 131.864,
+          "avg_cadence": 29.977
+        }
+      },
+      {
+        "start": 300,
+        "end": 600,
+        "start_index": 300,
+        "end_index": 601,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 300,
+          "distance": 250,
+          "avg_speed": 0.833,
+          "avg_heart_rate": 131.894,
+          "avg_cadence": 30.127
+        }
+      },
+      {
+        "start": 600,
+        "end": 1230,
+        "start_index": 600,
+        "end_index": 1231,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 630,
+          "distance": 500,
+          "avg_speed": 0.794,
+          "avg_heart_rate": 131.981,
+          "avg_cadence": 29.972
+        }
+      }
+    ]
+  },
+  {
+    "name": "pool-swim-mixed-added",
+    "golden": "pool-swim-mixed",
+    "at": [
+      109,
+      219
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 118,
+        "start_index": 0,
+        "end_index": 119,
+        "trigger": "button",
+        "stroke": "freestyle",
+        "totals": {
+          "elapsed_time": 118,
+          "distance": 100,
+          "avg_speed": 0.847,
+          "avg_heart_rate": 124.975,
+          "avg_cadence": 27.966
+        }
+      },
+      {
+        "start": 118,
+        "end": 218,
+        "start_index": 118,
+        "end_index": 219,
+        "trigger": "added",
+        "stroke": "mixed",
+        "totals": {
+          "elapsed_time": 100,
+          "distance": 100,
+          "avg_speed": 1,
+          "avg_heart_rate": 124.881,
+          "avg_cadence": 27.832
+        }
+      },
+      {
+        "start": 218,
+        "end": 438,
+        "start_index": 218,
+        "end_index": 439,
+        "trigger": "",
+        "stroke": "mixed",
+        "totals": {
+          "elapsed_time": 220,
+          "distance": 150,
+          "avg_speed": 0.682,
+          "avg_heart_rate": 125.299,
+          "avg_cadence": 27.95
+        }
+      }
+    ]
+  },
+  {
+    "name": "triathlon-added",
+    "golden": "triathlon",
+    "at": [
+      620,
+      1860,
+      3100
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 599,
+        "start_index": 0,
+        "end_index": 600,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 599,
+          "timer_time": 599,
+          "distance": 718.17,
+          "avg_speed": 1.199,
+          "max_speed": 1.3,
+          "avg_heart_rate": 143,
+          "max_heart_rate": 146,
+          "avg_cadence": 31.969,
+          "max_cadence": 34,
+          "avg_temperature": 17,
+          "max_temperature": 17
+        }
+      },
+      {
+        "start": 600,
+        "end": 620,
+        "start_index": 600,
+        "end_index": 621,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 20,
+          "distance": 30,
+          "avg_heart_rate": 133.238
+        }
+      },
+      {
+        "start": 620,
+        "end": 659,
+        "start_index": 620,
+        "end_index": 660,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 39,
+          "distance": 58.5,
+          "avg_heart_rate": 133.25
+        }
+      },
+      {
+        "start": 660,
+        "end": 1860,
+        "start_index": 660,
+        "end_index": 1861,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 1200,
+          "distance": 8995.45,
+          "ascent": 53.2,
+          "avg_speed": 7.496,
+          "avg_heart_rate": 152.946,
+          "avg_cadence": 90.042,
+          "avg_power": 224.509
+        }
+      },
+      {
+        "start": 1860,
+        "end": 2459,
+        "start_index": 1860,
+        "end_index": 2460,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 599,
+          "distance": 4485.92,
+          "ascent": 13.4,
+          "avg_speed": 7.489,
+          "avg_heart_rate": 153.095,
+          "avg_cadence": 89.928,
+          "avg_power": 225.71
+        }
+      },
+      {
+        "start": 2460,
+        "end": 2519,
+        "start_index": 2460,
+        "end_index": 2520,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 59,
+          "timer_time": 59,
+          "distance": 88.5,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 136
+        }
+      },
+      {
+        "start": 2520,
+        "end": 3100,
+        "start_index": 2520,
+        "end_index": 3101,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 580,
+          "distance": 1911.29,
+          "ascent": 6.16,
+          "avg_speed": 3.295,
+          "avg_heart_rate": 163,
+          "avg_cadence": 171
+        }
+      },
+      {
+        "start": 3100,
+        "end": 3719,
+        "start_index": 3100,
+        "end_index": 3720,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 619,
+          "distance": 2043.57,
+          "ascent": 39.24,
+          "avg_speed": 3.301,
+          "avg_heart_rate": 163.073,
+          "avg_cadence": 171
+        }
+      }
+    ]
   }
 ]
