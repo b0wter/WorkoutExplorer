@@ -354,6 +354,21 @@
   align-items: flex-start;
   gap: 6px;
 }
+.plus-item {
+  max-width: 100%;
+  white-space: nowrap; /* one line; a label wider than the menu ellipsizes */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The overlay sizes to its items, not to the narrow "+" it hangs from; the viewport bounds it. */
+.plus-menu {
+  width: max-content;
+  max-width: calc(100vw - 40px);
+}
+.wx-plus.flat .plus-menu {
+  width: auto;
+  max-width: none;
+}
 .wx-addpin .plus-menu {
   top: auto;
   bottom: calc(100% + 4px);
