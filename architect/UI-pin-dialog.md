@@ -1,6 +1,6 @@
 # UI: the pin dialog (edit page)
 
-- **Status:** proposal (23 Nov 2026), senior-ui-designer. Current state only.
+- **Status:** accepted, built (23 Nov 2026, bdc2b66). Current state only.
 - **Scope:** adding and editing pins on the edit page through one modal dialog; the read-only pins list. PIN-1, PIN-3 to PIN-5, PIN-8, AP-15, DS-4, DS-6; [F-56](../features/F-56-map-pins.md) PN-12, [F-65](../features/F-65-owner-added-laps.md) AL-9; user decision 23 Nov 2026 (dialog replaces "scroll to the form, focus Title").
 - **Basis:** code only (`src/web/src/edit/pins.ts`, `plus.ts`, `mapmenu.ts`, `addedtable.ts`, `edit.css`, `src/pins/index.ts`, `pins.css`, `src/dialog/`). Nothing was rendered.
 
@@ -21,7 +21,7 @@
 
 OK and Delete re-render rows and markers, so the opener is gone: focus the same pin's new row or marker (`[data-pin]`), after a delete the row now at that index, else the Pins heading, else the "+" (the rule `addedtable.ts` already uses). Always `preventScroll: true`; focus never lands on `body`.
 
-The viewing page is untouched: the editor opens the dialog from the view's existing `onselect`, not from new code in `src/pins`. The only change there is an optional hook in the existing `env.edit` seam, called per rendered row, through which the editor appends the × (rows are rebuilt on units and language changes, so the editor cannot add it once).
+The viewing page is untouched: the editor opens the dialog from the view's existing `onselect`, not from new code in `src/pins`. The only change there is the optional row hook `view.onrow` on `PinsView` (`src/web/src/pins/index.ts`), called per rendered row, through which the editor appends the × (rows are rebuilt on units and language changes, so the editor cannot add it once).
 
 ## Layout
 
@@ -77,12 +77,10 @@ two columns (>= 1024 px)                        phone (320-390 px)
 1. An optional `actions` argument: nodes that replace the Close button in `.dlg-actions`. The info dialogs are unchanged.
 2. Backdrop close only when the `pointerdown` also hit the dialog element. Without this, a text selection dragged out of a field ends with a click on the backdrop and throws the entry away. This also fixes the info dialogs.
 
-## Budget (owner chunk 19,412 / 20,000 gzip)
+## No move (PIN-8, OQ-273 changed 23 Nov 2026)
 
-- `src/dialog` is already shared by two lazy chunks (How to use, summary), so it should stay its own chunk and not count towards `start.svelte`. Check this in the build output; if Rollup inlines it, F-19's rule applies (split, never raise).
-- **Remove from `edit/pins.ts`:** the inline form `div` and its `slot.prepend`; Done; Move and its handler and enable logic; `edit()` and the three per-keystroke listeners (one apply on OK instead); the `scrollIntoView` and reduced-motion block in `placePin`; the `form.hidden` logic in `controls()`; and, with question 1 as suggested, `toSection` and the section-moving `selection.subscribe`. Texts `movePin`, `donePin`, `pinRefused` (en, de, es, fr). `field()` and `place()` stay.
-- **Add:** open, OK, close and deselect; the row ×; two text keys; about 15 lines of CSS. The net should be small. The engineer measures and reports it.
+There is no Move button and no range-moving of section pins: moving a pin is deleting it and adding it again, as for added laps (OQ-302).
 
-## Open questions
+## Budget
 
-1. **Moving a pin (PIN-8, OQ-273).** While the modal dialog is open the owner cannot select a new spot, so the form's "Move" (to the cursor) and "a new range moves the section" have nothing to act on. Suggestion: drop both. The dialog shows where the pin is, and moving is delete and add again, as decided for added laps (OQ-302). PIN-8's "move" is then met by delete and add. Alternative: a third "Move pin here" item in the "+", right-click and box lists, acting on the last opened pin. It costs about 300 bytes and adds hidden state.
+Owner chunk 19,701 / 20,000 gzip after the dialog (ADR-011 item 4). `src/dialog` stays its own shared chunk (735 gzip), not counted in `start.svelte`; if Rollup ever inlines it, F-19's rule applies (split, never raise).

@@ -10,3 +10,7 @@ Superseded v0.1 text, verbatim in substance:
 - **PN-12 (v0.1):** "while unsaved sliders or trim shade a pin, it is drawn dimmed in every view; after a save whose response lacks a pin the browser did not remove itself, the one-line notice (AC 36). With a pin change in the same save, the browser leaves the shaded pins out of the sent set."
 - **Verification (v0.1):** "Raising a radius, then trimming: exactly the no-longer-public pins are removed."
 - **F-54 hand-off (v0.1):** "the refusal and removal lines".
+
+## v0.2 → v0.3 (23 Nov 2026), pin dialog, no move (OQ-273 changed)
+
+- **PN-12 (v0.2):** "then the form opens. A section pin being edited: a new range moves its ends (OQ-273), each snapped the same way; Move puts a point pin at the cursor." Dimmed pins were "editable and deletable, not movable into the shaded part".

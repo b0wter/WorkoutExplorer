@@ -1,7 +1,7 @@
 # UI: edit page, add lap / add pin controls
 
 - **Status:** accepted, built (23 Nov 2026). Current state only; the original review and its problem list are in [history/UI-edit-page-add-controls.md](history/UI-edit-page-add-controls.md).
-- **Scope:** the "+" on the map (two columns, touch), the add box under the map (one column), the right-click menu (mouse), and how they sit with the map controls, pin form, pins list, added-laps table and laps table. AP-8, PIN-1, PIN-7, AP-22, DS-4; [F-65](F-65-owner-added-laps.md) AL-8, AL-9; [F-56](F-56-map-pins.md) PN-12; decision log of `features/README.md`, 21–23 Nov 2026.
+- **Scope:** the "+" on the map (two columns, touch), the add box under the map (one column), the right-click menu (mouse), and how they sit with the map controls, pins list, added-laps table and laps table. AP-8, PIN-1, PIN-7, AP-22, DS-4; [F-65](F-65-owner-added-laps.md) AL-8, AL-9; [F-56](F-56-map-pins.md) PN-12; decision log of `features/README.md`, 21–23 Nov 2026.
 - **Code:** `src/web/src/edit/plus.ts`, `pins.ts`, `mapmenu.ts`, `laps.ts`, `edit.css`; `components/map/map-view.css`.
 
 ## Rules
@@ -28,7 +28,6 @@
 ```
  map
  add box (rule 2, one column)
- pin form (when a pin is selected)
  Pins ─ list
  Added laps ─ table (lap, time, distance, ×), only while a boundary exists (F-65 AL-8)
  charts …
