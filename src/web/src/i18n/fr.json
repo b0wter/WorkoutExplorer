@@ -153,8 +153,7 @@
   "pinsTouch": "Pour les entraînements avec repères, touchez un repère sur la carte ou dans la liste pour le voir sur l'itinéraire et les graphiques ; les boutons de la carte affichent ou masquent chaque type.",
   "pinsMouse": "Pour les entraînements avec repères, cliquez sur un repère sur la carte ou dans la liste pour le voir sur l'itinéraire et les graphiques ; les boutons de la carte affichent ou masquent chaque type.",
   "numbersName": "Chiffres du résumé",
-  "numbersTouch": "Touchez ⓘ dans le résumé pour voir comment ses chiffres sont calculés.",
-  "numbersMouse": "Cliquez sur ⓘ dans le résumé pour voir comment ses chiffres sont calculés."
+  "numbersText": "La barre « Comment ces chiffres sont calculés », sous « Comment utiliser cette page », explique les chiffres du résumé."
  },
  "lib/charts": {
   "axisTime": "Temps",

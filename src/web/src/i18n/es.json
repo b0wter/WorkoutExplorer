@@ -153,8 +153,7 @@
   "pinsTouch": "En entrenamientos con marcadores, toca un marcador en el mapa o en la lista para verlo en la ruta y en los gráficos; los botones del mapa muestran u ocultan cada tipo.",
   "pinsMouse": "En entrenamientos con marcadores, haz clic en un marcador en el mapa o en la lista para verlo en la ruta y en los gráficos; los botones del mapa muestran u ocultan cada tipo.",
   "numbersName": "Cifras del resumen",
-  "numbersTouch": "Toca ⓘ en el resumen para ver cómo se calculan sus cifras.",
-  "numbersMouse": "Haz clic en ⓘ en el resumen para ver cómo se calculan sus cifras."
+  "numbersText": "La barra «Cómo se calculan estas cifras», bajo «Cómo usar esta página», explica las cifras del resumen."
  },
  "lib/charts": {
   "axisTime": "Tiempo",

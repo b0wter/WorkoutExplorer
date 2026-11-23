@@ -1678,7 +1678,7 @@ describe('F-58 SE-4: the summary dialog on the edit page (AC 36, 40)', () => {
     settings = fresh({ ...ON, trim_start_at: '2026-10-29T10:00:00Z', trim_end_at: '2026-10-29T11:00:00Z', trimmed: { sport: decoded.data.meta.sport, summary: rest } });
     await open();
     const button = $<HTMLButtonElement>('button[data-summary-info]')!;
-    expect([button.hidden, button.dataset.trim]).toEqual([false, 'both']);
+    expect([button.classList.contains('ready'), button.dataset.trim]).toEqual([true, 'both']);
     let text = await dialogText();
     expect(text).toContain('This workout: start hidden within 300 m, end hidden within 300 m.');
     expect(text).toMatch(/This workout: trimmed \(now starts \d\d:\d\d, ends \d\d:\d\d\); recomputed: distance, [^;]*; dropped: calories\./);

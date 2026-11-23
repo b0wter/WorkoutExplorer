@@ -241,13 +241,13 @@ export function enhanceHowto(root: ParentNode, opened: boolean, onopen: () => vo
   );
 }
 
-/** "About these numbers" (F-58 SE-5, SE-6; AP-24): reveals the strip's ⓘ (the data file is decoded);
+/** "About these numbers" (F-58 SE-5, SE-6; AP-24): reveals the bar under How to use (the data file is decoded);
  *  the dialog is a lazy chunk, which reads the trim string from the button (SE-2). `facts` is read
  *  on every open. */
 export function enhanceSummaryInfo(root: ParentNode, units: UnitsStore, facts: () => Facts, load = () => Promise.all([import('../summary-info'), loadGroup('help')]).then(([m]) => m)): void {
   const button = root.querySelector<HTMLButtonElement>('button[data-summary-info]');
   if (!button) return;
-  button.hidden = false;
+  button.classList.add('ready'); // as How to use: reserved and invisible until now
   lazyClick(button, load, (m) => m.openSummaryInfo(button, facts(), units.get(), summaryItems), 'helpFailed', button.parentElement!);
 }
 

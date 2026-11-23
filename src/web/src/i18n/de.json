@@ -153,8 +153,7 @@
   "pinsTouch": "Tippe bei Trainings mit Pins auf einen Pin auf der Karte oder in der Liste, um ihn auf der Route und in den Diagrammen zu zeigen; die Tasten auf der Karte blenden jede Art ein oder aus.",
   "pinsMouse": "Klicke bei Trainings mit Pins auf einen Pin auf der Karte oder in der Liste, um ihn auf der Route und in den Diagrammen zu zeigen; die Tasten auf der Karte blenden jede Art ein oder aus.",
   "numbersName": "Zahlen der Übersicht",
-  "numbersTouch": "Tippe in der Übersicht auf ⓘ, um zu sehen, wie ihre Zahlen berechnet werden.",
-  "numbersMouse": "Klicke in der Übersicht auf ⓘ, um zu sehen, wie ihre Zahlen berechnet werden."
+  "numbersText": "Die Leiste „Wie diese Zahlen berechnet werden“ unter „So nutzt du diese Seite“ erklärt die Zahlen der Übersicht."
  },
  "lib/charts": {
   "axisTime": "Zeit",

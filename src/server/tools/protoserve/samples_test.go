@@ -157,7 +157,7 @@ func TestSamplePages(t *testing.T) {
 			} else if strings.Contains(page, "data-gpx") {
 				t.Error("GPX button without Route.Gpx")
 			}
-			if n := strings.Count(page, "<button"); n != wantBtn || !strings.Contains(page, `<button type="button" class="summary-info" data-summary-info data-trim="`) || !regexp.MustCompile(`</header>\s*<div class="howto-row"><button type="button" class="howto" data-howto>`).MatchString(page) {
+			if n := strings.Count(page, "<button"); n != wantBtn || !regexp.MustCompile(`</header>\s*<div class="howto-row"><button type="button" class="howto" data-howto>.*?</button></div>\s*<div class="howto-row"><button type="button" class="howto" data-summary-info data-trim="[^"]*">.*?</button></div>\s*<section class="summary">`).MatchString(page) {
 				t.Errorf("server markup: %d buttons, want How to use (own row under the header), summary info and Report", n)
 			}
 

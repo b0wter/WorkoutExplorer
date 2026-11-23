@@ -17,7 +17,7 @@ const LINES: (readonly [K, K, K])[] = [
   ['zonesName', 'zonesText', 'zonesText'], // F-49
   ['shareName', 'shareTouch', 'shareMouse'], // F-40 SR-8
   ['pinsName', 'pinsTouch', 'pinsMouse'], // F-56 PN-13
-  ['numbersName', 'numbersTouch', 'numbersMouse'], // F-58 OQ-252
+  ['numbersName', 'numbersText', 'numbersText'], // F-58 OQ-252
 ];
 
 export function openHowto(doc: Document): void {
