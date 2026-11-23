@@ -14,6 +14,7 @@ import { onLanguage } from '../lib/i18n';
 import { t } from './texts';
 import { TWO_COLUMN_QUERY } from '../page/splitter';
 import { createPlus, type PlusItem } from './plus';
+import { startMapMenu } from './mapmenu';
 
 export interface PinEditorEnv {
   /** The pins slot: the tools and form go first, the view's list after them. */
@@ -76,7 +77,8 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     },
     run: () => placePin(),
   };
-  const plus = createPlus(doc, [...(env.items ?? []), addPin]);
+  const plusItems = [...(env.items ?? []), addPin];
+  const plus = createPlus(doc, plusItems);
   tools.append(plus.group);
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
@@ -95,6 +97,8 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     tools.classList.toggle('on-map', map);
   };
   mq?.addEventListener?.('change', dock);
+  // The same items on a mouse right-click of the route; both layouts, fullscreen included.
+  if (mapSlot) startMapMenu({ host: mapSlot, cursor, selection, items: plusItems });
 
   // ---- the form of the selected pin ----
   const form = make('div', 'pin-form');

@@ -34,6 +34,7 @@ describe('openHowto', () => {
       'Zones. Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
       'Share a range. Select a range, then tap "Copy link to this selection" to share it.',
       'Pins. On workouts with pins, tap a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
+      'Add a lap or pin. For sharers: on the edit page, select a point or range, then tap "+" to add a lap or pin.',
       'Summary numbers. The "How these numbers are computed" bar, under the "How to use this page" bar, explains the summary\'s numbers.',
     ]);
     expect(texts('fine')).toEqual([
@@ -45,6 +46,7 @@ describe('openHowto', () => {
       'Zones. Zones use the max heart rate and threshold power from the FIT file when it has them; the sharer can set their own on the edit page.',
       'Share a range. Select a range, then click "Copy link to this selection" to share it.',
       'Pins. On workouts with pins, click a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
+      'Add a lap or pin. For sharers: on the edit page, select a point or range, then right-click the map or use "+", to add a lap boundary or pin.',
       'Summary numbers. The "How these numbers are computed" bar, under the "How to use this page" bar, explains the summary\'s numbers.',
     ]);
   });

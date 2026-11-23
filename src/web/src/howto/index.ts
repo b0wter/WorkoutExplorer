@@ -17,6 +17,7 @@ const LINES: (readonly [K, K, K])[] = [
   ['zonesName', 'zonesText', 'zonesText'], // F-49
   ['shareName', 'shareTouch', 'shareMouse'], // F-40 SR-8
   ['pinsName', 'pinsTouch', 'pinsMouse'], // F-56 PN-13
+  ['editName', 'editTouch', 'editMouse'], // F-65 AL-9: the "+" and the map's right-click
   ['numbersName', 'numbersText', 'numbersText'], // F-58 OQ-252
 ];
 

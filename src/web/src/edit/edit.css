@@ -474,3 +474,15 @@
 .laps tr.dim > td:not(.lap-x) {
   opacity: 0.55;
 }
+
+/* Right-click menu on the map (mapmenu.ts): the "+" items at the pointer, inside the map box. */
+.map-menu {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100% - 20px);
+}

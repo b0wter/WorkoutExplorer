@@ -154,6 +154,9 @@
   "pinsName": "Pins",
   "pinsTouch": "Tippe bei Trainings mit Pins auf einen Pin auf der Karte oder in der Liste, um ihn auf der Route und in den Diagrammen zu zeigen; die Tasten auf der Karte blenden jede Art ein oder aus.",
   "pinsMouse": "Klicke bei Trainings mit Pins auf einen Pin auf der Karte oder in der Liste, um ihn auf der Route und in den Diagrammen zu zeigen; die Tasten auf der Karte blenden jede Art ein oder aus.",
+  "editName": "Lap oder Pin hinzufügen",
+  "editTouch": "Wer teilt: Wähle auf der Bearbeitungsseite einen Punkt oder Bereich und tippe auf „+“ (Lap oder Pin hinzufügen).",
+  "editMouse": "Wer teilt: Wähle auf der Bearbeitungsseite einen Punkt oder Bereich und klicke dann mit der rechten Maustaste auf die Karte oder nutze „+“, um eine Lap-Grenze oder einen Pin hinzuzufügen.",
   "numbersName": "Zahlen der Übersicht",
   "numbersText": "Die Leiste „Wie diese Zahlen berechnet werden“ unter „So nutzt du diese Seite“ erklärt die Zahlen der Übersicht."
  },
