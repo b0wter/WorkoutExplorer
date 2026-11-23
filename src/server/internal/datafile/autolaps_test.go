@@ -26,6 +26,14 @@ var autoLapsSpecs = []struct {
 	{"pool-swim", "pool-swim", nil},
 	{"pool-swim-mixed", "pool-swim-mixed", nil},
 	{"ride-no-laps", "ride-no-laps", nil},
+	{"chained-ride-ride", "chained-ride-ride", nil},
+	{"chained-ride-run", "chained-ride-run", nil},
+	{"chained-ride-run-added", "chained-ride-run", func(n int) []int { return []int{n / 5, n / 2, n * 4 / 5} }},
+	{"pool-swim-25yd", "pool-swim-25yd", nil},
+	{"pool-swim-33m", "pool-swim-33m", nil},
+	{"pool-swim-added", "pool-swim", func(n int) []int { return []int{n / 4, n / 2} }},
+	{"pool-swim-mixed-added", "pool-swim-mixed", func(n int) []int { return []int{n / 4, n / 2} }},
+	{"triathlon-added", "triathlon", func(n int) []int { return []int{n / 6, n / 2, n * 5 / 6} }},
 }
 
 func TestAutoLapsSample(t *testing.T) {

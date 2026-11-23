@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -88,5 +89,60 @@ func TestRemoveAutoLapsEndToEnd(t *testing.T) {
 	}
 	if rec := a.owner("PATCH", url, "x"+token[1:], `{"remove_auto_laps":true}`); rec.Code != 404 {
 		t.Errorf("wrong token: %d", rec.Code)
+	}
+}
+
+// QA-66-r1-2: the setting changes laps only, at radii 0, 300 and 2,000, with
+// and without a trim; hidden ends keep no position either way (I-3, UP-9).
+func TestRemoveAutoLapsPrivacyMatrix(t *testing.T) {
+	for _, radius := range []int{0, 300, 2000} {
+		for _, trim := range []bool{false, true} {
+			a := startApp(t, settings{})
+			pub, token, _ := a.upload("ride-lap-triggers.fit")
+			url := "/api/workouts/" + pub
+			start, _ := time.Parse(time.RFC3339, a.startAt(pub))
+			body := `{"hide_start_m":` + strconv.Itoa(radius) + `,"hide_end_m":` + strconv.Itoa(radius)
+			if trim {
+				at := func(s int) string { return `"` + start.Add(time.Duration(s)*time.Second).Format(time.RFC3339) + `"` }
+				body += `,"trim_start_at":` + at(100) + `,"trim_end_at":` + at(1300)
+			}
+			name := "r" + strconv.Itoa(radius) + " trim " + strconv.FormatBool(trim)
+			if rec := a.owner("PATCH", url, token, body+"}"); rec.Code != 200 {
+				t.Fatalf("%s: %d %s", name, rec.Code, rec.Body)
+			}
+			if rec := a.owner("POST", url+"/publish", token, ""); rec.Code != 200 {
+				t.Fatalf("%s: publish %d", name, rec.Code)
+			}
+			load := func() datafile.File {
+				bin, err := os.ReadFile(filepath.Join(a.dir, "public", pub, dataName(t, a.page(pub))))
+				if err != nil {
+					t.Fatal(err)
+				}
+				f, err := datafile.Decode(bin)
+				if err != nil {
+					t.Fatal(err)
+				}
+				return f
+			}
+			off := load()
+			if rec := a.owner("PATCH", url, token, `{"remove_auto_laps":true}`); rec.Code != 200 {
+				t.Fatal(rec.Code)
+			}
+			on := load()
+			if len(on.Streams) != len(off.Streams) {
+				t.Fatalf("%s: stream count", name)
+			}
+			for i := range on.Streams {
+				if !reflect.DeepEqual(on.Streams[i].Ints, off.Streams[i].Ints) || !reflect.DeepEqual(on.Streams[i].Valid, off.Streams[i].Valid) {
+					t.Errorf("%s: stream %s changed with the setting", name, on.Streams[i].Descriptor.Name)
+				}
+			}
+			if len(on.Meta.Laps) >= len(off.Meta.Laps) {
+				t.Errorf("%s: laps %d -> %d, want fewer", name, len(off.Meta.Laps), len(on.Meta.Laps))
+			}
+			if lat, ok := stream(on, "latitude"); radius > 0 && ok && (lat.Valid[0] || lat.Valid[len(lat.Valid)-1]) {
+				t.Errorf("%s: hidden ends have a position", name)
+			}
+		}
 	}
 }
