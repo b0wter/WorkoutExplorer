@@ -209,7 +209,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   // ---- the dialog: open, then OK (apply), Delete or any other close (no change) ----
   /** After a delete or a re-render the opener is gone: the row now at `k`, else the heading, else "+" (as addedtable.ts). */
   const focusRow = (k: number): void => {
-    const rows = slot.querySelectorAll<HTMLElement>('.pin-row');
+    const rows = slot.querySelectorAll<HTMLElement>('.pin-item[data-pin] > .pin-row');
     const h = slot.querySelector<HTMLElement>('.pins-head');
     h?.setAttribute('tabindex', '-1');
     const items = [...plus.group.querySelectorAll<HTMLElement>('.plus-item')];
@@ -224,7 +224,15 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     // the opener: a marker (focus returns to its replacement), a row, or for a new pin whatever the add came from
     sess = { p, k, from: act, marker: !!act?.closest('.pin-mk'), result: null };
     const s = sess;
-    const { openDialog } = await import('../dialog');
+    let openDialog: typeof import('../dialog').openDialog;
+    try {
+      ({ openDialog } = await import('../dialog'));
+    } catch (e) {
+      console.warn('pin dialog failed to load', e);
+      sess = null;
+      view.select(null);
+      return;
+    }
     type.value = p.type;
     title.value = p.title;
     title.placeholder = typeName(p.type);
@@ -248,17 +256,21 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   });
   cancel.addEventListener('click', () => dlg().close());
   const dlg = (): HTMLDialogElement => ok.closest('dialog')!;
-  const close = ({ p, k, from, marker, result }: NonNullable<typeof sess>): void => {
+  const close = ({ p, k: k0, from, marker, result }: NonNullable<typeof sess>): void => {
+    let k = k0;
     sess = null;
-    if (result === 'ok') {
+    const gone = k !== null && list.indexOf(p) < 0; // Save replaced the list meanwhile: act on nothing
+    if (!gone && result === 'ok') {
       Object.assign(p, { type: type.value, title: title.value, note: note.value });
       if (k === null) list.push(p);
       changed(null);
-    } else if (result === 'del') {
-      list.splice(k!, 1);
+    } else if (!gone && result === 'del') {
+      k = list.indexOf(p);
+      list.splice(k, 1);
       changed(null);
     }
     view.select(null); // a section's range stays selected
+    if (gone) return;
     if (result === 'del') return focusRow(k!);
     const at = list.indexOf(p);
     const back = at < 0 ? null : (marker ? doc.querySelector<HTMLElement>(`.pin-mk[data-pin="${at}"]`) : doc.querySelector<HTMLElement>(`.pin-item[data-pin="${at}"] .pin-row`)) ?? null;

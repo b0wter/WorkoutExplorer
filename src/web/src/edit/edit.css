@@ -650,7 +650,7 @@ html.wx-fs .pin-dlg {
   width: auto;
 }
 @media (pointer: coarse) {
-  .pin-list > .pin-item > .pin-row {
+  .pin-list > .pin-item[data-pin] > .pin-row {
     height: auto;
     min-height: 44px;
   }

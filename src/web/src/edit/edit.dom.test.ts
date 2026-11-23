@@ -1814,6 +1814,62 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(rowTexts()).toHaveLength(1);
   });
 
+  it('QA-56d-r1-1: deleting pins with added laps present keeps focus on a pin row, then the heading', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'a'), pin(1500, 'b')], added_lap_boundaries: [at(2500)] });
+    await start();
+    await vi.waitFor(() => expect(document.querySelector('.added-laps:not([hidden])')).not.toBeNull());
+    const x = (): HTMLButtonElement[] => [...document.querySelectorAll<HTMLButtonElement>('.pin-item[data-pin] .added-x-btn')];
+    x()[1].click();
+    expect(document.activeElement).toBe(row0());
+    x()[0].click();
+    expect(document.activeElement).toBe(document.querySelector('.pins-head'));
+  });
+
+  it('QA-56d-r1-2: a Save that replaces the list while the dialog is open: Delete and OK touch no other pin', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'a'), pin(1500, 'b')] });
+    await start();
+    await open0();
+    settings = fresh({ ...ON, pins: [pin(1500, 'b')] }); // the server dropped a
+    fill($<HTMLInputElement>('input[name="title"]')!, 'x');
+    await save();
+    dlgButton('Delete pin').click();
+    expect(rowTexts()).toHaveLength(1);
+    expect(rowTexts()[0]).toMatch(/^b/);
+    await open0();
+    fill(field('input'), 'changed');
+    settings = fresh({ ...ON, pins: [pin(1500, 'b')] });
+    fill($<HTMLInputElement>('input[name="title"]')!, 'y');
+    await save();
+    submit();
+    expect(rowTexts()[0]).toMatch(/^b/);
+  });
+
+  it('QA-56d-r1-3: a failed dialog import resets the editor so the next open works', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'a')] });
+    await start();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.doMock('../dialog', () => {
+      throw new Error('chunk gone');
+    });
+    row0().click();
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled());
+    vi.doUnmock('../dialog');
+    expect(document.querySelector('.pin-item.sel')).toBeNull();
+    await open0();
+    expect(dlg().open).toBe(true);
+    warn.mockRestore();
+  });
+
+  it('AC 4: a dimmed pin opens in the dialog with its reason and can be deleted', async () => {
+    settings = fresh({ ...ON, pins: [pin(10, 'start'), pin(1000, 'mid')] });
+    await start();
+    await open0();
+    expect(dlg().textContent).toContain('Hidden by the start radius');
+    dlgButton('Delete pin').click();
+    expect(rowTexts()).toHaveLength(1);
+    expect(rowTexts()[0]).toMatch(/^mid/);
+  });
+
   it('no visible route: no Add pin, stored pins listed dimmed (OQ-275)', async () => {
     settings = fresh({ hide_start_m: 2000, hiding_steps: { start: STEPS.start.map(() => -1), end: STEPS.end }, pins: [pin(1000, 'b')] });
     await start();
