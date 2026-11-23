@@ -1,6 +1,6 @@
 // The pin editor (F-56 PN-12; PIN-1, PIN-3 to PIN-5, PIN-7, PIN-8; OQ-234, OQ-272, OQ-273, OQ-275).
 // Owner chunk. Display goes through the lazy src/pins view over draft.bin; this module holds the
-// owner's pins (sample indices of the draft), "Add pin", the form, and the set Save sends. It
+// owner's pins (sample indices of the draft), "Add pin", the pin dialog, and the set Save sends. It
 // mirrors the server's rules so a refusal never shows in normal use; the server alone decides.
 // PN-11: owner text only through .value and textContent, never as HTML.
 
@@ -8,7 +8,7 @@ import type { WorkoutData } from '../lib/datafile';
 import type { PinsView } from '../pins';
 // Through src/pins (not lib/pins): this static import puts the view and lib/pins in one lazy chunk
 // with the owner chunk's dependency, instead of a third shared chunk in the viewing entry's preload list.
-import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedText, typeName, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi, type ApiPin, type PinType, type Shade, type ShownPin } from '../pins';
+import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedText, typeName, dimReason, fromApi, hasVisibleRoute, pinName, snap, sortPins, toApi, type ApiPin, type PinType, type Shade, type ShownPin } from '../pins';
 
 import { distanceUnit, formatDistance, formatElapsed } from '../lib/format';
 import { onLanguage } from '../lib/i18n';
@@ -18,7 +18,7 @@ import { createPlus, type PlusItem } from './plus';
 import { startMapMenu } from './mapmenu';
 
 export interface PinEditorEnv {
-  /** The pins slot: the tools and form go first, the view's list after them. */
+  /** The pins slot: the tools go first, the view's list after them. */
   readonly slot: HTMLElement;
   readonly view: PinsView;
   readonly data: WorkoutData;
@@ -80,15 +80,18 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   };
   // No positions (static per workout): no Add pin item at all, so the one-column box has no blank row.
   const plusItems = lat ? [...(env.items ?? []), addPin] : [...(env.items ?? [])];
-  /** Where an enabled item acts, in the units setting: "at 12.4 km", "12.4–13.1 km"; elapsed time without distance. */
-  const where = (): string => {
-    const r = selection.start() >= 0 ? [selection.start(), selection.end()] : [cursor.get() ?? -1];
-    if (r[0] < 0) return '';
+  /** A range or point in the units setting: "at 12.4 km", "12.4–13.1 km"; elapsed time without distance. */
+  const describe = (r: readonly number[]): string => {
     const dist = data.metrics.distance;
     const u = view.units.get();
     const km = !!dist && r.every((i) => Number.isFinite(dist[i]));
     const v = r.map((i) => (km ? formatDistance(dist![i], u) : formatElapsed(time[i] - time[0]))).join('–') + (km ? ' ' + distanceUnit(u) : '');
     return r.length > 1 ? v : t('whereAt', { v });
+  };
+  /** Where an enabled item acts. */
+  const where = (): string => {
+    const r = selection.start() >= 0 ? [selection.start(), selection.end()] : [cursor.get() ?? -1];
+    return r[0] < 0 ? '' : describe(r);
   };
   const plus = createPlus(doc, plusItems, where);
   tools.append(plus.group);
@@ -112,8 +115,9 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   // The same items on a mouse right-click of the route; both layouts, fullscreen included.
   if (mapSlot) startMapMenu({ host: mapSlot, cursor, selection, items: plusItems, where });
 
-  // ---- the form of the selected pin ----
-  const form = make('div', 'pin-form');
+  // ---- the dialog (UI-pin-dialog): one for add and edit, built on first use; nothing changes until OK ----
+  const form = make('form', 'pin-form');
+  form.id = 'wx-pin-form';
   const field = (input: HTMLElement): Text => {
     const l = form.appendChild(make('label', 'edit-field'));
     const text = l.appendChild(doc.createTextNode(''));
@@ -128,13 +132,15 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   const titleLabel = field(title);
   const note = make('textarea', '');
   note.maxLength = PIN_NOTE_MAX;
-  note.rows = 2;
+  note.rows = 3;
   const noteLabel = field(note);
-  const row = form.appendChild(make('div', 'edit-row'));
-  const move = row.appendChild(button(''));
-  const del = row.appendChild(button(''));
-  const done = row.appendChild(button(''));
-  slot.prepend(tools, form);
+  const placeLine = make('p', 'edit-small');
+  const del = button('');
+  del.classList.add('pin-del');
+  const ok = make('button', 'edit-save');
+  ok.setAttribute('form', form.id); // the actions sit outside the form: OK submits it (Enter in Title too)
+  const cancel = button('');
+  slot.prepend(tools);
   /** Every fixed text, again on a language change (F-54). */
   const label = (): void => {
     plus.label();
@@ -142,11 +148,9 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     typeLabel.data = t('pinType');
     titleLabel.data = t('pinTitle');
     noteLabel.data = t('pinNote');
-    move.textContent = t('movePin');
     del.textContent = t('deletePin');
-    done.textContent = t('donePin');
-    const k = view.selected();
-    if (k !== null) title.placeholder = typeName(list[k].type);
+    ok.textContent = t('ok');
+    cancel.textContent = t('cancel');
   };
   label();
 
@@ -162,19 +166,8 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     view.set(ps, keep);
     controls();
   };
-  const controls = (): void => {
-    const k = view.selected();
-    form.hidden = k === null;
-    if (k !== null) move.hidden = list[k].to !== undefined;
-    enable();
-  };
-  /** "+" needs a cursor or range, Move a usable spot; light enough for every cursor step (the
-   *  item states run only while the list is open). */
-  const enable = (): void => {
-    plus.refresh(selection.start() >= 0 || (cursor.get() ?? -1) >= 0);
-    const k = view.selected();
-    move.disabled = k === null || place(cursor.get() ?? -1) < 0;
-  };
+  /** "+" needs a cursor or range; light enough for every cursor step (the item states run only while the list is open). */
+  const controls = (): void => plus.refresh(selection.start() >= 0 || (cursor.get() ?? -1) >= 0);
   const say = (text: string): void => {
     msg.textContent = text;
   };
@@ -185,38 +178,17 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     render(keep);
   };
 
-  view.onselect((k) => {
-    if (k !== null) {
-      const p = list[k];
-      type.value = p.type;
-      title.value = p.title;
-      title.placeholder = typeName(p.type);
-      note.value = p.note;
-    }
-    controls();
+  // A tap on a row or marker selects the pin: the dialog opens; any close deselects, so the next tap opens it again.
+  view.onselect((k) => k !== null && void open(k));
+  view.onrow((li, k) => {
+    li.querySelector('.pin-note')?.remove(); // the list is read-only: no note under the row
+    const x = make('button', 'added-x-btn', '×');
+    x.type = 'button';
+    x.title = t('deletePin') + ': ' + pinName(list[k]);
+    x.setAttribute('aria-label', x.title);
+    x.addEventListener('click', () => (list.splice(k, 1), changed(null), focusRow(k)));
+    li.append(x);
   });
-  const edit = (f: (p: Pin) => void): void => {
-    const k = view.selected();
-    if (k === null) return;
-    f(list[k]);
-    env.onedit();
-    render(k);
-  };
-  type.addEventListener('change', () =>
-    edit((p) => {
-      p.type = type.value as PinType;
-      title.placeholder = typeName(p.type);
-    }),
-  );
-  title.addEventListener('input', () => edit((p) => (p.title = title.value)));
-  note.addEventListener('input', () => edit((p) => (p.note = note.value)));
-  del.addEventListener('click', () => {
-    const k = view.selected();
-    if (k === null) return;
-    list.splice(k, 1);
-    changed(null);
-  });
-  done.addEventListener('click', () => view.select(null));
 
   /** A sample snapped to the nearest one with a position (OQ-234); -1 when refused (PIN-7). */
   const place = (i: number): number => {
@@ -230,47 +202,79 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     return s.some((x) => x < 0) || (s.length > 1 && s[0] >= s[1]) ? null : (s as [number, number?]);
   };
   dock(); // after spot(): a flat "+" paints its items at once
-  /** OQ-273: the selected range as the section's ends, each snapped; refused as a point would be. */
-  const toSection = (p: Pin, a: number, b: number): void => {
-    const [sa, sb] = [place(a), place(b)];
-    if (sa < 0 || sb < 0 || sa >= sb) return say(t('pinRefused')), enable();
-    p.from = sa;
-    p.to = sb;
-    changed(list.indexOf(p));
+  selection.subscribe(controls);
+  cursor.subscribe(controls);
+  view.units.subscribe(controls); // the reasons' distances
+
+  // ---- the dialog: open, then OK (apply), Delete or any other close (no change) ----
+  /** After a delete or a re-render the opener is gone: the row now at `k`, else the heading, else "+" (as addedtable.ts). */
+  const focusRow = (k: number): void => {
+    const rows = slot.querySelectorAll<HTMLElement>('.pin-row');
+    const h = slot.querySelector<HTMLElement>('.pins-head');
+    h?.setAttribute('tabindex', '-1');
+    const items = [...plus.group.querySelectorAll<HTMLElement>('.plus-item')];
+    (rows[Math.min(k, rows.length - 1)] ?? h ?? (plus.button.hidden ? items[items.length - 1] : plus.button)).focus({ preventScroll: true });
   };
-  selection.subscribe((a, b) => {
-    const k = view.selected();
-    const p = k === null ? null : list[k];
-    if (p?.to !== undefined && a >= 0 && (a !== p.from || b !== p.to)) toSection(p, a, b);
-    else controls();
+  let sess: { p: Pin; k: number | null; from: Element | null; marker: boolean; result: 'ok' | 'del' | null } | null = null;
+  /** k: an existing pin; null: the new pin at `fresh`. */
+  const open = async (k: number | null, fresh?: Pin): Promise<void> => {
+    if (sess) return;
+    const p = k === null ? fresh! : list[k];
+    const act = doc.activeElement;
+    // the opener: a marker (focus returns to its replacement), a row, or for a new pin whatever the add came from
+    sess = { p, k, from: act, marker: !!act?.closest('.pin-mk'), result: null };
+    const s = sess;
+    const { openDialog } = await import('../dialog');
+    type.value = p.type;
+    title.value = p.title;
+    title.placeholder = typeName(p.type);
+    note.value = p.note;
+    placeLine.textContent = (k !== null && shown()[k].dim) || describe(p.to === undefined ? [p.from] : [p.from, p.to]);
+    del.hidden = k === null;
+    const d = openDialog(doc, 'pin-dlg', t(k === null ? 'addPin' : 'editPin'), [placeLine, form], slot, [del, ok, cancel]);
+    d.onkeydown = (e) => e.key === 'Escape' && e.stopPropagation(); // Esc closes this dialog only, not the fullscreen map
+    d.addEventListener('close', () => close(s), { once: true });
+    (k === null ? title : type).focus({ preventScroll: true });
+  };
+  type.addEventListener('change', () => (title.placeholder = typeName(type.value as PinType)));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (sess) sess.result = 'ok';
+    dlg().close();
   });
-  cursor.subscribe(enable);
-  view.units.subscribe(enable); // the reasons' distances
+  del.addEventListener('click', () => {
+    if (sess) sess.result = 'del';
+    dlg().close();
+  });
+  cancel.addEventListener('click', () => dlg().close());
+  const dlg = (): HTMLDialogElement => ok.closest('dialog')!;
+  const close = ({ p, k, from, marker, result }: NonNullable<typeof sess>): void => {
+    sess = null;
+    if (result === 'ok') {
+      Object.assign(p, { type: type.value, title: title.value, note: note.value });
+      if (k === null) list.push(p);
+      changed(null);
+    } else if (result === 'del') {
+      list.splice(k!, 1);
+      changed(null);
+    }
+    view.select(null); // a section's range stays selected
+    if (result === 'del') return focusRow(k!);
+    const at = list.indexOf(p);
+    const back = at < 0 ? null : (marker ? doc.querySelector<HTMLElement>(`.pin-mk[data-pin="${at}"]`) : doc.querySelector<HTMLElement>(`.pin-item[data-pin="${at}"] .pin-row`)) ?? null;
+    // a new pin: the "+" (two columns), "+ Pin" (one column) or, for the right-click, the map the menu returned focus to
+    const items = [...plus.group.querySelectorAll<HTMLElement>('.plus-item')];
+    const add = !from || from === doc.body || plus.group.contains(from) || !from.isConnected ? (plus.button.hidden ? items[items.length - 1] : plus.button) : (from as HTMLElement);
+    (k === null ? add : back ?? (from?.isConnected ? (from as HTMLElement) : add)).focus({ preventScroll: true });
+  };
 
   // ---- placing: at the selected point or range (OQ-272, revised 21 Nov 2026); no waiting mode ----
   const placePin = (): void => {
     const sp = spot();
     if (!sp) return;
     say('');
-    const p: Pin = { type: 'point_of_interest', title: '', note: '', from: sp[0], ...(sp[1] !== undefined && { to: sp[1] }) };
-    list.push(p);
-    changed(list.indexOf(p));
-    view.select(list.indexOf(p));
-    // The form is under the charts in two columns: bring it (and the list) into view, then the Title.
-    const calm = doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    form.scrollIntoView?.({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
-    title.focus({ preventScroll: true });
+    void open(null, { type: 'point_of_interest', title: '', note: '', from: sp[0], ...(sp[1] !== undefined && { to: sp[1] }) });
   };
-  move.addEventListener('click', () => {
-    const k = view.selected();
-    const s = place(cursor.get() ?? -1);
-    if (k === null || s < 0) return;
-    say('');
-    const p = list[k];
-    p.from = s;
-    changed(list.indexOf(p));
-    view.select(list.indexOf(p));
-  });
 
   render(null);
   onLanguage(() => {

@@ -14,7 +14,6 @@ import { formatElapsed } from '../lib/format';
 import { en as editTexts } from './texts';
 import { en as errorTexts } from '../lib/errors/texts';
 
-const PIN_REFUSED = editTexts.pinRefused;
 import { resetStubLog, stubLog } from '../page/testing/stub-log';
 import { startEdit } from './start.svelte';
 import editHtml from '../../edit.html?raw';
@@ -248,7 +247,7 @@ const patches = (): Record<string, unknown>[] => calls.filter((c) => c.init.meth
 /** The map is ready: its control stacks are #map-slot here, so a "+" control is in the document (no real MapLibre). */
 const controlPos: string[] = [];
 const mapReady = (): void => {
-  const handle = { setScheme() {}, setHidden() {}, marker: () => () => {}, marks() {}, laps() {}, control: (el: HTMLElement, pos?: string) => (controlPos.push(pos ?? ''), document.getElementById('map-slot')!.append(el)), sampleAt: () => -1, destroy() {} };
+  const handle = { setScheme() {}, setHidden() {}, marker: (el: HTMLElement) => (document.getElementById('map-slot')!.append(el), () => el.remove()), marks() {}, laps() {}, control: (el: HTMLElement, pos?: string) => (controlPos.push(pos ?? ''), document.getElementById('map-slot')!.append(el)), sampleAt: () => -1, destroy() {} };
   (stubLog.routeMap[0] as unknown as { onmapready(h: typeof handle): void } | undefined)?.onmapready(handle);
 };
 
@@ -1733,7 +1732,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
   const at = (i: number): string => new Date((startS + data.time[i]) * 1000).toISOString().slice(0, 19) + 'Z';
   const pin = (i: number, title: string) => ({ type: 'danger' as const, title, note: '', start_at: at(i), end_at: null });
   const rowTexts = (): string[] => [...document.querySelectorAll('.pin-row')].map((r) => r.textContent!);
-  const button = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.pin-tools button, .wx-addpin button, .pin-form button')].find((b) => b.textContent === text)!;
+  const button = (text: string): HTMLButtonElement => [...document.querySelectorAll<HTMLButtonElement>('.pin-tools button, .wx-addpin button, dialog.pin-dlg button')].find((b) => b.textContent === text)!;
   /** F-65 AL-9: "+" opened (when it can be), then the item's disabled state; "+" disabled counts as off. */
   const plusButton = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>('.plus-button')!;
   const off = (text: string): boolean => {
@@ -1742,6 +1741,29 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     if (plus.getAttribute('aria-expanded') !== 'true') plus.click();
     return button(text).getAttribute('aria-disabled') === 'true';
   };
+  // jsdom has no modal dialogs: the open state and the close event are all the editor relies on.
+  beforeEach(() => {
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+      if (!this.open) return;
+      this.open = false;
+      this.dispatchEvent(new Event('close'));
+    };
+  });
+  const dlg = (): HTMLDialogElement => document.querySelector<HTMLDialogElement>('dialog.pin-dlg')!;
+  const dlgOpen = async (): Promise<HTMLDialogElement> => {
+    await vi.waitFor(() => expect(dlg()?.open).toBe(true));
+    return dlg();
+  };
+  const field = (name: 'select' | 'input' | 'textarea') => dlg().querySelector<HTMLInputElement>(name)!;
+  const fill = (el: HTMLInputElement, v: string): void => {
+    el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  const submit = (): void => void dlg().querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
+  const dlgButton = (text: string): HTMLButtonElement => [...dlg().querySelectorAll('button')].find((b) => b.textContent === text)!;
   async function start(): Promise<void> {
     await open();
     stubLog.chartStack[0].onready?.();
@@ -1763,15 +1785,17 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await pick(20); // in the hidden start radius: refused, nothing placed
     expect(off('Add pin')).toBe(true);
     button('Add pin').click();
+    expect(dlg()).toBeNull();
     expect(rowTexts()).toHaveLength(3);
     await pick(2000);
     expect(off('Add pin')).toBe(false);
     button('Add pin').click();
+    await dlgOpen();
+    expect(rowTexts()).toHaveLength(3); // nothing until OK
+    fill(field('input'), '<b>new</b>');
+    submit();
+    expect(dlg().open).toBe(false);
     expect(rowTexts()).toHaveLength(4);
-    const title = document.querySelector<HTMLInputElement>('.pin-form input:not([type])')!;
-    expect(document.querySelector<HTMLElement>('.pin-form')!.hidden).toBe(false);
-    title.value = '<b>new</b>';
-    title.dispatchEvent(new Event('input', { bubbles: true }));
     expect(rowTexts()[2]).toMatch(/^<b>new<\/b>/);
     expect(document.querySelector('.pin-list b')).toBeNull();
     await save();
@@ -1800,7 +1824,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(rowTexts()[0]).toMatch(/Hidden by the start/);
   });
 
-  it('Add pin over a range makes a section; a new range moves its ends; a hidden end is refused and nothing changes (AC 34)', async () => {
+  it('Add pin over a range makes a section once OK; a range with a hidden end offers no Add pin (AC 34, PIN-8)', async () => {
     settings = fresh({ ...ON, pins: [] });
     await start();
     const sel = stubLog.chartStack[0].selection!;
@@ -1811,14 +1835,14 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     };
     await range(2000, 3000);
     button('Add pin').click();
-    expect(rowTexts()[0]).toMatch(/–/);
-    await range(2500, 3500);
+    await dlgOpen();
+    expect(dlg().querySelector('.edit-small')!.textContent).toMatch(/^[\d.]+–[\d.]+ (mi|km)$/);
+    submit();
     expect(rowTexts()[0]).toMatch(/–/);
     await range(2600, N - 5); // the end is in the hidden end radius
-    expect(document.querySelector('.pin-tools .edit-status')?.textContent).toBe(PIN_REFUSED);
     expect(off('Add pin')).toBe(true);
     await save();
-    expect(patches()).toEqual([{ pins: [{ ...pin(2500, ''), type: 'point_of_interest', end_at: at(3500) }] }]); // still 2500 to 3500
+    expect(patches()).toEqual([{ pins: [{ ...pin(2000, ''), type: 'point_of_interest', end_at: at(3000) }] }]);
   });
 
   it('PN-12, AL-9: in the two-column layout "+" with Add pin and its reason docks on the map slot, one column keeps them in the tools row', async () => {
@@ -1859,37 +1883,40 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect(whys.every((n) => n.isConnected)).toBe(true);
   });
 
-  it('PN-12: Add pin brings the form into view and focuses its Title (smooth, none under reduced motion); a point or range names where it acts', async () => {
-    const scroll = vi.fn();
-    (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView = scroll;
-    let calm = false;
-    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('reduced-motion') ? calm : true, addEventListener() {}, removeEventListener() {} }));
-    try {
-      settings = fresh({ ...ON, pins: [] });
-      await start();
-      await pick(2000);
-      const sel = stubLog.chartStack[0].selection!;
-      plusButton().click();
-      expect(why()).toMatch(/^at [\d.]+ (mi|km)$/);
-      sel.set(2000, 3000);
-      frames.splice(0).forEach((f) => f(0));
-      await settle();
-      expect(why()).toMatch(/^[\d.]+–[\d.]+ (mi|km)$/);
-      sel.clear();
-      frames.splice(0).forEach((f) => f(0));
-      await settle();
-      button('Add pin').click();
-      expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'smooth' });
-      expect(document.activeElement).toBe(document.querySelector('.pin-form input:not([type])'));
-      calm = true;
-      button('Add pin').click(); // twin: refused, nothing moves
-      await pick(2500);
-      plusButton().click();
-      button('Add pin').click();
-      expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest', behavior: 'auto' });
-    } finally {
-      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
-    }
+  it('PN-12: "+" names where it acts; Add pin opens the dialog on Title, OK makes the pin, Cancel makes none, focus returns to "+"', async () => {
+    settings = fresh({ ...ON, pins: [] });
+    await start();
+    await pick(2000);
+    const sel = stubLog.chartStack[0].selection!;
+    plusButton().click();
+    expect(why()).toMatch(/^at [\d.]+ (mi|km)$/);
+    sel.set(2000, 3000);
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    expect(why()).toMatch(/^[\d.]+–[\d.]+ (mi|km)$/);
+    sel.clear();
+    frames.splice(0).forEach((f) => f(0));
+    await settle();
+    button('Add pin').click();
+    await dlgOpen();
+    expect(dlg().querySelector('h2')!.textContent).toBe('Add pin');
+    expect(dlg().querySelector('.edit-small')!.textContent).toMatch(/^at [\d.]+ (mi|km)$/);
+    expect(document.activeElement).toBe(field('input'));
+    expect(dlgButton('Delete pin').hidden).toBe(true);
+    expect(field('input').placeholder).toBe('Point of interest');
+    dlgButton('Cancel').click();
+    expect(dlg().open).toBe(false);
+    expect(rowTexts()).toHaveLength(0);
+    expect(document.activeElement).toBe(plusButton());
+    plusButton().click();
+    button('Add pin').click();
+    await dlgOpen();
+    field('select').value = 'danger';
+    field('select').dispatchEvent(new Event('change'));
+    expect(field('input').placeholder).toBe('Danger');
+    submit();
+    expect(rowTexts()).toHaveLength(1);
+    expect(document.activeElement).toBe(plusButton());
   });
 
   it('one column: the items are disabled, as "+" is, until a cursor or range is set', async () => {
@@ -1903,7 +1930,7 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
 
   const why = (): string => (button('Add pin').nextElementSibling as HTMLElement).textContent!.trim();
 
-  it('the button and its visible reason follow radius and trim changes; a twin is refused; Move refuses a hidden spot (r3-2 to r3-4)', async () => {
+  it('the button and its visible reason follow radius and trim changes; a twin is refused (r3-2 to r3-4)', async () => {
     settings = fresh({ ...ON, pins: [] });
     await start();
     expect([off('Add pin'), why()]).toEqual([true, '']);
@@ -1923,25 +1950,105 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     await settle();
     expect(off('Add pin')).toBe(false);
     button('Add pin').click();
+    await dlgOpen();
+    submit();
     expect(rowTexts()).toHaveLength(1);
-    expect([off('Add pin'), why()]).toEqual([true, 'Already a pin here']); // selected pin: no twin
+    expect([off('Add pin'), why()]).toEqual([true, 'Already a pin here']);
     button('Add pin').click();
+    expect(dlg().open).toBe(false);
     expect(rowTexts()).toHaveLength(1);
-    await pick(30); // Move into the hidden start: disabled, and a click changes nothing
-    expect(button('Move').disabled).toBe(true);
-    button('Move').click();
     await save();
     expect(patches().at(-1)).toEqual({ pins: [{ ...pin(2000, ''), type: 'point_of_interest' }] });
   });
 
-  it('Move puts a point pin at the cursor; disabled without a usable cursor', async () => {
+  const row0 = (): HTMLButtonElement => document.querySelector<HTMLButtonElement>('.pin-row')!;
+  const open0 = async (): Promise<void> => {
+    row0().focus();
+    row0().click();
+    await dlgOpen();
+  };
+
+  it('edit via a row: filled in and selected while open; Cancel, Esc and the backdrop change nothing and deselect; OK applies; focus returns to the row (PIN-1, PIN-5)', async () => {
+    settings = fresh({ ...ON, pins: [{ ...pin(1000, 'mid'), note: 'n1' }] });
+    await start();
+    expect(document.querySelector('.pin-item .pin-note')).toBeNull(); // the list is read-only
+    await open0();
+    expect(dlg().querySelector('h2')!.textContent).toBe('Edit pin');
+    expect([field('select').value, field('input').value, dlg().querySelector('textarea')!.value]).toEqual(['danger', 'mid', 'n1']);
+    expect(document.activeElement).toBe(field('select'));
+    expect(document.querySelector('.pin-item.sel')).not.toBeNull();
+    fill(field('input'), 'changed');
+    dlgButton('Cancel').click();
+    expect(document.querySelector('.pin-item.sel')).toBeNull();
+    expect(rowTexts()[0]).toMatch(/^mid/);
+    expect(document.activeElement).toBe(row0());
+    await open0(); // the tap opens again: no toggle
+    expect(field('input').value).toBe('mid'); // the draft of the last open is gone
+    dlg().dispatchEvent(new Event('cancel')); // Esc and the back gesture end in close()
+    dlg().close();
+    expect(rowTexts()[0]).toMatch(/^mid/);
+    await open0();
+    dlg().dispatchEvent(new Event('pointerdown'));
+    dlg().click(); // the backdrop
+    expect(dlg().open).toBe(false);
+    expect(rowTexts()[0]).toMatch(/^mid/);
+    await open0();
+    fill(field('input'), 'changed');
+    submit();
+    expect(rowTexts()[0]).toMatch(/^changed/);
+    expect(document.activeElement).toBe(row0());
+    await save();
+    expect(patches()).toEqual([{ pins: [{ ...pin(1000, 'changed'), note: 'n1' }] }]);
+  });
+
+  it('a press that starts inside the dialog and ends on the backdrop does not close it', async () => {
     settings = fresh({ ...ON, pins: [pin(1000, 'mid')] });
     await start();
-    document.querySelector<HTMLButtonElement>('.pin-row')!.click();
-    await pick(1500);
-    button('Move').click();
+    await open0();
+    field('input').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    dlg().click(); // the drag ended on the backdrop
+    expect(dlg().open).toBe(true);
+    dlg().dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    dlg().click();
+    expect(dlg().open).toBe(false);
+  });
+
+  it('edit via a map marker: focus returns to the marker; Esc in the dialog does not reach the fullscreen map', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'mid')] });
+    await start();
+    const mk = document.querySelector<HTMLButtonElement>('.pin-mk')!;
+    mk.focus();
+    mk.click();
+    await dlgOpen();
+    const esc: string[] = [];
+    const seen = (e: KeyboardEvent): number => esc.push(e.key);
+    document.addEventListener('keydown', seen);
+    dlg().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    document.removeEventListener('keydown', seen);
+    expect(esc).toEqual([]);
+    submit();
+    const now = document.querySelector('.pin-mk');
+    expect(now).not.toBe(mk); // OK rebuilt the marker: focus is on its replacement
+    expect(document.activeElement).toBe(now);
+  });
+
+  it('Delete in the dialog and the row ×: no confirmation; focus goes to the row now at the index, else the heading', async () => {
+    settings = fresh({ ...ON, pins: [pin(1000, 'a'), pin(1500, 'b'), pin(2000, 'c')] });
+    await start();
+    const x = (): HTMLButtonElement[] => [...document.querySelectorAll<HTMLButtonElement>('.pin-item .added-x-btn')];
+    expect(x().map((b) => b.title)).toEqual(['Delete pin: a', 'Delete pin: b', 'Delete pin: c']);
+    x()[1].click();
+    expect(rowTexts().map((r) => r[0])).toEqual(['a', 'c']);
+    expect(document.activeElement).toBe(document.querySelectorAll('.pin-row')[1]);
+    await open0();
+    dlgButton('Delete pin').click();
+    expect(rowTexts().map((r) => r[0])).toEqual(['c']);
+    expect(document.activeElement).toBe(row0());
+    x()[0].click();
+    expect(rowTexts()).toHaveLength(0);
+    expect(document.activeElement).toBe(document.querySelector('.pins-head'));
     await save();
-    expect(patches()).toEqual([{ pins: [pin(1500, 'mid')] }]);
+    expect(patches()).toEqual([{ pins: [] }]);
   });
 });
 

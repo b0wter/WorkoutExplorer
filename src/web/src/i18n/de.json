@@ -119,10 +119,9 @@
   "pinType": "Art",
   "pinTitle": "Titel",
   "pinNote": "Notiz",
-  "movePin": "Verschieben",
   "deletePin": "Pin löschen",
-  "donePin": "Fertig",
-  "pinRefused": "Dieser Pin liegt in einem ausgeblendeten oder gekürzten Teil der Route.",
+  "editPin": "Pin bearbeiten",
+  "ok": "OK",
   "pinsRemoved": {
    "one": "{n} Pin im gekürzten Teil entfernt.",
    "other": "{n} Pins im gekürzten Teil entfernt."

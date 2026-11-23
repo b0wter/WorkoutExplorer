@@ -8,20 +8,22 @@ import { t } from './texts';
 
 /** Opens the dialog of class `cls` with a title and the given lines, then a Close button. With an
  *  `anchor`, at 1024 px and wider (F-13 D-17), its top-right corner sits on the anchor's, inside
- *  the viewport (OQ-258); narrower, centred. */
-export function openDialog(doc: Document, cls: string, title: string, lines: readonly Node[], anchor?: Element): HTMLDialogElement {
+ *  the viewport (OQ-258); narrower, centred. `actions` replace the Close button (the pin dialog). */
+export function openDialog(doc: Document, cls: string, title: string, lines: readonly Node[], anchor?: Element, actions?: readonly Node[]): HTMLDialogElement {
   const d = doc.querySelector<HTMLDialogElement>('dialog.' + cls) ?? build(doc, cls);
   const h = doc.createElement('h2');
   h.id = cls + '-title';
   h.textContent = title;
-  const close = doc.createElement('button');
-  close.type = 'button';
-  close.textContent = t('closeDialog');
-  close.addEventListener('click', () => d.close());
-  const actions = doc.createElement('p');
-  actions.className = 'dlg-actions';
-  actions.appendChild(close);
-  d.firstElementChild!.replaceChildren(h, ...lines, actions);
+  const bar = doc.createElement('p');
+  bar.className = 'dlg-actions';
+  if (actions) bar.append(...actions);
+  else {
+    const close = bar.appendChild(doc.createElement('button'));
+    close.type = 'button';
+    close.textContent = t('closeDialog');
+    close.addEventListener('click', () => d.close());
+  }
+  d.firstElementChild!.replaceChildren(h, ...lines, bar);
   d.removeAttribute('style');
   d.showModal();
   const win = doc.defaultView;
@@ -41,9 +43,13 @@ function build(doc: Document, cls: string): HTMLDialogElement {
   const body = doc.createElement('div');
   body.className = 'dlg-body';
   d.appendChild(body);
-  // The dialog has no padding, so a click on the dialog itself is a click on the backdrop.
+  // The dialog has no padding, so a click on the dialog itself is a click on the backdrop. Only when the press began
+  // there too: a text selection dragged out of a field ends on the backdrop and must not close.
+  let down: EventTarget | null = d;
+  d.addEventListener('pointerdown', (e) => (down = e.target));
   d.addEventListener('click', (e) => {
-    if (e.target === d) d.close();
+    if (e.target === d && down === d) d.close();
+    down = d;
   });
   doc.body.appendChild(d);
   return d;

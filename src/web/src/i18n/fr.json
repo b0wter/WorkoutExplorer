@@ -119,10 +119,9 @@
   "pinType": "Type",
   "pinTitle": "Titre",
   "pinNote": "Note",
-  "movePin": "Déplacer",
   "deletePin": "Supprimer le repère",
-  "donePin": "Terminé",
-  "pinRefused": "Ce repère est dans une partie masquée ou rognée de l'itinéraire.",
+  "editPin": "Modifier le repère",
+  "ok": "OK",
   "pinsRemoved": {
    "one": "{n} repère supprimé dans la partie rognée.",
    "other": "{n} repères supprimés dans la partie rognée."
