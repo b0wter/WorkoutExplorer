@@ -1823,6 +1823,21 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     listeners.forEach((f) => f({ matches }));
     expect(add.closest('.pin-tools')).not.toBeNull();
     expect(document.querySelector('.pin-tools')?.classList.contains('on-map')).toBe(false);
+    // one column: no "+", both items open side by side; back in two columns the "+" returns closed
+    expect([add.hidden, document.querySelector<HTMLElement>('.plus-menu')!.hidden]).toEqual([true, false]);
+    expect([...document.querySelectorAll<HTMLElement>('.plus-item')].map((b) => b.textContent)).toEqual(['Add lap', 'Add pin']);
+    matches = true;
+    listeners.forEach((f) => f({ matches }));
+    expect([add.hidden, add.getAttribute('aria-expanded'), document.querySelector<HTMLElement>('.plus-menu')!.hidden]).toEqual([false, 'false', true]);
+  });
+
+  it('one column: the items are disabled, as "+" is, until a cursor or range is set', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
+    settings = fresh({ ...ON, pins: [] });
+    await start();
+    expect([...document.querySelectorAll<HTMLButtonElement>('.plus-item')].map((b) => b.disabled)).toEqual([true, true]);
+    await pick(2000);
+    expect([...document.querySelectorAll<HTMLButtonElement>('.plus-item')].map((b) => b.disabled)).toEqual([false, false]);
   });
 
   const why = (): string => (button('Add pin').nextElementSibling as HTMLElement).textContent!.trim();

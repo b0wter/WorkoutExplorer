@@ -19,9 +19,12 @@ export interface Plus {
   /** `usable`: a cursor or range is set ("+" is disabled without); open item states follow. */
   refresh(usable: boolean): void;
   label(): void;
+  /** One column: no "+", the items sit open in a row. Two columns: the "+" disclosure. */
+  setFlat(flat: boolean): void;
 }
 
 let seq = 0;
+// Items are always open and "+" is hidden in flat mode (the one-column layout).
 
 export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string): HTMLElementTagNameMap[K] => {
@@ -29,6 +32,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
     e.className = cls;
     return e;
   };
+  let flat = false;
   const group = make('div', 'wx-plus');
   const button = group.appendChild(make('button', 'edit-button plus-button'));
   button.type = 'button';
@@ -46,7 +50,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       if (item.state().off) return paint(); // the state now, not the one painted on open
       close(false);
       item.run();
-      button.focus(); // the list hid the focused item: back to "+", as Esc does
+      if (!flat) button.focus(); // the list hid the focused item: back to "+", as Esc does
     });
     return { item, row, b, why };
   });
@@ -55,6 +59,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       const s = item.state();
       row.hidden = !!s.hidden;
       b.setAttribute('aria-disabled', String(s.off));
+      b.disabled = flat && button.disabled; // flat: no cursor or range, as the disabled "+"
       why.textContent = s.off ? s.why : '';
       if (why.textContent) b.setAttribute('aria-describedby', why.id);
       else b.removeAttribute('aria-describedby');
@@ -70,7 +75,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
     doc.addEventListener('pointerdown', outside, true);
   };
   function close(focus: boolean): void {
-    if (menu.hidden) return;
+    if (flat || menu.hidden) return;
     menu.hidden = true;
     button.setAttribute('aria-expanded', 'false');
     doc.removeEventListener('pointerdown', outside, true);
@@ -78,7 +83,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   }
   button.addEventListener('click', () => (menu.hidden ? !button.disabled && open() : close(false)));
   group.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !menu.hidden) {
+    if (e.key === 'Escape' && !flat && !menu.hidden) {
       e.stopPropagation(); // not the fullscreen map's Esc
       close(true);
     }
@@ -100,8 +105,17 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
     refresh: (usable) => {
       button.disabled = !usable;
       if (!usable) close(false);
-      else if (!menu.hidden) paint();
+      if (!menu.hidden) paint();
     },
     label,
+    setFlat: (f) => {
+      doc.removeEventListener('pointerdown', outside, true);
+      flat = f;
+      group.classList.toggle('flat', f);
+      button.hidden = f;
+      button.setAttribute('aria-expanded', 'false');
+      menu.hidden = !f;
+      if (f) paint();
+    },
   };
 }

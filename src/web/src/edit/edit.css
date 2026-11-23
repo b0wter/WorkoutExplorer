@@ -351,28 +351,59 @@
   z-index: 5;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
-  min-width: 180px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .wx-addpin .plus-menu {
   top: auto;
   bottom: calc(100% + 4px);
 }
 .plus-menu[hidden],
+.plus-button[hidden],
 .plus-row[hidden],
 .plus-row .edit-small:empty {
   display: none;
+}
+/* Items float without a box; they rise and fade in on open (instant under reduced motion). */
+.plus-row {
+  animation: plus-in 150ms ease-out backwards;
+}
+.plus-row:nth-child(2) {
+  animation-delay: 40ms;
+}
+@keyframes plus-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plus-row {
+    animation: none;
+  }
+}
+.plus-row .edit-small {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg);
 }
 .plus-row {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+}
+/* One column: no "+"; the items sit side by side under the map, wrapping only when too narrow. */
+.wx-plus.flat {
+  display: block;
+}
+.wx-plus.flat .plus-menu {
+  position: static;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.wx-plus.flat .plus-row {
+  animation: none;
 }
 .plus-item[aria-disabled='true'] {
   opacity: 0.6;

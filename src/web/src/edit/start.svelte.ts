@@ -204,7 +204,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       const xs = host.querySelectorAll<HTMLElement>('.lap-x-btn');
       const h = host.querySelector<HTMLElement>('section.laps h2');
       h?.setAttribute('tabindex', '-1');
-      (xs[Math.min(refocus, xs.length - 1)] ?? (h?.closest('[hidden]') ? null : h) ?? host.querySelector<HTMLElement>('.plus-button'))?.focus();
+      (xs[Math.min(refocus, xs.length - 1)] ?? (h?.closest('[hidden]') ? null : h) ?? host.querySelector<HTMLElement>('.plus-button:not([hidden]), .plus-item'))?.focus();
       refocus = -1;
     }
     const v = pinsView;

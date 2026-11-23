@@ -85,14 +85,14 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
   const onMap = mapSlot ? make('div', 'wx-addpin') : null;
   const mq = doc.defaultView?.matchMedia?.(TWO_COLUMN_QUERY);
   const dock = (): void => {
-    const map = onMap !== null && !!mq?.matches;
+    const map = onMap !== null && (mq?.matches ?? true); // no matchMedia (tests): two columns
     if (map) {
       onMap.append(plus.group);
       if (!onMap.isConnected) mapSlot!.append(onMap);
     } else tools.prepend(plus.group);
+    plus.setFlat(!map);
     tools.classList.toggle('on-map', map);
   };
-  dock();
   mq?.addEventListener?.('change', dock);
 
   // ---- the form of the selected pin ----
@@ -212,6 +212,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const s = r.map(place);
     return s.some((x) => x < 0) || (s.length > 1 && s[0] >= s[1]) ? null : (s as [number, number?]);
   };
+  dock(); // after spot(): a flat "+" paints its items at once
   /** OQ-273: the selected range as the section's ends, each snapped; refused as a point would be. */
   const toSection = (p: Pin, a: number, b: number): void => {
     const [sa, sb] = [place(a), place(b)];
