@@ -20,7 +20,7 @@
 5. **Never shift layout.** Menus are overlays. Reserved lines keep their height only for content that can appear in this visit.
 6. **A disabled item stays readable.** `aria-disabled`, opacity 0.6, the reason on the same line or right under it.
 7. **Sizes.** 32 px with a fine pointer, at least 44 px with `(pointer: coarse)`, add controls and the lap row × included.
-8. **Show the result where the eye is.** After Add pin the pin form scrolls into view and its Title is focused. After Add lap nothing moves; the map's lap marker and the new row are the feedback.
+8. **Show the result where the eye is.** Add pin opens the pin dialog: see [UI-pin-dialog.md](UI-pin-dialog.md). After Add lap nothing moves; the map's lap marker and the new row are the feedback.
 9. **Motion.** 150 ms ease-out rise and fade, none under `prefers-reduced-motion`.
 
 ## Below the map (edit page, one column order)
