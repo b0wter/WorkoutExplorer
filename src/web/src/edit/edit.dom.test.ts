@@ -1831,19 +1831,19 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect([add.hidden, add.getAttribute('aria-expanded'), document.querySelector<HTMLElement>('.plus-menu')!.hidden]).toEqual([false, 'false', true]);
   });
 
-  it('one column: one reserved reason line under the buttons, both reasons joined, items keep their own reason for assistive tech', async () => {
+  it('one column: two reserved reason lines under the buttons, one per item, items keep their own reason for assistive tech', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
     settings = fresh({ ...ON, pins: [] });
     await start();
-    const note = document.querySelector<HTMLElement>('.plus-note')!;
-    expect(note.hidden).toBe(false);
-    expect(note.textContent).toBe(`${editTexts.lapHere} · ${editTexts.pinHiddenSpot}`);
-    expect(note.title).toBe(note.textContent);
+    const notes = [...document.querySelectorAll<HTMLElement>('.plus-note')];
+    expect(document.querySelector<HTMLElement>('.plus-notes')!.hidden).toBe(false);
+    expect(notes.map((n) => n.textContent)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]); // one line per item, in order
+    expect(notes.map((n) => n.title)).toEqual([editTexts.lapHere, editTexts.pinHiddenSpot]);
     const add = document.querySelector<HTMLButtonElement>('.plus-item')!;
     expect(document.getElementById(add.getAttribute('aria-describedby')!)!.textContent).toBe(editTexts.lapHere);
     await pick(2000);
-    expect(note.textContent).toBe(''); // still in the DOM: the line is reserved
-    expect(note.isConnected).toBe(true);
+    expect(notes.map((n) => n.textContent)).toEqual(['', '']); // still in the DOM: the lines are reserved
+    expect(notes.every((n) => n.isConnected)).toBe(true);
   });
 
   it('one column: the items are disabled, as "+" is, until a cursor or range is set', async () => {

@@ -40,9 +40,9 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   button.setAttribute('aria-expanded', 'false');
   const menu = group.appendChild(make('div', 'plus-menu'));
   menu.hidden = true;
-  // Flat mode: one reserved line under the buttons for the reasons (the per-item ones are hidden by CSS).
-  const note = group.appendChild(make('div', 'edit-small plus-note'));
-  note.hidden = true;
+  // Flat mode: one reserved line per item under the buttons, in item order (the per-item ones are hidden by CSS).
+  const notes = group.appendChild(make('div', 'plus-notes'));
+  notes.hidden = true;
   const rows = items.map((item) => {
     const row = menu.appendChild(make('div', 'plus-row'));
     const b = row.appendChild(make('button', 'edit-button plus-item'));
@@ -55,21 +55,20 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       item.run();
       if (!flat) button.focus(); // the list hid the focused item: back to "+", as Esc does
     });
-    return { item, row, b, why };
+    const note = notes.appendChild(make('div', 'edit-small plus-note'));
+    return { item, row, b, why, note };
   });
   const paint = (): void => {
-    const reasons: string[] = [];
-    for (const { item, row, b, why } of rows) {
+    for (const { item, row, b, why, note } of rows) {
       const s = item.state();
       row.hidden = !!s.hidden;
       b.setAttribute('aria-disabled', String(s.off));
       b.disabled = flat && button.disabled; // flat: no cursor or range, as the disabled "+"
       why.textContent = s.off ? s.why : '';
-      if (!s.hidden && why.textContent) reasons.push(why.textContent);
+      note.textContent = note.title = why.textContent; // a hidden item keeps its (empty) line: hiding toggles at runtime
       if (why.textContent) b.setAttribute('aria-describedby', why.id);
       else b.removeAttribute('aria-describedby');
     }
-    note.textContent = note.title = reasons.join(' · ');
   };
   const outside = (e: Event): void => {
     if (!group.contains(e.target as Node)) close(false);
@@ -121,7 +120,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       button.hidden = f;
       button.setAttribute('aria-expanded', 'false');
       menu.hidden = !f;
-      note.hidden = !f;
+      notes.hidden = !f;
       if (f) paint();
     },
   };
