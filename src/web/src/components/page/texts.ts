@@ -4,6 +4,7 @@ import { texts } from '../../lib/i18n';
 
 export const en = {
   copyLink: 'Copy link',
+  howto: 'How to use this page',
   summaryInfo: 'How these numbers are computed',
   privacyNotice: 'Parts of the route, such as the start and end, may be hidden for privacy. Totals include them.',
   routeHidden: 'The entire route has been hidden by the uploader.',

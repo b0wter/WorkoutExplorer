@@ -29,6 +29,7 @@
  },
  "components/page": {
   "copyLink": "Copiar enlace",
+  "howto": "Cómo usar esta página",
   "summaryInfo": "Cómo se calculan estas cifras",
   "privacyNotice": "Partes de la ruta, como el inicio y el final, pueden estar ocultas por privacidad. Los totales las incluyen.",
   "routeHidden": "Quien subió el entrenamiento ha ocultado toda la ruta.",
@@ -101,6 +102,8 @@
   "plus": "Añadir una vuelta o un marcador",
   "addLap": "Añadir vuelta",
   "addLapShort": "+ Vuelta",
+  "selectFirst": "Selecciona primero un punto o un rango",
+  "whereAt": "en {v}",
   "lapHere": "Ya hay un límite aquí",
   "lapTrimmed": "En la parte recortada",
   "lapMax": "Máx. 100 vueltas",
@@ -467,7 +470,6 @@
   "estimatedFtp": "Estimadas a partir de una potencia umbral de {v} W"
  },
  "markup/view": {
-  "howto": "Cómo usar esta página",
   "gpx": "Descargar ruta (GPX)"
  },
  "markup/upload": {

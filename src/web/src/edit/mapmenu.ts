@@ -5,7 +5,7 @@
 
 import type { CursorStore } from '../lib/cursor';
 import type { SelectionStore } from '../lib/selection';
-import type { PlusItem } from './plus';
+import { reasonOf, type PlusItem } from './plus';
 
 export interface MapMenuEnv {
   /** The element holding the map (listener and positioning parent). */
@@ -13,10 +13,12 @@ export interface MapMenuEnv {
   readonly cursor: CursorStore;
   readonly selection: SelectionStore;
   readonly items: readonly PlusItem[];
+  /** The target of an enabled item ("at 12.4 km"), as the "+" shows it. */
+  readonly where: () => string;
 }
 
 export function startMapMenu(env: MapMenuEnv): void {
-  const { host, cursor, selection, items } = env;
+  const { host, cursor, selection, items, where } = env;
   const doc = host.ownerDocument;
   let pointer = '';
   let menu: HTMLElement | null = null;
@@ -51,19 +53,18 @@ export function startMapMenu(env: MapMenuEnv): void {
       if (s.hidden) continue;
       const b = doc.createElement('button');
       b.type = 'button';
-      b.className = 'edit-button plus-item';
+      b.className = 'map-menu-item';
       b.setAttribute('role', 'menuitem');
       b.setAttribute('aria-disabled', String(s.off || !usable));
-      b.textContent = item.label();
-      m.append(b);
-      if (s.off && s.why) {
+      b.append(doc.createTextNode(item.label()));
+      const reason = reasonOf(s, usable, where);
+      if (reason) {
         const why = doc.createElement('span');
-        why.className = 'edit-small';
-        why.id = 'wx-map-menu-why-' + buttons.length;
-        why.textContent = s.why;
-        b.setAttribute('aria-describedby', why.id);
-        m.append(why);
+        why.className = 'map-menu-why';
+        why.textContent = reason;
+        b.append(why);
       }
+      m.append(b);
       b.addEventListener('click', () => {
         if (!usable || item.state().off) return;
         close(true);
@@ -82,8 +83,10 @@ export function startMapMenu(env: MapMenuEnv): void {
         buttons[(at + (k.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length].focus();
       }
     });
-    const r = host.getBoundingClientRect();
-    host.append(m);
+    // Inside the map box that goes fullscreen (the page is hidden then), else the host.
+    const box = target.closest<HTMLElement>('.route-map') ?? host;
+    const r = box.getBoundingClientRect();
+    box.append(m);
     // kept inside the map box
     m.style.left = Math.max(0, Math.min(e.clientX - r.left, r.width - m.offsetWidth)) + 'px';
     m.style.top = Math.max(0, Math.min(e.clientY - r.top, r.height - m.offsetHeight)) + 'px';

@@ -10,6 +10,7 @@ import type { PinsView } from '../pins';
 // with the owner chunk's dependency, instead of a third shared chunk in the viewing entry's preload list.
 import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedText, typeName, dimReason, fromApi, hasVisibleRoute, snap, sortPins, toApi, type ApiPin, type PinType, type Shade, type ShownPin } from '../pins';
 
+import { distanceUnit, formatDistance, formatElapsed } from '../lib/format';
 import { onLanguage } from '../lib/i18n';
 import { t } from './texts';
 import { TWO_COLUMN_QUERY } from '../page/splitter';
@@ -77,13 +78,24 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     },
     run: () => placePin(),
   };
-  const plusItems = [...(env.items ?? []), addPin];
-  const plus = createPlus(doc, plusItems);
+  // No positions (static per workout): no Add pin item at all, so the one-column box has no blank row.
+  const plusItems = lat ? [...(env.items ?? []), addPin] : [...(env.items ?? [])];
+  /** Where an enabled item acts, in the units setting: "at 12.4 km", "12.4–13.1 km"; elapsed time without distance. */
+  const where = (): string => {
+    const r = selection.start() >= 0 ? [selection.start(), selection.end()] : [cursor.get() ?? -1];
+    if (r[0] < 0) return '';
+    const dist = data.metrics.distance;
+    const u = view.units.get();
+    const km = !!dist && r.every((i) => Number.isFinite(dist[i]));
+    const v = r.map((i) => (km ? formatDistance(dist![i], u) : formatElapsed(time[i] - time[0]))).join('–') + (km ? ' ' + distanceUnit(u) : '');
+    return r.length > 1 ? v : t('whereAt', { v });
+  };
+  const plus = createPlus(doc, plusItems, where);
   tools.append(plus.group);
   const msg = tools.appendChild(make('span', 'edit-status'));
   msg.setAttribute('role', 'status');
-  // Two-column layout (the page's own switch): "+" sits on the map, bottom left (PN-12, AL-9);
-  // one column: in the tools row. Same elements, so name, focus order and texts are kept.
+  // Two-column layout (the page's own switch): "+" is a control of the map's bottom-left stack (PN-12,
+  // AL-9); one column: in the tools row. Same elements, so name, focus order and texts are kept.
   const mapSlot = doc.getElementById('map-slot');
   const onMap = mapSlot ? make('div', 'wx-addpin') : null;
   const mq = doc.defaultView?.matchMedia?.(TWO_COLUMN_QUERY);
@@ -91,14 +103,14 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const map = onMap !== null && (mq?.matches ?? true); // no matchMedia (tests): two columns
     if (map) {
       onMap.append(plus.group);
-      if (!onMap.isConnected) mapSlot!.append(onMap);
+      if (!onMapAdded) (onMapAdded = true), view.map((m) => m.control(onMap)); // empty (CSS: hidden) in one column
     } else tools.prepend(plus.group);
     plus.setFlat(!map);
-    tools.classList.toggle('on-map', map);
   };
+  let onMapAdded = false;
   mq?.addEventListener?.('change', dock);
   // The same items on a mouse right-click of the route; both layouts, fullscreen included.
-  if (mapSlot) startMapMenu({ host: mapSlot, cursor, selection, items: plusItems });
+  if (mapSlot) startMapMenu({ host: mapSlot, cursor, selection, items: plusItems, where });
 
   // ---- the form of the selected pin ----
   const form = make('div', 'pin-form');
@@ -233,6 +245,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     else controls();
   });
   cursor.subscribe(enable);
+  view.units.subscribe(enable); // the reasons' distances
 
   // ---- placing: at the selected point or range (OQ-272, revised 21 Nov 2026); no waiting mode ----
   const placePin = (): void => {
@@ -243,6 +256,10 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     list.push(p);
     changed(list.indexOf(p));
     view.select(list.indexOf(p));
+    // The form is under the charts in two columns: bring it (and the list) into view, then the Title.
+    const calm = doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    form.scrollIntoView?.({ block: 'nearest', behavior: calm ? 'auto' : 'smooth' });
+    title.focus({ preventScroll: true });
   };
   move.addEventListener('click', () => {
     const k = view.selected();
