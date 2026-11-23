@@ -24,6 +24,14 @@ The owner adds lap boundaries after upload. Viewers must see the resulting laps 
 - Two implementations of the split (Go, TypeScript), pinned by shared samples. The edit page may differ from the public page in a last shown digit (quantised `draft.bin`).
 - After a parser change a stored boundary may no longer be valid. The build skips it, and the owner's next Save drops it.
 
+## Addendum (23 Nov 2026, F-66 Remove auto-laps)
+
+[F-66](F-66-remove-auto-laps.md) adds a stored on/off setting, `remove_auto_laps` (schema v12). While it is on, auto-laps are merged into the next lap of the same leg **before** this ADR's merge, so "device laps" in items 2 and 4 means the laps after removal. The same three choices apply:
+
+- **Recomputed from the original on every build.** Only the flag is stored, never the removed boundaries, so turning it off restores the device laps exactly.
+- **In the data file, no format change.** Merged laps use existing triggers and stroke codes (`mixed`), so the version stays 7.
+- **On P-7's allow-list in either direction (in-place rebuild).** Turning the setting on drops device lap values from the public file, and that hides something in the literal sense. We accept this: lap values carry no position and no text, and they are aggregates of streams that stay public. P-7 exists to protect places and texts, and lap totals are neither. Restoring only republishes values that come from the original.
+
 ## Would choose differently if
 
 - Boundaries gain text (names, types): then the item 3 argument fails, so they come off the allow-list.

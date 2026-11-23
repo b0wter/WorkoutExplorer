@@ -1,0 +1,59 @@
+# F-66 Remove auto-laps: architecture
+
+- **Version:** 0.1
+- **Status:** accepted (23 Nov 2026). Normal lane, QA effort medium. Product decisions OQ-306 to OQ-314 taken (feature file); no open questions
+- **Feature:** [`features/F-66-remove-auto-laps.md`](../features/F-66-remove-auto-laps.md)
+- **Requirements:** AP-8; AP-7, AP-12, AP-13, AP-19, AP-20, AP-23, UP-4, UP-6, UP-7, AC-4, AC-5, SH-4, DS-6, INF-1; NFR Performance, NFR Reliability; invariants I-3, I-5
+- **Builds on:** [F-65](F-65-owner-added-laps.md) AL-2, AL-3, AL-5 to AL-8 and [ADR-060](ADR-060-added-lap-boundaries-merged-into-the-data-file.md) (addendum of 23 Nov 2026 for this feature); [F-42](F-42-multisport-sections.md) MS-3; [F-64](F-64-laps-and-splits-per-multisport-leg.md) LL-2; [F-46](F-46-laps-and-splits.md) (trigger codes, splits only without laps); [F-48](F-48-pool-strokes.md), ADR-048 item 2 (stroke codes); [F-47](F-47-trim.md); [F-12](F-12-owner-api.md); [F-15](F-15-publish-pipeline-and-static-page.md) P-7; [F-19](F-19-edit-page-and-settings.md) (owner chunk ceiling); ADR-019, ADR-025
+- **Owner:** both. Backend first (RA-1 to RA-8), then frontend (RA-9, RA-10)
+
+## Decisions
+
+| # | Decision | Why |
+| --- | --- | --- |
+| RA-1 | **Storage: one column `remove_auto_laps`** on `workouts`, schema v12 (ADR-019, forward-only, a one-way door): `INTEGER NOT NULL DEFAULT 0 CHECK (remove_auto_laps IN (0, 1))`, added by `ALTER TABLE … ADD COLUMN` (no table rebuild). Existing rows read 0, so no data migration is needed. No list of removed boundaries is stored: the removal is recomputed from the original on every build. Deleted with the row (AC-4, `secure_delete`), never logged (I-5) | OQ-306: one value, reversible. A boolean needs no JSON or `NULL` case |
+| RA-2 | **Owner API.** The F-12 settings object gets `remove_auto_laps`, a boolean that `GET` always returns. A `PATCH` takes `true` or `false`. `null` or a value that is not a boolean gets `400 invalid_settings`, and the row is left unchanged. Only the edit token reaches it (ADR-025: a viewing link or a wrong token gets the one `404`, AC-5). The server does **not** check whether the action applies: `true` on a workout without removable boundaries builds the same file as `false`. The edit page sends the field only when it differs from the stored value (E-6, as AL-7) | The server stays small. "Shown only when it applies" (OQ-308) is a display rule |
+| RA-3 | **Removal rule: one pure function in `workout`**, beside `AddLaps`, over the **device laps in their stored order** (the order the data file and MS-3 use). **Auto-lap:** trigger `distance`, `time`, `position` or `""` (OQ-313). Implicit laps (AL-3) are not device laps and are never removed. **Lap i's end boundary is removed** when lap i is an auto-lap, a next device lap exists, and both belong to the same leg by MS-3: the last section whose start is at or before the lap's first sample; a single-sport workout is one leg (OQ-314). A run of laps whose ends are removed, plus the lap after them, becomes **one merged lap**: start of the first part, end of the latest-ending part, so any uncovered samples between parts fall inside it. It takes the trigger of its last part (AP-8), copies the sport, takes its stroke from RA-5, and gets cleared totals that `completeTotals` refills (range values and the transition rule by start). That is the path F-65 parts take (`src/server/internal/workout/addedlaps.go:154`). Unmerged laps stay byte-equal. **All removed** (OQ-307): if at least one boundary was removed and exactly one lap is left, the laps list becomes empty, so the workout counts as having no device laps and shows splits only (AP-8). If no boundary is removable, the workout is unchanged even while the setting is on | Neighbours in stored order, with no "touching" test, so files whose laps leave one-sample gaps (a likely export pattern) and truncated files still merge. The end of the workout and the end of the last lap before a truncated tail are not between two laps, so they stay |
+| RA-4 | **Order: parse → RA-3 (when on) → AL-3 → trim (TR-2) → `publicTransform`.** From here on, F-65 reads "device laps" as the laps after removal: `LapEnds`, implicit laps, `AddLaps`, and the `PATCH` boundary check (`CheckEdits`, `src/server/internal/publish/laps.go:79`). Each of them runs on the removed workout of the **resulting** record. So "Add lap" on a removed boundary is accepted, added boundaries split merged laps, the trim cuts a merged lap and keeps its remaining part (UP-6), and in a hidden start or end a merged lap shows time and distance (values computed before hiding) with no map marker (its first sample has no position). `PATCH` order stays AL-5's; the setting counts among "first settings" | One input order for the check and for the build, so the server cannot accept a boundary that the build then drops |
+| RA-5 | **Pool stroke of a merged lap:** the common stroke code of its parts, ignoring `""`; `""` if no part has a stroke; `mixed` if parts differ (ADR-048 item 2 code, AP-13 word "Mixed") | Rest laps carry no stroke and must not turn a one-stroke interval into "Mixed" |
+| RA-6 | **Data file: no format change, version stays 7.** Merged laps use only existing fields, trigger codes and stroke codes. `draft.bin` is unchanged (device laps only); the edit page mirrors the removal (RA-9). Splits, lengths, summary, pins, range links, preview image and GPX take no lap input (OQ-310) | No bump, so no reader change and no golden churn beyond lap rows |
+| RA-7 | **Rebuild.** `remove_auto_laps` goes **on** F-15 P-7's allow-list in either direction, so the rebuild is in place (ADR-060 addendum). A change of this field alone needs no parse in the `PATCH`: nothing is checked and nothing is deleted. `regenerate` reads the column and never writes it (RG-4) | Lap rows carry no position, and their values are aggregates of streams that stay public |
+| RA-8 | **Restore and added boundaries** (OQ-312). The server never deletes added boundaries because of this setting. A stored entry that now falls on a restored device boundary is skipped by the build (AL-3, as already built). A **sent** entry on it is refused like any other entry on a boundary (AL-2). The edit page keeps such entries in memory, so switching back on before Save brings them back, and leaves them out of the merge and of the sent set. So the Save that stores "off" drops them. On the edit page, "on a device boundary" uses the same tolerance as Add lap's "already a boundary here" (`LAP_TOLERANCE_S`, `src/web/src/edit/laps.ts:16`). The server compares exact samples. An entry near the boundary that was stored only through the API stays, which does no harm | The exact rule (server) and the tolerant rule (page) agree on everything the page sends. With the tolerance, a boundary that missed a device lap end by a sample does not survive as a 1 s lap |
+| RA-9 | **Edit page** (owner chunk). The pure mirror of RA-3 and RA-5 goes in `lib/addedlaps` (owner chunk only, never the entry). `edit/laps.ts` stays the **only writer** of `data.meta.laps`. Its base laps are the device laps, or the removed laps while the live setting is on. `lapEnds`, Add lap's "already there" set and the merge are recomputed from that base on a toggle, never on a cursor flush. The line under the laps table (OQ-311) shows when at least one removable boundary lies strictly inside the **live** trim window, or while the setting is on. Its count is the number of those boundaries (each one removes one lap). No confirmation (OQ-309). Splits only after removing everything and the laps view after a restore follow AL-8's existing rule (laps view if and only if `meta.laps` is not empty) | One writer and one merge path, so the table, map markers, row taps, F-51 chart and F-64 blocks follow with no change. A boundary the trim removes would change nothing visible, so it is not counted |
+| RA-10 | **Texts and About.** "Remove auto-laps", "Restore auto-laps" and the count go in the edit text group (F-54, four languages). About (INF-1 lists every stored setting): the `ab_theSettingsTitle` sentence gains "whether automatic laps are removed", in four languages. Nothing goes into the entry or its language file | DS-6, INF-1 |
+
+## What cannot leak
+
+- **Positions:** RA-3 changes only `laps`, before trim and hiding. Every stream in the public data file is byte-equal whether the setting is on or off. Lap metadata has no coordinate field (F-03 §5.3). Removing laps only removes map lap markers.
+- **Row:** one 0/1 value, owner API only, gone with the row.
+
+## Cost
+
+| What | Limit |
+| --- | --- |
+| Activity entry | **0 bytes**: no new code, word or trigger. Any growth is a defect |
+| Owner chunk | Mirror, line, toggle: estimate 600 bytes gzip, within F-19's **20,000** ceiling. If it would pass 20,000, apply F-19's rule (split feature code into its own lazy chunk), never raise the ceiling |
+| Data file | Equal or smaller (fewer laps) |
+| Server | RA-3 is O(laps + samples) per build; no extra parse per `PATCH` |
+
+## What QA must check
+
+Synthetic files only (ADR-004); the corpus only renders.
+
+| What | Check |
+| --- | --- |
+| RA-3, RA-5 rule | Generated workouts: a lap every 1,000 m with trigger `""` (Apple Watch style), with and without a truncated tail; `distance`, `time` and `position` mixed with `button`, `stop` and `equipment`; one lap; laps with uncovered samples between them; multisport with auto-laps on both sides of a leg boundary and in a transition; pool with one stroke, mixed strokes and rest laps. Unmerged laps are byte-equal. Each merged lap's values equal the range values over its range, with the trigger of its last part and the RA-5 stroke. OQ-307 gives empty laps. With the setting off, or with nothing removable, the file is byte-equal to today's |
+| With F-65 | API and edit page: Add lap on a removed boundary is accepted; added boundaries split a merged lap; after a restore, the entry on the restored boundary is gone after Save, and it comes back if the setting is switched on again before Save; a sent entry on a device boundary with the setting off gets `400` |
+| Privacy (I-3) | At radii 0, 300 and 2,000 per end, with and without a trim: the streams are byte-equal with the setting on and off, and no map lap marker appears in a hidden part |
+| API | A viewing link or a wrong token gets `404` (AC-5); `null` or a non-boolean gets `400` with the row unchanged; both directions rebuild in place (no remove-first, P-7); an unchanged value causes no rebuild; `regenerate` keeps the value |
+| Delete, expiry | No row remains (UP-7, AC-4) |
+| Go and browser agree | F-65's committed samples gain removal cases (single sport, multisport, pool, with added boundaries). The TypeScript lap ranges, order, triggers and strokes match the Go-built file, and values match within quantisation |
+| Edit page | Line shown and hidden as RA-9, count with a live trim, toggle wording, laps view gone when everything is removed and back after a restore; four languages, both themes, phone and desktop, touch and mouse |
+| Budgets | Entry unchanged; owner chunk figure reported; a viewer page makes no new request; ADR-016 scrub gate on `ride-12h` with the setting on; every corpus file renders on and off |
+
+## Hand-offs
+
+| To | What |
+| --- | --- |
+| Requirements (TD) | Data model: column `remove_auto_laps` (schema v12, boolean, owner only, deleted with the row). Public build: the removal step before the added-boundary merge. **Glossary:** new "Auto-lap" (a device lap with trigger distance, time, position or none; OQ-313); "Session / lap" gains "or several device laps merged by removing auto-laps, with computed values" |
+| In place on build | F-12 settings row `remove_auto_laps` (RA-2); F-15 P-7 allow-list (RA-7); F-29 About sentence (RA-10) |
