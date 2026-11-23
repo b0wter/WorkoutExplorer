@@ -26,7 +26,7 @@ export const en = {
   pinsTouch: 'On workouts with pins, tap a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
   pinsMouse: 'On workouts with pins, click a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
   editName: 'Add a lap or pin',
-  editTouch: 'For sharers: on the edit page, select a point or range, then tap "+" to add a lap or pin.',
+  editTouch: 'For sharers: on the edit page, select a point or range, then tap "+ Lap" or "+ Pin" (or "+" on the map).',
   editMouse: 'For sharers: on the edit page, select a point or range, then right-click the map or use "+", to add a lap boundary or pin.',
   numbersName: 'Summary numbers',
   numbersText: 'The "How these numbers are computed" bar, under the "How to use this page" bar, explains the summary\'s numbers.',

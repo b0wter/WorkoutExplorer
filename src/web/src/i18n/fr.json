@@ -155,7 +155,7 @@
   "pinsTouch": "Pour les entraînements avec repères, touchez un repère sur la carte ou dans la liste pour le voir sur l'itinéraire et les graphiques ; les boutons de la carte affichent ou masquent chaque type.",
   "pinsMouse": "Pour les entraînements avec repères, cliquez sur un repère sur la carte ou dans la liste pour le voir sur l'itinéraire et les graphiques ; les boutons de la carte affichent ou masquent chaque type.",
   "editName": "Ajouter un tour ou un repère",
-  "editTouch": "Pour qui partage : sur la page de modification, choisissez un point ou une plage et touchez « + » pour ajouter un tour ou un repère.",
+  "editTouch": "Pour qui partage : sur la page de modification, choisissez un point ou une plage et touchez « + Tour » ou « + Repère » (ou « + » sur la carte).",
   "editMouse": "Pour qui partage : sur la page de modification, choisissez un point ou une plage, puis faites un clic droit sur la carte ou utilisez « + », pour ajouter une limite de tour ou un repère.",
   "numbersName": "Chiffres du résumé",
   "numbersText": "La barre « Comment ces chiffres sont calculés », sous « Comment utiliser cette page », explique les chiffres du résumé."

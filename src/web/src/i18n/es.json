@@ -155,7 +155,7 @@
   "pinsTouch": "En entrenamientos con marcadores, toca un marcador en el mapa o en la lista para verlo en la ruta y en los gráficos; los botones del mapa muestran u ocultan cada tipo.",
   "pinsMouse": "En entrenamientos con marcadores, haz clic en un marcador en el mapa o en la lista para verlo en la ruta y en los gráficos; los botones del mapa muestran u ocultan cada tipo.",
   "editName": "Añadir vuelta o marcador",
-  "editTouch": "Quien comparte: en la página de edición, elige un punto o un rango y toca «+» para añadir una vuelta o un marcador.",
+  "editTouch": "Quien comparte: en la página de edición, elige un punto o un rango y toca «+ Vuelta» o «+ Marcador» (o «+» en el mapa).",
   "editMouse": "Quien comparte: en la página de edición, elige un punto o un rango y haz clic derecho en el mapa o usa «+» para añadir un límite de vuelta o un marcador.",
   "numbersName": "Cifras del resumen",
   "numbersText": "La barra «Cómo se calculan estas cifras», bajo «Cómo usar esta página», explica las cifras del resumen."
