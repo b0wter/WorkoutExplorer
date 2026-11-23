@@ -26,8 +26,7 @@ export const en = {
   pinsTouch: 'On workouts with pins, tap a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
   pinsMouse: 'On workouts with pins, click a pin on the map or in the list to show it on the route and charts; the buttons on the map show or hide each type.',
   numbersName: 'Summary numbers',
-  numbersTouch: 'Tap ⓘ on the summary to see how its numbers are computed.',
-  numbersMouse: 'Click ⓘ on the summary to see how its numbers are computed.',
+  numbersText: 'The "How these numbers are computed" bar, under the "How to use this page" bar, explains the summary\'s numbers.',
 };
 
 export const t = texts(en);
