@@ -11,3 +11,6 @@ export function loadGolden(): Golden[];
 
 /** F-65: the added-laps agreement cases (Go-built laps per golden and picked samples). */
 export function loadAddedLaps(): { name: string; golden: string; at: number[]; laps: unknown[] }[];
+
+/** F-66: the remove-auto-laps agreement cases, as loadAddedLaps. */
+export function loadAutoLaps(): { name: string; golden: string; at: number[]; laps: unknown[] }[];

@@ -5,7 +5,7 @@
 // the server's rules (lib/addedlaps); the server alone decides.
 
 import type { Lap, WorkoutData } from '../lib/datafile';
-import { addLaps, lapEnds, MAX_ADDED_LAPS, snapLapBoundary } from '../lib/addedlaps';
+import { addLaps, lapEnds, MAX_ADDED_LAPS, removableBoundaries, removeAutoLaps, snapLapBoundary } from '../lib/addedlaps';
 import { createRangeStats } from '../lib/range';
 import { lapsBySection, sections } from '../lib/sections';
 import { indexAt, instantAt, removed } from '../pins';
@@ -25,18 +25,28 @@ export interface AddedLaps {
   remove(at: number): void;
   /** "Add lap" at the cursor or both range ends (OQ-304), for the "+" disclosure. */
   item(cursor: () => number, range: () => readonly [number, number]): PlusItem;
-  /** `{ added_lap_boundaries }` when the set to send differs from the stored one, else {} (E-6). */
-  patch(stored: readonly string[]): { added_lap_boundaries?: string[] };
-  /** A settings response: the stored set is the truth. */
-  saved(stored: readonly string[]): void;
+  /** The settings to send when they differ from the stored ones, else {} (E-6). */
+  patch(stored: readonly string[], removeStored: boolean): { added_lap_boundaries?: string[]; remove_auto_laps?: boolean };
+  /** A settings response: the stored values are the truth. */
+  saved(stored: readonly string[], removeStored: boolean): void;
+  /** F-66 RA-9: the line under the laps table; null = not shown (no removable boundary in the live trim window, setting off). */
+  auto(): { readonly on: boolean; readonly label: string } | null;
+  /** F-66: switch "Remove auto-laps" on or off; the laps are recomputed. */
+  toggle(): void;
 }
 
 /** `cut()`: the live trim window [a, b] (TR-9). `onchange`: the set changed (data.meta.laps is the new merge). */
-export function createAddedLaps(data: WorkoutData, startS: number, stored: readonly string[], cut: () => readonly [number, number], onchange: () => void): AddedLaps {
+export function createAddedLaps(data: WorkoutData, startS: number, stored: readonly string[], removeStored: boolean, cut: () => readonly [number, number], onchange: () => void): AddedLaps {
   const { time, sampleCount: n } = data;
-  const device = data.meta.laps;
-  const ends = lapEnds(device, n);
+  const orig = data.meta.laps;
   const stats = createRangeStats(data);
+  // F-66 RA-9: the base of the merge is the device laps, or the laps after removing the auto-laps.
+  let on = removeStored;
+  const based = (): readonly Lap[] => (on ? removeAutoLaps({ ...data, meta: { ...data.meta, laps: orig } }, stats) : orig);
+  let device = based();
+  let ends = lapEnds(device, n);
+  /** F-66 RA-8: entries a restore took off the merge (on a restored device boundary); back when it is switched on again. */
+  let held: number[] = [];
   const snap = (i: number): number => snapLapBoundary(data.meta, time, i);
   /** AL-2's resolution of the stored set: nearest sample, the snap; an entry that is no longer a
    *  valid boundary (outside, a lap end, a repeat) is skipped and so never sent again (AL-3). */
@@ -56,6 +66,10 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
     (data.meta as { laps: readonly Lap[] }).laps = addLaps({ ...data, meta: { ...data.meta, laps: device } }, stats, set, 0, n - 1);
   };
   merge();
+  const rebase = (): void => {
+    device = based();
+    ends = lapEnds(device, n);
+  };
   const change = (): void => {
     merge();
     onchange();
@@ -102,14 +116,35 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
         },
       };
     },
-    patch: (stored) => {
+    patch: (stored, removeStored) => {
       const send = set.filter(kept).map((k) => instantAt(time, startS, k));
-      return JSON.stringify(send) === JSON.stringify(stored) ? {} : { added_lap_boundaries: send };
+      return { ...(JSON.stringify(send) === JSON.stringify(stored) ? {} : { added_lap_boundaries: send }), ...(on === removeStored ? {} : { remove_auto_laps: on }) };
     },
-    saved: (stored) => {
+    saved: (stored, removeStored) => {
+      const was = on;
+      held = []; // the stored state is the truth: what a Save dropped does not come back
+      on = removeStored;
+      if (on !== was) rebase();
       const next = load(stored);
-      if (next.join() === set.join()) return;
+      if (next.join() === set.join() && on === was) return;
       set = next;
+      change();
+    },
+    auto: () => {
+      const n1 = on ? 1 : removableBoundaries({ laps: orig, sessions: data.meta.sessions }, time, n, cut()[0], cut()[1]);
+      return n1 === 0 ? null : { on, label: on ? t('restoreAutoLaps') : t('removeAutoLaps', { n: n1 }) };
+    },
+    toggle: () => {
+      on = !on;
+      rebase();
+      if (on) {
+        set = [...set, ...held.filter((k) => !ends.has(k) && !set.includes(k))].sort((a, b) => a - b);
+        held = [];
+      } else {
+        const near = (k: number): boolean => [...ends].some((e) => Math.abs(time[e] - time[k]) <= LAP_TOLERANCE_S);
+        held = [...held, ...set.filter(near)];
+        set = set.filter((k) => !near(k));
+      }
       change();
     },
   };

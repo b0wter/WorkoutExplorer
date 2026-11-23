@@ -199,7 +199,12 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   // shortcut: the previous module's enhancers stay subscribed (detached, a little work per units or
   // language change); upgrade if owners edit laps by the hundreds in one visit.
   let refocus = -1;
+  let refocusAuto = false;
   const relaps = (): void => {
+    if (refocusAuto) {
+      host.querySelector<HTMLElement>('.laps-auto-btn')?.focus();
+      refocusAuto = false;
+    }
     if (refocus >= 0) {
       const xs = host.querySelectorAll<HTMLElement>('.lap-x-btn');
       const h = host.querySelector<HTMLElement>('section.laps h2');
@@ -224,6 +229,13 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   host.addEventListener(
     'click',
     (e) => {
+      const a = (e.target as Element).closest?.<HTMLElement>('.laps-auto-btn');
+      if (a && added) {
+        e.stopPropagation();
+        refocusAuto = true; // F-66: the line is rebuilt with the module; focus returns to it
+        added.toggle();
+        return;
+      }
       const b = (e.target as Element).closest?.<HTMLElement>('.lap-x-btn');
       if (!b || !added) return;
       e.stopPropagation();
@@ -234,7 +246,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     true,
   );
   const added = data
-    ? createAddedLaps(data, Date.parse(data.meta.start_time) / 1000, got.value.added_lap_boundaries ?? [], () => cut, () => {
+    ? createAddedLaps(data, Date.parse(data.meta.start_time) / 1000, got.value.added_lap_boundaries ?? [], got.value.remove_auto_laps ?? false, () => cut, () => {
         ui.status = '';
         lapsKey++;
         setTimeout(relaps); // after Svelte's update
@@ -326,7 +338,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     settings = r.value;
     record(r.value);
     pinEditor?.saved(r.value.pins ?? []);
-    added?.saved(r.value.added_lap_boundaries ?? []);
+    added?.saved(r.value.added_lap_boundaries ?? [], r.value.remove_auto_laps ?? false);
     zones();
     void effortsRefresh?.then((refresh) => refresh?.());
     visibility = r.value.visibility;
@@ -344,7 +356,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
   const basemap = basemapJobs(owner);
 
   /** F-56 PN-12: the pins go with every Save, when they changed. */
-  const withPins = (patch: SettingsPatch): SettingsPatch => ({ ...patch, ...pinEditor?.patch(settings.pins ?? []), ...added?.patch(settings.added_lap_boundaries ?? []) });
+  const withPins = (patch: SettingsPatch): SettingsPatch => ({ ...patch, ...pinEditor?.patch(settings.pins ?? []), ...added?.patch(settings.added_lap_boundaries ?? [], settings.remove_auto_laps ?? false) });
   const save = (panel: SettingsPatch): Promise<void> | void => {
     if (ui.busy) return;
     const patch = withPins(panel);
@@ -415,6 +427,12 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
           void cut; // the dimmed rows follow the live trim
           void model; // and the language (the × names)
           return added ? { rows: added.rows() } : undefined;
+        },
+        get auto() {
+          void lapsKey;
+          void cut; // the count follows the live trim
+          void model; // and the language
+          return added?.auto() ?? undefined;
         },
         report: false,
         edit: true,

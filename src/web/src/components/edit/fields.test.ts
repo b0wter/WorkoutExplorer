@@ -24,6 +24,7 @@ const STORED: Settings = {
   zones_threshold_power: null,
   pins: [],
   added_lap_boundaries: [],
+  remove_auto_laps: false,
 };
 
 afterEach(() => {

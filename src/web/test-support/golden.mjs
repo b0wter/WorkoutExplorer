@@ -50,3 +50,13 @@ export function loadGolden() {
 export function loadAddedLaps() {
   return JSON.parse(fs.readFileSync(path.resolve(DIR, '../added-laps.json'), 'utf8'));
 }
+
+/**
+ * F-66's Go and browser agreement sample (src/server/testdata/datafile/auto-laps.json): as
+ * loadAddedLaps, the laps after removing the auto-laps (and merging `at` over the result).
+ *
+ * @returns {{ name: string, golden: string, at: number[], laps: unknown[] }[]}
+ */
+export function loadAutoLaps() {
+  return JSON.parse(fs.readFileSync(path.resolve(DIR, '../auto-laps.json'), 'utf8'));
+}

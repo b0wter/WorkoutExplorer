@@ -1,0 +1,303 @@
+[
+  {
+    "name": "ride-lap-triggers",
+    "golden": "ride-lap-triggers",
+    "at": [],
+    "laps": [
+      {
+        "start": 0,
+        "end": 300,
+        "start_index": 0,
+        "end_index": 301,
+        "trigger": "button",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 300,
+          "timer_time": 300,
+          "distance": 2255.54,
+          "ascent": 49,
+          "descent": 0,
+          "avg_speed": 7.518,
+          "max_speed": 7.999,
+          "avg_heart_rate": 144,
+          "max_heart_rate": 152,
+          "avg_cadence": 88.914,
+          "max_cadence": 93,
+          "avg_power": 257,
+          "max_power": 290,
+          "avg_temperature": 18,
+          "max_temperature": 18
+        }
+      },
+      {
+        "start": 300,
+        "end": 1200,
+        "start_index": 300,
+        "end_index": 1201,
+        "trigger": "stop",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 900,
+          "distance": 6752.27,
+          "ascent": 49.4,
+          "avg_speed": 7.503,
+          "avg_heart_rate": 152.281,
+          "avg_cadence": 89.039,
+          "avg_power": 212.26
+        }
+      },
+      {
+        "start": 1200,
+        "end": 1499,
+        "start_index": 1200,
+        "end_index": 1500,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 299,
+          "timer_time": 299,
+          "distance": 2237.98,
+          "ascent": 5,
+          "descent": 17,
+          "avg_speed": 7.485,
+          "max_speed": 7.98,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 142,
+          "avg_cadence": 88.844,
+          "max_cadence": 93,
+          "avg_power": 236,
+          "max_power": 286,
+          "avg_temperature": 19,
+          "max_temperature": 20
+        }
+      }
+    ]
+  },
+  {
+    "name": "ride-lap-triggers-added",
+    "golden": "ride-lap-triggers",
+    "at": [
+      214,
+      500
+    ],
+    "laps": [
+      {
+        "start": 0,
+        "end": 214,
+        "start_index": 0,
+        "end_index": 215,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 214,
+          "distance": 1608.8,
+          "ascent": 41.68,
+          "avg_speed": 7.518,
+          "avg_heart_rate": 142.056,
+          "avg_cadence": 88.851,
+          "avg_power": 250.86
+        }
+      },
+      {
+        "start": 214,
+        "end": 300,
+        "start_index": 214,
+        "end_index": 301,
+        "trigger": "button",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 86,
+          "distance": 646.74,
+          "ascent": 7.6,
+          "avg_speed": 7.52,
+          "avg_heart_rate": 149.023,
+          "avg_cadence": 89.115,
+          "avg_power": 273.598
+        }
+      },
+      {
+        "start": 300,
+        "end": 500,
+        "start_index": 300,
+        "end_index": 501,
+        "trigger": "added",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 200,
+          "distance": 1504.2,
+          "ascent": 1.32,
+          "avg_speed": 7.521,
+          "avg_heart_rate": 153.642,
+          "avg_cadence": 88.831,
+          "avg_power": 240.139
+        }
+      },
+      {
+        "start": 500,
+        "end": 1200,
+        "start_index": 500,
+        "end_index": 1201,
+        "trigger": "stop",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 700,
+          "distance": 5248.07,
+          "ascent": 48.08,
+          "avg_speed": 7.497,
+          "avg_heart_rate": 151.896,
+          "avg_cadence": 89.093,
+          "avg_power": 204.271
+        }
+      },
+      {
+        "start": 1200,
+        "end": 1499,
+        "start_index": 1200,
+        "end_index": 1500,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 299,
+          "timer_time": 299,
+          "distance": 2237.98,
+          "ascent": 5,
+          "descent": 17,
+          "avg_speed": 7.485,
+          "max_speed": 7.98,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 142,
+          "avg_cadence": 88.844,
+          "max_cadence": 93,
+          "avg_power": 236,
+          "max_power": 286,
+          "avg_temperature": 19,
+          "max_temperature": 20
+        }
+      }
+    ]
+  },
+  {
+    "name": "triathlon",
+    "golden": "triathlon",
+    "at": [],
+    "laps": [
+      {
+        "start": 0,
+        "end": 599,
+        "start_index": 0,
+        "end_index": 600,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 599,
+          "timer_time": 599,
+          "distance": 718.17,
+          "avg_speed": 1.199,
+          "max_speed": 1.3,
+          "avg_heart_rate": 143,
+          "max_heart_rate": 146,
+          "avg_cadence": 31.969,
+          "max_cadence": 34,
+          "avg_temperature": 17,
+          "max_temperature": 17
+        }
+      },
+      {
+        "start": 600,
+        "end": 659,
+        "start_index": 600,
+        "end_index": 660,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 59,
+          "timer_time": 59,
+          "distance": 88.5,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 136
+        }
+      },
+      {
+        "start": 660,
+        "end": 2459,
+        "start_index": 660,
+        "end_index": 2460,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 1799,
+          "timer_time": 1799,
+          "distance": 13481.37,
+          "ascent": 67,
+          "descent": 96,
+          "avg_speed": 7.494,
+          "max_speed": 8,
+          "avg_heart_rate": 153,
+          "max_heart_rate": 156,
+          "avg_cadence": 90,
+          "max_cadence": 92,
+          "avg_power": 225,
+          "max_power": 240,
+          "avg_temperature": 20,
+          "max_temperature": 20
+        }
+      },
+      {
+        "start": 2460,
+        "end": 2519,
+        "start_index": 2460,
+        "end_index": 2520,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 59,
+          "timer_time": 59,
+          "distance": 88.5,
+          "avg_heart_rate": 133,
+          "max_heart_rate": 136
+        }
+      },
+      {
+        "start": 2520,
+        "end": 3719,
+        "start_index": 2520,
+        "end_index": 3720,
+        "trigger": "",
+        "stroke": "",
+        "totals": {
+          "elapsed_time": 1199,
+          "timer_time": 1199,
+          "distance": 3954.86,
+          "ascent": 45,
+          "descent": 85,
+          "avg_speed": 3.298,
+          "max_speed": 3.5,
+          "avg_heart_rate": 163,
+          "max_heart_rate": 166,
+          "avg_cadence": 171,
+          "max_cadence": 170,
+          "avg_temperature": 21,
+          "max_temperature": 21
+        }
+      }
+    ]
+  },
+  {
+    "name": "pool-swim",
+    "golden": "pool-swim",
+    "at": [],
+    "laps": []
+  },
+  {
+    "name": "pool-swim-mixed",
+    "golden": "pool-swim-mixed",
+    "at": [],
+    "laps": []
+  },
+  {
+    "name": "ride-no-laps",
+    "golden": "ride-no-laps",
+    "at": [],
+    "laps": []
+  }
+]

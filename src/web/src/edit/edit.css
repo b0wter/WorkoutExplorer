@@ -507,6 +507,26 @@ html.wx-fs .wx-addpin,
   opacity: 0.55;
 }
 
+/* F-66 RA-9: the line under the laps table, in the look of the edit page's text links. */
+.laps-auto {
+  margin: 8px 0 0;
+}
+.laps-auto-btn {
+  min-height: 32px;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  .laps-auto-btn {
+    min-height: 44px;
+  }
+}
+
 /* Right-click menu on the map (mapmenu.ts): a themed panel at the pointer, inside the map box (also
    the fullscreen one); full-width rows, the reason as a small line under the label. */
 .map-menu {

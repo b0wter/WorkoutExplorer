@@ -14,8 +14,10 @@
   interface Props {
     laps: PageLaps | null;
     remove?: { readonly rows: readonly LapRemoval[] };
+    /** F-66 RA-9, edit page only: the line under the table, "Remove auto-laps (N)" or "Restore auto-laps"; its click is the edit glue's. */
+    auto?: { readonly on: boolean; readonly label: string };
   }
-  let { laps, remove }: Props = $props();
+  let { laps, remove, auto }: Props = $props();
   const x = $derived(!!remove?.rows.some((r) => r));
   /** The first lap of each leg block (L-2's DOM order). */
   const offsets = $derived(laps?.Legs.reduce<number[]>((o, l, k) => [...o, (o[k - 1] ?? 0) + (laps!.Legs[k - 1]?.Rows.length ?? 0)], []) ?? []);
@@ -52,5 +54,6 @@
         {@render table(laps.Columns, laps.Rows, 0)}
       {/if}
     {/if}
+    {#if auto}<p class="laps-auto"><button type="button" class="laps-auto-btn">{auto.label}</button></p>{/if}
   </section>
 {/if}

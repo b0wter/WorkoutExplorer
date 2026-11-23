@@ -8,7 +8,7 @@ import { cleanText } from '../../lib/text';
 
 /** What the panel edits. */
 /** Pins are not the panel's (F-56: the pin editor adds them to the patch). */
-export type Form = Required<Omit<SettingsPatch, 'pins' | 'added_lap_boundaries'>>;
+export type Form = Required<Omit<SettingsPatch, 'pins' | 'added_lap_boundaries' | 'remove_auto_laps'>>;
 
 export const TITLE_MAX = 100;
 export const DESCRIPTION_MAX = 1000;
