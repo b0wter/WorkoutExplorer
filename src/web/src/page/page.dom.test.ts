@@ -211,8 +211,6 @@ describe('adoption, not hydration (D-8, ADR-026 item 4)', () => {
     expect(after).toEqual(nodes);
     const strip = (h: string): string =>
       h.replace(/Expires in [^<]+/, 'X').replace(/<select.*?<\/select>/g, '').replace(/<span class="laps-switch">.*?<\/span>/, '').replace('class="laps live"', 'class="laps"');
-    // F-58 SE-5: the ⓘ is revealed once the data file is decoded.
-    html[1] = html[1].replace(' hidden=""', '');
     expect(after.map((n) => strip(n.outerHTML))).toEqual(html.map((h) => h.replace(/Expires around [^<]+/, 'X')));
   });
 });

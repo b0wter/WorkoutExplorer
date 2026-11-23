@@ -5,6 +5,7 @@
 - **Feature:** [`features/F-58-summary-explained.md`](../features/F-58-summary-explained.md); decisions OQ-251 to OQ-260
 - **Requirements:** AP-24; explains AP-2, AP-4, AP-10, AP-12, AP-13, AP-16, UP-6, SH-4, SH-9; reuses AP-22; DS-1, DS-4, NFR Performance, NFR Privacy
 - **Builds on:** [F-39](F-39-how-to-use.md) HU-6, HU-7 (dialog, lazy chunk), [F-13](F-13-activity-page-layout.md) D-2, D-9, D-10, [F-16](F-16-start-and-end-hiding.md) H-1, H-5, H-6, [F-47](F-47-trim.md) TR-3, TR-7, TR-9, [F-15](F-15-publish-pipeline-and-static-page.md) P-4, ADR-011, ADR-026. No data file format change, no migration, no setting
+- **Trigger changed (user, 23 Nov 2026, replaces OQ-251 and SE-5):** no corner ⓘ; a full-width bar like How to use (`.howto`, label "How these numbers are computed") directly under it and above the strip, on both pages, reserved and invisible until enhanced (as How to use); the dialog still opens over the strip on wide screens (OQ-258).
 - **Owner:** frontend, plus one small backend step (B-1, SE-2). The feature file says frontend; it becomes **both**
 
 ## Decisions

@@ -43,7 +43,7 @@ const PAIRS = ['speed', 'heart_rate', 'power', 'cadence', 'temperature'];
 const cell = (i: SummaryItem | undefined): string => (i ? i.Value + (i.Unit ? ' ' + i.Unit : '') : '');
 
 /** `cells` is lib/page's summaryItems, passed in: imported here, it would split lib/format out of the entry. */
-/** Opens over the button's strip; the trim string is the button's data attribute (SE-2). */
+/** Opens over the summary strip on wide screens (OQ-258); the trim string is the button's data attribute (SE-2). */
 export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cells: typeof summaryItems): void {
   const doc = button.ownerDocument;
   const trim = button.dataset.trim ?? '';
@@ -97,5 +97,5 @@ export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cel
   if (pool || lengths || f.lengths.length)
     add(t('poolName'), t('poolText'), [lengths && t('poolLengths', { n: cell(lengths) }), pool && t('poolIn', { p: cell(pool) })].filter(Boolean).join(' '));
   if (f.zones) add(t('zonesInfoName'), t('zonesInfoText'));
-  openDialog(doc, 'summary-dlg', t('numbersTitle'), lines, button.parentElement ?? undefined);
+  openDialog(doc, 'summary-dlg', t('numbersTitle'), lines, doc.querySelector('.summary') ?? button);
 }

@@ -85,10 +85,10 @@ async function dialogText(data: ArrayBuffer, sample = 'ride-30min', route: Route
   page = renderSample(sample, route === 'whole' ? {} : { route: { Map: '', NoLocation: route === 'none' ? '' : 'yes', Hidden: route === 'none' ? 'yes' : '' } as never });
   if (title) document.querySelector('h1')!.textContent = title;
   const button = document.querySelector<HTMLButtonElement>('button[data-summary-info]')!;
-  expect(button.hidden).toBe(true); // until the data file is decoded (SE-5)
+  expect(button.classList.contains('ready')).toBe(false); // reserved, invisible until the data file is decoded (SE-5)
   await startPage(document);
   await settle();
-  expect(button.hidden).toBe(false);
+  expect(button.classList.contains('ready')).toBe(true);
   button.click();
   await vi.waitFor(() => expect(document.querySelector<HTMLDialogElement>('dialog.summary-dlg')?.open).toBe(true));
   const text = [...document.querySelectorAll('dialog.summary-dlg .dlg-body p:not(.dlg-actions)')].map((p) => p.textContent).join('\n');
@@ -139,16 +139,16 @@ describe('topics (AC 37, 38; SE-3)', () => {
     expect(topics(await dialogText(variant(decode('zones-wahoo-ride'), 'whole')))).toContain('Zones');
   });
 
-  it('a failed chunk load: one line after the strip, never a second', async () => {
+  it('a failed chunk load: one line after the bar, never a second', async () => {
     const { enhanceSummaryInfo } = await import('../page/enhance');
     const { createUnitsStore } = await import('../lib/units');
-    document.body.innerHTML = '<section class="summary"><button data-summary-info hidden></button></section>';
+    document.body.innerHTML = '<div class="howto-row"><button data-summary-info></button></div><section class="summary"></section>';
     enhanceSummaryInfo(document, createUnitsStore('metric'), () => ({ sport: 'cycling', summary: {}, sessions: [], lengths: [], zones: false }), () => Promise.reject(new Error('x')));
     const b = document.querySelector<HTMLButtonElement>('button')!;
     b.click();
     b.click();
     await settle();
-    expect([...document.querySelectorAll('.report-fail')].map((e) => e.previousElementSibling?.className)).toEqual(['summary']);
+    expect([...document.querySelectorAll('.report-fail')].map((e) => e.previousElementSibling?.className)).toEqual(['howto-row']);
     document.body.innerHTML = '';
   });
 });

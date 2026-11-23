@@ -39,7 +39,7 @@ describe('template', () => {
     expect(template).not.toMatch(/map-pin|aria-pressed|pinned/);
     // Report, hidden without JavaScript (F-28 RF-1, RF-9); How to use, invisible until enhanced
     // (F-39 HU-6: a reserved box, not hidden).
-    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="gpx" data-gpx data-t="gpx">', '<button type="button" class="howto" data-howto>', '<button type="button" class="summary-info" data-summary-info data-trim="{{.Trim}}" hidden title="How these numbers are computed" aria-label="How these numbers are computed" data-t-title="summaryInfo" data-t-aria-label="summaryInfo">', '<button type="button" data-report hidden data-t="report">']);
+    expect(template.match(/<button[^>]*>/g)).toEqual(['<button type="button" class="gpx" data-gpx data-t="gpx">', '<button type="button" class="howto" data-howto>', '<button type="button" class="howto" data-summary-info data-trim="{{.Trim}}">', '<button type="button" data-report hidden data-t="report">']);
   });
 
   it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6; F-46 LS-3)', () => {
