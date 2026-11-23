@@ -40,6 +40,7 @@ import { routePresence } from '../lib/route';
 import { basemapJobs } from './basemap-job';
 import { HIDE_STEP_M, hidingRanges, trimIndex } from '../components/edit/fields';
 import { startPinEditor, type PinEditor } from './pins';
+import { startAddedTable, type AddedTable } from './addedtable';
 import type { ZoneSource } from '../zones';
 import * as mine from '../lib/mine';
 
@@ -224,7 +225,9 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     if (splits || data.meta.lengths.length) import('../splits').then((m) => m.startSplits(doc, data, v.units, seams, fmt, splits), () => console.warn('edit: splits chunk failed'));
     v.map((m) => m.laps());
     pinEditor?.refresh();
+    addedTable?.refresh();
   };
+  let addedTable: AddedTable | null = null;
   // The ×'s of the laps view (AL-8): before the rows' own tap (capture), never a row selection.
   host.addEventListener(
     'click',
@@ -482,7 +485,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       startTime: data?.meta.start_time ?? '',
       ontrim: (a: number, b: number) => {
         cut = [a, b];
-        queueMicrotask(() => pinEditor?.refresh()); // outside the panel's fill effect, which writes cut
+        queueMicrotask(() => (pinEditor?.refresh(), addedTable?.refresh())); // outside the panel's fill effect, which writes cut
       },
       zones: data?.meta.zones ?? {},
       gpx: !!data && data.meta.sport !== 'multisport' && routePresence(data) === 'route',
@@ -539,6 +542,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
           },
           settings.pins ?? [],
         );
+        if (added) addedTable = startAddedTable(view.slot, result.data, added, view.units);
       },
       // F-58 SE-4: the saved settings' facts; sessions, lengths and zones as the rest of the page.
       explain: () => {

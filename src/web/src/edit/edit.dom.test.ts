@@ -2058,6 +2058,35 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     expect(patches().at(-1)).toEqual({ added_lap_boundaries: [] });
   });
 
+  it('AL-8: the added-laps table under the pins: render, × in either table updates both, hidden when empty', async () => {
+    await start();
+    const tbl = (): HTMLElement => document.querySelector<HTMLElement>('.added-laps')!;
+    const xs = (): HTMLButtonElement[] => [...tbl().querySelectorAll<HTMLButtonElement>('.added-x-btn')];
+    expect(tbl().hidden).toBe(true);
+    await pick(1000);
+    await addLap();
+    await pick(2000);
+    await addLap();
+    await vi.waitFor(() => expect(xs()).toHaveLength(2));
+    expect(tbl().previousElementSibling).toBe(document.querySelector('.pin-list')); // directly under the pins
+    expect(tbl().hidden).toBe(false);
+    const lines = [...tbl().querySelectorAll('.pin-item:not(.added-head)')].map((l) => l.textContent);
+    expect(lines[0]).toContain(formatElapsed(data.time[1000] - data.time[0]));
+    expect(lines[0]!.startsWith('2')).toBe(true);
+    expect(xs()[0].getAttribute('aria-label')).toBe('Remove the added lap boundary at the end of lap 2');
+    // From the new table: both tables lose the row, focus goes to the next ×.
+    xs()[0].click();
+    await settle();
+    expect(xs()).toHaveLength(1);
+    expect(document.querySelectorAll('.lap-x-btn')).toHaveLength(1);
+    expect(document.activeElement).toBe(xs()[0]);
+    // From the main table: the new table follows and hides when empty.
+    document.querySelector<HTMLButtonElement>('.lap-x-btn')!.click();
+    await settle();
+    expect(tbl().hidden).toBe(true);
+    expect(rows()).toHaveLength(16);
+  });
+
   it('with a range: both ends (OQ-304); an end on a device boundary adds nothing', async () => {
     await start();
     const sel = stubLog.chartStack[0].selection!;

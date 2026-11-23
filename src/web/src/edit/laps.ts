@@ -16,7 +16,7 @@ import { t } from './texts';
 const LAP_TOLERANCE_S = 2;
 
 /** One lap row's × (LapsTable's `remove`): its boundary, name and dimmed reason; null = no ×. */
-export type LapRemoval = { readonly at: number; readonly name: string; readonly dim: string } | null;
+export type LapRemoval = { readonly at: number; readonly n: number; readonly name: string; readonly dim: string } | null;
 
 export interface AddedLaps {
   /** Per lap of data.meta.laps, in order. */
@@ -81,7 +81,7 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
       // The number the row shows: per leg block on a multisport workout (F-64 LL-2), else overall.
       const legs = lapsBySection(sections(data.meta), data.meta.laps);
       const shown = legs.length ? legs.flatMap((ls) => ls.map((_, k) => k + 1)) : data.meta.laps.map((_, i) => i + 1);
-      return data.meta.laps.map((l, i) => (l.trigger === 'added' && set.includes(l.end_index - 1) ? { at: l.end_index - 1, name: t('removeLap', { n: shown[i] }), dim: kept(l.end_index - 1) ? '' : removed() } : null));
+      return data.meta.laps.map((l, i) => (l.trigger === 'added' && set.includes(l.end_index - 1) ? { at: l.end_index - 1, n: shown[i], name: t('removeLap', { n: shown[i] }), dim: kept(l.end_index - 1) ? '' : removed() } : null));
     },
     remove: (at) => {
       set = set.filter((k) => k !== at);

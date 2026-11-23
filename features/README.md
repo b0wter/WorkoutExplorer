@@ -863,3 +863,5 @@ The original questions follow for reference.
 **Decided on 14 Nov 2026, comparison chart elevation overlay** (user, AP-23, F-51): the overlay drop-down gets "Elevation": each row's net elevation change (end minus start, can be negative), in m or ft by the units setting; offered only when the rows have elevation, not for pool lengths. Updated: spec AP-23; F-51 (scope, AC). Architecture and code follow in the small lane.
 
 **Decided on 14 Nov 2026, row taps toggle** (user, AP-8, AP-11, AP-12, AP-23): tapping an already selected lap, split or length row, a multisport leg separator row, its comparison-chart bar (F-51), or a best-effort row (F-50) clears the selection. Updated: spec AP-8 (rows and leg separator rows), AP-11, AP-23; F-18, F-42, F-48, F-50, F-51. Architecture and code follow.
+
+**Decided on 23 Nov 2026, added-laps table** (user, AP-8, F-65, already built): the edit page shows a small table of the owner-added lap boundaries (lap number, time, distance, ×) directly under the pins table, only while one exists; its × works as the laps table's and both tables follow. Updated: F-65 (scope, AC).

@@ -482,10 +482,12 @@ html.wx-fs .wx-addpin,
 @media (pointer: coarse) {
   .wx-plus.flat .plus-item,
   .wx-addpin .plus-item,
-  .lap-x-btn {
+  .lap-x-btn,
+  .added-x-btn {
     min-height: 44px;
   }
-  .lap-x-btn {
+  .lap-x-btn,
+  .added-x-btn {
     min-width: 44px;
   }
 }
@@ -499,7 +501,8 @@ html.wx-fs .wx-addpin,
   width: 1%;
   white-space: nowrap;
 }
-.lap-x-btn {
+.lap-x-btn,
+.added-x-btn {
   min-width: 32px;
   min-height: 32px; /* the hit area; the glyph stays small */
   padding: 0 8px;
@@ -509,6 +512,26 @@ html.wx-fs .wx-addpin,
   border: 1px solid var(--line);
   border-radius: 4px;
   cursor: pointer;
+}
+/* The added-laps list under the pins (same rows as the pins list): lap and time columns, × at the end. */
+.added-laps {
+  margin-top: 8px;
+}
+.added-row {
+  height: auto;
+  min-height: 32px;
+  cursor: default;
+}
+.added-row .pin-t {
+  flex: 0 0 4em;
+}
+.added-row .pin-d {
+  flex: 1;
+}
+.added-head .pin-d,
+.added-head .pin-t {
+  font-size: 12px;
+  color: var(--muted);
 }
 .lap-x .edit-small {
   margin-left: 6px;
