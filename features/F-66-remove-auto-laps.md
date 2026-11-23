@@ -1,6 +1,6 @@
 # F-66 Remove auto-laps
 
-- **Status:** planned (user, 23 Nov 2026); listed last in the build order; open questions waiting on the user
+- **Status:** planned (user, 23 Nov 2026); listed last in the build order; open questions decided (user, 23 Nov 2026)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** both (backend first: stored setting, laps rebuilt into the published data and the server-rendered laps table; frontend: the action on the edit page, laps mirrored over `draft.bin`)
 - **Lane:** normal (merged lap values come from the public streams, as F-65; no coordinates stored)
@@ -50,13 +50,16 @@ A sharer whose device wrote a lap every kilometre (Apple Watch exports, device "
 - [ ] New texts in all four languages (DS-6); works in both themes, phone and desktop, touch and mouse.
 - [ ] Viewers load no new code; entry bundle and LCP unchanged within noise; every corpus file renders.
 
+## Decisions (user, 23 Nov 2026)
+- OQ-306 to OQ-314: decided as suggested (see Open questions); Scope and acceptance criteria already follow them.
+
 ## Open questions
-- [ ] **OQ-306 Reversible or one-off.** Assumed: a reversible on/off setting stored as one value with the workout (smaller than a list of removed boundaries like `added_lap_boundaries`, and undoable). Alternative: one-off removal storing the removed boundaries. Affects storage, Scope "Reversible", AC 3.
-- [ ] **OQ-307 Splits when all laps are removed.** Assumed: fall back to splits only, as a workout without device laps (AP-8). Alternative: keep one lap over the whole workout. Affects AC 1.
-- [ ] **OQ-308 Show only when it applies.** Assumed: yes, only with at least one removable auto-lap boundary (or while on). Alternative: always shown, disabled with a reason. Affects AC 4.
-- [ ] **OQ-309 Confirm dialog.** Assumed: none, because it is reversible and the viewing page changes only on Save. Affects the UI.
-- [ ] **OQ-310 Viewing page and GPX.** Assumed: viewing page shows the merged laps after Save, like added laps; GPX has no laps and the preview image no lap markers, so both are unchanged. Affects Scope "Shown like any lap change".
-- [ ] **OQ-311 Placement.** Assumed: one line under the laps table on the edit page, "Remove auto-laps (12)". Alternative: an item in the "+" menu (F-65). Affects the UI.
-- [ ] **OQ-312 Added boundary on a restored device boundary.** Assumed: the device boundary wins; the added one is dropped on the next Save (ADR-060 already skips it in the build). Affects AC 5.
-- [ ] **OQ-313 Which triggers count as auto.** Assumed: `distance`, `time`, `position` and missing/unknown. `position` merges all four FIT position values (incl. marked position and waypoint) and is kept whole, no parser change. Alternative: leave missing/unknown out (would not solve the Apple Watch case). Affects Scope "Auto-lap", AC 1, AC 2.
-- [ ] **OQ-314 Multisport legs.** Assumed: a lap boundary at a leg boundary always stays, so no lap spans two legs (F-64). Affects AC 6.
+- [x] **OQ-306 Reversible or one-off.** Decided (user, 23 Nov 2026) as suggested: a reversible on/off setting stored as one value with the workout (smaller than a list of removed boundaries like `added_lap_boundaries`, and undoable). Alternative: one-off removal storing the removed boundaries. Affects storage, Scope "Reversible", AC 3.
+- [x] **OQ-307 Splits when all laps are removed.** Decided (user, 23 Nov 2026) as suggested: fall back to splits only, as a workout without device laps (AP-8). Alternative: keep one lap over the whole workout. Affects AC 1.
+- [x] **OQ-308 Show only when it applies.** Decided (user, 23 Nov 2026) as suggested: yes, only with at least one removable auto-lap boundary (or while on). Alternative: always shown, disabled with a reason. Affects AC 4.
+- [x] **OQ-309 Confirm dialog.** Decided (user, 23 Nov 2026) as suggested: none, because it is reversible and the viewing page changes only on Save. Affects the UI.
+- [x] **OQ-310 Viewing page and GPX.** Decided (user, 23 Nov 2026) as suggested: viewing page shows the merged laps after Save, like added laps; GPX has no laps and the preview image no lap markers, so both are unchanged. Affects Scope "Shown like any lap change".
+- [x] **OQ-311 Placement.** Decided (user, 23 Nov 2026) as suggested: one line under the laps table on the edit page, "Remove auto-laps (12)". Alternative: an item in the "+" menu (F-65). Affects the UI.
+- [x] **OQ-312 Added boundary on a restored device boundary.** Decided (user, 23 Nov 2026) as suggested: the device boundary wins; the added one is dropped on the next Save (ADR-060 already skips it in the build). Affects AC 5.
+- [x] **OQ-313 Which triggers count as auto.** Decided (user, 23 Nov 2026) as suggested: `distance`, `time`, `position` and missing/unknown. `position` merges all four FIT position values (incl. marked position and waypoint) and is kept whole, no parser change. Alternative: leave missing/unknown out (would not solve the Apple Watch case). Affects Scope "Auto-lap", AC 1, AC 2.
+- [x] **OQ-314 Multisport legs.** Decided (user, 23 Nov 2026) as suggested: a lap boundary at a leg boundary always stays, so no lap spans two legs (F-64). Affects AC 6.
