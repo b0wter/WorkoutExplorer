@@ -56,4 +56,10 @@
     {/if}
     {#if auto}<p class="laps-auto"><button type="button" class="laps-auto-btn">{auto.label}</button></p>{/if}
   </section>
+{:else if auto}
+  <!-- F-66 QA-66-r1-1: no laps module (no distance, no lengths) but the line must stay reachable to restore. -->
+  <section class="laps">
+    <div class="laps-head"><h2>{t('headLaps')}</h2></div>
+    <p class="laps-auto"><button type="button" class="laps-auto-btn">{auto.label}</button></p>
+  </section>
 {/if}

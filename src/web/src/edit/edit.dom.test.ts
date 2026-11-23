@@ -2142,6 +2142,51 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     });
   });
 
+  describe('F-66 QA-66-r1-1: no distance, no lengths', () => {
+    const line = (): HTMLButtonElement | null => document.querySelector<HTMLButtonElement>('.laps-auto-btn');
+    /** The golden's one implicit lap replaced by a time lap and a stop lap (metadata rewritten, columns shifted). */
+    const plain = (): void => {
+      const src = golden('indoor-no-distance-no-gps');
+      const v = new DataView(src);
+      const l = v.getUint32(10, true);
+      const meta = JSON.parse(new TextDecoder().decode(new Uint8Array(src, 14, l)));
+      const n = v.getUint32(6, true);
+      const mid = Math.floor(n / 2);
+      const lap = (a: number, b: number, trigger: string) => ({ start: meta.laps[0].start, end: meta.laps[0].end, start_index: a, end_index: b, trigger, stroke: '', totals: {} });
+      meta.laps = [lap(0, mid, 'time'), lap(mid, n, 'stop')];
+      const a4 = (x: number): number => Math.ceil(x / 4) * 4;
+      const d = a4(14 + new TextEncoder().encode(JSON.stringify(meta)).length) - a4(14 + l);
+      for (const st of meta.streams) st.byte_offset += d;
+      const out = new TextEncoder().encode(JSON.stringify(meta));
+      const head = a4(14 + out.length);
+      const buf = new Uint8Array(head + src.byteLength - a4(14 + l));
+      buf.set(new Uint8Array(src, 0, 14));
+      new DataView(buf.buffer).setUint32(10, out.length, true);
+      buf.set(out, 14);
+      buf.set(new Uint8Array(src, a4(14 + l)), head);
+      draft = () => new Response(buf.buffer.slice(0), { status: 200 });
+    };
+
+    it('removing every auto-lap keeps "Restore auto-laps"; it brings the laps back', async () => {
+      plain();
+      await start();
+      expect(line()!.textContent).toMatch(/^Remove auto-laps \(\d+\)$/);
+      line()!.click();
+      await settle();
+      expect(line()!.textContent).toBe('Restore auto-laps');
+      line()!.click();
+      await settle();
+      expect(line()!.textContent).toMatch(/^Remove auto-laps/);
+    });
+
+    it('opening with the setting stored on shows "Restore auto-laps"', async () => {
+      plain();
+      settings = fresh({ remove_auto_laps: true });
+      await start();
+      expect(line()!.textContent).toBe('Restore auto-laps');
+    });
+  });
+
   it('at 100 added boundaries Add lap is off with its reason', async () => {
     settings = fresh({ added_lap_boundaries: Array.from({ length: 100 }, (_, k) => at(11 + 10 * k)) });
     await start();
