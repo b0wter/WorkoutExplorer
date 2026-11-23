@@ -216,7 +216,7 @@ corpus: build-server
 # Rewrite every golden report and golden data file (and remove stale ones);
 # review the diff of expected/ and testdata/datafile/ (ADR-004, F-03 design).
 corpus-update:
-	cd $(SERVER_DIR) && go test ./internal/ingest -run '^TestCorpus$$' -update && go test ./internal/datafile -run '^TestDataFileCorpus$$' -update
+	cd $(SERVER_DIR) && go test ./internal/ingest -run '^TestCorpus$$' -update && go test ./internal/datafile -run '^(TestDataFileCorpus|TestAddedLapsSample|TestAutoLapsSample)$$' -update
 
 # Regenerate the synthetic corpus files; must give identical bytes.
 corpus-gen:

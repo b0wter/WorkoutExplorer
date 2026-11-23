@@ -28,6 +28,7 @@ const SETTINGS: Settings = {
   zones_threshold_power: null,
   pins: [],
   added_lap_boundaries: [],
+  remove_auto_laps: false,
 };
 
 function setup(hash: string, respond: () => Response | Promise<Response> = () => Response.json(SETTINGS), path = '/edit/' + ID) {

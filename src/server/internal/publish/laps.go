@@ -32,6 +32,15 @@ func window(w workout.Workout, r lifecycle.Record) (lo, hi int, ok bool) {
 	return workout.TrimWindow(w, r.TrimStartAt, r.TrimEndAt)
 }
 
+// deviceLaps is F-66 RA-4's step before the added boundaries: the laps after
+// the removal of auto-laps when r asks for it.
+func deviceLaps(w workout.Workout, r lifecycle.Record) workout.Workout {
+	if r.RemoveAutoLaps {
+		return workout.RemoveAutoLaps(w)
+	}
+	return w
+}
+
 // withAddedLaps is AL-6's step before the trim: r's boundaries split w's
 // laps. A stored instant that no longer fits is skipped (AL-3).
 func withAddedLaps(w workout.Workout, r lifecycle.Record) workout.Workout {
@@ -76,7 +85,7 @@ func (a *Area) CheckEdits(ctx context.Context, r lifecycle.Record, pins []lifecy
 		if !ok {
 			return nil, nil, lifecycle.ErrTrimTooShort
 		}
-		ends := workout.LapEnds(w)
+		ends := workout.LapEnds(deviceLaps(w, r))
 		lcs = make([]lifecycle.LapCheck, len(laps))
 		for i, t := range laps {
 			k, ok := resolveLap(w, t)

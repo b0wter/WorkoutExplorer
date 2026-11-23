@@ -52,7 +52,7 @@ describe('template', () => {
   it('F-49 ZN-8: one empty, hidden zones slot right after the laps module, like ActivityPage.svelte', () => {
     const slot = '<div id="zones-slot" class="zones-slot" hidden></div>';
     expect(template).toMatch(/<\/section>\{\{end\}\}\s*<div id="zones-slot" class="zones-slot" hidden><\/div>/);
-    expect(sources['../components/page/ActivityPage.svelte']).toMatch(new RegExp('<LapsTable laps=\\{model.Laps\\} \\{remove\\} />\\{/key\\}\\s*' + slot));
+    expect(sources['../components/page/ActivityPage.svelte']).toMatch(new RegExp('<LapsTable laps=\\{model.Laps\\} \\{remove\\} \\{auto\\} />\\{/key\\}\\s*' + slot));
   });
 
   it('F-50 EF-8: one empty, hidden efforts slot right after the zones slot, like ActivityPage.svelte', () => {

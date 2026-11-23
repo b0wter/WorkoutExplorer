@@ -201,7 +201,9 @@ describe('modules (AP-3, D-5, D-10)', () => {
     expect(summaryItems('swimming', { lengths: 40, stroke: 'bogus' }).map((i) => i.Key)).toEqual(['lengths']);
     expect(byName('pool-swim').Summary.map((i) => i.Key)).toContain('stroke');
     expect(byName('pool-swim-mixed').Summary.map((i) => i.Key)).not.toContain('stroke');
-    expect(byName('pool-swim-mixed').Laps!.Rows.map((r) => r[r.length - 1])).toEqual(['Freestyle', '', 'Backstroke', 'Drill', 'Mixed']);
+    const mixed = byName('pool-swim-mixed').Laps!;
+    const sc = mixed.Columns.findIndex((c) => c.Key === 'stroke');
+    expect(mixed.Rows.map((r) => r[sc])).toEqual(['Freestyle', '', 'Backstroke', 'Drill', 'Mixed']);
     expect(byName('triathlon').Laps!.Columns.map((c) => c.Key)).not.toContain('stroke');
   });
 });

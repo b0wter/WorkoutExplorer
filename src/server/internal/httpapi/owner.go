@@ -97,6 +97,8 @@ type settingsBody struct {
 	// AddedLapBoundaries is F-65 AL-2: the stored set, RFC 3339 UTC whole
 	// seconds, ascending; [] without any.
 	AddedLapBoundaries []string `json:"added_lap_boundaries"`
+	// RemoveAutoLaps is F-66 RA-2.
+	RemoveAutoLaps bool `json:"remove_auto_laps"`
 }
 
 // pinBody is one pin (F-56 PN-2); instants are RFC 3339 UTC whole seconds.
@@ -183,7 +185,7 @@ func settingsOf(r lifecycle.Record, v lifecycle.OwnerView) settingsBody {
 	for i, t := range r.AddedLapBoundaries {
 		laps[i] = t.UTC().Format(time.RFC3339)
 	}
-	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed, AddedLapBoundaries: laps,
+	return settingsBody{SuggestedTitle: v.Suggested, Trimmed: v.Trimmed, AddedLapBoundaries: laps, RemoveAutoLaps: r.RemoveAutoLaps,
 		TrimStartAt: at(r.TrimStartAt), TrimEndAt: at(r.TrimEndAt),
 		ZonesMaxHeartRate: r.ZonesMaxHeartRate, ZonesThresholdPower: r.ZonesThresholdPower,
 		Title: r.Title, Description: r.Description, HideStartM: r.HideStartM, HideEndM: r.HideEndM,
@@ -505,6 +507,9 @@ func parsePatch(body []byte) (p lifecycle.SettingsPatch, msg string) {
 			}
 			p.Pins = lifecycle.OptPins{Set: true, V: ps}
 			continue
+		case "remove_auto_laps":
+			p.RemoveAutoLaps = new(bool)
+			dst = p.RemoveAutoLaps
 		case "added_lap_boundaries":
 			// The whole set (F-65 AL-2); null and more than the cap are refused.
 			var strs []string

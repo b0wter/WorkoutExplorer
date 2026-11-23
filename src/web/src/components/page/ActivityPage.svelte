@@ -25,8 +25,10 @@
      *  the × of the added rows. */
     lapsKey?: number;
     remove?: ComponentProps<typeof LapsTable>['remove'];
+    /** F-66 RA-9, edit page: the line under the laps table. */
+    auto?: ComponentProps<typeof LapsTable>['auto'];
   }
-  let { model, report = false, edit = false, copy = true, lapsKey = 0, remove }: Props = $props();
+  let { model, report = false, edit = false, copy = true, lapsKey = 0, remove, auto }: Props = $props();
 </script>
 
 <div class="page" class:has-map={model.Route.Map !== ""}>
@@ -42,7 +44,7 @@
   {#if edit}<div class="pins-slot"></div>{/if}
   {#if model.ChartsClass}<div id="charts-slot" class={'charts ' + model.ChartsClass}></div>{/if}
   <div id="range-slot" class="range-slot"></div>
-  {#key lapsKey}<LapsTable laps={model.Laps} {remove} />{/key}
+  {#key lapsKey}<LapsTable laps={model.Laps} {remove} {auto} />{/key}
   <div id="zones-slot" class="zones-slot" hidden></div>
   <div id="efforts-slot" class="efforts-slot" hidden></div>
   <PageFooter {report} />

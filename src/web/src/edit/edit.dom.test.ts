@@ -8,6 +8,8 @@ import { flushSync } from 'svelte';
 import { loadGolden } from '../../test-support/golden.mjs';
 import type { Settings } from '../lib/owner';
 import { decodeDataFile } from '../lib/datafile';
+import { removableBoundaries, removeAutoLaps } from '../lib/addedlaps';
+import { createRangeStats } from '../lib/range';
 import { formatElapsed } from '../lib/format';
 import { en as editTexts } from './texts';
 import { en as errorTexts } from '../lib/errors/texts';
@@ -68,6 +70,7 @@ const fresh = (over: Partial<Settings> = {}): Settings => ({
   zones_threshold_power: null,
   pins: [],
   added_lap_boundaries: [],
+  remove_auto_laps: false,
   ...over,
 });
 
@@ -2091,6 +2094,97 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     await addLap();
     await save();
     expect(patches()[0].added_lap_boundaries).toEqual([at(20)]);
+  });
+
+  describe('F-66 RA-8, RA-9: remove auto-laps', () => {
+    const autoLine = (): HTMLButtonElement | null => document.querySelector<HTMLButtonElement>('.laps-auto-btn');
+    const gone = removableBoundaries(data.meta, data.time, data.sampleCount, 0, data.sampleCount - 1);
+    const after = removeAutoLaps(data, createRangeStats(data)).length;
+
+    it('the line shows the count, takes effect at once, Save sends the setting, Restore brings the device laps back', async () => {
+      expect(gone).toBeGreaterThan(0);
+      await start();
+      expect(autoLine()!.textContent).toBe(`Remove auto-laps (${gone})`);
+      autoLine()!.click();
+      await settle();
+      expect(rows()).toHaveLength(after);
+      expect(autoLine()!.textContent).toBe('Restore auto-laps');
+      await save();
+      expect(patches()).toEqual([{ remove_auto_laps: true }]);
+      autoLine()!.click();
+      await settle();
+      expect(rows()).toHaveLength(16);
+      expect(autoLine()!.textContent).toBe(`Remove auto-laps (${gone})`);
+    });
+
+    it('the count follows the live trim window: only boundaries strictly inside it', async () => {
+      await start();
+      const hi = data.meta.laps[4].end_index - 1;
+      const want = removableBoundaries(data.meta, data.time, data.sampleCount, 0, hi);
+      expect(want).toBeLessThan(gone);
+      type('trim_b', String(hi));
+      await settle();
+      expect(autoLine()?.textContent ?? null).toBe(want === 0 ? null : `Remove auto-laps (${want})`);
+    });
+
+    it('a stored on setting shows the removed laps and "Restore"; an added boundary on a restored device boundary is left out of the next Save', async () => {
+      const merged = new Set(removeAutoLaps(data, createRangeStats(data)).map((l) => l.end_index - 1));
+      const removedEnd = data.meta.laps.map((l) => l.end_index - 1).find((k) => !merged.has(k) && k > 0 && k < data.sampleCount - 1)!;
+      expect(removedEnd).toBeGreaterThan(0);
+      settings = fresh({ remove_auto_laps: true, added_lap_boundaries: [at(removedEnd)] });
+      await start();
+      expect(autoLine()!.textContent).toBe('Restore auto-laps');
+      expect(rows()).toHaveLength(after === 0 ? 2 : after + 1); // the added boundary splits a merged lap, or the whole workout
+      autoLine()!.click();
+      await settle();
+      await save();
+      expect(patches()).toEqual([{ added_lap_boundaries: [], remove_auto_laps: false }]);
+    });
+  });
+
+  describe('F-66 QA-66-r1-1: no distance, no lengths', () => {
+    const line = (): HTMLButtonElement | null => document.querySelector<HTMLButtonElement>('.laps-auto-btn');
+    /** The golden's one implicit lap replaced by a time lap and a stop lap (metadata rewritten, columns shifted). */
+    const plain = (): void => {
+      const src = golden('indoor-no-distance-no-gps');
+      const v = new DataView(src);
+      const l = v.getUint32(10, true);
+      const meta = JSON.parse(new TextDecoder().decode(new Uint8Array(src, 14, l)));
+      const n = v.getUint32(6, true);
+      const mid = Math.floor(n / 2);
+      const lap = (a: number, b: number, trigger: string) => ({ start: meta.laps[0].start, end: meta.laps[0].end, start_index: a, end_index: b, trigger, stroke: '', totals: {} });
+      meta.laps = [lap(0, mid, 'time'), lap(mid, n, 'stop')];
+      const a4 = (x: number): number => Math.ceil(x / 4) * 4;
+      const d = a4(14 + new TextEncoder().encode(JSON.stringify(meta)).length) - a4(14 + l);
+      for (const st of meta.streams) st.byte_offset += d;
+      const out = new TextEncoder().encode(JSON.stringify(meta));
+      const head = a4(14 + out.length);
+      const buf = new Uint8Array(head + src.byteLength - a4(14 + l));
+      buf.set(new Uint8Array(src, 0, 14));
+      new DataView(buf.buffer).setUint32(10, out.length, true);
+      buf.set(out, 14);
+      buf.set(new Uint8Array(src, a4(14 + l)), head);
+      draft = () => new Response(buf.buffer.slice(0), { status: 200 });
+    };
+
+    it('removing every auto-lap keeps "Restore auto-laps"; it brings the laps back', async () => {
+      plain();
+      await start();
+      expect(line()!.textContent).toMatch(/^Remove auto-laps \(\d+\)$/);
+      line()!.click();
+      await settle();
+      expect(line()!.textContent).toBe('Restore auto-laps');
+      line()!.click();
+      await settle();
+      expect(line()!.textContent).toMatch(/^Remove auto-laps/);
+    });
+
+    it('opening with the setting stored on shows "Restore auto-laps"', async () => {
+      plain();
+      settings = fresh({ remove_auto_laps: true });
+      await start();
+      expect(line()!.textContent).toBe('Restore auto-laps');
+    });
   });
 
   it('at 100 added boundaries Add lap is off with its reason', async () => {

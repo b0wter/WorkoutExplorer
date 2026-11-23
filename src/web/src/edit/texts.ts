@@ -68,6 +68,8 @@ export const en = {
   lapHere: 'Already a lap here',
   lapTrimmed: 'In the trimmed part',
   lapMax: 'Max. 100 added laps',
+  removeAutoLaps: 'Remove auto-laps ({n})',
+  restoreAutoLaps: 'Restore auto-laps',
   removeLap: 'Remove the added lap boundary at the end of lap {n}',
   pinHiddenSpot: 'Hidden or trimmed',
   pinHere: 'Already a pin here',

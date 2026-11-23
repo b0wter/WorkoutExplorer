@@ -47,6 +47,8 @@ export interface Settings {
   readonly pins: readonly ApiPin[];
   /** F-65 AL-2: owner-added lap boundaries, RFC 3339 UTC whole seconds, ascending; [] without any. */
   readonly added_lap_boundaries: readonly string[];
+  /** F-66 RA-2: the device's automatic laps are removed; always returned. */
+  readonly remove_auto_laps: boolean;
 }
 
 /** F-36 MC-2, MC-4: the server's preview frame for the public route, its key and whether a stored
@@ -56,7 +58,7 @@ export type PreviewFrame =
   | { readonly frame: { readonly lon: number; readonly lat: number; readonly zoom: number }; readonly key: string; readonly current: boolean };
 
 /** The fields a PATCH may carry (F-12). */
-export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_start_m' | 'hide_end_m' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power' | 'pins' | 'added_lap_boundaries'>>;
+export type SettingsPatch = Partial<Pick<Settings, 'title' | 'description' | 'hide_start_m' | 'hide_end_m' | 'lifetime_days' | 'trim_start_at' | 'trim_end_at' | 'zones_max_heart_rate' | 'zones_threshold_power' | 'pins' | 'added_lap_boundaries' | 'remove_auto_laps'>>;
 
 /** 'not-found' is ADR-025's single answer (the generic page, E-4); 'error' carries the server's
  *  `error` code and message ('' without one: UP-10's sentence); the caller picks the text by code

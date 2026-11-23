@@ -827,7 +827,8 @@ func poolSwimMixed() file {
 	const poolM = 25.0
 	f := file{name: "pool-swim-mixed.fit", start: baseStart.Add(35 * 24 * time.Hour), localOffset: intp(3600),
 		pool: &poolSpec{2500, typedef.DisplayMeasureMetric, 14}, lapStroke: map[int]typedef.SwimStroke{},
-		sessStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeMixed}}
+		sessStroke: map[int]typedef.SwimStroke{0: typedef.SwimStrokeMixed},
+		trigger:    map[int]typedef.LapTrigger{88: typedef.LapTriggerManual}} // F-66: the rest lap ends by button, so removal leaves a freestyle lap and a mixed one
 	rng := rand.New(rand.NewPCG(36, 37))
 	t, done := 0, 0
 	for _, lp := range laps {

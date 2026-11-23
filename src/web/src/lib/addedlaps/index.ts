@@ -63,6 +63,24 @@ export function snapLapBoundary(meta: Pick<WorkoutMeta, 'sessions' | 'lengths'>,
   return best < 0 ? i : best;
 }
 
+/** Go's completeTotals on cleared totals: range values over the samples [a, b], nothing below two
+ *  samples; no speed, power or cadence for a lap starting in a transition (F-18 L-1). */
+function rangeTotals(meta: Pick<WorkoutMeta, 'sessions'>, stats: RangeStats, a: number, b: number, start: number): Totals {
+  if (b <= a) return {};
+  const v = stats.query(a, b, emptyValues());
+  const o: Record<string, number> = { elapsed_time: v.elapsed };
+  const put = (k: string, x: number): void => void (x === x && (o[k] = x));
+  put('distance', v.distance);
+  put('ascent', v.gain);
+  put('avg_heart_rate', v.heartRate);
+  if (meta.sessions.find((s) => s.start <= start && start <= s.end)?.sport !== 'transition') {
+    put('avg_speed', v.speed);
+    put('avg_power', v.power);
+    put('avg_cadence', v.cadence);
+  }
+  return o;
+}
+
 /** AL-3: every sample of `at` strictly inside (lo, hi) that is not a lap end splits the lap that
  *  holds it (of overlapping laps, the later-starting). Parts share the split sample; their totals
  *  are range values (F-18 L-1, no speed, power or cadence for a part starting in a transition);
@@ -83,24 +101,7 @@ export function addLaps(data: Pick<WorkoutData, 'meta' | 'time' | 'sampleCount'>
     if (best >= 0 && !c.includes(k)) cuts.set(best, [...c, k]);
   }
   if (cuts.size === 0) return [...meta.laps];
-  const out = emptyValues();
-  const transition = (t: number): boolean => meta.sessions.find((s) => s.start <= t && t <= s.end)?.sport === 'transition';
-  /** Go's completeTotals on cleared totals: range values over [a, b], nothing below two samples. */
-  const totals = (a: number, b: number, start: number): Totals => {
-    if (b <= a) return {};
-    const v = stats.query(a, b, out);
-    const o: Record<string, number> = { elapsed_time: v.elapsed };
-    const put = (k: string, x: number): void => void (x === x && (o[k] = x));
-    put('distance', v.distance);
-    put('ascent', v.gain);
-    put('avg_heart_rate', v.heartRate);
-    if (!transition(start)) {
-      put('avg_speed', v.speed);
-      put('avg_power', v.power);
-      put('avg_cadence', v.cadence);
-    }
-    return o;
-  };
+  const totals = (a: number, b: number, start: number): Totals => rangeTotals(meta, stats, a, b, start);
   const parts = (j: number, base: Lap): Lap[] => {
     const ks = cuts.get(j)!.sort((x, y) => x - y);
     let start = base.start;
@@ -123,4 +124,55 @@ export function addLaps(data: Pick<WorkoutData, 'meta' | 'time' | 'sampleCount'>
     if (s.lap < 0 && cuts.has(j)) laps.push(...parts(j, { start: time[s.first], end: time[s.last], start_index: s.first, end_index: s.last + 1, trigger: '', stroke: '', totals: {} }));
   });
   return laps.sort((x, y) => x.start - y.start); // stable
+}
+
+/** F-66 OQ-313: a device lap ended by distance, time, position, or by nothing the parser knows. */
+export const isAutoLap = (trigger: string): boolean => trigger === 'distance' || trigger === 'time' || trigger === 'position' || trigger === '';
+
+/** MS-3: the last session starting at or before the lap's first sample. */
+const legOf = (meta: Pick<WorkoutMeta, 'sessions'>, time: Float64Array, n: number, l: Lap): number => {
+  const at = l.start_index < n ? time[l.start_index] : l.start;
+  let k = -1;
+  meta.sessions.forEach((s, i) => void (s.start <= at && (k = i)));
+  return k;
+};
+
+/** F-66 RA-3, RA-5: the mirror of Go's workout.RemoveAutoLaps over the device laps. The end of every
+ *  auto-lap with a next lap in the same leg goes; a run of those laps and the lap after it become one:
+ *  first start, latest end, trigger of the last part, common stroke or 'mixed', range values. One lap
+ *  left after a removal: none (OQ-307). */
+export function removeAutoLaps(data: Pick<WorkoutData, 'meta' | 'time' | 'sampleCount'>, stats: RangeStats): Lap[] {
+  const { meta, time, sampleCount: n } = data;
+  const laps = meta.laps;
+  const out: Lap[] = [];
+  let removed = false;
+  for (let i = 0; i < laps.length; ) {
+    let j = i;
+    while (j + 1 < laps.length && isAutoLap(laps[j].trigger) && legOf(meta, time, n, laps[j]) === legOf(meta, time, n, laps[j + 1])) j++;
+    if (j === i) {
+      out.push(laps[i++]);
+      continue;
+    }
+    removed = true;
+    let [end, end_index, stroke] = [laps[i].end, laps[i].end_index, ''];
+    for (const p of laps.slice(i, j + 1)) {
+      if (p.end > end) [end, end_index] = [p.end, p.end_index];
+      stroke = p.stroke === '' || p.stroke === stroke ? stroke : stroke === '' ? p.stroke : 'mixed';
+    }
+    const m: Lap = { ...laps[i], end, end_index, trigger: laps[j].trigger, stroke, totals: rangeTotals(meta, stats, laps[i].start_index, end_index - 1, laps[i].start) };
+    out.push(m);
+    i = j + 1;
+  }
+  return !removed ? [...laps] : out.length === 1 ? [] : out;
+}
+
+/** F-66 RA-9: the number of removable auto-lap boundaries strictly inside the samples (lo, hi). */
+export function removableBoundaries(meta: Pick<WorkoutMeta, 'laps' | 'sessions'>, time: Float64Array, n: number, lo: number, hi: number): number {
+  const { laps } = meta;
+  let c = 0;
+  for (let i = 0; i + 1 < laps.length; i++) {
+    const k = laps[i].end_index - 1;
+    if (isAutoLap(laps[i].trigger) && legOf(meta, time, n, laps[i]) === legOf(meta, time, n, laps[i + 1]) && k > lo && k < hi) c++;
+  }
+  return c;
 }
