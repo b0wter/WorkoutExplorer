@@ -398,8 +398,9 @@
   display: block;
   box-sizing: border-box;
   min-width: 0; /* a flex item of the wrapping tools row: shrinks to the row, not to the reason text */
-  max-width: 100%;
+  width: 100%; /* the full column */
   padding: 8px;
+  background: var(--card); /* as the summary metrics */
   border: 1px solid var(--line);
   border-radius: 6px;
 }
