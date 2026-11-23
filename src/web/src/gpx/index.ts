@@ -21,10 +21,12 @@ async function publicPins(input: GpxInput): Promise<ShownPin[] | undefined> {
 }
 
 export async function downloadGpx(doc: Document, input: GpxInput): Promise<void> {
-  const url = URL.createObjectURL(new Blob(gpxParts(input, await publicPins(input)), { type: 'application/gpx+xml' }));
+  const name = gpxFileName(input);
+  // A File, not a Blob: iOS Safari titles its "Download?" prompt with the object URL's name unless the file has one.
+  const url = URL.createObjectURL(new File(gpxParts(input, await publicPins(input)), name, { type: 'application/gpx+xml' }));
   const a = doc.createElement('a');
   a.href = url;
-  a.download = gpxFileName(input);
+  a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), REVOKE_MS);
 }
