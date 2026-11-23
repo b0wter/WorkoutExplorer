@@ -1831,6 +1831,21 @@ describe('F-56 PN-12: pins on the edit page (AC 33 to 36, 41)', () => {
     expect([add.hidden, add.getAttribute('aria-expanded'), document.querySelector<HTMLElement>('.plus-menu')!.hidden]).toEqual([false, 'false', true]);
   });
 
+  it('one column: one reserved reason line under the buttons, both reasons joined, items keep their own reason for assistive tech', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
+    settings = fresh({ ...ON, pins: [] });
+    await start();
+    const note = document.querySelector<HTMLElement>('.plus-note')!;
+    expect(note.hidden).toBe(false);
+    expect(note.textContent).toBe(`${editTexts.lapHere} · ${editTexts.pinHiddenSpot}`);
+    expect(note.title).toBe(note.textContent);
+    const add = document.querySelector<HTMLButtonElement>('.plus-item')!;
+    expect(document.getElementById(add.getAttribute('aria-describedby')!)!.textContent).toBe(editTexts.lapHere);
+    await pick(2000);
+    expect(note.textContent).toBe(''); // still in the DOM: the line is reserved
+    expect(note.isConnected).toBe(true);
+  });
+
   it('one column: the items are disabled, as "+" is, until a cursor or range is set', async () => {
     vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }));
     settings = fresh({ ...ON, pins: [] });
@@ -1938,6 +1953,31 @@ describe('F-65 AL-8, AL-9: added laps on the edit page', () => {
     frames.splice(0).forEach((f) => f(0));
     await settle();
     expect([menu.hidden, plus().disabled]).toEqual([true, true]);
+  });
+
+  it('AL-9: a boundary within 2 s of a device lap end counts as there already (cursor and both range ends)', async () => {
+    await start();
+    const e = data.meta.laps[0].end_index - 1;
+    const near = data.time.findIndex((x, i) => i > e && x - data.time[e] > 0 && x - data.time[e] <= 2);
+    const far = data.time.findIndex((x, i) => i > e && x - data.time[e] > 2);
+    const sel = stubLog.chartStack[0].selection!;
+    const range = async (a: number, b: number): Promise<void> => {
+      sel.set(a, b);
+      frames.splice(0).forEach((f) => f(0));
+      await settle();
+    };
+    await pick(near);
+    plus().click();
+    expect([item('Add lap').getAttribute('aria-disabled'), reason('Add lap')]).toEqual(['true', 'There is a lap boundary here already.']);
+    await range(e, near); // both ends at or near the same end
+    expect(item('Add lap').getAttribute('aria-disabled')).toBe('true');
+    await range(near, far); // the far end is new: only it is added
+    expect(item('Add lap').getAttribute('aria-disabled')).toBe('false');
+    item('Add lap').click();
+    await settle();
+    expect(rows()).toHaveLength(17);
+    await save();
+    expect(patches()).toEqual([{ added_lap_boundaries: [at(far)] }]);
   });
 
   it('Add lap splits the lap at the cursor: one more row, "Added" then the device trigger, × only there; Save sends the set once', async () => {

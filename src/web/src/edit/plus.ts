@@ -40,6 +40,9 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
   button.setAttribute('aria-expanded', 'false');
   const menu = group.appendChild(make('div', 'plus-menu'));
   menu.hidden = true;
+  // Flat mode: one reserved line under the buttons for the reasons (the per-item ones are hidden by CSS).
+  const note = group.appendChild(make('div', 'edit-small plus-note'));
+  note.hidden = true;
   const rows = items.map((item) => {
     const row = menu.appendChild(make('div', 'plus-row'));
     const b = row.appendChild(make('button', 'edit-button plus-item'));
@@ -55,15 +58,18 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
     return { item, row, b, why };
   });
   const paint = (): void => {
+    const reasons: string[] = [];
     for (const { item, row, b, why } of rows) {
       const s = item.state();
       row.hidden = !!s.hidden;
       b.setAttribute('aria-disabled', String(s.off));
       b.disabled = flat && button.disabled; // flat: no cursor or range, as the disabled "+"
       why.textContent = s.off ? s.why : '';
+      if (!s.hidden && why.textContent) reasons.push(why.textContent);
       if (why.textContent) b.setAttribute('aria-describedby', why.id);
       else b.removeAttribute('aria-describedby');
     }
+    note.textContent = note.title = reasons.join(' · ');
   };
   const outside = (e: Event): void => {
     if (!group.contains(e.target as Node)) close(false);
@@ -115,6 +121,7 @@ export function createPlus(doc: Document, items: readonly PlusItem[]): Plus {
       button.hidden = f;
       button.setAttribute('aria-expanded', 'false');
       menu.hidden = !f;
+      note.hidden = !f;
       if (f) paint();
     },
   };

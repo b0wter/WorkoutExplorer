@@ -12,6 +12,9 @@ import { indexAt, instantAt, removed } from '../pins';
 import type { PlusItem } from './plus';
 import { t } from './texts';
 
+/** A new boundary this close (seconds) to an existing one is no boundary (a split end misses a device lap by a sample or two). */
+const LAP_TOLERANCE_S = 2;
+
 /** One lap row's × (LapsTable's `remove`): its boundary, name and dimmed reason; null = no ×. */
 export type LapRemoval = { readonly at: number; readonly name: string; readonly dim: string } | null;
 
@@ -77,7 +80,9 @@ export function createAddedLaps(data: WorkoutData, startS: number, stored: reado
         const ts = (a >= 0 ? [a, b] : cursor() >= 0 ? [cursor()] : []).map(snap);
         const [lo, hi] = cut();
         if (ts.some((k) => k < lo || k > hi)) return t('lapTrimmed');
-        const add = [...new Set(ts.filter((k) => k !== lo && k !== hi && !ends.has(k) && !set.includes(k)))];
+        // Within LAP_TOLERANCE_S of an existing end, added boundary or the cut counts as there already.
+        const there = [...ends, ...set, lo, hi].map((k) => time[k]);
+        const add = [...new Set(ts.filter((k) => !there.some((x) => Math.abs(x - time[k]) <= LAP_TOLERANCE_S)))];
         if (add.length === 0) return t('lapHere');
         // Only what Save would send counts: boundaries the live trim removes do not (AL-8).
         return set.filter(kept).length + add.length > MAX_ADDED_LAPS ? t('lapMax') : add;
