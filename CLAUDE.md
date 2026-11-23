@@ -56,3 +56,4 @@ Escalate to the user instead of looping when a finding needs a product decision 
 ## Releases
 
 - Before every release, check whether a newer Caddy minor version exists (Caddy patches float automatically, minors are pinned, F-59). If one does, raise the pin in the small lane and test it before tagging. If a new Caddy **major** version exists, have `senior-requirements-engineer` add a feature "Upgrade to Caddy N" (upgrade and test) at the top of the build order in `features/README.md`, and tell the user.
+- Every release gets a changelog on GitHub. Once CI has created the release for the tag, set its notes with `gh release edit vX.Y.Z --notes-file <file>`. List every feature added since the previous tag (`F-NN` and one plain line each), notable fixes, and the upgrade steps (migrations, regenerate, irreversible steps). Show the notes to the user before publishing them.
