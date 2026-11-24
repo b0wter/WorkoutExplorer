@@ -49,5 +49,4 @@ Each kind runs against a local fake endpoint; none contacts a real service (AC 5
 
 | ID | Question | Blocks | Owner |
 | --- | --- | --- | --- |
-| F70-Q3 | ntfy.sh copies every message on a topic anyone can read, including `Click` and `Actions` (the delete link), to Google FCM, and through it to APNs for iOS, unless the request sends `Firebase: no` (QA-70-r1-6). Send it? See the QA-70-r1-6 report | NS-5 header list; About page and RUNBOOK wording | user |
 | F70-V1 | Fact to verify, not a decision: do ntfy's iOS app and web app show `view` action buttons? ntfy's docs do not say (checked 24 Nov 2026). If not, iOS operators see no delete button and use the Click target and the CLI; RUNBOOK says so | RUNBOOK wording | backend engineer |

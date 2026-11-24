@@ -1,9 +1,28 @@
 package about
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
+
+// TestNtfyPushSentence (QA-70-r2-3): the FCM/Google/Apple sentence is in the
+// rendered About page only with ntfy.
+func TestNtfyPushSentence(t *testing.T) {
+	for _, c := range []struct {
+		n    Notify
+		want bool
+	}{{Notify{Kind: "ntfy", Host: "ntfy.example"}, true}, {Notify{Kind: "pushover"}, false}, {Notify{Kind: "callback"}, false}, {Notify{}, false}} {
+		src, _ := os.ReadFile("../../../web/about.html")
+		got, err := fill([]byte(strings.Replace(string(src), "<!--wx:attributions-->", MarkerDone, 1)), Values{Notify: c.n})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if has := strings.Contains(string(got), `data-t="ab_ntfyPush"`); has != c.want {
+			t.Errorf("kind %q: sentence present %v, want %v", c.n.Kind, has, c.want)
+		}
+	}
+}
 
 func TestParseOperator(t *testing.T) {
 	in := "## Who <runs> it\r\nJane\nDoe\n- a & b\n- c\n\nText <!--wx:version--> {{ x }}\n- late\n"
