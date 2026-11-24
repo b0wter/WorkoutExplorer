@@ -649,4 +649,13 @@ func TestParseOverlappingLapsBound(t *testing.T) {
 	if d > 6*time.Second { // ADR-017 budget is 2 s; slack for a loaded CI machine
 		t.Errorf("parse took %v", d)
 	}
+	// QA-CR-r2-2: the owner-triggered lap spans stay linear too (1.6 s / 3.1 s before the fix).
+	start = time.Now()
+	n := len(w.Samples.Offset)
+	ends := workout.LapEnds(w)
+	_ = workout.AddLaps(w, []int{n / 3, n / 2}, 0, n)
+	t.Logf("LapEnds+AddLaps %v (%d ends)", time.Since(start), len(ends))
+	if time.Since(start) > 2*time.Second {
+		t.Errorf("LapEnds+AddLaps took %v", time.Since(start))
+	}
 }

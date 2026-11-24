@@ -26,16 +26,20 @@ func lapSpans(w *Workout) []lapSpan {
 	off := w.Samples.Offset
 	n := len(off)
 	var out []lapSpan
-	covered := make([]bool, n)
+	diff := make([]int, n+1) // difference array: O(n + laps), not laps x samples (QA-CR-r2-2)
 	for i, l := range w.Laps {
 		from, to := SampleRange(off, l.Start, l.End)
 		if to-from < 1 {
 			continue
 		}
 		out = append(out, lapSpan{from, to - 1, i})
-		for k := from; k < to; k++ {
-			covered[k] = true
-		}
+		diff[from]++
+		diff[to]--
+	}
+	covered := make([]bool, n)
+	for k, c := 0, 0; k < n; k++ {
+		c += diff[k]
+		covered[k] = c > 0
 	}
 	for k := 0; k < n; {
 		if covered[k] {

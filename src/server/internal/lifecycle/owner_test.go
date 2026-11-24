@@ -486,41 +486,20 @@ func TestDeleteFailureIsServerError(t *testing.T) {
 	}
 }
 
-// A delete cannot fall between an update's commit and its hook (O-7): the
-// hook never sees a row that is gone.
-func TestOwnerWritesAreSerialised(t *testing.T) {
-	var r *fakeRepo
-	hook := &fakeHook{}
-	s, repo, _, _, c, _ := owned(t, hook)
-	r = repo
-	for id, rec := range r.rows {
-		pub := t0
-		rec.Visibility, rec.PublishedAt = Unlisted, &pub
-		r.rows[id] = rec
-	}
-	var gone bool
-	var mu sync.Mutex
-	hook.check = func(Record) {
-		time.Sleep(time.Millisecond)
-		mu.Lock()
-		defer mu.Unlock()
-		if len(r.rows) == 0 || gone {
-			t.Error("hook ran for a deleted workout")
-		}
-	}
+// ADR-061: a delete may land anywhere between a write's steps; the end state
+// is always row gone, and no call fails with a server error.
+func TestOwnerWritesAndDeleteEndGone(t *testing.T) {
+	s, r, _, _, c, _ := owned(t, &fakeHook{})
 	var wg sync.WaitGroup
 	for i := range 20 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			if i == 10 {
-				time.Sleep(5 * time.Millisecond)
+				time.Sleep(time.Millisecond)
 				if err := s.DeleteByOwner(context.Background(), c.PublicID, c.EditToken); err != nil {
 					t.Error(err)
 				}
-				mu.Lock()
-				gone = true
-				mu.Unlock()
 				return
 			}
 			_, err := s.Update(context.Background(), c.PublicID, c.EditToken, SettingsPatch{HideStartM: ip(300 * (i % 2))})
@@ -530,6 +509,37 @@ func TestOwnerWritesAreSerialised(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	r.mu.Lock()
+	rows := len(r.rows)
+	r.mu.Unlock()
+	if rows != 0 {
+		t.Errorf("%d rows left", rows)
+	}
+}
+
+// QA-CR-r2-1: a failed row delete is a server error, never a 404.
+type failingDeleteRepo struct{ *fakeRepo }
+
+func (r failingDeleteRepo) DeleteWorkout(context.Context, string) (bool, error) {
+	return false, errors.New("database is locked (SQLITE_BUSY)")
+}
+
+func TestDeleteRowErrorIsServerError(t *testing.T) {
+	s, r, _, l, c, _ := owned(t, nil)
+	s.d.Repo = failingDeleteRepo{r}
+	var se *ServerError
+	if err := s.DeleteByOwner(context.Background(), c.PublicID, c.EditToken); !errors.As(err, &se) {
+		t.Fatalf("answer %v, want a server error", err)
+	}
+	errLines := 0
+	for _, m := range l.all(t) {
+		if m["level"] == "ERROR" {
+			errLines++
+		}
+	}
+	if errLines == 0 || len(r.rows) != 1 {
+		t.Errorf("ERROR lines %d, rows %d", errLines, len(r.rows))
+	}
 }
 
 func TestOwnerDeleteReleasesStorage(t *testing.T) {
