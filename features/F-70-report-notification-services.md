@@ -27,6 +27,7 @@ A hoster who does not use Pushover gets report notifications through a service t
 - **Updater alerts** (OQ-343): the updater (F-52, F-60) sends its failure alert through the same chosen service.
 - **Revocation** (OQ-344, changed by F70-Q1, user, 24 Nov 2026): every delete key is revoked at a start with notifications off (ADR-042), and automatically at the first start after the service, URL or token changes (Pushover settings included). The server keeps only a salted hash of the settings in a small file in the data directory; the first start after the upgrade revokes the delete links still out, once. RUNBOOK tells the hoster that a switch or a changed topic or token revokes open delete links, and that after a leak they change the topic or token.
 - **Disclosure:** the About page names the chosen service (or "your own server" for a callback) and what it learns (INF-1); RUNBOOK, `example.env` and the three install paths explain each service and the route out.
+- **ntfy and push providers** (F70-Q3, user, 24 Nov 2026): requests never send `Firebase: no`; fast delivery matters more than the risk. A public ntfy server such as ntfy.sh may pass the whole message, viewing and delete links included, to Google (Firebase Cloud Messaging) and Apple (APNs). Whenever ntfy is the configured service, the About page says so in plain words. RUNBOOK explains it, that a self-hosted ntfy with `upstream-base-url` sends the upstream only a poll request without the message, and that `Firebase: no` is not offered as an option.
 
 ## Out of scope
 - Email (no email, settled), SMS, chat services with their own APIs (Matrix, Telegram, Slack) except through the callback.
@@ -47,6 +48,7 @@ A hoster who does not use Pushover gets report notifications through a service t
 - [ ] Endpoint down, timing out (10 s), answering 4xx/5xx or redirecting: report stored and confirmed, one WARN line without secret, no delete key issued for that report.
 - [ ] Rate limit: the 11th report within an hour is folded into the next message as today, on every service.
 - [ ] A start with notifications off revokes every delete key; so does the first start after the service, URL, token or a Pushover setting changed, and the first start after the upgrade; a restart with unchanged settings keeps them; the data directory holds no setting in plain text; a failed update alerts through the chosen service.
+- [ ] With ntfy set, the About page states that the ntfy server may pass the message, including the viewing and delete links, to Google and Apple for push delivery; with Pushover, a callback or notifications off, it does not. No ntfy request carries a `Firebase` header.
 - [ ] About page names the service; RUNBOOK, `example.env`, DOCKER, PODMAN and BAREMETAL docs cover it; tests with a local fake endpoint per service, none contacting a real service in CI.
 
 ## Open questions
