@@ -661,6 +661,10 @@ tbody tr:nth-child(even) {
 .foot a {
   margin-right: 12px;
 }
+.gh-icon {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
 /* F-28 RF-1: Report opens a dialog, so it is a button, drawn like the About link. */
 .foot button {
   padding: 0;

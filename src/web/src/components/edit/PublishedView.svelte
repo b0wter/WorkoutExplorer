@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GithubLink from '../page/GithubLink.svelte';
   // The published page (F-20 C-5, AC-6): the viewing link with Copy (C-4) and Go there, the edit link
   // with Copy, Go there (a button, lib/owner navigates) and the save warning, F-53's list note (AC 51), and Delete. No other workout data.
   // CRITICAL: the edit link is the only place the token is in the DOM: one text node in a
@@ -66,4 +67,4 @@
     <span class="edit-status" role="status">{busy || status}</span>
   </p>
 </main>
-<footer class="foot generic-foot" {@attach impressum}><a href="/about">{tc('about')}</a></footer>
+<footer class="foot generic-foot" {@attach impressum}><a href="/about">{tc('about')}</a> <GithubLink /></footer>

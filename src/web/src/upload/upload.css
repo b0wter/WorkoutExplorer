@@ -83,6 +83,16 @@
   display: none;
 }
 /* F-63: the iOS Shortcut hint, in the page only while serve has the link; shown without JavaScript. */
+.source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.source a {
+  color: inherit;
+}
 .shortcut {
   color: var(--muted);
   font-size: 14px;
