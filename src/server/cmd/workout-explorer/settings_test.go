@@ -81,7 +81,7 @@ func TestAboutTemplateContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->", "<!--wx:shortcut-->", "<!--wx:shortcut-url-->", "<!--/wx:shortcut-->", "<!--wx:updates-->", "<!--/wx:updates-->"} {
+	for _, m := range []string{about.MarkerList, "<!--wx:operator-->", "<!--wx:pushover-->", "<!--/wx:pushover-->", "<!--wx:shortcut-->", "<!--wx:shortcut-url-->", "<!--/wx:shortcut-->", "<!--wx:updates-->", "<!--/wx:updates-->", "Google (Firebase) and Apple"} {
 		if !strings.Contains(string(src), m) {
 			t.Errorf("about.html lacks %s", m)
 		}
