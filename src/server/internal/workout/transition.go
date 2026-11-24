@@ -37,6 +37,9 @@ var transitionStreams = [numStreams]transitionRule{
 	streamSpeed:       ruleDrop,
 	streamCadence:     ruleDrop,
 	streamPower:       ruleDrop,
+	// F-68 XS-8: running dynamics are dropped like cadence (AP-4).
+	streamVerticalOscillation: ruleDrop, streamGroundContactTime: ruleDrop,
+	streamStrideLength: ruleDrop, streamVerticalRatio: ruleDrop,
 }
 
 // transitionTotalKept lists every field of Totals the same way. Time totals

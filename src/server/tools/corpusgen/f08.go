@@ -83,6 +83,7 @@ func cutDerived(outputs []output) ([]output, error) {
 		{"run-30min.fit", "run-30min-cut-60.fit", 6, 10},
 		{"triathlon.fit", "triathlon-cut-90.fit", 9, 10},
 		{"chained-ride-ride.fit", "chained-ride-ride-cut-75.fit", 3, 4},
+		{"stryd-power.fit", "stryd-power-cut-60.fit", 6, 10},           // F-68
 		{"pool-swim-mixed.fit", "pool-swim-mixed-cut-80.fit", 8, 10},   // F-48: no session, lengths kept (OQ-185)
 		{"zones-wahoo-ride.fit", "zones-wahoo-ride-cut-60.fit", 6, 10}, // F-49: no session, zone messages kept (UP-3)
 	} {
@@ -198,6 +199,10 @@ func standalone() ([]output, error) {
 	}
 	b, err = chainedRideRun()
 	if err := add("chained-ride-run.fit", b, err); err != nil {
+		return nil, err
+	}
+	b, err = strydChained()
+	if err := add("stryd-chained.fit", b, err); err != nil {
 		return nil, err
 	}
 	b, err = encode(triathlon())

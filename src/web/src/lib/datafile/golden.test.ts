@@ -94,6 +94,9 @@ describe('golden fixtures', () => {
   describe.each(goldens.map((g) => [g.name, g] as const))('%s', (_name, g) => {
     it('decodes to the fixture (AC 2)', async () => {
       const f = fixtureOf(g);
+      // Version 8 running dynamics are read and not exposed until the frontend part of F-68.
+      const dyn = new Set(['vertical_oscillation', 'ground_contact_time', 'stride_length', 'vertical_ratio']);
+      const fixtureStreams = f.streams.filter((s) => !dyn.has(s.name));
       const data = decodeOk(g.bin);
       const header = new DataView(g.bin);
       expect(g.bin.byteLength).toBe(f.byte_length);
@@ -103,7 +106,7 @@ describe('golden fixtures', () => {
       expect(l).toBe(f.metadata_length);
 
       const streams = streamsOf(data);
-      expect(streams.map(([name]) => name)).toEqual(f.streams.map((s) => s.name));
+      expect(streams.map(([name]) => name)).toEqual(fixtureStreams.map((s) => s.name));
 
       // Byte offsets from the file's own descriptors, read by the test.
       const meta = JSON.parse(new TextDecoder().decode(new Uint8Array(g.bin, 14, l))) as {
@@ -113,7 +116,7 @@ describe('golden fixtures', () => {
 
       for (let k = 0; k < streams.length; k++) {
         const [name, values] = streams[k];
-        const exp = f.streams[k];
+        const exp = fixtureStreams[k];
         const s = SCALE[name];
         expect(values.length, name).toBe(f.sample_count);
         let valid = 0;

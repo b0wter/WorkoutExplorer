@@ -239,14 +239,40 @@ func TestSizeBudget4h(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(f.Streams) != len(specs) {
-		t.Fatalf("ride-4h has streams %v, want all %d", streamNames(f), len(specs))
+	if len(f.Streams) != len(specs)-4 { // all but the four running dynamics (F-68)
+		t.Fatalf("ride-4h has streams %v, want all %d", streamNames(f), len(specs)-4)
 	}
 	br, err := precompress.Brotli(bin)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("ride-4h: data.bin %d bytes, data.bin.br %d bytes (budget %d)", len(bin), len(br), budget)
+	if len(br) >= budget {
+		t.Errorf("data.bin.br is %d bytes, budget is under %d", len(br), budget)
+	}
+}
+
+// TestSizeBudget4hRun: a 4-hour run with every stream, native power and the
+// four running dynamics (F-68 stop rule), is under 500 KB as data.bin.br.
+func TestSizeBudget4hRun(t *testing.T) {
+	const budget = 500_000
+	w := parseFile(t, filepath.Join(corpusDir, "synthetic", "run-4h-dynamics.fit"))
+	bin, err := Encode(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := Decode(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Streams) != len(specs) {
+		t.Fatalf("run-4h-dynamics has streams %v, want all %d", streamNames(f), len(specs))
+	}
+	br, err := precompress.Brotli(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("run-4h-dynamics: data.bin %d bytes, data.bin.br %d bytes (budget %d)", len(bin), len(br), budget)
 	if len(br) >= budget {
 		t.Errorf("data.bin.br is %d bytes, budget is under %d", len(br), budget)
 	}

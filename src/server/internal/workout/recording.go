@@ -68,4 +68,12 @@ type RawRecord struct {
 	At time.Time
 	// Values; NaN = not recorded.
 	Lat, Lon, Altitude, Distance, Speed, HeartRate, Cadence, Power, Temperature float64
+
+	// F-68 XS-1: running dynamics at the stored resolution of data file
+	// version 8; 0 = not recorded (devices write 0 while standing). Zero
+	// values of a literal therefore mean "absent".
+	VerticalOscillation uint16 // 1 mm
+	GroundContactTime   uint16 // 1 ms
+	StrideLength        uint16 // 1 mm
+	VerticalRatio       uint16 // 0.1 %
 }

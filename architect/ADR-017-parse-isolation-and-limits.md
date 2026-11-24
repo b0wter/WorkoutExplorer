@@ -103,6 +103,8 @@ Uploads go through `(*Parser).Accept`: parse, strip identifying data (UP-9), and
    - B is about 150 to 250 MB. The workout is close to `Normalise`'s 98 MB, the encoder is the 12-hour file's 8.8 MB per run scaled to 500,000 samples, and the upload and stripped copy add about 35 MB.
    - So M(4) is about 0.85 to 1.05 GB, plus L.
 
+   (note, 24 Nov 2026, F-68 XS-11) Four running-dynamics values per record and the Stryd list raise A by about 15 to 45 MB (max RSS 337 MB at 440,000 F-68 records, the most that fit in `MaxBytes`, against 289 to 322 MB for the 500,000-record twin; MEASUREMENTS.md, "Extra sensor streams"). The model's form and the 400 MB rule hold; M(4) grows by about 90 MB at most.
+
    N = 16 allows up to 2·A + 14·B + L in the worst case. In practice, requests waiting for a slot hold only U. Every later in-memory table that clients can grow (for example F-27's report limiter) states its own bound and adds it to M(N) the same way.
 
    (note, 9 Nov 2026, F-36 MC-4, MC-5) One preview-map upload at a time adds **P ≈ 55 MB allocated in total** (4 MB body, about 16 MB for the check and re-encode of a 16-bit upload, up to about 34 MB for the in-place build's decode, composite, quantize and up to three encodes; measured on noise, sequential, so the live peak is lower) to M(N); a second one gets `503`. One frame GET at a time takes its own slot before the original is read, else `503`, so it adds at most one original plus one parse (QA-36-r1-1). Both builds use the parser's existing slots.

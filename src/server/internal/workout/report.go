@@ -25,8 +25,8 @@ const (
 
 // streamNames and streamDecimals are in report order (stream* constants).
 var (
-	streamNames    = [numStreams]string{"latitude", "longitude", "altitude", "distance", "speed", "heart_rate", "cadence", "power", "temperature"}
-	streamDecimals = [numStreams]int{decPosition, decPosition, decAltDist, decAltDist, decSpeed, decOther, decOther, decOther, decOther}
+	streamNames    = [numStreams]string{"latitude", "longitude", "altitude", "distance", "speed", "heart_rate", "cadence", "power", "temperature", "vertical_oscillation", "ground_contact_time", "stride_length", "vertical_ratio"}
+	streamDecimals = [numStreams]int{decPosition, decPosition, decAltDist, decAltDist, decSpeed, decOther, decOther, decOther, decOther, decOther, decOther, decOther, decOther}
 )
 
 // ReportV2 is the golden report of a normalised workout (ADR-004). Field
@@ -122,6 +122,11 @@ type ReportStreams struct {
 	Cadence     *ReportStream `json:"cadence,omitempty"`
 	Power       *ReportStream `json:"power,omitempty"`
 	Temperature *ReportStream `json:"temperature,omitempty"`
+
+	VerticalOscillation *ReportStream `json:"vertical_oscillation,omitempty"`
+	GroundContactTime   *ReportStream `json:"ground_contact_time,omitempty"`
+	StrideLength        *ReportStream `json:"stride_length,omitempty"`
+	VerticalRatio       *ReportStream `json:"vertical_ratio,omitempty"`
 }
 
 // ReportStream holds statistics over the valid values of a stream and a
@@ -315,6 +320,8 @@ func reportStreams(s Samples) ReportStreams {
 		Latitude: out[streamLat], Longitude: out[streamLon], Altitude: out[streamAltitude],
 		Distance: out[streamDistance], Speed: out[streamSpeed], HeartRate: out[streamHeartRate],
 		Cadence: out[streamCadence], Power: out[streamPower], Temperature: out[streamTemperature],
+		VerticalOscillation: out[streamVerticalOscillation], GroundContactTime: out[streamGroundContactTime],
+		StrideLength: out[streamStrideLength], VerticalRatio: out[streamVerticalRatio],
 	}
 }
 

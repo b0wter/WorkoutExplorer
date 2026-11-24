@@ -1,12 +1,12 @@
 # ADR-005 Workout data file format, version 1 (`WEXD`)
 
 - **Status:** accepted
-- **Date:** 10 Oct 2026; revision 1 of 22 Oct 2026 (item 9, kept workouts); note of 26 Oct 2026 (item 9, version 2 by ADR-029); note of 11 Nov 2026 (items 7 and 9, version 3 by ADR-044); note of 12 Nov 2026 (item 9, version 4 by ADR-046); note of 13 Nov 2026 (item 9, version 5 by ADR-048); note of 13 Nov 2026 (item 9, version 6 by ADR-049); note of 22 Nov 2026 (item 9, version 7 by ADR-060)
+- **Date:** 10 Oct 2026; revision 1 of 22 Oct 2026 (item 9, kept workouts); note of 26 Oct 2026 (item 9, version 2 by ADR-029); note of 11 Nov 2026 (items 7 and 9, version 3 by ADR-044); note of 12 Nov 2026 (item 9, version 4 by ADR-046); note of 13 Nov 2026 (item 9, version 5 by ADR-048); note of 13 Nov 2026 (item 9, version 6 by ADR-049); note of 22 Nov 2026 (item 9, version 7 by ADR-060); note of 24 Nov 2026 (item 9, version 8 by F-68)
 - **History:** [architect/history/ADR-005-workout-data-file-format-v1.md](history/ADR-005-workout-data-file-format-v1.md)
 - **Features:** F-03 (writer, introduces it), F-04 (browser reader), F-09 (`draft.bin`), F-15 (public data file), F-16 (hiding changes columns only), F-17 (version 2, ADR-029), F-30 (regenerate)
 - **Supersedes:** none
 - **Requirements:** AP-4, NFR Performance (data file under 500 KB compressed for a 4-hour ride; 60 fps on 12 hours), SH-4 (via F-16); TD Workout data file (Layout, stream table, Size, Versioning), TD Principles ("Fast for viewers")
-- **Normative specification:** [F-03 design, section "Data file format, version 7"](F-03-workout-data-file-writer.md#data-file-format-version-7-normative). This ADR records the decisions and why they were made. The byte-level rules are in that section.
+- **Normative specification:** [F-03 design, section "Data file format, version 8"](F-03-workout-data-file-writer.md#data-file-format-version-8-normative). This ADR records the decisions and why they were made. The byte-level rules are in that section.
 
 ## Context
 
@@ -38,6 +38,7 @@ Two constraints from later features shape the answers. F-16 must be able to prov
    - (12 Nov 2026, [ADR-046](ADR-046-lap-trigger-and-recorded-pool-length-in-the-data-file.md)) **The live version is 4.** It adds the lap `trigger` and the summary's `pool_length_recorded_m`; streams and columns unchanged.
    - (13 Nov 2026, [ADR-048](ADR-048-lengths-and-strokes-in-the-data-file.md)) **The live version is 5.** It adds the top-level `lengths`, the lap `stroke` and the summary's `stroke`; streams and columns unchanged.
    - (22 Nov 2026, [ADR-060](ADR-060-added-lap-boundaries-merged-into-the-data-file.md)) **The live version is 7.** It adds the lap trigger code `added` (version 6, ADR-049, added `zones`); streams and columns unchanged.
+   - (24 Nov 2026, [F-68](F-68-extra-sensor-streams.md) XS-2) **The live version is 8.** It adds four `uint16` columns after `elevation_gain` (vertical oscillation, ground contact time, stride length, vertical ratio); header and metadata unchanged. No migration: `regenerate` rebuilds from the originals.
    - (rev. 1, OQ-55, the user, 22 Oct 2026) **Kept workouts.** A workout whose rebuild fails for a server-side reason (F-30: `canceled`, a time limit, or an error that is not about the file) is kept unchanged: it serves its previous data file and pages, under their old content-hashed names, until a later run rebuilds it. Its pages refer to the previous content-hashed app bundle, and **an old bundle is deleted only once no kept workout refers to it**. So more than one format version and bundle can be live for a while, but each bundle reads exactly one version, and no reader for an old version is ever written. The deploy report counts kept workouts (F-09 v1.10, F-30 hand-off).
 10. **The committed contract is a set of golden files.** For every synthetic corpus file, the repository holds the writer's `data.bin` and a JSON fixture of the decoded integer values (count, statistics and digest). Go's `TestDataFileCorpus` keeps both current. F-04's decoder tests read them. Fixtures exist for synthetic files only (ADR-004 item 7, rev. 3).
 

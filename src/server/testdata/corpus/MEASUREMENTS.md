@@ -215,3 +215,18 @@ cd src/server && go test ./internal/publish -run '^$' -bench Ride12h -benchtime 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-25 | 96ece12 + F-15 (uncommitted) | Intel Core i7-4770T @ 2.50 GHz (8 threads) | go1.26.10 linux/amd64 | `BenchmarkPublishRide12h` (3 runs of 10) | 167 M to 171 M (about 0.17 s) | 95.3 MB | 8,958 to 9,012 |
 | 2026-10-25 | 96ece12 + F-15 (uncommitted) | Intel Core i7-4770T @ 2.50 GHz (8 threads) | go1.26.10 linux/amd64 | `BenchmarkTitleSaveRide12h` (3 runs of 10) | 115 M to 168 M (about 0.13 s) | 42.7 MB | 8,702 |
+
+## Extra sensor streams (F-68, XS-11)
+
+Data file version 8 adds four `uint16` columns (43 bytes per sample with every stream, was 35).
+
+**Size stop rule** (a 4-hour run with every stream above 500,000 bytes `.br` stops the feature): `TestSizeBudget4hRun` on `synthetic/run-4h-dynamics.fit` (14,400 samples, native power, the four dynamics, extra noise): `data.bin` 627,676 bytes, `data.bin.br` 148,884 bytes. Within the rule (`ride-4h.fit` without the dynamics: 109,651 `.br`). The synthetic values are noisy but narrow; a real run's dynamics may compress worse, to be re-checked on the operator's real files (not committed).
+
+**Memory** (ADR-017 item 7 and the server memory model). The all-caps twin cannot carry the new fields at 500,000 records within `MaxBytes` (500,000 records with the four dynamics and a Stryd field are 22.7 MB, over 20 MiB; 440,000 records are 20.3 MB). `corpusgen -cap-file <path> -cap-records 440000 -cap-f68` writes the largest such file (every record carries the four dynamics and a Stryd value next to native power, so the Stryd samples are collected and dropped, the worst case). Max RSS of `workout-explorer parse -original` (`/usr/bin/time -v`, 5 runs, no `GOGC`/`GOMEMLIMIT`), go1.26, Intel Core i7-4770T, 2026-11-24, uncommitted F-68 build:
+
+| File | Records | Max RSS |
+| --- | --- | --- |
+| all-caps twin without F-68 fields | 500,000 | 289 to 322 MB |
+| all-caps twin with F-68 fields (`-cap-records 440000 -cap-f68`) | 440,000 | 336.5 to 337.4 MB (stable) |
+
+Result: **A rises by about 15 to 45 MB** (`RawRecord` +8 bytes, the sparse Stryd list 16 bytes per Stryd record, four more `float64` sample streams, 32 bytes per sample and the same again while gaps are filled). The stop rule (A at most 400 MB) and the form of M(N) hold; M(4) = 2A + 2B + L grows by about 90 MB at most (ADR-017 note).

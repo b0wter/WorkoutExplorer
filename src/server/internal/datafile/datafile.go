@@ -1,8 +1,8 @@
 // Package datafile encodes a normalised workout as the binary data file the
-// browser reads (format version 7, magic WEXD) and decodes it again.
+// browser reads (format version 8, magic WEXD) and decodes it again.
 //
 // The normative format description is architect/F-03-workout-data-file-writer.md,
-// section "Data file format, version 7"; the decisions behind it are in
+// section "Data file format, version 8"; the decisions behind it are in
 // ADR-005. The package is pure: it depends on package workout and the
 // standard library only, does no I/O and never logs (Technical Design,
 // Code structure: Dependency rules).
@@ -20,7 +20,7 @@ const Magic = "WEXD"
 
 // Version is the only format version this package writes and reads
 // (Format §9, ADR-005 item 9).
-const Version uint16 = 7
+const Version uint16 = 8
 
 // headerSize is magic, version, sample count and metadata length (Format §1).
 const headerSize = 14
@@ -233,6 +233,15 @@ var specs = []streamSpec{
 		func(s *workout.Samples) []float64 { return s.MovingTime }},
 	{"elevation_gain", typeInt32, encDelta, "0.1", 0.1, 10, "m", 0, maxAbs, math.MaxInt32, 4,
 		func(s *workout.Samples) []float64 { return s.Gain }},
+	// Version 8 (F-68 XS-2): running dynamics, 1 mm / 1 ms / 1 mm / 0.1 %.
+	{"vertical_oscillation", typeUint16, encRaw, "0.1", 0.1, 10, "cm", 0, 65534, 65535, 2,
+		func(s *workout.Samples) []float64 { return s.VerticalOscillation }},
+	{"ground_contact_time", typeUint16, encRaw, "1", 1, 1, "ms", 0, 65534, 65535, 2,
+		func(s *workout.Samples) []float64 { return s.GroundContactTime }},
+	{"stride_length", typeUint16, encRaw, "0.001", 0.001, 1000, "m", 0, 65534, 65535, 2,
+		func(s *workout.Samples) []float64 { return s.StrideLength }},
+	{"vertical_ratio", typeUint16, encRaw, "0.1", 0.1, 10, "%", 0, 65534, 65535, 2,
+		func(s *workout.Samples) []float64 { return s.VerticalRatio }},
 }
 
 // Indices into specs used by the pairing rule (W-3).
