@@ -387,6 +387,10 @@
   "closeReport": "Schließen",
   "reportNotSent": "Die Meldung konnte nicht gesendet werden. Bitte versuche es später noch einmal."
  },
+ "sections": {
+  "wholeWorkout": "Ganzes Training",
+  "legPick": "Disziplin"
+ },
  "splits": {
   "viewLaps": "Runden",
   "viewSplits": "Splits",

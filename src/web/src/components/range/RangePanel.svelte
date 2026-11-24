@@ -26,6 +26,7 @@
     toTemperature,
     type Units,
   } from '../../lib/format';
+  import { ordered, sportIn } from '../../lib/sections/order';
 
   interface Props {
     /** Fixed for the life of this instance. */
@@ -39,7 +40,10 @@
 
   let { data, selection, units = 'metric', oncopy }: Props = $props();
 
-  const sport = untrack(() => data.meta.sport);
+  // F-67 LP-10 (OQ-322): a range inside one multisport section reads speed in that section's unit.
+  const meta = untrack(() => data.meta);
+  const secs = ordered(meta);
+  let sport = $state(meta.sport);
   const stats = createRangeStats(untrack(() => data));
   const fields = stats.fields;
   const out = emptyValues();
@@ -49,7 +53,7 @@
     elapsed: 'rangeTime',
     moving: 'rangeMoving',
     gain: 'rangeGain',
-    speed: isPaceSport(sport) ? 'rangePace' : 'rangeSpeed',
+    speed: 'rangeSpeed',
     heartRate: 'rangeHeartRate',
     power: 'rangePower',
     cadence: 'rangeCadence',
@@ -101,6 +105,7 @@
 
   function write(a: number, b: number): void {
     if (a < 0 || cells.length === 0) return;
+    if (secs) sport = sportIn(secs, a, b) || meta.sport;
     stats.query(a, b, out);
     for (let k = 0; k < fields.length; k++) cells[k].textContent = text(fields[k], out, current);
   }
@@ -123,7 +128,7 @@
 <div class="range-panel" bind:this={root}>
   {#each fields as f (f)}
     <div class="cell">
-      <div class="label">{t(LABELS[f])}</div>
+      <div class="label">{t(f === 'speed' && isPaceSport(sport) ? 'rangePace' : LABELS[f])}</div>
       <div class="val"><span class="value">{MISSING_TEXT}</span>{#if (lang(), unitOf(f, units))}&nbsp;<span class="unit">{(lang(), unitOf(f, units))}</span>{/if}</div>
     </div>
   {/each}

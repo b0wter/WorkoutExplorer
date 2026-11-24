@@ -3,6 +3,7 @@
 
 import type { Lap, WorkoutMeta } from '../datafile';
 import { sportName } from '../format/dates';
+import { ordered } from './order';
 
 /** One section: its name, first sample and session sport. */
 export interface Section {
@@ -15,15 +16,8 @@ export interface Section {
  *  session in start order (file order on ties), the first starting at sample 0, transitions
  *  named T1, T2, … in order. */
 export function sections(meta: Pick<WorkoutMeta, 'sessions'>): Section[] | null {
-  if (new Set(meta.sessions.map((s) => s.sport)).size < 2) return null;
   let t = 0;
-  return [...meta.sessions]
-    .sort((a, b) => a.start - b.start)
-    .map((s, i) => ({
-      name: s.sport === 'transition' ? 'T' + ++t : sportName(s.sport),
-      start: i === 0 ? 0 : s.start_index,
-      sport: s.sport,
-    }));
+  return ordered(meta)?.map((s) => ({ ...s, name: s.sport === 'transition' ? 'T' + ++t : sportName(s.sport) })) ?? null;
 }
 
 /** MS-3: the last section whose start ≤ the lap's start_index. */

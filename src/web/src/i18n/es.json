@@ -387,6 +387,10 @@
   "closeReport": "Cerrar",
   "reportNotSent": "No se pudo enviar la denuncia. Inténtalo de nuevo más tarde."
  },
+ "sections": {
+  "wholeWorkout": "Entrenamiento completo",
+  "legPick": "Segmento"
+ },
  "splits": {
   "viewLaps": "Vueltas",
   "viewSplits": "Parciales",

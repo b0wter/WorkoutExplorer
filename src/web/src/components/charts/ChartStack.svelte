@@ -16,7 +16,7 @@
   import { t } from '../../lib/charts/texts';
   import { t as tp } from '../../page/texts';
   import MetricChart from './MetricChart.svelte';
-  import { DEFAULT_CHART_HEIGHT, TITLE_ROW_HEIGHT, Y_AXIS_SIZE, chartAreaHeight, plotWidth, type ChartDecorator } from './uplot-options';
+  import { DEFAULT_CHART_HEIGHT, TITLE_ROW_HEIGHT, Y_AXIS_SIZE, chartAreaHeight, plotWidth, type ChartDecorator, type ChartView } from './uplot-options';
 
   interface Props {
     data: WorkoutData;
@@ -42,9 +42,11 @@
     onhint?: () => void;
     /** Extra marks on every chart (F-42 MS-7), from outside; ChartStack knows no rule for them. */
     decorate?: ChartDecorator;
+    /** F-67 LP-3, LP-4: the multisport leg to zoom every chart to; null or absent: the whole workout. */
+    view?: ChartView;
   }
 
-  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, hint = 'plain', onhint, decorate }: Props = $props();
+  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, hint = 'plain', onhint, decorate, view }: Props = $props();
 
   // A wiring bug, not a data problem: one cursor store per WorkoutData (ADR-008).
   // Reads only the two sampleCount values: never cursor.get() or subscribe.
@@ -55,7 +57,8 @@
   }
   $effect.pre(() => checkWiring(data, cursor));
 
-  const charts = $derived((lang(), presentCharts(data, units)));
+  // F-67 LP-6: in a leg view the charts read in the leg's sport (speed or pace, cadence unit); the set stays.
+  const charts = $derived((lang(), presentCharts(data, units, view?.sport)));
   // The x axis (F-17 R-7, R-8): ChartStack's own state, from initialAxis (time by default); the page
   // remembers the viewer's choice through onaxis. Both axes are built once per data value; a switch
   // rebuilds the uPlot instances (F-14 D-11's path) and leaves the stores alone, so the cursor and
@@ -67,7 +70,8 @@
   }
   const timeX = $derived(timeAxis(data.time));
   const distanceX = $derived(data.metrics.distance ? distanceAxis(data.metrics.distance) : null);
-  const axis = $derived(axisKind === 'distance' && distanceX ? distanceX : timeX);
+  // LP-5: a leg whose distance does not advance is drawn on time; the viewer's choice stays.
+  const axis = $derived(axisKind === 'distance' && distanceX && (!view || distanceX.at[view.b] > distanceX.at[view.a]) ? distanceX : timeX);
   // chartHeight is read once per data value (D-15): untracked, so only a new data re-reads it.
   const plotHeight = $derived.by(() => {
     void data;
@@ -156,7 +160,7 @@
       {/if}
     </div>
    {/if}
-   {#key units + scheme + axis.kind + lang()}
+   {#key units + scheme + axis.kind + lang() + view?.a}
     <CursorReadout {data} {cursor} {units} />
     <div class="chart-area" bind:this={area}>
       {#if drawable}
@@ -172,6 +176,7 @@
             height={plotHeight}
             isBottom={k === charts.length - 1}
             {decorate}
+            {view}
             onfirstdata={() => chartHasData(data, charts.length)}
           />
         {/each}

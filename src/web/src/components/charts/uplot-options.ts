@@ -105,6 +105,9 @@ export function outerHeight(plotHeight: number, isBottom: boolean): number {
  *  what it draws takes no pointer events. */
 export type ChartDecorator = (over: HTMLElement, x: (index: number) => number) => void;
 
+/** F-67 LP-3: the picked multisport leg (samples a..b, its sport), or null: the whole workout. */
+export type ChartView = { readonly a: number; readonly b: number; readonly sport: string } | null;
+
 /** Colours uPlot cannot take from CSS: read from the theme's custom properties when a chart is built (F-14 D-10). */
 export interface ChartInk {
   /** The series line. */

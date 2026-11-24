@@ -28,7 +28,7 @@
     type GestureInputKind,
     type GestureState,
   } from '../../lib/charts';
-  import { buildOptions, outerHeight, xScale, type ChartDecorator } from './uplot-options';
+  import { buildOptions, outerHeight, xScale, type ChartDecorator, type ChartView } from './uplot-options';
 
   interface Props {
     spec: ChartSpec;
@@ -46,11 +46,13 @@
     isBottom: boolean;
     /** See ChartDecorator; called from layout only. */
     decorate?: ChartDecorator;
+    /** F-67 LP-4: a leg view; fixed for the life of this instance (ChartStack keys on it). */
+    view?: ChartView;
     /** Called once, after the first layout: after the first setData, or with no data when the width gives 0 buckets. */
     onfirstdata?: () => void;
   }
 
-  let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, decorate, onfirstdata }: Props = $props();
+  let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, decorate, view, onfirstdata }: Props = $props();
 
   let host: HTMLDivElement;
   let layout: ((w: number, f?: ChartDecorator) => void) | null = null;
@@ -67,14 +69,20 @@
     const firstData = onfirstdata;
     const ax = axis;
     const sel = selection;
-    const xs = ax.x;
     const at = ax.at;
+    // F-67 LP-4: in a leg view only its samples a..b reach chartValues and decimate (edge columns
+    // and the y axis fit the leg), on the x range [at[a], at[b]]; a one-sample leg widens by 1.
+    // The whole view (a = 0, b = N − 1) gives today's arrays and range.
+    const a = view?.a ?? 0;
+    const b = view?.b ?? d.sampleCount - 1;
+    const xs = ax.x.subarray(a, b + 1);
+    const gaps = d.gaps.filter((g) => g > a && g <= b).map((g) => g - a);
     const keys = ax.keys;
     const keyIndex = ax.index;
     // presentCharts only gives specs of present streams.
     // Converted once, so a pace stop (NaN) is a gap before decimation and the min/max view stays honest.
-    const values = chartValues(s, d.metrics[s.metric] as Float64Array);
-    const scale = xScale(ax, units);
+    const values = chartValues(s, (d.metrics[s.metric] as Float64Array).subarray(a, b + 1));
+    const scale = { ...xScale(ax, units), min: at[a], max: at[b] > at[a] ? at[b] : at[a] + 1 };
     const xMin = scale.min;
     const xMax = scale.max;
 
@@ -85,6 +93,8 @@
     const ink = { line: prop('--c-' + s.metric, s.colour), axis: prop('--muted', '#555'), grid: prop('--grid', 'rgba(0,0,0,0.1)') };
     const u = new uPlot(buildOptions(s, d, { width, height: plotHeight, isBottom: bottom }, ink, scale), undefined, host);
     const over = u.over;
+    // LP-7: a leg view cuts the cursor line, shade and decorations at the plot edge.
+    if (view) over.style.overflow = 'hidden';
 
     // Cursor line: one absolutely positioned div in the plot area.
     const line = document.createElement('div');
@@ -115,14 +125,14 @@
 
     const moveLine = (i: CursorIndex): void => {
       // No x (a sample without distance): no line (R-7).
-      if (i === null || xs[i] !== xs[i]) {
+      if (i === null || ax.x[i] !== ax.x[i]) {
         if (lineVisible) {
           line.style.visibility = 'hidden';
           lineVisible = false;
         }
         return;
       }
-      line.style.transform = 'translateX(' + u.valToPos(xs[i], 'x') + 'px)';
+      line.style.transform = 'translateX(' + u.valToPos(ax.x[i], 'x') + 'px)';
       if (!lineVisible) {
         line.style.visibility = 'visible';
         lineVisible = true;
@@ -142,7 +152,7 @@
           // setSize computes u.bbox synchronously (canvas px); never read from the DOM.
           const buckets = bucketCount(u.bbox.width / uPlot.pxRatio, uPlot.pxRatio);
           if (buckets < 1) return;
-          const dec = decimate(xs, values, d.gaps, xMin, xMax, buckets);
+          const dec = decimate(xs, values, gaps, xMin, xMax, buckets);
           u.setData([dec.x, dec.y]);
         });
         rect = null;
@@ -176,7 +186,9 @@
     const indexAt = (clientX: number): number => {
       if (rect === null) rect = over.getBoundingClientRect();
       const k = nearestIndex(keys, u.posToVal(clientX - rect.left, 'x'));
-      return k < 0 || keyIndex === null ? k : keyIndex[k];
+      const i = k < 0 || keyIndex === null ? k : keyIndex[k];
+      // LP-7: hover, drag and long-press stay inside the leg.
+      return i < a ? (i < 0 ? i : a) : i > b ? b : i;
     };
     let pressTimer: ReturnType<typeof setTimeout> | undefined;
     const stopTimer = (): void => {

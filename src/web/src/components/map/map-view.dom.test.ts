@@ -1017,6 +1017,23 @@ describe('pixel ratio follows devicePixelRatio (F-07 D-8, QA-06-r4-1)', () => {
     map.fire('resize');
     expect(map.fits).toHaveLength(2);
   });
+
+  it('F-67 LP-9: fit(a, b) fits the positioned samples of a..b once and becomes the resize target; a < 0 the whole route; none without a position', async () => {
+    const s = setup();
+    const { handle, map } = await mounted(s);
+    map.fire('zoomstart', { originalEvent: new Event('wheel') }); // moved: a pick still fits
+    handle.fit(2, 6); // samples 3, 4 have no position
+    expect(map.fits).toHaveLength(1);
+    expect(map.fits[0]).toEqual([[8.02, 47.0, 8.06, 47.0], { padding: 32, maxZoom: 16, animate: false }]);
+    map.fire('resize');
+    expect(map.fits[1][0]).toEqual([8.02, 47.0, 8.06, 47.0]);
+    handle.fit(3, 4); // no positioned sample: no move, target unchanged
+    map.fire('resize');
+    expect(map.fits).toHaveLength(3);
+    expect(map.fits[2][0]).toEqual([8.02, 47.0, 8.06, 47.0]);
+    handle.fit(-1, -1);
+    expect(map.fits[3][0]).toEqual([8.0, 47.0, 8.07, 47.0]);
+  });
 });
 
 describe('fit padding in two columns (F-13 D-18)', () => {

@@ -9,6 +9,7 @@
   import type { CursorStore } from '../../lib/cursor';
   import type { Units } from '../../lib/format';
   import { MISSING_TEXT, readoutFields } from '../../lib/charts';
+  import { ordered, sportIn } from '../../lib/sections/order';
 
   interface Props {
     data: WorkoutData;
@@ -19,17 +20,23 @@
 
   let { data, cursor, units = 'metric' }: Props = $props();
 
-  const fields = $derived(readoutFields(data, units));
+  // F-67 LP-10: on a multisport workout the fields read in the sport of the leg under the cursor
+  // (speed or pace), '–' for speed in a transition; the labels re-render only when that sport changes.
+  let sport = $state<string>();
+  const fields = $derived(readoutFields(data, units, sport));
   let row: HTMLDivElement;
 
   onMount(() => {
-    // Fixed for the life of this instance (ChartStack keys on data).
-    const f = fields;
+    // Fixed for the life of this instance (ChartStack keys on data), but for a leg's sport (LP-10).
+    let f = fields;
+    const secs = ordered(data.meta);
     // The value cells, in field order; collected once (no reactive array on the hot path).
     const els = row.querySelectorAll<HTMLSpanElement>('.value');
     const c = cursor;
     return c.subscribe((i) => {
-      for (let k = 0; k < f.length; k++) els[k].textContent = i === null ? MISSING_TEXT : f[k].text(i);
+      const s = secs && i !== null ? sportIn(secs, i) : sport;
+      if (s !== sport) f = readoutFields(data, units, (sport = s));
+      for (let k = 0; k < f.length; k++) els[k].textContent = i === null || (s === 'transition' && f[k].key === 'speed') ? MISSING_TEXT : f[k].text(i);
     });
   });
 </script>

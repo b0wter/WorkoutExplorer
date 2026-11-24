@@ -138,6 +138,9 @@ export interface RouteMapHandle {
   control(el: HTMLElement, position?: 'bottom-left' | 'top-right'): void;
   /** the route sample within a touch's radius of a client point, or -1 (PN-12's tap). */
   sampleAt(x: number, y: number): number;
+  /** F-67 LP-9: fits the camera once to the positioned samples a..b (a < 0: the whole route), as the
+   *  initial fit, and refits there on resize until the viewer moves; no move without a position. */
+  fit(a: number, b: number): void;
   destroy(): void;
 }
 
@@ -147,7 +150,7 @@ const WORLD_PX = 512;
 type MutableInput = { -readonly [K in keyof RouteGestureInput]: RouteGestureInput[K] };
 
 const swallow = (): void => {};
-const inertHandle: RouteMapHandle = { setScheme: swallow, setHidden: swallow, marker: () => swallow, marks: swallow, laps: swallow, control: swallow, sampleAt: () => -1, destroy: swallow };
+const inertHandle: RouteMapHandle = { setScheme: swallow, setHidden: swallow, marker: () => swallow, marks: swallow, laps: swallow, control: swallow, sampleAt: () => -1, fit: swallow, destroy: swallow };
 
 export async function mountRouteMap(options: MountOptions): Promise<RouteMapHandle> {
   const { container, data, cursor, selection, whenQuiet, signal } = options;
@@ -346,6 +349,9 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
   let noteTimer: ReturnType<typeof setTimeout> | undefined;
   // F-13 D-20: true once the viewer (or F-62's first centring) moved the camera; no refit after.
   let moved = false;
+  // F-67 LP-9: D-20's refit target, the route or a picked leg's positions.
+  let fitTo: readonly [number, number, number, number] = route.bounds;
+  const refit = (): unknown => map.fitBounds([...fitTo], { padding: fitPadding(), maxZoom: 16, animate: false });
   const teardown = (): void => {
     exitFullscreen(); // FS-7: root class, scroll lock, listeners and history entry go before the map
     stopLocation();
@@ -754,7 +760,7 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
       map.on('zoomstart', onViewerMove);
       map.on('resize', () => {
         if (!moved && !destroyed) {
-          map.fitBounds([west, south, east, north], { padding: fitPadding(), maxZoom: 16, animate: false });
+          refit();
         }
       });
     }
@@ -872,6 +878,16 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     },
     control(el, position = 'bottom-left'): void {
       if (!destroyed) map.addControl({ onAdd: () => el, onRemove: () => el.remove() }, position);
+    },
+    fit(a, b): void {
+      if (destroyed) return;
+      let box: [number, number, number, number] = [Infinity, Infinity, -Infinity, -Infinity];
+      if (a < 0) box = [...route.bounds];
+      else for (let i = a; i <= b; i++) if (lat[i] === lat[i]) box = [Math.min(box[0], lon[i]), Math.min(box[1], lat[i]), Math.max(box[2], lon[i]), Math.max(box[3], lat[i])];
+      if (!(box[0] <= box[2])) return;
+      fitTo = box;
+      moved = false;
+      refit();
     },
     sampleAt(x, y): number {
       if (destroyed) return -1;

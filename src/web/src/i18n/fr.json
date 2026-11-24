@@ -387,6 +387,10 @@
   "closeReport": "Fermer",
   "reportNotSent": "Le signalement n'a pas pu être envoyé. Réessayez plus tard."
  },
+ "sections": {
+  "wholeWorkout": "Séance complète",
+  "legPick": "Segment"
+ },
  "splits": {
   "viewLaps": "Tours",
   "viewSplits": "Fractions",

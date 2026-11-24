@@ -9,7 +9,7 @@ import type { Units } from '../lib/format';
 import type { UnitsStore } from '../lib/units';
 import type { MapLayerPrefs, ThemeChoice } from '../lib/prefs';
 import type { HintMode } from '../lib/charts';
-import type { ChartDecorator } from '../components/charts/uplot-options';
+import type { ChartDecorator, ChartView } from '../components/charts/uplot-options';
 import type { RouteMapHandle } from '../components/map/map-view';
 import { langSource, type Lang } from '../lib/i18n';
 
@@ -41,6 +41,8 @@ export interface Look {
   readonly decorate?: ChartDecorator;
   /** Sets one chunk's decorator by key (sections, F-56 pins); the charts redraw. */
   decorator(key: string, f: ChartDecorator): void;
+  /** F-67 LP-3: the charts' leg view, memory only; written by the sections chunk. */
+  view: ChartView;
 }
 
 export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme: ThemeChoice = 'system', hint: HintMode = 'plain'): Look {
@@ -49,6 +51,7 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
   let isDark = $state(dark?.matches ?? false);
   let t = $state(theme);
   let d = $state.raw<ChartDecorator>();
+  let v = $state.raw<ChartView>(null);
   const chunks: Record<string, ChartDecorator> = {};
   units.subscribe((next) => (u = next));
   langState();
@@ -79,6 +82,12 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
       chunks[key] = f;
       const fs = Object.values(chunks);
       d = (over, x) => fs.forEach((g) => g(over, x)); // a write only, also when called inside an effect
+    },
+    get view() {
+      return v;
+    },
+    set view(next) {
+      v = next;
     },
     store: units,
   };

@@ -111,8 +111,8 @@ function hasValue(values: Float64Array | undefined): boolean {
 }
 
 /** Specs in CHART_ORDER for streams present in data with at least one non-NaN value. */
-export function presentCharts(data: WorkoutData, units: Units = 'metric'): readonly ChartSpec[] {
-  const specs = chartSpecs(data.meta.sport, units);
+export function presentCharts(data: WorkoutData, units: Units = 'metric', sport = data.meta.sport): readonly ChartSpec[] {
+  const specs = chartSpecs(sport, units);
   return CHART_ORDER.filter((m) => hasValue(data.metrics[m])).map((m) => specs[m]);
 }
 
@@ -126,16 +126,16 @@ export interface ReadoutField {
   readonly text: (index: number) => string;
 }
 
-/** Readout fields in order: elapsed, distance (if the stream is present), then presentCharts(data).
+/** Readout fields in order: elapsed, distance (if the stream is present), then presentCharts(data) for `sport` (default the workout's; F-67 LP-10).
  *  Built once per WorkoutData; text() reads the full-resolution arrays (D-9). */
-export function readoutFields(data: WorkoutData, units: Units = 'metric'): readonly ReadoutField[] {
+export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?: string): readonly ReadoutField[] {
   const time = data.time;
   const fields: ReadoutField[] = [{ key: 'elapsed', label: t('axisTime'), unit: '', text: (i) => formatElapsed(time[i]) }];
   const distance = data.metrics.distance;
   if (distance !== undefined) {
     fields.push({ key: 'distance', label: t('axisDistance'), unit: distanceUnit(units), text: (i) => formatDistance(distance[i], units) });
   }
-  for (const spec of presentCharts(data, units)) {
+  for (const spec of presentCharts(data, units, sport)) {
     const values = data.metrics[spec.metric];
     if (values === undefined) continue; // presentCharts only returns present streams
     const { toDisplay, format } = spec;

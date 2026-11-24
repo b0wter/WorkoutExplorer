@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Lap, Session } from '../datafile';
 import { lapsBySection, legs, sectionRanges, sections } from '.';
+import { ordered, sportIn } from './order';
 
 const s = (sport: string, start = 0, start_index = 0): Session =>
   ({ sport, sub_sport: '', start, end: start, start_index, end_index: start_index, totals: {} });
@@ -45,5 +46,28 @@ describe('ranges and legs (MS-2, MS-6)', () => {
       ['Ride', 4, 8],
       ['Run', 8, 9],
     ]);
+  });
+});
+
+describe('ordered and sportIn (F-67 LP-10)', () => {
+  const sessions = [s('swimming', 0, 3), s('transition', 4, 4), s('cycling', 4, 4), s('running', 8, 8)];
+  const secs = ordered({ sessions }) ?? [];
+  it('the MS-2 order without names; null for one sport; sections() builds on it', () => {
+    expect(ordered({ sessions: [s('cycling'), s('cycling', 9, 5)] })).toBeNull();
+    expect(secs).toEqual([
+      { start: 0, sport: 'swimming' },
+      { start: 4, sport: 'transition' },
+      { start: 4, sport: 'cycling' },
+      { start: 8, sport: 'running' },
+    ]);
+    expect(sections({ sessions })?.map((x) => [x.start, x.sport])).toEqual(secs.map((x) => [x.start, x.sport]));
+  });
+  it('a sample: the last section whose start ≤ it; a range: that section while it ends by the next start, else ""', () => {
+    expect([0, 3, 4, 7, 8, 99].map((i) => sportIn(secs, i))).toEqual(['swimming', 'swimming', 'cycling', 'cycling', 'running', 'running']);
+    expect(sportIn(secs, 0, 4)).toBe('swimming'); // the shared boundary sample, as the leg heading's range
+    expect(sportIn(secs, 0, 5)).toBe('');
+    expect(sportIn(secs, 4, 8)).toBe('cycling');
+    expect(sportIn(secs, 5, 9)).toBe('');
+    expect(sportIn(secs, 8, 99)).toBe('running');
   });
 });

@@ -238,6 +238,7 @@ function setup(
   if (options.onhint) props.onhint = options.onhint;
   const look = options.look;
   if (look) Object.defineProperty(props, 'decorate', { get: () => look.decorate, enumerable: true });
+  if (look) Object.defineProperty(props, 'view', { get: () => look.view, enumerable: true });
   const app = mount(ChartStack, { target, props: props as never });
   flushSync();
   current = { data, cursor, target, reported, ready: () => ready, active: () => active, app };
@@ -988,5 +989,118 @@ describe('F-42 MS-7: the decoration seam', () => {
     [...m.target.querySelectorAll<HTMLButtonElement>('.axis-toggle button')][1].click();
     flushSync();
     expect(calls).toHaveLength(3 * n);
+  });
+});
+
+describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
+  const data = golden('triathlon');
+  const n = data.sampleCount;
+  const RUN = { a: 2520, b: n - 1, sport: 'running' };
+  const SWIM = { a: 0, b: 600, sport: 'swimming' };
+  const BIKE = { a: 660, b: 2460, sport: 'cycling' };
+  type Scales = { scales: { x: { min: number; max: number } } };
+  const titles = (m: Mounted) => [...m.target.querySelectorAll('.chart-title')].map((e) => e.textContent ?? '');
+  const speedTitle = (m: Mounted) => titles(m).find((x) => /^(Pace|Speed) /.test(x));
+  const pressed = (m: Mounted) => [...m.target.querySelectorAll('.axis-toggle button')].map((b) => b.getAttribute('aria-pressed'));
+  const start = (axis: 'time' | 'distance' = 'time', d: WorkoutData = data) => {
+    const look = createLook(createUnitsStore('metric'), null);
+    const selection = createSelectionStore(n, (f) => requestAnimationFrame(() => f()));
+    const m = setup(d, { look, selection, initialAxis: axis });
+    layout(900);
+    const pick = (v: typeof RUN | null): Recorded[] => {
+      const before = env.charts.length;
+      look.view = v;
+      flushSync();
+      return env.charts.slice(before);
+    };
+    return { m, look, selection, pick };
+  };
+
+  it('AC 2: the run zooms every chart to its samples on the time axis; only leg samples reach the charts; Whole workout restores exactly', () => {
+    const { m, pick } = start();
+    const whole = env.charts.map((r) => r.data.at(-1));
+    expect(speedTitle(m)).toBe('Speed · km/h'); // OQ-321
+    const fresh = pick(RUN);
+    expect(fresh).toHaveLength(whole.length);
+    for (const r of fresh) {
+      const u = r.u as unknown as Scales;
+      expect([u.scales.x.min, u.scales.x.max]).toEqual([data.time[RUN.a], data.time[RUN.b]]);
+      const x = r.data.at(-1)?.x ?? [];
+      expect(Math.min(...x)).toBeGreaterThanOrEqual(data.time[RUN.a]);
+      expect(Math.max(...x)).toBeLessThanOrEqual(data.time[RUN.b]);
+    }
+    expect(speedTitle(m)).toBe('Pace · /km');
+    expect(overs(m).every((o) => o.style.overflow === 'hidden')).toBe(true); // LP-7 clip
+    const back = pick(null);
+    expect(back.map((r) => r.data.at(-1))).toEqual(whole);
+    expect(speedTitle(m)).toBe('Speed · km/h');
+    expect(overs(m).every((o) => o.style.overflow === '')).toBe(true);
+  });
+
+  it('AC 2: swim reads per 100 m; bike km/h; the run pace axis fits the run (its samples only)', () => {
+    const { m, pick } = start();
+    pick(SWIM);
+    expect(speedTitle(m)).toBe('Pace · /100 m');
+    pick(BIKE);
+    expect(speedTitle(m)).toBe('Speed · km/h');
+    const fresh = pick(RUN);
+    const speed = fresh[presentCharts(data).findIndex((s) => s.metric === 'speed')];
+    const ys = (speed.data.at(-1)?.y ?? []).filter((v): v is number => v !== null);
+    const run = [...(data.metrics.speed ?? [])].slice(RUN.a, RUN.b + 1).filter((v) => v >= 0.5).map((v) => 1000 / v);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(Math.floor(Math.min(...run)));
+    expect(Math.max(...ys)).toBeLessThanOrEqual(Math.ceil(Math.max(...run)));
+  });
+
+  it('AC 2, LP-5: on the distance axis the leg spans its carried distance (counted from the start, OQ-323)', () => {
+    const { m, pick } = start('distance');
+    const ax = distanceAxis(data.metrics.distance as Float64Array);
+    if (!ax) throw new Error('no distance axis');
+    for (const r of pick(RUN)) {
+      const u = r.u as unknown as Scales;
+      expect([u.scales.x.min, u.scales.x.max]).toEqual([ax.at[RUN.a], ax.at[RUN.b]]);
+    }
+    expect(pressed(m)).toEqual(['false', 'true']);
+  });
+
+  it('LP-5: a leg whose distance does not advance draws on time, the toggle showing time; the choice stays', () => {
+    const dist = Float64Array.from(data.metrics.distance ?? []);
+    dist.fill(dist[RUN.a], RUN.a);
+    const { m, pick } = start('distance', { ...data, metrics: { ...data.metrics, distance: dist } });
+    const fresh = pick(RUN);
+    expect((fresh[0].u as unknown as Scales).scales.x.min).toBe(data.time[RUN.a]);
+    expect(pressed(m)).toEqual(['true', 'false']);
+    pick(null);
+    expect(pressed(m)).toEqual(['false', 'true']);
+  });
+
+  it('LP-7: in a leg view the pointer index stays inside the leg', () => {
+    const { m, pick } = start();
+    pick(BIKE);
+    const o = overs(m)[0];
+    pointer(o, 'pointermove', -5000);
+    env.frame();
+    expect(m.cursor.get()).toBe(BIKE.a);
+    pointer(o, 'pointermove', 50000);
+    env.frame();
+    expect(m.cursor.get()).toBe(BIKE.b);
+  });
+
+  it('AC 3 (LP-10): the whole-view readout reads pace /km in the run, /100 m in the swim, km/h on the bike, – in T1 and T2', () => {
+    const { m } = start();
+    const speedCell = () => [...m.target.querySelectorAll('.readout .cell')].find((c) => /Pace|Speed/.test(c.querySelector('.label')?.textContent ?? ''));
+    const at = (i: number) => {
+      m.cursor.set(i);
+      env.frame();
+      flushSync();
+      const c = speedCell();
+      return [c?.querySelector('.label')?.textContent, c?.querySelector('.unit')?.textContent, c?.querySelector('.value')?.textContent];
+    };
+    const run = at(3000);
+    expect(run.slice(0, 2)).toEqual(['Pace', '/km']);
+    expect(run[2]).toMatch(/^\d+:\d\d$/);
+    expect(at(300).slice(0, 2)).toEqual(['Pace', '/100 m']);
+    expect(at(1000).slice(0, 2)).toEqual(['Speed', 'km/h']);
+    expect(at(630)[2]).toBe('–'); // T1
+    expect(at(2490)[2]).toBe('–'); // T2
   });
 });

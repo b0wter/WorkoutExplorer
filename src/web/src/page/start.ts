@@ -23,6 +23,7 @@ import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enha
 import { enhanceLaps } from './laps';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
 import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
+import { ordered } from '../lib/sections/order';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
@@ -276,12 +277,14 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     : null;
 
   // F-56 PN-10: the map's seam for the pins chunk, once the map is ready.
+  // F-67 LP-9: the sections chunk waits for it too.
   let pinMap: RouteMapHandle | null = null;
-  let onPinMap: ((m: RouteMapHandle) => void) | null = null;
+  const onPinMap: ((m: RouteMapHandle) => void)[] = [];
+  const mapFor = (cb: (m: RouteMapHandle) => void): unknown => (pinMap ? cb(pinMap) : onPinMap.push(cb));
   const map = hasRoute && mapSlot ? createMapProps(data, cursor, selection, look, (h) => {
     performance.mark('wx-page:map-ready');
     pinMap = h;
-    onPinMap?.(h);
+    onPinMap.forEach((f) => f(h));
     addPinToggle(root, mapSlot);
     const box = mapSlot.querySelector<HTMLElement>('.route-map');
     if (box) mountStrip(box, data, cursor, units); // F-33 CR-2: the fullscreen box holds it
@@ -293,7 +296,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     // F-56 PN-9: the pins chunk (it fetches the file), only with a pins file or on the edit page.
     if (pinSlot)
       import('../pins').then(
-        (m) => m.startPins({ slot: pinSlot, data, cursor, selection, units, look, edit, map: (cb) => (pinMap ? cb(pinMap) : (onPinMap = cb)) }),
+        (m) => m.startPins({ slot: pinSlot, data, cursor, selection, units, look, edit, map: mapFor }),
         () => {
           pinSlot.hidden = true;
           console.warn('page: pins chunk failed');
@@ -301,7 +304,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
       );
     // F-42 MS-1, MS-9: section lines, names and separator ranges are a lazy chunk, for a workout
     // whose sessions hold two or more sports only; failing, the page stays as it is.
-    if (new Set(data.meta.sessions.map((s) => s.sport)).size > 1) import('../sections').then((m) => m.startSections(data, look, laps.legs), () => console.warn('page: sections chunk failed'));
+    if (ordered(data.meta)) import('../sections').then((m) => m.startSections(data, look, laps.legs, selection, mapFor, chartsSlot), () => console.warn('page: sections chunk failed'));
     // F-46 LS-4, F-48 PL-8: the switch, the splits with their drop-down and the lengths are a lazy
     // chunk; failing, laps only.
     const splits = distanceAdvances(data);
@@ -347,6 +350,9 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
         onhint: hintDone,
         get decorate() {
           return look.decorate;
+        },
+        get view() {
+          return look.view;
         },
         onready: () => {
           performance.mark('wx-page:charts-ready');
