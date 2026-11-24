@@ -22,7 +22,7 @@ uPlot (1.6.32, already a dependency since F-01) brings its own cursor, legend, s
 2. **We decimate.** `lib/charts/decimate` turns full-resolution `WorkoutData` arrays into a min/max-per-pixel-column series with `null` at every break (missing sample or gap). uPlot never receives `WorkoutData` arrays or `NaN`.
 3. **We own interaction.** Pointer Events on `u.over` go through a pure gesture reducer into `cursor.set` (ADR-010).
 4. **We draw the cursor line** as one CSS-transformed `div` per chart, positioned with `u.valToPos`. A cursor move never redraws a canvas.
-5. **Alignment is explicit:** an identical fixed x range, a fixed y-axis width and fixed padding on every chart (uPlot's auto padding differs between charts with and without a bottom axis).
+5. **Alignment is explicit:** an identical fixed x range, a fixed y-axis width and fixed padding on every chart (uPlot's auto padding differs between charts with and without a bottom axis). (Note 24 Nov 2026, F-67 LP-4: the x range is fixed per view; a multisport leg view sets one leg range on every chart at once, still never per chart and never uPlot's own zoom.)
 6. **Only `components/charts` imports `uplot`.** Everything else talks to charts through the cursor store and, later, other stores.
 7. (11 Nov 2026, ADR-011 C1/C2) **Unused uPlot parts are trimmed at build:** the `wx-uplot-trim` plugin in `vite.config.ts` blanks the assignments of statics the app never uses (`join`, `fmtDate`, `tzDate`, `sync`, `rangeLog`, `rangeAsinh`, paths `stepped`, `bars`, `spline`) and fails build and tests when one is not found exactly once; `components/charts/uplot.css` replaces `uPlot.min.css` with the rules used. Recheck both on a uPlot upgrade.
 
