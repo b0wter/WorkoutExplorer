@@ -276,3 +276,23 @@ func TestStop(t *testing.T) {
 		t.Fatal("Run did not return")
 	}
 }
+
+// TestNoWorkAfterCancel (QA-70-r2-1): with the context already cancelled,
+// Run never handles a queued report, so nothing is sent.
+func TestNoWorkAfterCancel(t *testing.T) {
+	srv, reqs := fake(t, 200, nil)
+	n := New(Config{Kind: Pushover, URL: srv.URL, Token: token, User: user}, nil, nil, nil)
+	for i := 1; i <= queueSize; i++ {
+		n.Notify(int64(i), "x", "")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	for i := 0; i < queueSize; i++ {
+		n.Run(ctx)
+	}
+	select {
+	case <-reqs:
+		t.Error("a request was sent after cancel")
+	default:
+	}
+}

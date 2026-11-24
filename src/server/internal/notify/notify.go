@@ -128,6 +128,9 @@ func (n *Notifier) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case it := <-n.queue:
+			if ctx.Err() != nil { // select is random: after shutdown starts, take no more work (QA-70-r2-1)
+				return
+			}
 			n.handle(ctx, it)
 		}
 	}
