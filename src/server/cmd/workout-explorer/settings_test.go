@@ -72,7 +72,7 @@ const fixtureAsset = "fixture-1.js"
 
 // aboutFixture is a finished About page: the list is generated, every marker is present.
 const aboutFixture = `<main><!--wx:operator-->|<!--wx:version-->
-<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:updates-->UPDATES<!--/wx:updates--><!--wx:generated-->{{ list <!--wx:version--> }}</main><!--wx:impressum-->`
+<!--wx:pushover-->PUSH<!--/wx:pushover--><!--wx:ntfy-->NTFY <!--wx:notify-host--><!--/wx:ntfy--><!--wx:callback-->CB<!--/wx:callback--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->">SC</a><!--/wx:shortcut--><!--wx:updates-->UPDATES<!--/wx:updates--><!--wx:generated-->{{ list <!--wx:version--> }}</main><!--wx:impressum-->`
 
 // TestAboutTemplateContract: the frontend's source template carries every
 // marker serve and the generator fill (F-29 AB-3, AB-5).

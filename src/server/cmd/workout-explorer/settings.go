@@ -15,7 +15,7 @@ import (
 
 	"workout-explorer/internal/about"
 	"workout-explorer/internal/ingest"
-	"workout-explorer/internal/pushover"
+	"workout-explorer/internal/notify"
 )
 
 // The settings read from the environment (Technical Design, Conventions:
@@ -30,6 +30,9 @@ const (
 	envUploadsIPv6          = "WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV6"
 	envPushoverToken        = "WORKOUT_EXPLORER_PUSHOVER_TOKEN"
 	envPushoverUser         = "WORKOUT_EXPLORER_PUSHOVER_USER"
+	envNotifyKind           = "WORKOUT_EXPLORER_NOTIFY_KIND"
+	envNotifyURL            = "WORKOUT_EXPLORER_NOTIFY_URL"
+	envNotifyToken          = "WORKOUT_EXPLORER_NOTIFY_TOKEN"
 	envOperatorFile         = "WORKOUT_EXPLORER_OPERATOR_FILE"
 	envIOSShortcutURL       = "WORKOUT_EXPLORER_IOS_SHORTCUT_URL"
 	envImpressumFile        = "WORKOUT_EXPLORER_IMPRESSUM_FILE"
@@ -171,12 +174,39 @@ func pushoverKeys(getenv func(string) string) (token, user string, err error) {
 		return "", "", errors.New(envPushoverToken + " must be set when " + envPushoverUser + " is set")
 	case user == "":
 		return "", "", errors.New(envPushoverUser + " must be set when " + envPushoverToken + " is set")
-	case !pushover.ValidKey(token):
+	case !notify.ValidKey(token):
 		return "", "", errors.New(envPushoverToken + " must be 30 letters and digits (a Pushover application token)")
-	case !pushover.ValidKey(user):
+	case !notify.ValidKey(user):
 		return "", "", errors.New(envPushoverUser + " must be 30 letters and digits (a Pushover user key)")
 	}
 	return token, user, nil
+}
+
+// notifyService reads the ntfy and callback settings (F-70 NS-2, NS-3): all
+// unset or empty is off. The kind and the URL come together, the token needs
+// both, and Pushover keys with a kind are two services. Every error is fixed
+// text naming the setting, never a value and never url.Parse's text.
+func notifyService(getenv func(string) string) (kind notify.Kind, rawURL, token string, err error) {
+	k, u, t := getenv(envNotifyKind), getenv(envNotifyURL), getenv(envNotifyToken)
+	switch {
+	case k == "" && u == "" && t == "":
+		return "", "", "", nil
+	case k != "" && (getenv(envPushoverToken) != "" || getenv(envPushoverUser) != ""):
+		return "", "", "", errors.New("only one notification service may be set: " + envNotifyKind + " and the " + envPushoverToken + " settings are both set")
+	case k != "" && k != string(notify.Ntfy) && k != string(notify.Callback):
+		return "", "", "", errors.New(envNotifyKind + " must be ntfy or callback")
+	case k == "":
+		return "", "", "", errors.New(envNotifyKind + " must be set when " + envNotifyURL + " or " + envNotifyToken + " is set")
+	case u == "":
+		return "", "", "", errors.New(envNotifyURL + " must be set when " + envNotifyKind + " is set")
+	}
+	if err := notify.CheckURL(notify.Kind(k), u); err != nil {
+		return "", "", "", errors.New(envNotifyURL + " " + err.Error())
+	}
+	if t != "" && !notify.CheckToken(t) {
+		return "", "", "", errors.New(envNotifyToken + " must be 1 to 256 characters of letters, digits and -._~+/ with an optional = at the end")
+	}
+	return notify.Kind(k), u, t, nil
 }
 
 // operatorBlock reads the operator file (F-29 AB-8) and returns it rendered.
@@ -306,6 +336,10 @@ func readSettings(getenv func(string) string) (settings, error) {
 	if err != nil {
 		return settings{}, err
 	}
+	nk, nu, nt, err := notifyService(getenv)
+	if err != nil {
+		return settings{}, err
+	}
 	op, err := operatorBlock(getenv)
 	if err != nil {
 		return settings{}, err
@@ -323,7 +357,7 @@ func readSettings(getenv func(string) string) (settings, error) {
 		return settings{}, err
 	}
 	return settings{autoUpdate: au, impressumHTML: im, iosShortcutURL: sc, operatorHTML: op, operatorFile: getenv(envOperatorFile), maxConcurrentUploads: n, parseTimeout: t, storageLimit: l, baseURL: b, trustedProxy: tp, uploadsIPv4: u4, uploadsIPv6: u6,
-		pushoverToken: pt, pushoverUser: pu}, nil
+		pushoverToken: pt, pushoverUser: pu, notifyKind: nk, notifyURL: nu, notifyToken: nt}, nil
 }
 
 // newParser is the one place cmd builds an ingest.Parser: the default limits

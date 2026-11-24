@@ -114,6 +114,7 @@ func dataLeft(t *testing.T, dir, id, pub string, more ...string) []string {
 		switch e.Name() {
 		case "workouts.db", "workouts.db-wal", "workouts.db-shm": // the tables and bytes above
 		case "public.lock": // empty, ADR-031
+		case "notify.state": // salted hash of the notification settings, nothing per workout (F-70 NS-13)
 		case "private":
 			if exists(filepath.Join(p, id)) {
 				left = append(left, "private/{id}")

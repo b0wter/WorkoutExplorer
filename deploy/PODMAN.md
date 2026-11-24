@@ -134,7 +134,7 @@ workouts.example.org {
 
 ## 8. Notifications (optional)
 
-Set both Pushover keys in `.env` (RUNBOOK.md, "Notifications"), then give the app alone the egress network with a drop-in, which `install` never overwrites:
+Set the notification service in `.env` (Pushover keys, or ntfy or callback settings; RUNBOOK.md, "Notifications"). Inside the container `127.0.0.1` is the app itself: reach a service on this host through its LAN address. Then give the app alone the egress network with a drop-in, which `install` never overwrites:
 
 ```sh
 d=/var/lib/workouts/.config/containers/systemd/workout-explorer-app.container.d

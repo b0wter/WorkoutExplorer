@@ -17,7 +17,7 @@ INF-6 lets the operator delete a reported workout from the Pushover notification
 3. **Issued at send, not at filing:** only when the notifier has decided to send a report's notification. A report without a sent notification has no key.
 4. **Validity:** hash present, report younger than 30 days, workout row present and not past `expires_at`.
 5. **Redeemed by one consuming statement** (`UPDATE … SET delete_key_hash = NULL … RETURNING`) before the unchanged operator delete. Single use does not depend on the delete succeeding or on a process lock.
-6. **Revocation:** `serve` without Pushover settings clears every key at start.
+6. **Revocation:** `serve` with notifications off (no Pushover, ntfy or callback setting) clears every key at start. F-70: a failed send revokes that report's key (NS-7); a changed service, URL or token clears every key at the next start (NS-13, `notify.state`).
 
 ## Consequences
 

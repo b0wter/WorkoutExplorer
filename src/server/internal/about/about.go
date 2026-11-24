@@ -8,7 +8,9 @@
 //	<!--wx:attributions-->   build time: tools/attributions replaces it (once) with <!--wx:generated--> and the list
 //	<!--wx:operator-->       serve: the operator file as <h2>, <p> and <ul> (exactly once; AB-8), or the placeholder paragraph
 //	<!--wx:version-->        serve: the binary's version, HTML-escaped (any number of times, also inside the list)
-//	<!--wx:pushover-->...<!--/wx:pushover-->  exactly one pair; kept (markers dropped) only when notifications are on
+//	<!--wx:pushover-->...<!--/wx:pushover-->  exactly one pair; kept (markers dropped) only when notifications go through Pushover
+//	<!--wx:ntfy-->...<!--/wx:ntfy-->          exactly one pair; kept only for ntfy (F-70 NS-8); <!--wx:notify-host--> inside it: the host, HTML-escaped
+//	<!--wx:callback-->...<!--/wx:callback-->  exactly one pair; kept only for a callback URL (no host is shown)
 //	<!--wx:shortcut-->...<!--/wx:shortcut-->  exactly one pair; kept only when the iOS Shortcut link is set (F-34, INF-5; package shell)
 //	<!--wx:updates-->...<!--/wx:updates-->    exactly one pair; kept only when automatic updates are on (F-52 AU-12, PT-9a)
 //	<!--wx:shortcut-url-->   serve: inside that pair, the link, HTML-escaped (also usable in an href)
@@ -39,6 +41,11 @@ const (
 	markerVersion = "<!--wx:version-->"
 	markerPushOn  = "<!--wx:pushover-->"
 	markerPushOff = "<!--/wx:pushover-->"
+	markerNtfyOn  = "<!--wx:ntfy-->"
+	markerNtfyOff = "<!--/wx:ntfy-->"
+	markerCbOn    = "<!--wx:callback-->"
+	markerCbOff   = "<!--/wx:callback-->"
+	markerHost    = "<!--wx:notify-host-->"
 	markerUpOn    = "<!--wx:updates-->"
 	markerUpOff   = "<!--/wx:updates-->"
 )
@@ -55,9 +62,15 @@ const MaxOperatorFile = 16 << 10
 // Impressum puts the footer's Impressum link in (F-38). Updates keeps the
 // automatic-updates block (F-52).
 type Values struct {
-	Operator, Version, Shortcut       string
-	Notifications, Impressum, Updates bool
+	Operator, Version, Shortcut string
+	Notify                      Notify
+	Impressum, Updates          bool
 }
+
+// Notify names the report notification service (F-70 NS-8): Kind is
+// "pushover", "ntfy", "callback" or "" (off); Host is the ntfy server's host
+// and port, never a path.
+type Notify struct{ Kind, Host string }
 
 // ParseOperator checks the operator file's content and renders it (AB-8):
 // "## Text" is an <h2>, consecutive "- Text" lines one <ul>, other non-empty
@@ -138,9 +151,15 @@ func fill(src []byte, v Values) ([]byte, error) {
 		return nil, errors.New("about page: needs exactly one operator marker")
 	}
 	// The blocks first, so nothing inserted later is ever scanned again.
-	s, ok := shell.CutBlock(s, markerPushOn, markerPushOff, v.Notifications)
+	s, ok := shell.CutBlock(s, markerPushOn, markerPushOff, v.Notify.Kind == "pushover")
 	if !ok {
 		return nil, errors.New("about page: the pushover block is missing or malformed")
+	}
+	if s, ok = shell.CutBlock(s, markerNtfyOn, markerNtfyOff, v.Notify.Kind == "ntfy"); !ok {
+		return nil, errors.New("about page: the ntfy block is missing or malformed")
+	}
+	if s, ok = shell.CutBlock(s, markerCbOn, markerCbOff, v.Notify.Kind == "callback"); !ok {
+		return nil, errors.New("about page: the callback block is missing or malformed")
 	}
 	if s, ok = shell.CutBlock(s, shell.ShortcutOn, shell.ShortcutOff, v.Shortcut != ""); !ok {
 		return nil, errors.New("about page: the shortcut block is missing or malformed")
@@ -157,7 +176,7 @@ func fill(src []byte, v Values) ([]byte, error) {
 		op = Placeholder
 	}
 	// One pass: an inserted value that contains a marker is not expanded.
-	return []byte(strings.NewReplacer(MarkerDone, "", markerOp, op, markerVersion, html.EscapeString(v.Version),
+	return []byte(strings.NewReplacer(MarkerDone, "", markerOp, op, markerVersion, html.EscapeString(v.Version), markerHost, html.EscapeString(v.Notify.Host),
 		shell.ShortcutURL, html.EscapeString(v.Shortcut)).Replace(s)), nil
 }
 

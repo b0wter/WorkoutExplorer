@@ -25,6 +25,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"workout-explorer/internal/notify"
 )
 
 // version is set at build time with
@@ -157,7 +159,24 @@ func serve(args []string, stderr io.Writer) int {
 // startedFields are the limits logged on "server started" (ADR-021 rev. 6 item 7).
 func startedFields(cfg settings) []any {
 	return []any{"max_concurrent_uploads", cfg.maxConcurrentUploads, "parse_timeout_s", int(cfg.parseTimeout / time.Second), "uploads_per_hour_ipv4", cfg.uploadsIPv4, "uploads_per_hour_ipv6", cfg.uploadsIPv6,
-		"notifications", cfg.pushoverToken != ""}
+		"notify", notifyName(cfg), "notify_host", notifyHost(cfg)}
+}
+
+// notifyName and notifyHost are the only parts of the notification setting
+// that are logged (F-70 NS-8): the service and, for ntfy and callback, the host.
+func notifyName(cfg settings) string {
+	c, ok := cfg.notifyConfig()
+	if !ok {
+		return "off"
+	}
+	return string(c.Kind)
+}
+
+func notifyHost(cfg settings) string {
+	if c, _ := cfg.notifyConfig(); c.Kind == notify.Ntfy || c.Kind == notify.Callback {
+		return notify.Host(c.URL)
+	}
+	return ""
 }
 
 // runServer serves on ln until ctx is cancelled, then shuts down with a

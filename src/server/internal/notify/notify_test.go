@@ -1,4 +1,4 @@
-package pushover
+package notify
 
 import (
 	"bytes"
@@ -87,10 +87,10 @@ func TestRequest(t *testing.T) {
 	srv, reqs := fake(t, 200, nil)
 	var logs syncBuf
 	var issued []int64
-	n := New(token, user, srv.URL+"/1/messages.json", func(_ context.Context, id int64) (string, bool) {
+	n := New(Config{Kind: Pushover, URL: srv.URL + "/1/messages.json", Token: token, User: user}, func(_ context.Context, id int64) (string, bool) {
 		issued = append(issued, id)
 		return link, true
-	}, slog.New(slog.NewJSONHandler(&logs, nil)))
+	}, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	go n.Run(ctx)
@@ -127,10 +127,10 @@ func TestMessage(t *testing.T) {
 }
 
 func TestDefaults(t *testing.T) {
-	n := New(token, user, "", nil, nil)
+	n := New(Config{Kind: Pushover, URL: "", Token: token, User: user}, nil, nil, nil)
 	tr := n.client.Transport.(*http.Transport)
-	if n.endpoint != "https://api.pushover.net/1/messages.json" || tr.Proxy != nil || n.client.Timeout != 10*time.Second || n.client.CheckRedirect == nil {
-		t.Errorf("endpoint %s, proxy set %v, timeout %v", n.endpoint, tr.Proxy != nil, n.client.Timeout)
+	if n.cfg.URL != "https://api.pushover.net/1/messages.json" || tr.Proxy != nil || n.client.Timeout != 10*time.Second || n.client.CheckRedirect == nil {
+		t.Errorf("endpoint %s, proxy set %v, timeout %v", n.cfg.URL, tr.Proxy != nil, n.client.Timeout)
 	}
 	for k, ok := range map[string]bool{token: true, user: true, "": false, token[:29]: false, token + "a": false, token[:29] + "-": false, token[:29] + "é": false} {
 		if ValidKey(k) != ok {
@@ -146,7 +146,7 @@ func TestNotifyNeverBlocks(t *testing.T) {
 	hang := make(chan struct{})
 	defer close(hang)
 	srv, reqs := fake(t, 200, hang)
-	n := New(token, user, srv.URL, nil, nil)
+	n := New(Config{Kind: Pushover, URL: srv.URL, Token: token, User: user}, nil, nil, nil)
 	t0 := time.Now()
 	for i := 1; i <= 100; i++ {
 		n.Notify(int64(i), "spam", "")
@@ -175,10 +175,10 @@ func TestNotifyNeverBlocks(t *testing.T) {
 func TestCap(t *testing.T) {
 	srv, reqs := fake(t, 200, nil)
 	var issued []int64
-	n := New(token, user, srv.URL, func(_ context.Context, id int64) (string, bool) {
+	n := New(Config{Kind: Pushover, URL: srv.URL, Token: token, User: user}, func(_ context.Context, id int64) (string, bool) {
 		issued = append(issued, id)
 		return "", false // a failed issue: the message goes without the link
-	}, nil)
+	}, nil, nil)
 	now := time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC)
 	n.now = func() time.Time { return now }
 	ctx := context.Background()
@@ -218,12 +218,12 @@ func TestFailures(t *testing.T) {
 	for _, status := range []int{400, 429, 500} {
 		srv, reqs := fake(t, status, nil)
 		var logs syncBuf
-		n := New(token, user, srv.URL, func(context.Context, int64) (string, bool) { return link, true }, slog.New(slog.NewJSONHandler(&logs, nil)))
+		n := New(Config{Kind: Pushover, URL: srv.URL, Token: token, User: user}, func(context.Context, int64) (string, bool) { return link, true }, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
 		n.handle(ctx, item{1, "spam", viewURL})
 		if len(reqs) != 1 {
 			t.Errorf("%d: %d requests (no retry)", status, len(reqs))
 		}
-		if l := logs.String(); !strings.Contains(l, `"level":"WARN","msg":"notification failed","status":`) || strings.Contains(l, "echo") {
+		if l := logs.String(); !strings.Contains(l, `"level":"WARN","msg":"notification failed","kind":"pushover","status":`) || strings.Contains(l, "echo") {
 			t.Errorf("%d: log %s", status, l)
 		}
 		noSecrets(t, logs.String())
@@ -237,7 +237,7 @@ func TestFailures(t *testing.T) {
 	redir := httptest.NewServer(http.RedirectHandler(target.URL+"/?token="+token, http.StatusTemporaryRedirect))
 	defer redir.Close()
 	var logs syncBuf
-	n := New(token, user, redir.URL, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
+	n := New(Config{Kind: Pushover, URL: redir.URL, Token: token, User: user}, nil, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
 	n.handle(ctx, item{1, "spam", ""})
 	if len(treqs) != 0 || !strings.Contains(logs.String(), `"status":307`) {
 		t.Errorf("redirect: %d requests, log %s", len(treqs), logs.String())
@@ -249,12 +249,12 @@ func TestFailures(t *testing.T) {
 	defer close(hang)
 	slow, _ := fake(t, 200, hang)
 	logs = syncBuf{}
-	n = New(token, user, slow.URL, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
+	n = New(Config{Kind: Pushover, URL: slow.URL, Token: token, User: user}, nil, nil, slog.New(slog.NewJSONHandler(&logs, nil)))
 	n.client.Timeout = 50 * time.Millisecond
 	n.handle(ctx, item{1, "spam", ""})
 	dead := httptest.NewServer(http.NotFoundHandler())
 	dead.Close()
-	n.endpoint = dead.URL + "/x?token=" + token // even a secret in the URL never reaches the log
+	n.cfg.URL = dead.URL + "/x?token=" + token // even a secret in the URL never reaches the log
 	n.handle(ctx, item{2, "spam", ""})
 	l := logs.String()
 	if !strings.Contains(l, `"class":"timeout"`) || !strings.Contains(l, `"class":"network"`) || strings.Count(l, "\n") != 2 {
@@ -265,7 +265,7 @@ func TestFailures(t *testing.T) {
 
 // TestStop: Run returns when its context ends; queued ones are dropped.
 func TestStop(t *testing.T) {
-	n := New(token, user, "http://127.0.0.1:1", nil, nil)
+	n := New(Config{Kind: Pushover, URL: "http://127.0.0.1:1", Token: token, User: user}, nil, nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() { n.Run(ctx); close(done) }()

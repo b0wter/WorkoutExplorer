@@ -20,7 +20,7 @@ func TestParseOperator(t *testing.T) {
 
 // Nothing inserted is scanned again: a marker in the operator block stays text.
 func TestFillNoRescan(t *testing.T) {
-	src := "<!--wx:operator--><!--wx:pushover-->P<!--/wx:pushover--><!--wx:shortcut-->S<!--/wx:shortcut--><!--wx:updates--><!--/wx:updates--><!--wx:generated--><!--wx:impressum-->"
+	src := "<!--wx:operator--><!--wx:pushover-->P<!--/wx:pushover--><!--wx:ntfy-->NTFY <!--wx:notify-host--><!--/wx:ntfy--><!--wx:callback-->CB<!--/wx:callback--><!--wx:shortcut-->S<!--/wx:shortcut--><!--wx:updates--><!--/wx:updates--><!--wx:generated--><!--wx:impressum-->"
 	got, err := fill([]byte(src), Values{Operator: "<p>&lt;!--wx:version--&gt;</p>", Version: "v"})
 	if err != nil || strings.Contains(string(got), "P") || strings.Contains(string(got), "S") || !strings.Contains(string(got), "&lt;!--wx:version--&gt;") {
 		t.Errorf("%q %v", got, err)
@@ -36,7 +36,7 @@ func TestParseOperatorBOM(t *testing.T) {
 // TestFillShortcut (F-34): the block only with a link; the link escaped in
 // the href and the text; a link holding a marker is not expanded.
 func TestFillShortcut(t *testing.T) {
-	src := `<!--wx:operator--><!--wx:pushover--><!--/wx:pushover--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->"><!--wx:shortcut-url--></a><!--/wx:shortcut--><!--wx:updates--><!--/wx:updates--><!--wx:generated--><!--wx:impressum-->`
+	src := `<!--wx:operator--><!--wx:pushover--><!--/wx:pushover--><!--wx:ntfy-->NTFY <!--wx:notify-host--><!--/wx:ntfy--><!--wx:callback-->CB<!--/wx:callback--><!--wx:shortcut--><a href="<!--wx:shortcut-url-->"><!--wx:shortcut-url--></a><!--/wx:shortcut--><!--wx:updates--><!--/wx:updates--><!--wx:generated--><!--wx:impressum-->`
 	link := `https://www.icloud.com/shortcuts/a?b=1&c="><script><!--wx:version-->`
 	esc := `https://www.icloud.com/shortcuts/a?b=1&amp;c=&#34;&gt;&lt;script&gt;&lt;!--wx:version--&gt;`
 	got, err := fill([]byte(src), Values{Shortcut: link, Version: "v"})
@@ -55,7 +55,7 @@ func TestFillShortcut(t *testing.T) {
 
 // TestFillImpressum (F-38 IM-7): the link only when set; the marker is required once.
 func TestFillImpressum(t *testing.T) {
-	src := "<!--wx:operator--><!--wx:pushover--><!--/wx:pushover--><!--wx:shortcut--><!--/wx:shortcut--><!--wx:updates--><!--/wx:updates--><!--wx:generated--><footer><!--wx:impressum--></footer>"
+	src := "<!--wx:operator--><!--wx:pushover--><!--/wx:pushover--><!--wx:ntfy-->NTFY <!--wx:notify-host--><!--/wx:ntfy--><!--wx:callback-->CB<!--/wx:callback--><!--wx:shortcut--><!--/wx:shortcut--><!--wx:updates--><!--/wx:updates--><!--wx:generated--><footer><!--wx:impressum--></footer>"
 	if got, err := fill([]byte(src), Values{Impressum: true}); err != nil || !strings.HasSuffix(string(got), `<footer><a href="/impressum">Impressum</a></footer>`) {
 		t.Errorf("on: %q %v", got, err)
 	}
@@ -70,7 +70,7 @@ func TestFillImpressum(t *testing.T) {
 // TestFillUpdates (F-52 AU-12, PT-9a): the block only when automatic updates
 // are on; the pair is required once.
 func TestFillUpdates(t *testing.T) {
-	src := "<!--wx:operator--><!--wx:pushover--><!--/wx:pushover--><!--wx:shortcut--><!--/wx:shortcut--><!--wx:updates-->U<!--/wx:updates--><!--wx:generated--><!--wx:impressum-->"
+	src := "<!--wx:operator--><!--wx:pushover--><!--/wx:pushover--><!--wx:ntfy-->NTFY <!--wx:notify-host--><!--/wx:ntfy--><!--wx:callback-->CB<!--/wx:callback--><!--wx:shortcut--><!--/wx:shortcut--><!--wx:updates-->U<!--/wx:updates--><!--wx:generated--><!--wx:impressum-->"
 	if got, err := fill([]byte(src), Values{Updates: true}); err != nil || string(got) != Placeholder+"U" {
 		t.Errorf("on: %q %v", got, err)
 	}

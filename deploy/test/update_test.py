@@ -77,6 +77,12 @@ class Host:
                 if self.path == "/pushover":
                     host.pushover.append(body.decode())
                     return self.send(200, b'{"status":1}')
+                if self.path.startswith(("/ntfy/", "/cb", "/followed")):
+                    host.notes.append({"path": self.path, "headers": dict(self.headers), "body": body.decode()})
+                    return self.send(200)
+                if self.path.startswith("/redir"):
+                    host.notes.append({"path": self.path, "headers": dict(self.headers), "body": body.decode()})
+                    return self.send(302, headers=[("Location", "/followed")])
                 self.send(404)
 
         class Health(TLS): # plain HTTP: the health endpoint, and the same releases (so only --proto refuses them)
@@ -103,7 +109,7 @@ class Host:
             threading.Thread(target=s.serve_forever, daemon=True).start()
 
     def reset(self):
-        self.files, self.latest, self.requests, self.pushover = {}, None, [], []
+        self.files, self.latest, self.requests, self.pushover, self.notes = {}, None, [], [], []
         self.health_version, self.http_redirect, self.latest_status = None, False, 302
         self.status, self.sent = {}, {} # per object: an HTTP status, "drop", "stall" or ("big", n); bytes sent
 
@@ -564,6 +570,104 @@ class Test(unittest.TestCase):
         argv = open(os.path.join(self.d, "argv")).read()
         self.assertNotIn("a" * 30, argv, "a Pushover secret on a curl command line")
         self.assertNotIn("u" * 30, argv)
+
+    # --- F-70: the alert through ntfy or a callback (NS-11) ------------------------------------
+    NOTE_TOKEN = "tk_throwawayBearer0123"
+
+    def notify_on(self, kind, url, token=None, **more):
+        self.env.update({"WORKOUT_EXPLORER_NOTIFY_KIND": kind, "WORKOUT_EXPLORER_NOTIFY_URL": url})
+        if token:
+            self.env["WORKOUT_EXPLORER_NOTIFY_TOKEN"] = token
+        self.env.update(more)
+        self.write_env()
+
+    def failing_deploy(self, rc=3, env=None):
+        self.host.reset()
+        self.host.health_version = "v1.4.0"
+        s = os.path.join(self.srv, "update.stopped")
+        os.path.exists(s) and os.remove(s)
+        self.release("v1.5.0", rc=rc)
+        self.host.latest = "v1.5.0"
+        return self.expect(action="failed", reason="deploy", rc=rc, env=env)
+
+    def assert_no_secret_in_argv(self, *secrets):
+        argv = open(os.path.join(self.d, "argv")).read()
+        for x in secrets:
+            self.assertNotIn(x, argv, "a secret on a curl command line")
+
+    def test_ntfy_alert(self):
+        base = "https://127.0.0.1:%d" % self.host.port
+        self.notify_on("ntfy", base + "/ntfy/secretTopic?k=querySecret", self.NOTE_TOKEN)
+        _, out, err = self.failing_deploy()
+        self.assertEqual(self.host.pushover, [])
+        self.assertEqual(len(self.host.notes), 1)
+        n = self.host.notes[0]
+        self.assertEqual(n["path"], "/ntfy/secretTopic?k=querySecret")
+        self.assertEqual(n["body"], "v1.5.0 failed (exit 3). Automatic updates are stopped until a manual deploy succeeds.")
+        self.assertEqual(n["headers"].get("Title"), "Workout Explorer")
+        self.assertEqual(n["headers"].get("Authorization"), "Bearer " + self.NOTE_TOKEN)
+        self.assert_no_secret_in_argv("secretTopic", "querySecret", self.NOTE_TOKEN, "127.0.0.1:%d/ntfy" % self.host.port)
+        for x in ("secretTopic", self.NOTE_TOKEN):
+            self.assertNotIn(x, out + err)
+
+    def test_callback_alert(self):
+        self.notify_on("callback", "https://127.0.0.1:%d/cb" % self.host.port, self.NOTE_TOKEN)
+        self.failing_deploy()
+        self.assertEqual(len(self.host.notes), 1)
+        n = self.host.notes[0]
+        self.assertEqual(json.loads(n["body"]), {"alert": "v1.5.0 failed (exit 3). Automatic updates are stopped until a manual deploy succeeds."})
+        self.assertEqual(n["headers"].get("Content-Type"), "application/json")
+        self.assertEqual(n["headers"].get("Authorization"), "Bearer " + self.NOTE_TOKEN)
+        self.assert_no_secret_in_argv(self.NOTE_TOKEN, "127.0.0.1:%d/cb" % self.host.port)
+
+    def test_notify_without_token_and_plain_http_to_loopback(self):
+        self.notify_on("callback", "http://127.0.0.1:%d/cb" % self.host.hport)
+        self.failing_deploy()
+        self.assertEqual(len(self.host.notes), 1)
+        self.assertNotIn("Authorization", self.host.notes[0]["headers"])
+
+    def test_notify_redirect_is_not_followed(self):
+        self.notify_on("ntfy", "https://127.0.0.1:%d/redir/secretTopic" % self.host.port)
+        _, out, err = self.failing_deploy()
+        self.assertEqual([n["path"] for n in self.host.notes], ["/redir/secretTopic"])
+        self.assertIn("the ntfy alert could not be sent", err)
+        self.assertNotIn("secretTopic", out + err)
+
+    def test_notify_two_services_or_invalid_sends_nothing(self):
+        for name, extra in {
+            "two services": {"WORKOUT_EXPLORER_PUSHOVER_TOKEN": "a" * 30, "WORKOUT_EXPLORER_PUSHOVER_USER": "u" * 30},
+            "token without url": None,
+            "unknown kind": {"WORKOUT_EXPLORER_NOTIFY_KIND": "gotify"},
+            "bad token": {"WORKOUT_EXPLORER_NOTIFY_TOKEN": 'a"b'},
+        }.items():
+            with self.subTest(name):
+                self.setUp()
+                url = "https://127.0.0.1:%d/ntfy/secretTopic" % self.host.port
+                if extra is None:
+                    self.env.update({"WORKOUT_EXPLORER_NOTIFY_TOKEN": self.NOTE_TOKEN})
+                    self.write_env()
+                else:
+                    self.notify_on("ntfy", url, **extra)
+                _, out, err = self.failing_deploy() # the update result is unchanged
+                self.assert_stopped("failed", "v1.5.0", 3)
+                self.assertEqual((self.host.notes, self.host.pushover), ([], []))
+                self.assertIn("notification settings invalid; no alert", err)
+                self.assertNotIn("secretTopic", out + err)
+
+    def test_notify_url_cases_agree_with_go(self):
+        """The cases internal/notify tests too (CheckURL): update.sh accepts exactly the same set."""
+        path = os.path.join(HERE, "notify-url-cases.tsv")
+        cases = [l.rstrip("\n").split("\t") for l in open(path) if l.strip() and not l.startswith("#")]
+        self.assertGreater(len(cases), 30)
+        for result, kind, url in cases:
+            with self.subTest(url=url):
+                self.setUp()
+                with open(self.envfile, "a") as f: # the raw line, as an operator would write it
+                    f.write("WORKOUT_EXPLORER_NOTIFY_KIND=%s\nWORKOUT_EXPLORER_NOTIFY_URL=%s\n" % (kind, url))
+                _, out, err = self.failing_deploy(env={"WX_UPDATE_NOTIFY_DRYRUN": "1"})
+                want = "notification settings valid" if result == "valid" else "notification settings invalid; no alert"
+                self.assertIn(want, err)
+                self.assertEqual(self.host.notes, [])
 
     def test_failure_without_pushover_logs_only(self):
         self.release("v1.5.0", rc=3)
