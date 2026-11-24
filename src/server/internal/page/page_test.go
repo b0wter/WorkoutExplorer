@@ -110,6 +110,7 @@ var samples = []sampleSpec{
 	{"ride-30min", "ride-30min", "Morning loop", "Easy spin.\nSecond line.", nil, false, "", ""},
 	{"ride-12h", "ride-12h", "", "", nil, false, "", ""},
 	{"run-30min", "run-30min", "", "", nil, false, "", ""},
+	{"run-dynamics", "run-dynamics", "", "", nil, false, "", ""}, // F-68 QA-68-r1-6
 	{"ride-no-hr", "ride-30min", "", "", withoutHeartRate, false, "", ""},
 	{"indoor-ride", "indoor-no-gps", "Trainer", "", nil, false, "", ""},
 	{"indoor-unknown-zone", "indoor-no-distance-no-gps", "", "", nil, false, "", ""},

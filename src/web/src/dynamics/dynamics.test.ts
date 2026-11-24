@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGolden } from '../../test-support/golden.mjs';
 import { decodeDataFile, DYNAMICS_ORDER, type WorkoutData } from '../lib/datafile';
 import { presentCharts, readoutFields } from '../lib/charts';
+import { buildPageViewModel } from '../lib/page/view';
 import { dynamicsSpecs } from './specs';
 import './index';
 
@@ -50,6 +51,13 @@ describe('run-dynamics', () => {
     expect(charts.indexOf('temperature') === -1 || charts.indexOf('temperature') < charts.indexOf(present[0])).toBe(true);
     const fields = readoutFields(d).map((f) => f.key);
     expect(fields.slice(-present.length)).toEqual(present);
+  });
+
+  it('QA-68-r1-6: the page sample (Go-compared) reserves exactly the charts and cells the client draws', () => {
+    const m = buildPageViewModel(d, { title: '', description: '', expiresAt: '2026-10-30T09:15:00Z', publicId: 'x', dataFile: 'd' });
+    const n = presentCharts(d).length;
+    expect(m.ChartsClass).toBe('charts-' + n + ' cells-' + readoutFields(d).length + ' has-distance');
+    expect(n).toBeGreaterThanOrEqual(DYNAMICS_ORDER.length);
   });
 
   it('the sentinel is a gap: no value is the raw 65535 or 0 (XS-1)', () => {

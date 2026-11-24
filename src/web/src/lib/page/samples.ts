@@ -103,6 +103,7 @@ export const SAMPLES: readonly SampleSpec[] = [
   { name: 'ride-30min', golden: 'ride-30min', title: 'Morning loop', description: 'Easy spin.\nSecond line.' },
   { name: 'ride-12h', golden: 'ride-12h', title: '', description: '' },
   { name: 'run-30min', golden: 'run-30min', title: '', description: '' },
+  { name: 'run-dynamics', golden: 'run-dynamics', title: '', description: '' }, // F-68 QA-68-r1-6
   { name: 'ride-no-hr', golden: 'ride-30min', title: '', description: '', transform: withoutHeartRate },
   { name: 'indoor-ride', golden: 'indoor-no-gps', title: 'Trainer', description: '' },
   { name: 'indoor-unknown-zone', golden: 'indoor-no-distance-no-gps', title: '', description: '' },

@@ -20,3 +20,11 @@
   --c-stride_length: #c4d24a;
   --c-vertical_ratio: #d19a76;
 }
+/* QA-68-r1-5: the created cells lack RangePanel's Svelte-scoped overflow rules. */
+.range-panel .cell,
+.range-panel .label,
+.range-panel .val {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
