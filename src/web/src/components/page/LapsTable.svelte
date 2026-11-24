@@ -23,7 +23,7 @@
   const offsets = $derived(laps?.Legs.reduce<number[]>((o, l, k) => [...o, (o[k - 1] ?? 0) + (laps!.Legs[k - 1]?.Rows.length ?? 0)], []) ?? []);
 </script>
 
-{#snippet table(columns: readonly { Key: string; Label: string }[], rows: readonly (readonly string[])[], offset: number)}
+{#snippet table(columns: readonly { Key: string; Label: string }[], rows: readonly (readonly string[])[], offset: number, pace: string, speed: string)}
   <div class="laps-scroll">
     <table>
       <thead><tr>{#each columns as column (column.Key)}<th data-k={column.Key}>{column.Label}</th>{/each}{#if x}<th class="lap-x"></th>{/if}</tr></thead>
@@ -35,6 +35,7 @@
       </tbody>
     </table>
   </div>
+  {#if pace || speed}<p class="laps-note">{t(pace ? 'lapsNotePace' : 'lapsNoteSpeed')}</p>{/if}
 {/snippet}
 
 {#if laps}
@@ -46,12 +47,12 @@
           {#each laps.Legs as leg, k (k)}
             <div class="laps-leg" data-sport={leg.Sport}>
               <h3>{leg.Name}</h3>
-              {#if leg.Columns.length}{@render table(leg.Columns, leg.Rows, offsets[k])}{/if}
+              {#if leg.Columns.length}{@render table(leg.Columns, leg.Rows, offsets[k], leg.NotePace, leg.NoteSpeed)}{/if}
             </div>
           {/each}
         </div>
       {:else}
-        {@render table(laps.Columns, laps.Rows, 0)}
+        {@render table(laps.Columns, laps.Rows, 0, laps.NotePace, laps.NoteSpeed)}
       {/if}
     {/if}
     {#if auto}<p class="laps-auto"><button type="button" class="laps-auto-btn">{auto.label}</button></p>{/if}

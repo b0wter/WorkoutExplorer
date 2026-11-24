@@ -630,6 +630,13 @@ td:first-child {
 tbody tr:nth-child(even) {
   background: var(--card);
 }
+/* AP-8 footnote under a device laps table. */
+.laps-note {
+  margin: 4px 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
 /* One block per leg of a multisport workout, heading and own table (F-64 LL-2); the heading selects
    the leg and is marked like a row (LL-3), its text in line with the first column. */
 .laps-leg h3 {

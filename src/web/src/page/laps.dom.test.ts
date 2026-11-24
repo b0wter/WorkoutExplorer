@@ -200,6 +200,20 @@ describe('the tapped row stays in place (L-7; AC 8)', () => {
 
 const dist = (rows: HTMLTableRowElement[]): string[] => rows.map((r) => r.cells[2].textContent ?? '');
 
+describe('AP-8 footnote', () => {
+  const note = (p: Page): (string | null)[] => [...(p.section?.querySelectorAll('.laps-note') ?? [])].map((n) => n.textContent);
+  it('a ride with device laps stars Time and Speed and shows the hint under the table; its splits show neither', () => {
+    const p = open(ride(), 'metric', true);
+    expect([...p.section!.querySelectorAll('.laps-scroll:not(.splits) th')].map((h) => h.textContent).slice(0, 4)).toEqual(['#', 'Time*', 'Distance (km)', 'Speed (km/h)*']);
+    expect(note(p)).toEqual(["* Time includes pauses; speed is the device's own average, usually over moving time only."]);
+    expect(p.section?.querySelector('.laps-note')?.previousElementSibling?.classList.contains('laps-scroll')).toBe(true);
+    p.button('Splits')?.click();
+    expect(p.section?.querySelector('.splits')).not.toBeNull();
+    expect([...p.section!.querySelectorAll('.splits th')].map((h) => h.textContent)).not.toContain('Time*');
+    expect(note(p)).toHaveLength(1); // only the server table's
+  });
+});
+
 describe('laps / splits switch (L-4 to L-6; F-46 LS-4, LS-7)', () => {
   it('a ride opens its splits on 5 km; 1 km gives 14 splits; imperial keeps 1 km in miles; the selection stays', () => {
     const p = open(ride(), 'metric', true);
@@ -484,7 +498,7 @@ describe('laps per leg (F-64 LL-2, LL-3; AC 1, 3, 8, 9)', () => {
     ]);
     expect(p.section?.querySelector('.laps-section')).toBeNull();
     const speed = (name: string): string | null | undefined => blocks(p).find((b) => legName(b) === name)?.querySelector('th[data-k="avg_speed"]')?.textContent;
-    expect([speed('Swim'), speed('Ride'), speed('Run')]).toEqual(['Pace (/100 yd)', 'Speed (mph)', 'Pace (/mi)']);
+    expect([speed('Swim'), speed('Ride'), speed('Run')]).toEqual(['Pace (/100 yd)*', 'Speed (mph)*', 'Pace (/mi)*']);
     expect(blocks(p)[2].querySelector('th[data-k="distance"]')?.textContent).toBe('Distance (mi)');
     expect(warn).not.toHaveBeenCalled();
   });

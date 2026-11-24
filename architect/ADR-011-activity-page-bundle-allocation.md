@@ -49,6 +49,7 @@ ADR-002 counts the entry chunk plus its static imports plus CSS, gzip -9, 60,000
 | (rev. 15) − size review C1–C3 (user 11 Nov 2026, [review](history/ADR-011-size-review-2026-11-11.md)): unused uPlot statics blanked at build (`wx-uplot-trim` in `vite.config.ts`, ADR-009), uPlot CSS cut to the used rules (`components/charts/uplot.css`), Svelte `discloseVersion: false`; measured 11 Nov 2026 → entry 56,507 | −2,978 |
 | + F-43 device line and F-44 pool cells (reader keys, two `summaryItems` cells, `.device` CSS; the edit page's line is in the owner chunk), measured 11 Nov 2026 → entry 56,655 | +148 |
 | + F-46 laps and splits (LS-4: switch, splits table and drop-down leave for the lazy `src/splits/`, 1,602 + 226 CSS gzip; trigger column and the LS-8 seam join), measured 12 Nov 2026 → entry 56,351 (F-45 had left it at 56,661) | −304 |
+| + AP-8 laps footnote (starred Time/Pace labels, hint under device-lap tables), measured 24 Nov 2026 → entry 60,565 of 62,000 | +100 |
 | **Reserve** | **3,649** (60,000 − 56,351) |
 | **Total** | **60,000** |
 

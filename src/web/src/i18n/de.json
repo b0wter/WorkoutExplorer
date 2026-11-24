@@ -35,6 +35,8 @@
   "routeHidden": "Die gesamte Route wurde von der hochladenden Person ausgeblendet.",
   "headLaps": "Runden",
   "headSplits": "Splits",
+  "lapsNotePace": "* Zeit enthält Pausen; Pace ist der Durchschnitt des Geräts, meist nur über die Bewegungszeit.",
+  "lapsNoteSpeed": "* Zeit enthält Pausen; Geschwindigkeit ist der Durchschnitt des Geräts, meist nur über die Bewegungszeit.",
   "about": "Über",
   "report": "Melden"
  },

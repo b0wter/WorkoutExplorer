@@ -10,6 +10,8 @@ export const en = {
   routeHidden: 'The entire route has been hidden by the uploader.',
   headLaps: 'Laps',
   headSplits: 'Splits',
+  lapsNotePace: "* Time includes pauses; pace is the device's own average, usually over moving time only.",
+  lapsNoteSpeed: "* Time includes pauses; speed is the device's own average, usually over moving time only.",
   about: 'About',
   report: 'Report',
 };

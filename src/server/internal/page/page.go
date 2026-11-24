@@ -61,6 +61,8 @@ type Laps struct {
 	Columns []Column
 	Rows    [][]string
 	None    string
+	// NotePace or NoteSpeed is "yes" when the laps are the device's own (AP-8 footnote), else "".
+	NotePace, NoteSpeed string
 	// Legs is F-64 LL-2: a multisport workout's laps as one block per
 	// section (heading and its own table); empty otherwise. When set, the
 	// template prints them instead of Columns and Rows.
@@ -73,6 +75,8 @@ type LapsLeg struct {
 	Name, Sport string
 	Columns     []Column
 	Rows        [][]string
+	NotePace    string
+	NoteSpeed   string
 }
 
 // Settings are the workout's settings besides the data file (lib/page PageSettings).
@@ -407,8 +411,12 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 		{"avg_power", "Power (W)", intText},
 		{"avg_cadence", "Cadence (" + cadenceUnit(sport) + ")", intText},
 	}
+	// AP-8 footnote: device laps (not F-65 'added') carry their own average speed beside the elapsed time.
+	device := false
 	ts := make([]totals, len(laps))
 	for i, l := range laps {
+		device = device || l.Trigger != "added"
+
 		ts[i] = totalsOf(l.Totals)
 	}
 	cell := func(t totals, c lapColumn) string {
@@ -439,8 +447,24 @@ func lapsGroup(sport string, laps []datafile.Lap) *Laps {
 		showStroke = showStroke || strokeWords[l.Stroke] != "" // F-48 PL-7
 	}
 	out := &Laps{Columns: []Column{{Key: "number", Label: "#"}}, Rows: make([][]string, len(laps)), Legs: []LapsLeg{}}
+	hasTime, hasSpeed := false, false
 	for _, c := range shown {
-		out.Columns = append(out.Columns, Column{Key: c.key, Label: c.label})
+		hasTime = hasTime || c.key == "elapsed_time"
+		hasSpeed = hasSpeed || c.key == "avg_speed"
+	}
+	if device && hasTime && hasSpeed {
+		if isPaceSport(sport) {
+			out.NotePace = "yes"
+		} else {
+			out.NoteSpeed = "yes"
+		}
+	}
+	for _, c := range shown {
+		label := c.label
+		if (out.NotePace != "" || out.NoteSpeed != "") && (c.key == "elapsed_time" || c.key == "avg_speed") {
+			label += "*"
+		}
+		out.Columns = append(out.Columns, Column{Key: c.key, Label: label})
 	}
 	if showStroke {
 		out.Columns = append(out.Columns, Column{Key: "stroke", Label: "Stroke"})

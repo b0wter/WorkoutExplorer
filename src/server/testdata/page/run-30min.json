@@ -99,7 +99,7 @@
       },
       {
         "Key": "elapsed_time",
-        "Label": "Time"
+        "Label": "Time*"
       },
       {
         "Key": "distance",
@@ -107,7 +107,7 @@
       },
       {
         "Key": "avg_speed",
-        "Label": "Pace (/km)"
+        "Label": "Pace (/km)*"
       },
       {
         "Key": "ascent",
@@ -179,6 +179,8 @@
       ]
     ],
     "None": "",
+    "NotePace": "yes",
+    "NoteSpeed": "",
     "Legs": []
   },
   "Card": {

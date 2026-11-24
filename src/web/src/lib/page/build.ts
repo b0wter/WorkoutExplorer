@@ -92,7 +92,11 @@ export const codeWord = (kind: keyof typeof CODES, code = ''): string => (!CODES
  *  trigger; F-48 PL-7: stroke before it, when any lap has a known stroke). */
 export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & { readonly trigger?: string; readonly stroke?: string })[], units: Units = 'metric'): LapsGroup | null {
   if (laps.length === 0) return null;
-  const speedLabel = t(isPaceSport(sport) ? 'colPace' : 'colSpeed', { u: speedOrPaceUnit(sport, units) });
+  // AP-8 footnote: device laps (a trigger string, not 'added') carry their own average speed, usually over moving time,
+  // beside the elapsed time; browser splits (no trigger) have both from the same range.
+  const device = laps.some((l) => l.trigger !== undefined && l.trigger !== 'added');
+  const pace = isPaceSport(sport);
+  const speedLabel = t(pace ? 'colPace' : 'colSpeed', { u: speedOrPaceUnit(sport, units) });
   const cols: { key: string; label: string; cell: (t: Totals) => string }[] = [
     { key: 'elapsed_time', label: t('colTime'), cell: (o) => cellOf(o, 'elapsed_time', formatElapsed) },
     { key: 'distance', label: t('colDistance', { u: distanceUnit(units) }), cell: (o) => cellOf(o, 'distance', (v) => formatDistance(v, units)) },
@@ -106,10 +110,14 @@ export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & {
   const shown = cols.filter((c) => laps.some((l) => c.cell(l.totals) !== MISSING_TEXT));
   // Word columns after the numbers, headed by their capitalised key, when at least one lap has a known word.
   const words = (['stroke', 'trigger'] as const).filter((k) => laps.some((l) => codeWord(k, l[k]) !== ''));
+  const note = device && shown.some((c) => c.key === 'elapsed_time') && shown.some((c) => c.key === 'avg_speed');
+  const star = (c: { key: string; label: string }): string => (note && (c.key === 'elapsed_time' || c.key === 'avg_speed') ? c.label + '*' : c.label);
   return {
-    Columns: [{ Key: 'number', Label: '#' }, ...shown.map((c) => ({ Key: c.key, Label: c.label })), ...words.map((k) => ({ Key: k, Label: t(k) }))],
+    Columns: [{ Key: 'number', Label: '#' }, ...shown.map((c) => ({ Key: c.key, Label: star(c) })), ...words.map((k) => ({ Key: k, Label: t(k) }))],
     Rows: laps.map((l, i) => [String(i + 1), ...shown.map((c) => c.cell(l.totals)), ...words.map((k) => codeWord(k, l[k]))]),
     None: '',
+    NotePace: note && pace ? 'yes' : '',
+    NoteSpeed: note && !pace ? 'yes' : '',
   };
 }
 

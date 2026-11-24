@@ -35,6 +35,8 @@
   "routeHidden": "Tout l'itinéraire a été masqué par la personne qui l'a importé.",
   "headLaps": "Tours",
   "headSplits": "Fractions",
+  "lapsNotePace": "* Le temps inclut les pauses ; l'allure est la moyenne de l'appareil, en général sur le temps de déplacement seul.",
+  "lapsNoteSpeed": "* Le temps inclut les pauses ; la vitesse est la moyenne de l'appareil, en général sur le temps de déplacement seul.",
   "about": "À propos",
   "report": "Signaler"
  },

@@ -15,14 +15,14 @@ import { t } from './device-texts';
 import type { PageLaps, PageLapsLeg, PageSettings, PageViewModel } from './model';
 
 /** The hidden module of a file without laps but with an advancing distance (F-46 LS-3) or lengths (F-48 PL-7). */
-const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', Legs: [] };
+const NO_LAPS: PageLaps = { Columns: [], Rows: [], None: 'yes', NotePace: '', NoteSpeed: '', Legs: [] };
 
 /** F-64 LL-2: one block per section with its own laps table, built for the section's sport. */
 function lapLegs(meta: WorkoutData['meta'], units?: Units): PageLapsLeg[] {
   const secs = sections(meta);
   return lapsBySection(secs, meta.laps).map((laps, k) => {
     const g = lapsGroup(secs![k].sport, laps, units);
-    return { Name: secs![k].name, Sport: secs![k].sport, Columns: g?.Columns ?? [], Rows: g?.Rows ?? [] };
+    return { Name: secs![k].name, Sport: secs![k].sport, Columns: g?.Columns ?? [], Rows: g?.Rows ?? [], NotePace: g?.NotePace ?? '', NoteSpeed: g?.NoteSpeed ?? '' };
   });
 }
 

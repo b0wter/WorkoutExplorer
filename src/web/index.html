@@ -60,12 +60,12 @@
           <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
           <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
           {{end}}</tbody>
-          </table></div>{{end}}</div>{{end}}</div>
+          </table></div>{{if .NotePace}}<p class="laps-note" data-t="lapsNotePace">* Time includes pauses; pace is the device's own average, usually over moving time only.</p>{{end}}{{if .NoteSpeed}}<p class="laps-note" data-t="lapsNoteSpeed">* Time includes pauses; speed is the device's own average, usually over moving time only.</p>{{end}}{{end}}</div>{{end}}</div>
         {{else}}{{if .Columns}}<div class="laps-scroll"><table>
           <thead><tr>{{range .Columns}}<th data-k="{{.Key}}">{{.Label}}</th>{{end}}</tr></thead>
           <tbody>{{range .Rows}}<tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
           {{end}}</tbody>
-        </table></div>{{end}}{{end}}
+        </table></div>{{if .NotePace}}<p class="laps-note" data-t="lapsNotePace">* Time includes pauses; pace is the device's own average, usually over moving time only.</p>{{end}}{{if .NoteSpeed}}<p class="laps-note" data-t="lapsNoteSpeed">* Time includes pauses; speed is the device's own average, usually over moving time only.</p>{{end}}{{end}}{{end}}
       </section>{{end}}
       <div id="zones-slot" class="zones-slot" hidden></div>
       <div id="efforts-slot" class="efforts-slot" hidden></div>

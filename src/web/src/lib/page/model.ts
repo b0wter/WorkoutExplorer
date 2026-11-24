@@ -47,6 +47,9 @@ export interface LapsGroup {
   /** 'yes': the file has no laps but its distance advances: the module is rendered hidden, headed
    *  "Splits", with no table, for the splits chunk to fill and reveal (F-46 LS-3); '' otherwise. */
   readonly None: string;
+  /** AP-8 footnote: 'pace' or 'speed' when Time and the speed column both come from the device (starred labels), else ''. */
+  readonly NotePace: string;
+  readonly NoteSpeed: string;
 }
 
 export interface PageViewModel {
@@ -84,6 +87,8 @@ export interface PageLapsLeg {
   readonly Sport: string;
   readonly Columns: LapsGroup['Columns'];
   readonly Rows: LapsGroup['Rows'];
+  readonly NotePace: string;
+  readonly NoteSpeed: string;
 }
 
 /** What the builder needs besides the decoded data file: the settings of the workout. */

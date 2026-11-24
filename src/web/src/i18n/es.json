@@ -35,6 +35,8 @@
   "routeHidden": "Quien subió el entrenamiento ha ocultado toda la ruta.",
   "headLaps": "Vueltas",
   "headSplits": "Parciales",
+  "lapsNotePace": "* El tiempo incluye pausas; el ritmo es la media del propio dispositivo, normalmente solo en movimiento.",
+  "lapsNoteSpeed": "* El tiempo incluye pausas; la velocidad es la media del propio dispositivo, normalmente solo en movimiento.",
   "about": "Acerca de",
   "report": "Denunciar"
  },

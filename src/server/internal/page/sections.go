@@ -69,7 +69,7 @@ func lapLegs(secs []section, laps []datafile.Lap) []LapsLeg {
 	for k, s := range secs {
 		leg := LapsLeg{Name: s.name, Sport: s.sport, Columns: []Column{}, Rows: [][]string{}}
 		if g := lapsGroup(s.sport, per[k]); g != nil {
-			leg.Columns, leg.Rows = g.Columns, g.Rows
+			leg.Columns, leg.Rows, leg.NotePace, leg.NoteSpeed = g.Columns, g.Rows, g.NotePace, g.NoteSpeed
 		}
 		out[k] = leg
 	}

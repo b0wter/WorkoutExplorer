@@ -99,7 +99,7 @@
       },
       {
         "Key": "elapsed_time",
-        "Label": "Time"
+        "Label": "Time*"
       },
       {
         "Key": "distance",
@@ -107,7 +107,7 @@
       },
       {
         "Key": "avg_speed",
-        "Label": "Speed (km/h)"
+        "Label": "Speed (km/h)*"
       },
       {
         "Key": "ascent",
@@ -188,6 +188,8 @@
       ]
     ],
     "None": "",
+    "NotePace": "",
+    "NoteSpeed": "yes",
     "Legs": [
       {
         "Name": "Swim",
@@ -199,7 +201,7 @@
           },
           {
             "Key": "elapsed_time",
-            "Label": "Time"
+            "Label": "Time*"
           },
           {
             "Key": "distance",
@@ -207,7 +209,7 @@
           },
           {
             "Key": "avg_speed",
-            "Label": "Pace (/100 m)"
+            "Label": "Pace (/100 m)*"
           },
           {
             "Key": "avg_heart_rate",
@@ -227,7 +229,9 @@
             "143",
             "32"
           ]
-        ]
+        ],
+        "NotePace": "yes",
+        "NoteSpeed": ""
       },
       {
         "Name": "T1",
@@ -262,7 +266,9 @@
             "133",
             "Distance"
           ]
-        ]
+        ],
+        "NotePace": "",
+        "NoteSpeed": ""
       },
       {
         "Name": "Ride",
@@ -274,7 +280,7 @@
           },
           {
             "Key": "elapsed_time",
-            "Label": "Time"
+            "Label": "Time*"
           },
           {
             "Key": "distance",
@@ -282,7 +288,7 @@
           },
           {
             "Key": "avg_speed",
-            "Label": "Speed (km/h)"
+            "Label": "Speed (km/h)*"
           },
           {
             "Key": "ascent",
@@ -312,7 +318,9 @@
             "225",
             "90"
           ]
-        ]
+        ],
+        "NotePace": "",
+        "NoteSpeed": "yes"
       },
       {
         "Name": "T2",
@@ -342,7 +350,9 @@
             "0.09",
             "133"
           ]
-        ]
+        ],
+        "NotePace": "",
+        "NoteSpeed": ""
       },
       {
         "Name": "Run",
@@ -354,7 +364,7 @@
           },
           {
             "Key": "elapsed_time",
-            "Label": "Time"
+            "Label": "Time*"
           },
           {
             "Key": "distance",
@@ -362,7 +372,7 @@
           },
           {
             "Key": "avg_speed",
-            "Label": "Pace (/km)"
+            "Label": "Pace (/km)*"
           },
           {
             "Key": "ascent",
@@ -387,7 +397,9 @@
             "163",
             "171"
           ]
-        ]
+        ],
+        "NotePace": "yes",
+        "NoteSpeed": ""
       }
     ]
   },

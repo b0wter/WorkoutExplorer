@@ -165,8 +165,23 @@ describe('modules (AP-3, D-5, D-10)', () => {
     expect(lapsGroup('cycling', [{ totals: { elapsed_time: 60 } }])!.Columns.map((c) => c.Key)).not.toContain('trigger');
   });
 
+  it('AP-8: device laps star Time and Pace/Speed and carry the footnote; splits, added laps and a missing column do not', () => {
+    const lap = (trigger: string | undefined, totals: Record<string, number>) => ({ trigger, totals });
+    const both = { elapsed_time: 304, avg_speed: 3.3 };
+    const labels = (g: ReturnType<typeof lapsGroup>) => g!.Columns.map((c) => c.Label);
+    const ride = lapsGroup('cycling', [lap('manual', both)])!;
+    expect([ride.NoteSpeed, labels(ride).slice(1)]).toEqual(['yes', ['Time*', 'Speed (km/h)*']]);
+    const run = lapsGroup('running', [lap('', both)])!;
+    expect([run.NotePace, labels(run).slice(1)]).toEqual(['yes', ['Time*', 'Pace (/km)*']]);
+    for (const g of [lapsGroup('running', [lap(undefined, both)]), lapsGroup('running', [lap('added', both)]), lapsGroup('running', [lap('manual', { elapsed_time: 60 })])]) {
+      expect(g!.NotePace + g!.NoteSpeed).toBe('');
+      expect(labels(g).join()).not.toContain('*');
+    }
+    expect(lapsGroup('running', [lap('added', both), lap('manual', both)])!.NotePace).toBe('yes');
+  });
+
   it('LS-3: without laps but with an advancing distance the module is the hidden splits-only one', () => {
-    expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes', Legs: [] });
+    expect(byName('ride-no-laps').Laps).toEqual({ Columns: [], Rows: [], None: 'yes', NotePace: '', NoteSpeed: '', Legs: [] });
     expect(byName('ride-12h').Laps?.None).toBe('');
   });
 
@@ -279,7 +294,7 @@ describe('imperial builders (F-14 D-2, D-5; AC 1, 4, 6)', () => {
     const laps = lapsGroup(d.meta.sport, d.meta.laps, 'imperial');
     expect(laps?.Columns.map((c) => c.Label)).toContain('Distance (mi)');
     expect(laps?.Columns.map((c) => c.Label)).toContain('Gain (ft)');
-    expect(laps?.Columns.map((c) => c.Label)).toContain('Speed (mph)');
+    expect(laps?.Columns.map((c) => c.Label)).toContain('Speed (mph)*');
   });
   it('a run shows min/mi; a swim shows miles with pace per 100 yd (OQ-67)', () => {
     const r = spec('run-30min');
