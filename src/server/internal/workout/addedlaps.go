@@ -139,6 +139,7 @@ func AddLaps(w Workout, at []int, lo, hi int) Workout {
 	}
 	off := w.Samples.Offset
 	tl := newSportTimeline(w.Sessions, w.hints)
+	ix := newRangeIndex(&w.Samples)
 	partsOf := func(j int, base Lap) []Lap {
 		ks := cuts[j]
 		slices.Sort(ks)
@@ -151,7 +152,7 @@ func AddLaps(w Workout, at []int, lo, hi int) Workout {
 				p.End, p.Trigger = off[ks[i]], TriggerAdded
 				start = off[ks[i]]
 			}
-			completeTotals(&w.Samples, &p.Totals, p.Start, p.End, tl)
+			completeTotals(ix, &p.Totals, p.Start, p.End, tl)
 			out = append(out, p)
 		}
 		return out

@@ -598,3 +598,55 @@ func BenchmarkParseAtCap(b *testing.B) {
 		}
 	})
 }
+
+// overlapLapsFile is the CR-01 hostile shape: n records with HR, power,
+// cadence, altitude and distance, and laps full-length laps that all span the
+// whole recording and carry no totals, so every lap needs every range value.
+func overlapLapsFile(n, laps int) []byte {
+	b := &fitBuilder{}
+	b.def(0, mesgnum.Record, []fieldDef{
+		{253, 4, basetype.Uint32}, {78, 4, basetype.Uint32}, {5, 4, basetype.Uint32},
+		{3, 1, basetype.Uint8}, {4, 1, basetype.Uint8}, {7, 2, basetype.Uint16},
+	})
+	b.def(3, mesgnum.Session, []fieldDef{{253, 4, basetype.Uint32}, {2, 4, basetype.Uint32}, {5, 1, basetype.Enum}})
+	b.def(4, mesgnum.Lap, []fieldDef{{253, 4, basetype.Uint32}, {2, 4, basetype.Uint32}})
+	u32 := func(buf []byte, v uint32) []byte { return binary.LittleEndian.AppendUint32(buf, v) }
+	rec := make([]byte, 0, 20)
+	for i := 0; i < n; i++ {
+		rec = u32(rec[:0], uint32(fitEpoch+i))
+		rec = u32(rec, uint32(2_600+i%500))
+		rec = u32(rec, uint32(i*700))
+		rec = append(rec, byte(120+i%40), byte(80+i%20))
+		rec = binary.LittleEndian.AppendUint16(rec, uint16(180+i%90))
+		b.data(0, rec...)
+	}
+	end := uint32(fitEpoch + n - 1)
+	for k := 0; k < laps; k++ {
+		b.data(4, u32(u32(nil, end), fitEpoch)...)
+	}
+	b.data(3, append(u32(u32(nil, end), fitEpoch), 2)...)
+	return b.bytes()
+}
+
+// TestParseOverlappingLapsBound is CR-01: 10,000 overlapping full-length laps
+// over 500,000 samples must stay within ADR-017's complexity bound (lap
+// totals O(1) per lap after one prefix pass). Measured 24 s before the fix.
+func TestParseOverlappingLapsBound(t *testing.T) {
+	data := overlapLapsFile(DefaultLimits.MaxRecords, DefaultLimits.MaxLaps)
+	if len(data) > DefaultLimits.MaxBytes {
+		t.Fatalf("%d bytes, over MaxBytes", len(data))
+	}
+	start := time.Now()
+	w, err := newTestParser(DefaultLimits).Parse(context.Background(), data)
+	d := time.Since(start)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(w.Laps) != DefaultLimits.MaxLaps || w.Laps[0].Totals.AvgHeartRate == nil || w.Laps[len(w.Laps)-1].Totals.AvgPower == nil {
+		t.Fatalf("laps %d, totals not completed", len(w.Laps))
+	}
+	t.Logf("parse %v", d)
+	if d > 6*time.Second { // ADR-017 budget is 2 s; slack for a loaded CI machine
+		t.Errorf("parse took %v", d)
+	}
+}

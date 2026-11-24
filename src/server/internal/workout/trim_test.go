@@ -79,7 +79,7 @@ func TestTrimEndMatchesRangeAndDropsTheDrive(t *testing.T) {
 		t.Errorf("sport %q", out.Sport)
 	}
 	// Equal to the range values of the untrimmed workout.
-	rv := rangeValues(&w.Samples, 0, 599)
+	rv := newRangeIndex(&w.Samples).values(0, 599)
 	wantPtr(t, "range distance", rv.distance, *s.Distance, 1e-9)
 	wantPtr(t, "range gain", rv.gain, *s.Ascent, 1e-9)
 	if *out.Derived.MovingTime > 599 {

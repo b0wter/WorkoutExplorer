@@ -186,11 +186,12 @@ func Trim(w Workout, a, b int) Workout {
 	out.Summary.PoolRecordedM = nil
 	setPool(&out)
 	out.Summary.Lengths = trimmedLengths(&out) // OQ-181
+	ix := newRangeIndex(&out.Samples)
 	for i := range out.Sessions {
 		if !cutSessions[i] {
 			continue
 		}
-		completeTotals(&out.Samples, &out.Sessions[i].Totals, out.Sessions[i].Start, out.Sessions[i].End, tl)
+		completeTotals(ix, &out.Sessions[i].Totals, out.Sessions[i].Start, out.Sessions[i].End, tl)
 	}
 	completeLaps(&out, tl)
 	return out

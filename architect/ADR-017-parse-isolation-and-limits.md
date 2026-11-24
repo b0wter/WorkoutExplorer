@@ -212,3 +212,5 @@ It buys protection against exactly one class of failure: unbounded growth that o
 - (rev. 7) `fit rejected` lines with `limit` `time` arrive at close to 60 per hour while friends get `busy`: lower T, or move rate limiting into Caddy (ADR-021, "Would choose differently if").
 - (rev. 7) The operator needs more than 60 s for legitimate files: lower the caps in a revision. A higher bound would let one client address deny parsing to everyone.
 - (rev. 7) A second limit has to vary per machine (for example `MaxConcurrent` on a single-core machine): add it as its own setting, by the same rules, in a revision. Do not widen this one into a "limits profile".
+
+- (CR-01) Lap and session totals use one prefix-sum pass per Samples (`rangeIndex` in `workout/laps.go`), so 10,000 overlapping full-length laps over 500,000 samples cost 0.6 s instead of 20 s; `TestParseOverlappingLapsBound` guards it. `MaxLaps` (10,000, item 3) is unchanged.
