@@ -490,6 +490,11 @@ func TestDeleteFailureIsServerError(t *testing.T) {
 // is always row gone, and no call fails with a server error.
 func TestOwnerWritesAndDeleteEndGone(t *testing.T) {
 	s, r, _, _, c, _ := owned(t, &fakeHook{})
+	for id, rec := range r.rows { // published, so the hook runs on every Update
+		pub := t0
+		rec.Visibility, rec.PublishedAt = Unlisted, &pub
+		r.rows[id] = rec
+	}
 	var wg sync.WaitGroup
 	for i := range 20 {
 		wg.Add(1)
