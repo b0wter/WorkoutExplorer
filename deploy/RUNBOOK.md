@@ -146,7 +146,7 @@ Do this before or after starting, but it must be done. All examples use `workout
 Rules for any proxy:
 
 - **Pass `X-Forwarded-For` with the client address as its last entry.** Without it, the server sees every visitor as your proxy and the upload limit is shared by everybody (Troubleshooting).
-- **Do not add, change or remove response headers.** The app sets a strict Content-Security-Policy, `Referrer-Policy`, `X-Content-Type-Options`, `X-Robots-Tag` and `Strict-Transport-Security` (HSTS, once) itself (ADR-032). A second HSTS or a different CSP from the proxy breaks the policy.
+- **Do not add, change or remove response headers.** The app sets a strict Content-Security-Policy, `Referrer-Policy`, `X-Content-Type-Options`, `X-Robots-Tag`, `Permissions-Policy: geolocation=(self)` (F-62) and `Strict-Transport-Security` (HSTS, once) itself (ADR-032). A second HSTS or a different CSP from the proxy breaks the policy.
 - No response caching.
 - Allow request bodies of at least 21 MB (uploads are capped at 20 MB; the extra bytes are overhead).
 - Allow `/api/*` requests to last at least 480 seconds.

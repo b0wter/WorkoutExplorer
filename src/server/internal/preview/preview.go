@@ -49,8 +49,9 @@ const (
 	unitSize    = 28
 	rowHeight   = 124
 	routeWidth  = 6
-	minSpanM    = 200 // a route smaller than this is drawn at this span
-	minStepPx   = 1.0 // points closer than this to the last kept one are skipped
+	minSpanM    = 200    // a route smaller than this is drawn at this span
+	maxDrawPts  = 60_000 // above this many samples, every k-th is drawn: caps the cost of a crafted zigzag (CR2-01)
+	minStepPx   = 1.0    // points closer than this to the last kept one are skipped
 	circleSides = 16
 )
 
@@ -256,9 +257,17 @@ func drawRoute(img *image.RGBA, f datafile.File) bool {
 func stroke(img *image.RGBA, runs [][][2]float64, proj func([2]float64) (float64, float64), width float64, c color.Color) {
 	z := vector.NewRasterizer(Width, Height)
 	r := width / 2
+	total := 0
+	for _, run := range runs {
+		total += len(run)
+	}
+	stride := (total + maxDrawPts - 1) / maxDrawPts
 	for _, run := range runs {
 		var px, py float64
 		for i, p := range run {
+			if stride > 1 && i%stride != 0 && i < len(run)-1 {
+				continue
+			}
 			x, y := proj(p)
 			if i > 0 && math.Hypot(x-px, y-py) < minStepPx && i < len(run)-1 {
 				continue
