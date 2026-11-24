@@ -45,22 +45,27 @@ export function rangeCells(root: HTMLElement, data: WorkoutData, selection: Sele
       return { metric: s.metric, sum, count, cell, label, value, unit };
     });
   let current = units;
+  // Built per units and language change, not per drag frame (QA-68-r1-8).
+  const specsOf = () => dynamicsSpecs(current).flatMap((s) => rows.filter((x) => x.metric === s.metric).map((r) => [r, s] as const));
+  let specs = specsOf();
   const write = (): void => {
     const [a, b] = [selection.start(), selection.end()];
-    for (const s of dynamicsSpecs(current)) {
-      const r = rows.find((x) => x.metric === s.metric);
-      if (!r) continue;
+    for (const [r, s] of specs) {
       const v = a < 0 ? Number.NaN : s.toDisplay(prefixMean(r.count, r.sum, a, b));
       r.label.textContent = s.short ?? s.label;
       r.unit.textContent = s.unit;
       r.value.textContent = v === v ? s.format(v) : MISSING_TEXT;
     }
   };
-  const off = [selection.subscribe(write), onLanguage(write)];
+  const rebuild = (): void => {
+    specs = specsOf();
+    write();
+  };
+  const off = [selection.subscribe(write), onLanguage(rebuild)];
   return {
     update(u: Units): void {
       current = u;
-      write();
+      rebuild();
     },
     destroy(): void {
       off.forEach((f) => f());
