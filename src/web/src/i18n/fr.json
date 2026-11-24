@@ -570,5 +570,15 @@
   "genericGone": "Cet entraînement a expiré ou n'est pas disponible.",
   "genericAbout": "À propos",
   "ab_title": "À propos - Workout Explorer"
+ },
+ "dynamics": {
+  "dynVerticalOscillation": "Oscillation verticale",
+  "dynGroundContact": "Temps de contact au sol",
+  "dynStrideLength": "Longueur de foulée",
+  "dynVerticalRatio": "Ratio vertical",
+  "dynVerticalOscillationShort": "Osc. vert.",
+  "dynGroundContactShort": "Contact",
+  "dynStrideLengthShort": "Foulée",
+  "dynVerticalRatioShort": "Ratio vert."
  }
 }

@@ -15,7 +15,7 @@ export const MARKUP: Readonly<Record<string, readonly string[]>> = {
 export const GROUPS: Readonly<Record<string, readonly string[]>> = {
   // The viewing page's entry, with the lazy map, sections, splits, zones, efforts and pins viewer,
   // and the page components the edit page renders.
-  page: ['markup/view', 'page', 'components/page', 'lib/format', 'lib/format/dates-texts', 'lib/page', 'lib/page/device-texts', 'lib/charts', 'components/map', 'components/map/map-texts', 'sections', 'splits', 'lib/splits', 'zones', 'efforts', 'pins', 'lib/pins'],
+  page: ['markup/view', 'page', 'components/page', 'lib/format', 'lib/format/dates-texts', 'lib/page', 'lib/page/device-texts', 'lib/charts', 'components/map', 'components/map/map-texts', 'sections', 'dynamics', 'splits', 'lib/splits', 'zones', 'efforts', 'pins', 'lib/pins'],
   help: ['howto', 'summary-info', 'dialog'],
   report: ['report', 'lib/errors'],
   owner: ['edit', 'lib/errors'],

@@ -99,12 +99,12 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(css).toMatch(/^\.howto:not\(\.ready\),\n\.gpx:not\(\.ready\) \{\s*visibility: hidden;/m);
   });
 
-  it.each([1, 2, 3, 4, 5, 6])('.charts-%s reserves exactly what ChartStack sets for its chart area', (n) => {
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])('.charts-%s reserves exactly what ChartStack sets for its chart area', (n) => {
     expect(rule('.charts-' + n)).toContain(`--area: ${chartAreaHeight(n, DEFAULT_CHART_HEIGHT)}px`);
   });
 
-  it.each([1, 2, 3, 4, 5, 6, 7, 8])('.cells-%s reserves the readout rows of a 4-column grid (8 columns: one row)', (k) => {
-    expect(rule('.cells-' + k)).toBe(` --r4: ${Math.ceil(k / 4)}; `);
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])('.cells-%s reserves the readout rows of a 4-column grid (8 columns: --r8)', (k) => {
+    expect(rule('.cells-' + k)).toBe(` --r4: ${Math.ceil(k / 4)};${k > 8 ? ' --r8: 2;' : ''} `);
   });
 
   it('the readout shares the range panel card; 29 px rows and its 8 px of padding are in the reserved height', () => {
@@ -115,7 +115,7 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(css).toMatch(/^\.readout \.val,\n\.range-panel \.val \{[^}]*line-height: 16px;/m);
     expect(css).toMatch(/^\.readout \.unit,\n\.range-panel \.unit \{[^}]*line-height: 13px;/m);
     expect(css).toMatch(/^#charts-slot \.readout,\n#map-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/m); // F-33: the strip shares the tracks
-    expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: 1;\s*\}\s*#charts-slot \.readout,\s*#map-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
+    expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: var\(--r8, 1\);\s*\}\s*#charts-slot \.readout,\s*#map-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
     expect(rule('.charts')).toContain('calc(var(--bar) + var(--r) * 29px + 16px + var(--area) + var(--hint))');
   });
 

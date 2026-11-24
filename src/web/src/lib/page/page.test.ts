@@ -6,6 +6,7 @@ import { listSamples, readSample, removeSample, updating, writeSample } from '..
 import { decodeDataFile, type WorkoutData } from '../datafile';
 import { loadGolden } from '../../../test-support/golden.mjs';
 import { readoutFields } from '../charts';
+import '../../dynamics'; // F-68: the lazy chunk's specs, as the page glue loads them before the charts
 import { distanceAdvances, lapsGroup, summaryItems } from '.';
 import { buildPageViewModel, defaultTitle } from './view';
 import { EXPIRES_AT, SAMPLES, buildSample, sampleText, withoutHeartRate } from './samples';

@@ -10,7 +10,7 @@
 import { mount } from 'svelte';
 import { createCursorStore } from '../lib/cursor';
 import { createSelectionStore, type SelectionStore } from '../lib/selection';
-import { loadDataFile } from '../lib/datafile';
+import { DYNAMICS_ORDER, loadDataFile } from '../lib/datafile';
 import { loadGroup, onLanguage, pageLang } from '../lib/i18n';
 import { routePresence } from '../lib/route';
 import ChartStack from '../components/charts/ChartStack.svelte';
@@ -236,6 +236,8 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     return;
   }
   const data = result.data;
+  // F-68 XS-9: the dynamics chunk (specs, texts) before the charts and readouts are built; a failed load only leaves those charts out.
+  if (DYNAMICS_ORDER.some((n) => data.metrics[n])) await import('../dynamics').catch(() => console.warn('page: dynamics chunk failed'));
   enhance(data.meta);
   addUnitsSelect(root, units, prefs.setUnits);
   // F-58 SE-1: the viewing page's dialog gets these public metadata fields only, never streams,

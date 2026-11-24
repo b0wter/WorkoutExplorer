@@ -2,7 +2,7 @@
 // Any change here is a format change (F-03 §9) and goes together with the Go
 // writer and the golden fixtures.
 
-import type { CumulativeName, MetricName } from './model';
+import type { CumulativeName, DynamicsName, MetricName } from './model';
 
 export const MAGIC = 'WEXD';
 export const VERSION = 8;
@@ -11,9 +11,7 @@ export const HEADER_SIZE = 14;
 /** Two consecutive samples this far apart or more form a gap (F-02 R-3, F-03 §7). */
 export const GAP_SECONDS = 5;
 
-export type StreamName = 'time_offset' | 'latitude' | 'longitude' | MetricName | CumulativeName | DynamicsName;
-/** Version 8 (F-68): read and skipped until the frontend part of F-68 charts them. */
-export type DynamicsName = 'vertical_oscillation' | 'ground_contact_time' | 'stride_length' | 'vertical_ratio';
+export type StreamName = 'time_offset' | 'latitude' | 'longitude' | MetricName | CumulativeName;
 export type ColumnType = 'int32' | 'uint16' | 'uint8' | 'int8';
 export type Encoding = 'delta' | 'raw';
 
@@ -52,6 +50,9 @@ export const STREAM_SPECS: readonly StreamSpec[] = [
   { name: 'vertical_ratio', type: 'uint16', encoding: 'raw', scale: 0.1, unit: '%', size: 2, sentinel: 65535 },
 ];
 
+/** F-68 XS-1 order. */
+export const DYNAMICS_ORDER: readonly DynamicsName[] = ['vertical_oscillation', 'ground_contact_time', 'stride_length', 'vertical_ratio'];
+
 /** Metric streams in §2 order: the key order of `WorkoutData.metrics`. */
 export const METRIC_ORDER: readonly MetricName[] = [
   'altitude',
@@ -61,10 +62,11 @@ export const METRIC_ORDER: readonly MetricName[] = [
   'cadence',
   'power',
   'temperature',
+  ...DYNAMICS_ORDER,
 ];
 
 /** §2 unit of each metric stream, as written in the descriptors. */
-export const METRIC_UNITS: Readonly<Record<MetricName, string>> = {
+export const METRIC_UNITS: Readonly<Record<Exclude<MetricName, DynamicsName>, string>> = {
   altitude: 'm',
   distance: 'm',
   speed: 'm/s',

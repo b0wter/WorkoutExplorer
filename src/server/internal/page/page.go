@@ -518,8 +518,8 @@ func routePresence(f datafile.File) string {
 	return "no-visible-route"
 }
 
-// chartMetrics is AP-4's chart order (lib/charts CHART_ORDER).
-var chartMetrics = []string{"altitude", "speed", "heart_rate", "power", "cadence", "temperature"}
+// chartMetrics is AP-4's chart order (lib/charts CHART_ORDER), then F-68's running dynamics.
+var chartMetrics = []string{"altitude", "speed", "heart_rate", "power", "cadence", "temperature", "vertical_oscillation", "ground_contact_time", "stride_length", "vertical_ratio"}
 
 // chartsClass: "charts-n cells-k" (readout cells: time, distance if present,
 // one per chart), plus " has-distance" with a distance stream (the axis

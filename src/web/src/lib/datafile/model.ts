@@ -10,7 +10,11 @@ export type MetricName =
   | 'heart_rate'
   | 'cadence'
   | 'power'
-  | 'temperature';
+  | 'temperature'
+  | DynamicsName;
+
+/** Version 8 (F-68 XS-1): the running dynamics, charted by the lazy src/dynamics chunk. */
+export type DynamicsName = 'vertical_oscillation' | 'ground_contact_time' | 'stride_length' | 'vertical_ratio';
 
 /** The cumulative streams of format version 2 (ADR-029), for ranges (F-17). */
 export type CumulativeName = 'moving_time' | 'elevation_gain';

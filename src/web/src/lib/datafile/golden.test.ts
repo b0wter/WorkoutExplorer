@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadGolden, type Golden } from '../../../test-support/golden.mjs';
 import { decodeDataFile } from './decode';
+import { DYNAMICS_ORDER } from './format';
 import type { WorkoutData } from './model';
 
 interface FixtureStream {
@@ -41,6 +42,10 @@ const SCALE: Record<string, number> = {
   temperature: 1,
   moving_time: 1,
   elevation_gain: 0.1,
+  vertical_oscillation: 0.1,
+  ground_contact_time: 1,
+  stride_length: 0.001,
+  vertical_ratio: 0.1,
 };
 
 const goldens = loadGolden();
@@ -50,9 +55,13 @@ function streamsOf(data: WorkoutData): [string, Float64Array][] {
   if (data.position) {
     out.push(['latitude', data.position.latitude], ['longitude', data.position.longitude]);
   }
-  for (const [name, values] of Object.entries(data.metrics)) out.push([name, values]);
+  // File order: the version 8 dynamics columns come after the cumulative ones.
+  const dyn = (n: string): boolean => (DYNAMICS_ORDER as readonly string[]).includes(n);
+  const metrics = Object.entries(data.metrics);
+  for (const [name, values] of metrics) if (!dyn(name)) out.push([name, values]);
   if (data.movingTime) out.push(['moving_time', data.movingTime]);
   if (data.elevationGain) out.push(['elevation_gain', data.elevationGain]);
+  for (const [name, values] of metrics) if (dyn(name)) out.push([name, values]);
   return out;
 }
 
@@ -94,9 +103,7 @@ describe('golden fixtures', () => {
   describe.each(goldens.map((g) => [g.name, g] as const))('%s', (_name, g) => {
     it('decodes to the fixture (AC 2)', async () => {
       const f = fixtureOf(g);
-      // Version 8 running dynamics are read and not exposed until the frontend part of F-68.
-      const dyn = new Set(['vertical_oscillation', 'ground_contact_time', 'stride_length', 'vertical_ratio']);
-      const fixtureStreams = f.streams.filter((s) => !dyn.has(s.name));
+      const fixtureStreams = f.streams;
       const data = decodeOk(g.bin);
       const header = new DataView(g.bin);
       expect(g.bin.byteLength).toBe(f.byte_length);

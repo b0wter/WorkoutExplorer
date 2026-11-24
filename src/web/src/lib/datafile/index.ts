@@ -3,12 +3,13 @@
 
 export { decodeDataFile } from './decode';
 export { loadDataFile } from './load';
-export { GAP_SECONDS, METRIC_ORDER, METRIC_UNITS } from './format';
+export { DYNAMICS_ORDER, GAP_SECONDS, METRIC_ORDER, METRIC_UNITS } from './format';
 export type {
   DataFileError,
   DataFileErrorCode,
   DataFileResult,
   Device,
+  DynamicsName,
   Lap,
   Length,
   MetricName,

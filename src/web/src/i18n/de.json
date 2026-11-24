@@ -570,5 +570,15 @@
   "genericGone": "Dieses Training ist abgelaufen oder nicht verfügbar.",
   "genericAbout": "Über",
   "ab_title": "Info - Workout Explorer"
+ },
+ "dynamics": {
+  "dynVerticalOscillation": "Vertikale Oszillation",
+  "dynGroundContact": "Bodenkontaktzeit",
+  "dynStrideLength": "Schrittlänge",
+  "dynVerticalRatio": "Vertikales Verhältnis",
+  "dynVerticalOscillationShort": "Vert. Osz.",
+  "dynGroundContactShort": "Kontakt",
+  "dynStrideLengthShort": "Schritt",
+  "dynVerticalRatioShort": "Vert. Verh."
  }
 }
