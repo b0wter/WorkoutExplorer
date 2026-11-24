@@ -38,7 +38,8 @@
   "lapsNotePace": "* Zeit enthält Pausen; Pace ist der Durchschnitt des Geräts, meist nur über die Bewegungszeit.",
   "lapsNoteSpeed": "* Zeit enthält Pausen; Geschwindigkeit ist der Durchschnitt des Geräts, meist nur über die Bewegungszeit.",
   "about": "Über",
-  "report": "Melden"
+  "report": "Melden",
+  "source": "Quellcode und Probleme auf GitHub"
  },
  "dialog": {
   "closeDialog": "Schließen"
@@ -493,7 +494,9 @@
   "shortcutHint": "Auf einem iPhone oder iPad? Lade mit {link} direkt aus dem Teilen-Menü hoch. {more}",
   "shortcutLink": "diesem Kurzbefehl",
   "shortcutMore": "Mehr",
-  "uploadAbout": "Über"
+  "uploadAbout": "Über",
+  "uploadSource": "Open Source: {link}",
+  "uploadSourceLink": "Fehler melden oder Ideen vorschlagen auf GitHub"
  },
  "markup/static": {
   "ab_aboutWorkoutExplorer": "Über Workout Explorer",

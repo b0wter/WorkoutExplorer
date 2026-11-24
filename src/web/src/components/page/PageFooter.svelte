@@ -8,4 +8,4 @@
   let { report = true }: Props = $props();
 </script>
 
-<footer class="foot" {@attach impressum}><a href="/about">{t('about')}</a>{#if report} <button type="button" data-report hidden>{t('report')}</button>{/if}</footer>
+<footer class="foot" {@attach impressum}><a href="/about">{t('about')}</a> <a class="gh" href="https://github.com/b0wter/WorkoutExplorer">{t('source')}</a>{#if report} <button type="button" data-report hidden>{t('report')}</button>{/if}</footer>

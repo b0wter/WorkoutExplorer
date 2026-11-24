@@ -1250,7 +1250,11 @@ describe('F-38 IM-7: the Impressum link in the browser-drawn footers', () => {
     t.innerHTML = filled;
     document.body.prepend(t);
   };
-  const links = (): string[] => [...document.querySelectorAll('footer a')].map((a) => a.getAttribute('href')!);
+  const links = (): string[] => [...document.querySelectorAll('footer a:not(.gh)')].map((a) => a.getAttribute('href')!);
+  it('the page and published footers link the repository', async () => {
+    await open();
+    expect(document.querySelector('footer a.gh')?.getAttribute('href')).toBe('https://github.com/b0wter/WorkoutExplorer');
+  });
 
   for (const [name, filled, want] of [
     ['set', LINK, ['/about', '/impressum']],
