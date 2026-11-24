@@ -103,7 +103,7 @@ Uploads go through `(*Parser).Accept`: parse, strip identifying data (UP-9), and
    - B is about 150 to 250 MB. The workout is close to `Normalise`'s 98 MB, the encoder is the 12-hour file's 8.8 MB per run scaled to 500,000 samples, and the upload and stripped copy add about 35 MB.
    - So M(4) is about 0.85 to 1.05 GB, plus L.
 
-   (note, 24 Nov 2026, F-68 XS-11) Four running-dynamics values per record and the Stryd list raise A by about 15 to 45 MB (max RSS 337 MB at 440,000 F-68 records, the most that fit in `MaxBytes`, against 289 to 322 MB for the 500,000-record twin; MEASUREMENTS.md, "Extra sensor streams"). The model's form and the 400 MB rule hold; M(4) grows by about 90 MB at most.
+   (note, 24 Nov 2026, F-68 XS-11, corrected QA-68-r1-7) Four running-dynamics values per record and the Stryd list raise A by **about 52 to 58 MB at equal record count** (max RSS 345 to 347 MB with F-68 fields against 287 to 295 MB without, both 440,000 records, the most that fit in `MaxBytes`; MEASUREMENTS.md, "Extra sensor streams"). Scaled to 500,000 records A is about 350 to 380 MB, within about 5 % of the 400 MB rule. The model's form and the rule hold; M(4) grows by about 120 MB at most. A 500,000-record file with all streams does not fit in `MaxBytes` with the library's encoder (22.7 MB).
 
    N = 16 allows up to 2·A + 14·B + L in the worst case. In practice, requests waiting for a slot hold only U. Every later in-memory table that clients can grow (for example F-27's report limiter) states its own bound and adds it to M(N) the same way.
 

@@ -93,14 +93,18 @@ func dynamicsRun(name string, day int, seed uint64, end int) file {
 
 // runDynamics4h is the size-budget run (F68 stop rule): 14,400 records with
 // every stream, native power and the four dynamics, noisy like ride-4h.
-func runDynamics4h() file {
-	const end = 14399
-	f := dynamicsRun("run-4h-dynamics.fit", 62, 71, end)
+func runDynamics4h() file { return runDynamicsLong("run-4h-dynamics.fit", 62, 71, 73, 14399) }
+
+// runDynamics12h is the 12-hour gate file (F-68 AC 7): 43,200 records, all ten charts.
+func runDynamics12h() file { return runDynamicsLong("run-12h-dynamics.fit", 63, 75, 77, 43199) }
+
+func runDynamicsLong(name string, day int, seed, seed2 uint64, end int) file {
+	f := dynamicsRun(name, day, seed, end)
 	f.laps = nil
 	for from := 0; from < end; from += 900 {
 		f.laps = append(f.laps, span{from: from, to: min(from+900, end)})
 	}
-	rng := rand.New(rand.NewPCG(73, 74))
+	rng := rand.New(rand.NewPCG(seed2, seed2+1))
 	u := func(a float64) float64 { return (rng.Float64()*2 - 1) * a }
 	for i := range f.samples {
 		s := &f.samples[i]

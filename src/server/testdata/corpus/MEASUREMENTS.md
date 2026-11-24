@@ -226,7 +226,11 @@ Data file version 8 adds four `uint16` columns (43 bytes per sample with every s
 
 | File | Records | Max RSS |
 | --- | --- | --- |
-| all-caps twin without F-68 fields | 500,000 | 289 to 322 MB |
-| all-caps twin with F-68 fields (`-cap-records 440000 -cap-f68`) | 440,000 | 336.5 to 337.4 MB (stable) |
+| all-caps twin without F-68 fields (`-cap-records 440000`) | 440,000 | 287 to 295 MB |
+| all-caps twin with F-68 fields (`-cap-records 440000 -cap-f68`) | 440,000 | 345 to 347 MB |
 
-Result: **A rises by about 15 to 45 MB** (`RawRecord` +8 bytes, the sparse Stryd list 16 bytes per Stryd record, four more `float64` sample streams, 32 bytes per sample and the same again while gaps are filled). The stop rule (A at most 400 MB) and the form of M(N) hold; M(4) = 2A + 2B + L grows by about 90 MB at most (ADR-017 note).
+(Re-measured like for like, 3 runs each, 24 Nov 2026, QA-68-r1-7; the earlier comparison against the 500,000-record twin understated the cost. The same build without F-68 fields at 500,000 records: 289 to 322 MB.)
+
+Result: **A rises by about 52 to 58 MB** at equal record count (`RawRecord` +8 bytes, the sparse Stryd list 16 bytes per Stryd record, four more `float64` sample streams, 32 bytes per sample and the same again while gaps are filled), so about 350 to 380 MB at 500,000 records. The stop rule (A at most 400 MB) and the form of M(N) hold with about 5 % margin; M(4) = 2A + 2B + L grows by about 120 MB at most (ADR-017 note).
+
+**12-hour run with every stream** (`synthetic/run-12h-dynamics.fit`, 43,200 samples, ten charts; `TestRun12hAllStreams`): `data.bin` 1,878,020 bytes, `data.bin.br` 444,961 bytes (under 500 KB even at 12 hours).
