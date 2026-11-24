@@ -35,7 +35,7 @@ A viewer splits the workout every 1, 5, 10, 15, 30 or 60 minutes, for example to
 
 ## Constraints
 - Code stays in the splits chunk; nothing new in the viewing entry (ADR-011).
-- Building 1-min splits on the 12-hour corpus file (about 720 rows) and its comparison chart stays within F-46's rebuild budget; scrubbing stays at 60 fps.
+- Building 1-min splits on the 12-hour corpus file (about 720 rows) (the table; with about 720 rows there is no chart under AP-23) stays within F-46's rebuild budget; scrubbing stays at 60 fps.
 - **Reliability:** smart recording (irregular intervals), long pauses, gaps between sessions, a workout shorter than 1 min, trimmed starts (UP-6) and truncated files must not break the table.
 
 ## Acceptance criteria
@@ -47,7 +47,7 @@ A viewer splits the workout every 1, 5, 10, 15, 30 or 60 minutes, for example to
 - [ ] A pool swim, and a pool-swim leg, offer no time group; a workout without distance has no splits section, as today.
 - [ ] Row tap selects the split's range; comparison chart shows one bar per row; the range is kept on a preset change; not part of `#range=`.
 - [ ] Phone portrait at 360 px (drop-down fits, no horizontal page scroll), desktop; both themes; all four languages.
-- [ ] Entry bundle unchanged; 60 fps scrubbing on the 12-hour file with 1-min splits shown; every corpus file renders.
+- [ ] Entry bundle unchanged; 60 fps scrubbing on the 12-hour file with the 1-min splits table shown (no chart at that row count, AP-23); every corpus file renders.
 
 ## Open questions
 - [x] **OQ-333 Which clock.** Decided (user, 24 Nov 2026), alternative chosen: moving time instead of the suggested elapsed time; now in Scope "Clock" and "Boundaries".

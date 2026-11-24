@@ -18,6 +18,8 @@ export interface Preset {
   /** Pool only: whole lengths per split and the distance a whole split shows, in the pool's unit. */
   readonly lengths?: number;
   readonly shown?: number;
+  /** F-69: a time split; `length` is then moving seconds, over the moving-time stream. */
+  readonly time?: true;
 }
 
 export interface SplitChoice {
@@ -38,6 +40,7 @@ const LISTS: Readonly<Record<string, [number[], number]>> = {
   e_biking: CYCLING,
   swimming: [[50, 100, 200, 500, 1000], 100],
 };
+const TIME_MIN = [1, 5, 10, 15, 30, 60]; // F-69 TS-3
 const POOL = [100, 200, 400, 500, 1000];
 
 import { t } from './texts';
@@ -64,14 +67,22 @@ function poolPreset(target: number, pool: Pool): Preset {
   return { label: Math.round(shown) + ' ' + pool.unit, length: n * pool.recorded, lengths: n, shown };
 }
 
-/** The drop-down's presets for the workout (LS-5): `advance` is d̄[N−1] − d̄[0] in metres. */
-export function splitChoice(meta: Pick<WorkoutMeta, 'sport' | 'summary'>, advance: number): SplitChoice {
+/** F-69 TS-3: the window's moving time for the offer rule; 0 (no time group) without the stream or for a lap swim. */
+export function movingOf(m: Float64Array | undefined, a: number, b: number, lapSwim: boolean): number {
+  return m && !lapSwim && b > a ? m[b] - m[a] : 0;
+}
+
+/** The drop-down's presets for the workout (LS-5): `advance` is d̄[N−1] − d̄[0] in metres. `moving`
+ *  (F-69 TS-3) is the window's moving time in seconds: the time presets not longer than it follow the
+ *  distance ones, from 60 s and never for a pool swim. */
+export function splitChoice(meta: Pick<WorkoutMeta, 'sport' | 'summary'>, advance: number, moving = 0): SplitChoice {
   const pool = poolOf(meta);
   const [list, def] = Object.hasOwn(LISTS, meta.sport) ? LISTS[meta.sport] : [KM, 1000];
   const all = pool ? POOL.map((t) => poolPreset(t, pool)) : list.map((m) => ({ label: label(m, meta.sport === 'swimming'), length: m }));
   const d = pool ? 0 : list.indexOf(def);
   const presets = all.filter((p, i) => i === d || p.length <= advance + 1e-6);
-  return { presets, index: presets.indexOf(all[d]), pool };
+  const time: Preset[] = pool || moving < 60 ? [] : TIME_MIN.filter((m) => m * 60 <= moving + 1e-6).map((m) => ({ label: m + ' min', length: m * 60, time: true }));
+  return { presets: [...presets, ...time], index: presets.indexOf(all[d]), pool };
 }
 
 /** Split boundaries over d̄ (F-18 L-4) for splits of `length` metres within the sample window

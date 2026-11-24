@@ -1,7 +1,7 @@
 // Split presets and rules (F-46 LS-5, LS-6; AP-20; AC 34 to 36).
 import { describe, expect, it } from 'vitest';
 import type { Summary } from '../datafile';
-import { partialLast, poolDistance, presetBounds, splitChoice } from '.';
+import { movingOf, partialLast, poolDistance, presetBounds, splitChoice } from '.';
 
 const labels = (sport: string, advance = 1e6, summary: Summary = {}): string[] => splitChoice({ sport, summary }, advance).presets.map((p) => p.label);
 const chosen = (sport: string, advance = 1e6, summary: Summary = {}): string => {
@@ -148,5 +148,85 @@ describe('windowed boundaries (F-64 LL-4)', () => {
 
   it('a tail without advance is in no split', () => {
     expect(presetBounds(x, m500, null, 7, 13)).toEqual([7, 12]);
+  });
+});
+
+describe('time splits (F-69)', () => {
+  const time = (sport: string, moving: number, summary: Summary = {}) => splitChoice({ sport, summary }, 1e6, moving).presets.filter((p) => p.time).map((p) => p.label);
+  /** Moving time of one sample per second; `stops` are [from, to) second ranges in which it stays flat. */
+  const clock = (n: number, stops: [number, number][] = []): Float64Array => {
+    const m = new Float64Array(n);
+    for (let i = 1; i < n; i++) m[i] = m[i - 1] + (stops.some(([f, t]) => i > f && i <= t) ? 0 : 1);
+    return m;
+  };
+  const rows = (m: Float64Array, min: number, a = 0, b = m.length - 1) => {
+    const p = splitChoice({ sport: 'running', summary: {} }, 1e6, 1e6).presets.find((x) => x.label === min + ' min')!;
+    const bo = presetBounds(m, p, null, a, b);
+    return { bo, secs: bo.slice(1).map((x, i) => m[x] - m[bo[i]]), partial: partialLast(m, bo, p, null) };
+  };
+
+  it('offer: presets up to the moving time, from 60 s, after the distance ones, default unchanged (AC 1)', () => {
+    expect(time('running', 50 * 60)).toEqual(['1 min', '5 min', '10 min', '15 min', '30 min']);
+    expect(time('running', 60)).toEqual(['1 min']);
+    expect(time('running', 59)).toEqual([]);
+    expect(time('running', 0)).toEqual([]);
+    const c = splitChoice({ sport: 'running', summary: {} }, 1e6, 3600);
+    expect(c.presets.map((p) => p.label).slice(-6)).toEqual(['1 min', '5 min', '10 min', '15 min', '30 min', '60 min']);
+    expect(c.presets[c.index].label).toBe('1 km');
+  });
+
+  it('no time group for a pool swim; open water has one (AC 6)', () => {
+    expect(time('swimming', 3600, pool(25, 25))).toEqual([]);
+    expect(time('swimming', 3600)).toContain('10 min');
+  });
+
+  it('movingOf: absent stream, lap swim and empty window give no offer', () => {
+    const m = clock(100);
+    expect(movingOf(m, 10, 60, false)).toBe(50);
+    expect(movingOf(undefined, 0, 99, false)).toBe(0);
+    expect(movingOf(m, 0, 99, true)).toBe(0);
+    expect(movingOf(m, 5, 5, false)).toBe(0);
+  });
+
+  it('50 min in 10 min splits: five rows of 10:00; 47 min: four and a partial 7:00 (AC 1, 2)', () => {
+    expect(rows(clock(3001), 10).secs).toEqual([600, 600, 600, 600, 600]);
+    const r = rows(clock(2821), 10);
+    expect(r.secs).toEqual([600, 600, 600, 600, 420]);
+    expect(r.partial).toBe(true);
+    expect(rows(clock(3001), 10).partial).toBe(false);
+  });
+
+  it('a stop lies inside its row and adds no time; at a boundary it falls into the next row (AC 3)', () => {
+    const r = rows(clock(2401 + 1200, [[840, 2040]]), 10);
+    expect(r.secs).toEqual([600, 600, 600, 600]);
+    expect(r.bo[2] - r.bo[1]).toBe(1800); // row 2: 10 min moving, 30 min elapsed
+    const at = rows(clock(1201 + 600, [[600, 1200]]), 10); // the stop begins at sample 600, exactly a boundary
+    expect(at.bo).toEqual([0, 600, 1800]);
+    expect(at.secs).toEqual([600, 600]);
+  });
+
+  it('a gap counted as moving ends one row, late; across two multiples it still ends one row (AC 4)', () => {
+    const m = Float64Array.from([0, 300, 420, 1500, 1560, 1800]); // jump 420 → 1500 crosses 600 and 1200
+    const r = rows(m, 10);
+    expect(r.bo).toEqual([0, 3, 5]);
+    expect(r.secs).toEqual([1500, 300]);
+  });
+
+  it('smart recording: irregular spacing, boundaries at the first sample at or past the multiple', () => {
+    const m = Float64Array.from([0, 7, 250, 603, 700, 1190, 1203, 1500]);
+    expect(rows(m, 10).bo).toEqual([0, 3, 6, 7]);
+  });
+
+  it('multisport leg start and a trimmed start count from the window start (AC 5)', () => {
+    const m = clock(3000);
+    const r = rows(m, 5, 1000, 2900); // a leg from sample 1000: first split ends 300 s later
+    expect(r.bo.slice(0, 3)).toEqual([1000, 1300, 1600]);
+    expect(r.secs.reduce((x, y) => x + y)).toBe(1900); // rows sum to the window's moving time
+  });
+
+  it('a window shorter than 1 min is one partial row; a closing stop is inside the last row', () => {
+    expect(rows(clock(30), 1).secs).toEqual([29]);
+    const t = rows(clock(300, [[200, 299]]), 1); // a stop at the end stays inside the last row
+    expect(t.secs).toEqual([60, 60, 60, 20]);
   });
 });

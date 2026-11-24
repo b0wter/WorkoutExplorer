@@ -224,7 +224,8 @@ describe('laps / splits switch (L-4 to L-6; F-46 LS-4, LS-7)', () => {
     p.button('Splits')?.click();
     expect(server?.hidden).toBe(true);
     expect(p.select()?.hidden).toBe(false);
-    expect([...p.select()!.options].map((o) => o.text)).toEqual(['1 km', '2 km', '2.5 km', '5 km', '10 km']); // 13.46 km
+    expect([...p.select()!.options].map((o) => o.text)).toEqual(['1 km', '2 km', '2.5 km', '5 km', '10 km', '1 min', '5 min', '10 min', '15 min']); // 13.46 km; F-69: the time group follows, default unchanged
+    expect(p.select()!.querySelector('optgroup')?.label).toBe('Time');
     expect(p.select()?.selectedOptions[0].text).toBe('5 km');
     expect(p.rows('.splits')).toHaveLength(3);
     expect(dist(p.rows('.splits'))[2]).toBe('3.46');
@@ -713,9 +714,9 @@ describe('splits per leg (F-64 LL-4 to LL-7; AC 2, 4 to 7, 10, 13)', () => {
       return out;
     };
     expect(options(lap)).toEqual(['100 m', '200 m', '400 m', '500 m']);
-    expect(options(golden('triathlon'))).toEqual(['50 m', '100 m', '200 m', '500 m']);
+    expect(options(golden('triathlon'))).toEqual(['50 m', '100 m', '200 m', '500 m', '1 min', '5 min', '10 min']); // F-69 AC 5: an open-water leg has the time group, a lap swim (above) none
     // QA-64-r1-1: a pool length in the summary alone does not make an open-water leg a pool swim.
-    expect(options({ ...lap, meta: { ...lap.meta, sessions: data.meta.sessions } })).toEqual(['50 m', '100 m', '200 m', '500 m']);
+    expect(options({ ...lap, meta: { ...lap.meta, sessions: data.meta.sessions } })).toEqual(['50 m', '100 m', '200 m', '500 m', '1 min', '5 min', '10 min']);
   });
 
   it('QA-64-r1-1: a leg\'s drop-down redraws its chart with the new splits', () => {
