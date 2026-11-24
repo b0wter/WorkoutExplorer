@@ -48,6 +48,7 @@ const (
 	codeStale        = "stale"
 	codeInvalidImage = "invalid_image"
 	msgMapBusy       = "Another preview image is being processed. Please try again."
+	msgWriteBusy     = "Another change to this workout is being saved. Please try again."
 	msgMapStale      = "The preview frame has changed."
 	msgMapRefused    = "The preview image was refused."
 )
@@ -330,6 +331,8 @@ func fail(w http.ResponseWriter, err error) {
 		writeNotFound(w)
 	case errors.As(err, &ie):
 		writeError(w, http.StatusBadRequest, codeInvalid, ie.Message)
+	case errors.Is(err, lifecycle.ErrBusy):
+		writeError(w, http.StatusServiceUnavailable, codeBusy, msgWriteBusy)
 	default:
 		writeRefusal(w, codeServerError)
 	}

@@ -26,7 +26,7 @@ type codeEntry struct {
 var msgCode = map[string]string{
 	"msgImpressumRate": codeRateLimited, "msgReportDeleteRate": codeRateLimited, "msgReportsLimit": codeRateLimited,
 	"msgReportType": codeInvalidRep, "msgReportBody": codeInvalidRep,
-	"msgMapBusy": codeBusy, "msgMapStale": codeStale, "msgMapRefused": codeInvalidImage + "|" + codeTooLarge,
+	"msgMapBusy": codeBusy, "msgWriteBusy": codeBusy, "msgMapStale": codeStale, "msgMapRefused": codeInvalidImage + "|" + codeTooLarge,
 	"msgBadBody": codeInvalid, "msgBadTrim": codeInvalid, "msgBadZone": codeInvalid, "msgBadType": codeInvalid,
 }
 

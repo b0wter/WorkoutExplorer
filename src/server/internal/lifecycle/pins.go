@@ -238,7 +238,7 @@ func (s *Service) resolveEdits(ctx context.Context, rec, eff Record, p SettingsP
 	}
 	pcs, lcs, err := s.d.Trimmer.CheckEdits(ctx, eff, pc, lc)
 	if err != nil {
-		return nil, nil, s.ownerFail("edits", rec.ID, err)
+		return nil, nil, s.writeFail(ctx, "edits", rec.ID, err)
 	}
 	switch {
 	case judgeP:

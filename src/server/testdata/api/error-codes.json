@@ -2,7 +2,7 @@
   "_": "Contract with the browser (F-54 LG-6, ADR-059 item 5): every `error` code the /api answers with. `messages` are the English sentences the server sends for the code (checked by internal/httpapi/errorcodes_test.go); `general` codes carry developer-facing sentences that vary, which the browser replaces by one general text (P-14), so their messages are not listed.",
   "codes": {
     "bad_request":      {"general": true},
-    "busy":             {"messages": ["Too many uploads right now. Please try again in a minute.", "Another preview image is being processed. Please try again."]},
+    "busy":             {"messages": ["Too many uploads right now. Please try again in a minute.", "Another preview image is being processed. Please try again.", "Another change to this workout is being saved. Please try again."]},
     "canceled":         {"messages": ["The upload was interrupted."]},
     "internal":         {"messages": ["This file could not be read."]},
     "invalid_image":    {"general": true},

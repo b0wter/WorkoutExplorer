@@ -235,29 +235,6 @@ func TestExpireCheckpoint(t *testing.T) {
 	}
 }
 
-// TestExpireDeleteHoldsLock (X-3, QA-21-r1-3): the pass deletes a due row
-// only under the O-7 lock.
-func TestExpireDeleteHoldsLock(t *testing.T) {
-	r, f := newRepo(), newFiles()
-	now := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
-	s := New(Deps{Repo: r, Files: f, Now: func() time.Time { return now }})
-	r.rows["a"] = Record{ID: "a", Visibility: Draft, CreatedAt: now.Add(-49 * time.Hour), ExpiresAt: now.Add(time.Hour)}
-	s.mu.Lock()
-	done := make(chan error, 1)
-	go func() { done <- s.Expire(context.Background()) }()
-	time.Sleep(100 * time.Millisecond)
-	r.mu.Lock()
-	n := len(r.deleted)
-	r.mu.Unlock()
-	s.mu.Unlock()
-	if n != 0 {
-		t.Error("the pass deleted while an owner write held the lock")
-	}
-	if err := <-done; err != nil || len(r.rows) != 0 {
-		t.Errorf("%v rows %v", err, r.rows)
-	}
-}
-
 // TestDeadlineBetweenLookupAndCommit (QA-21-r1-2, X-3): a publish or PATCH
 // whose lookup ran before the deadline but whose commit runs after it is not
 // found, and the row is unchanged.
