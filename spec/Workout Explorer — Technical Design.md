@@ -95,14 +95,14 @@ The parser reads the messages below and builds one normalised workout: sessions,
 | `file_id` | File type check, device manufacturer and product (device name, F-43), creation time |
 | `session` | Sport and sub-sport, totals and averages as the device computed them; pool length and active lengths (AP-16, F-44); stroke (AP-13, F-48); threshold power, a zone basis (AP-10, F-49). Its `max_heart_rate` is the workout's own maximum and never a zone basis |
 | `lap` | Laps table (AP-8), with trigger (F-46) and stroke (AP-13, F-48) |
-| `record` | All streams: position, altitude, distance, speed, heart rate, cadence, power, temperature. Running dynamics are not parsed in the MVP |
+| `record` | All streams: position, altitude, distance, speed, heart rate, cadence, power, temperature; and (F-68 XS-1) vertical oscillation, ground contact time (`stance_time`), stride length (`step_length`) and vertical ratio, where a raw 0 is missing. No other running dynamics field is read |
 | `event` | Timer start and stop, used to split moving from paused time |
 | `activity` | The workout's fixed UTC offset (F-02 D-7) |
 | `sport` | Sport hints for samples no session covers (F-08 D-12) |
 | `length` | Pool swim lengths: rest or active, stroke, time, stroke count, average speed (AP-13, [F-48](../architect/F-48-pool-strokes.md)); dropped inside a session that is not a pool swim. The summary's Lengths cell still uses the session's count (AP-16), except after a trim |
 | `device_info` | Creator's product name and recognised sensor types (AP-14, F-43); a read allow-list, never descriptors, serial or ANT+ numbers (F-43 DI-1) |
 | `time_in_zone` (session-referenced only), `hr_zone`, `power_zone`, `zones_target` | Zone values (AP-10, [F-49](../architect/F-49-zones.md) ZN-1 to ZN-3, ADR-049): `time_in_zone` boundaries (heart rate in percent of max converted with its `max_heart_rate`), then `hr_zone.high_bpm` and `power_zone.high_value`; as a basis for the default model, or shown next to the file's boundaries, `time_in_zone.max_heart_rate`, `zones_target.max_heart_rate` and `functional_threshold_power`. Resting and threshold heart rate and the device's time-in-zone totals are never read; they stay only in the original (UP-9) |
-| Developer fields | Not parsed in the MVP; extra sensor streams come later |
+| Developer fields | One is read, only inside `ingest` and only from `record` messages: Stryd power (field name `Power`, units `Watts`, numeric scalar, no scale or offset), which becomes the power stream when the file has no native power (F-68 XS-3 to XS-5). Every other developer field, name and application ID is ignored and never published; the stored original keeps them (UP-9) |
 
 **Conversions and derived values**
 
@@ -128,7 +128,7 @@ Keep a test corpus and run every parser change against it (ADR-004). Only genera
 
 ## Workout data file
 
-Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 7"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044; version 4: ADR-046; version 5: ADR-048; version 6: ADR-049; version 7, lap trigger `added`: ADR-060).
+Each published workout has one binary file, `data.bin`, that the browser turns into typed arrays without parsing. Caddy serves a pre-compressed `data.bin.br` written at publish time (ADR-006). The byte-level rules are normative in the F-03 design (section "Data file format, version 8"); the decisions behind them are ADR-005 (version 2: ADR-029; version 3: ADR-044; version 4: ADR-046; version 5: ADR-048; version 6: ADR-049; version 7, lap trigger `added`: ADR-060).
 
 **Layout** (little-endian, every column starts on a 4-byte boundary so typed-array views need no copy)
 
@@ -149,10 +149,14 @@ Each published workout has one binary file, `data.bin`, that the browser turns i
 | Temperature | int8 | 1 °C | Raw |
 | Moving time, cumulative (format version 2, ADR-029; never charted) | int32 | 1 s | Delta |
 | Gain, cumulative (format version 2, ADR-029; never charted) | int32 | 0.1 m | Delta |
+| Vertical oscillation (format version 8, F-68) | uint16 | 1 mm (unit cm) | Raw |
+| Ground contact time (format version 8, F-68) | uint16 | 1 ms | Raw |
+| Stride length (format version 8, F-68) | uint16 | 1 mm (unit m) | Raw |
+| Vertical ratio (format version 8, F-68) | uint16 | 0.1 % | Raw |
 
 Missing samples use the type's maximum value as a sentinel (for example 255 for uint8). Delta-coded columns compress very well with brotli, because most deltas are small and repetitive.
 
-**Size.** A 4-hour ride with every stream is about 14,400 samples × 35 bytes ≈ 504 KB before compression; with delta coding and brotli it should land well inside the 500 KB budget. Measure this on the test corpus early.
+**Size.** A 4-hour ride with every stream is about 14,400 samples × 35 bytes ≈ 504 KB before compression (43 bytes per sample with the four F-68 columns: a noisy synthetic 4-hour run with every stream is 628 KB, 149 KB after brotli); with delta coding and brotli it should land well inside the 500 KB budget. Measure this on the test corpus early.
 
 **Charts** draw a min/max-per-pixel view computed in the browser, so no downsampled copy is stored; range statistics (AP-7) always use full resolution.
 
@@ -517,6 +521,7 @@ The ubiquitous language: use these names in code, API fields and documents. Add 
 | Release manifest | A release's `SHA256SUMS`: one `sha256sum` line per archive, every name starting `workout-explorer-<tag>-`, signed offline as `SHA256SUMS.minisig`; the only proof a release is genuine (F-52 AU-4, ADR-050). | The checksums alone (integrity only) |
 | Stopped state | The updater's file `{deploy dir}/update.stopped`, written after a refused or failed update; while it exists no automatic update runs; a successful manual deploy removes it (F-52 AU-9). | `docker compose stop` (the containers) |
 | Kept workout | A workout whose rebuild failed during regeneration for a server-side reason (`canceled`, a time limit, an error not about the file). It is unchanged and serves its previous files until a later run rebuilds it (Versioning, ADR-005 item 9). | A workout deleted because its file is rejected |
+| Stride length / ground contact time | The FIT `record` fields `step_length` / `stance_time` (F-68). Garmin labels `step_length` "stride length". | Cadence; step count |
 | Cursor | The shared sample index (or none) that drives charts, map marker and readouts (AP-6); held in one cursor store per workout (`lib/cursor`, ADR-008). | Selection (a range, F-17); a time or pixel position |
 | Units store | The page's one unit-system choice (metric or imperial): defaulted from the browser language, switched by the drop-down; a drop-down choice is remembered in `localStorage` through `lib/prefs` and wins over the default, never in a cookie or sent to the server (DS-1). One per page (`lib/units`, F-14 D-3), passed to every consumer. | Unit labels and factors (`lib/format`); the server markup, always metric (ADR-027) |
 | Language | The page view's interface language (`en`, `de`, `es`, `fr`), decided once by the head script and set as `<html data-lang>`; remembered as `wx.lang` only after a drop-down choice; held in one language store per page (DS-6, [F-54](../architect/F-54-translated-interface.md) LG-1, ADR-059). | Units default (still from the browser language) |

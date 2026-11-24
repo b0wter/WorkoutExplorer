@@ -44,6 +44,9 @@ type listener struct {
 	creatorName string // F-43 DI-2: the creator's device_info product name, first sequence, sanitised
 
 	zones zoneReader // F-49 ZN-1
+
+	stryd        strydReader   // F-68 XS-3: developer state of the current sequence
+	strydSamples []strydSample // F-68 XS-5: valid Stryd values, applied by fillStryd after the walk
 }
 
 func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {
@@ -66,6 +69,7 @@ func newListener(lim Limits, cancel context.CancelCauseFunc) *listener {
 func (l *listener) beginSequence(n int) {
 	l.seqNo = n
 	l.seqFileID, l.skip, l.seqMessages = false, false, 0
+	l.stryd.reset()
 	l.pendingSport = l.pendingSport[:0] // a sport message after a sequence's last record is dropped
 	if n >= 2 {
 		l.rec.SequenceStarts = append(l.rec.SequenceStarts, len(l.rec.Records))
@@ -151,8 +155,16 @@ func (l *listener) OnMesg(m proto.Message) {
 		l.lap(mesgdef.NewLap(&m))
 	case mesgnum.Length:
 		l.length(mesgdef.NewLength(&m))
+	case mesgnum.DeveloperDataId:
+		l.stryd.developerDataID(&m)
+	case mesgnum.FieldDescription:
+		l.stryd.description(mesgdef.NewFieldDescription(&m))
 	case mesgnum.Record:
-		l.record(mesgdef.NewRecord(&m))
+		if l.record(mesgdef.NewRecord(&m)) {
+			if w, ok := l.stryd.power(&m); ok {
+				l.strydSamples = append(l.strydSamples, strydSample{len(l.rec.Records) - 1, w})
+			}
+		}
 	case mesgnum.Sport:
 		l.sport(mesgdef.NewSport(&m))
 	case mesgnum.DeviceInfo:
@@ -324,11 +336,11 @@ func span(startTime, timestamp time.Time, elapsedRaw uint32) (time.Time, time.Ti
 	return utc(spanStart(startTime, end, elapsedRaw)), utc(end)
 }
 
-// record converts one record; records without a valid timestamp (E-8) are dropped.
-func (l *listener) record(r *mesgdef.Record) {
+// record converts one record; records without a valid timestamp (E-8) are dropped (false).
+func (l *listener) record(r *mesgdef.Record) bool {
 	at := dateTime(r.Timestamp)
 	if at.IsZero() {
-		return
+		return false
 	}
 	for _, name := range l.pendingSport {
 		l.rec.Sports = append(l.rec.Sports, workout.RawSport{At: at, Sport: name})
@@ -346,7 +358,13 @@ func (l *listener) record(r *mesgdef.Record) {
 		Cadence:     cadence(r.Cadence, r.FractionalCadence),
 		Power:       uint16Value(r.Power),
 		Temperature: sint8Value(r.Temperature),
+
+		VerticalOscillation: dynamic(r.VerticalOscillation),
+		GroundContactTime:   dynamic(r.StanceTime),
+		StrideLength:        dynamic(r.StepLength),
+		VerticalRatio:       dynamic(r.VerticalRatio),
 	})
+	return true
 }
 
 // event keeps timer events only: start → start; stop, stop_all,

@@ -31,9 +31,11 @@ import (
 func main() {
 	out := flag.String("out", "testdata/corpus/synthetic", "output directory")
 	capPath := flag.String("cap-file", "", "write the all-caps file for the ADR-017 rev. 1 stop-rule measurement to this `path` and nothing else (never committed)")
+	capRecords := flag.Int("cap-records", 500_000, "records of the -cap-file")
+	capF68 := flag.Bool("cap-f68", false, "the -cap-file records also carry the four running dynamics and a Stryd power developer field (F-68 XS-11)")
 	flag.Parse()
 	if *capPath != "" {
-		if err := writeCapFile(*capPath); err != nil {
+		if err := writeCapFile(*capPath, *capRecords, *capF68); err != nil {
 			fmt.Fprintf(os.Stderr, "corpusgen: %v\n", err)
 			os.Exit(1)
 		}
@@ -86,8 +88,12 @@ func generate(outDir string) error {
 }
 
 // writeCapFile writes the memory measurement file (ADR-017 item 7).
-func writeCapFile(path string) error {
-	b, err := encode(capFile(500_000))
+func writeCapFile(path string, records int, f68 bool) error {
+	f := capFile(records)
+	if f68 {
+		capDynamics(&f)
+	}
+	b, err := encode(f)
 	if err != nil {
 		return err
 	}
@@ -103,9 +109,12 @@ type sample struct {
 	lat, lon                     float64
 	alt, dist, speed             float64
 	hr, cad, power, temp         float64
-	legacyAlt, legacySpeed       float64 // written in the legacy fields as well (enhanced-and-legacy.fit)
-	legacyOnly                   bool    // alt and speed go into the legacy fields although the file is enhanced
-	unknownField, developerField bool    // unknown-messages.fit
+	legacyAlt, legacySpeed       float64   // written in the legacy fields as well (enhanced-and-legacy.fit)
+	legacyOnly                   bool      // alt and speed go into the legacy fields although the file is enhanced
+	unknownField, developerField bool      // unknown-messages.fit
+	dyn                          [4]uint16 // F-68: raw vertical_oscillation, stance_time, step_length, vertical_ratio
+	hasDyn                       bool      // write dyn, zeros included
+	dev                          []devVal  // F-68: developer values of this record
 }
 
 func newSample(t int) sample {
@@ -149,6 +158,7 @@ type file struct {
 	lapStroke   map[int]typedef.SwimStroke // lap swim_stroke by lap start offset; absent = not written (F-48)
 	sessStroke  map[int]typedef.SwimStroke // session swim_stroke by session start offset; absent = not written (F-48)
 	session     func(*mesgdef.Session)     // last change to every session message; nil = none (F-49)
+	sessionDev  []proto.DeveloperField     // developer fields of every session message (F-68)
 }
 
 // fileDevice is the recording device in file_id (F-43). product 0 and name ""
@@ -219,6 +229,14 @@ func corpus() []file {
 		wahooRide(),
 		ftpOnlyRide(),
 		targetRide(),
+		dynamicsRun("run-dynamics.fit", 61, 61, 1799),
+		runDynamics4h(),
+		strydOnly(),
+		strydAndNative(),
+		strydTwoApps(),
+		strydRedefined(),
+		strydLate(),
+		developerHostile(),
 	}
 }
 
@@ -932,7 +950,9 @@ func encode(f file) ([]byte, error) {
 		add(l.to, orderLap, lapMesg(f, l))
 	}
 	for _, s := range f.sessions {
-		add(s.to, orderSession, sessionMesg(f, s))
+		sm := sessionMesg(f, s)
+		sm.DeveloperFields = append(sm.DeveloperFields, f.sessionDev...)
+		add(s.to, orderSession, sm)
 	}
 	msgs = append(msgs, f.extra...)
 	last := 0
@@ -1041,7 +1061,13 @@ func recordMesg(f file, s sample) proto.Message {
 	if !math.IsNaN(s.temp) {
 		r.SetTemperature(int8(s.temp))
 	}
+	if s.hasDyn {
+		r.SetVerticalOscillation(s.dyn[0]).SetStanceTime(s.dyn[1]).SetStepLength(s.dyn[2]).SetVerticalRatio(s.dyn[3])
+	}
 	m := r.ToMesg(nil)
+	for _, d := range s.dev {
+		m.DeveloperFields = append(m.DeveloperFields, proto.DeveloperField{Num: d.num, DeveloperDataIndex: d.index, Value: d.v})
+	}
 	if s.unknownField {
 		m.Fields = append(m.Fields, rawField(250, basetype.Uint16, proto.Uint16(uint16(s.t))))
 	}

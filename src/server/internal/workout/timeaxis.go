@@ -17,6 +17,10 @@ const (
 	streamCadence
 	streamPower
 	streamTemperature
+	streamVerticalOscillation // F-68 XS-1
+	streamGroundContactTime
+	streamStrideLength
+	streamVerticalRatio
 	numStreams
 )
 
@@ -25,7 +29,17 @@ func (s *Samples) streams() [numStreams]*[]float64 {
 	return [numStreams]*[]float64{
 		&s.Lat, &s.Lon, &s.Altitude, &s.Distance, &s.Speed,
 		&s.HeartRate, &s.Cadence, &s.Power, &s.Temperature,
+		&s.VerticalOscillation, &s.GroundContactTime, &s.StrideLength, &s.VerticalRatio,
 	}
+}
+
+// dyn converts a running dynamics value at its stored resolution into the
+// stream's unit (divisor per unit); 0 is missing (F-68 XS-1).
+func dyn(v uint16, div float64) float64 {
+	if v == 0 {
+		return math.NaN()
+	}
+	return float64(v) / div
 }
 
 // values returns the values of r in stream order; non-finite values become NaN.
@@ -33,6 +47,7 @@ func (r RawRecord) values() [numStreams]float64 {
 	v := [numStreams]float64{
 		r.Lat, r.Lon, r.Altitude, r.Distance, r.Speed,
 		r.HeartRate, r.Cadence, r.Power, r.Temperature,
+		dyn(r.VerticalOscillation, 10), dyn(r.GroundContactTime, 1), dyn(r.StrideLength, 1000), dyn(r.VerticalRatio, 10),
 	}
 	for i := range v {
 		if math.IsInf(v[i], 0) {

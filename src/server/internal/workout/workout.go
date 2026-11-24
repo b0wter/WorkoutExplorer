@@ -129,6 +129,8 @@ type Samples struct {
 	Offset []int32
 	// Streams, each nil or of len(Offset).
 	Lat, Lon, Altitude, Distance, Speed, HeartRate, Cadence, Power, Temperature []float64
+	// F-68 XS-1 running dynamics: cm, ms, m, %.
+	VerticalOscillation, GroundContactTime, StrideLength, VerticalRatio []float64
 	// MovingTime and Gain are the cumulative series of F-17 B-1 (ADR-029),
 	// set by Normalise after gap filling: nil when the total is absent,
 	// otherwise of len(Offset), non-decreasing, starting at 0 (ADR-029 rev. 1),

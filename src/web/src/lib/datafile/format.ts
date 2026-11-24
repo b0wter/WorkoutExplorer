@@ -1,17 +1,19 @@
-// Data file format version 7 as constants: F-03 design, normative format §1–§2.
+// Data file format version 8 as constants: F-03 design, normative format §1–§2.
 // Any change here is a format change (F-03 §9) and goes together with the Go
 // writer and the golden fixtures.
 
 import type { CumulativeName, MetricName } from './model';
 
 export const MAGIC = 'WEXD';
-export const VERSION = 7;
+export const VERSION = 8;
 /** Magic (4) + version (2) + sample count (4) + metadata length (4). */
 export const HEADER_SIZE = 14;
 /** Two consecutive samples this far apart or more form a gap (F-02 R-3, F-03 §7). */
 export const GAP_SECONDS = 5;
 
-export type StreamName = 'time_offset' | 'latitude' | 'longitude' | MetricName | CumulativeName;
+export type StreamName = 'time_offset' | 'latitude' | 'longitude' | MetricName | CumulativeName | DynamicsName;
+/** Version 8 (F-68): read and skipped until the frontend part of F-68 charts them. */
+export type DynamicsName = 'vertical_oscillation' | 'ground_contact_time' | 'stride_length' | 'vertical_ratio';
 export type ColumnType = 'int32' | 'uint16' | 'uint8' | 'int8';
 export type Encoding = 'delta' | 'raw';
 
@@ -43,6 +45,11 @@ export const STREAM_SPECS: readonly StreamSpec[] = [
   // Version 2 (ADR-029): cumulative moving time and gain, never charted, never missing.
   { name: 'moving_time', type: 'int32', encoding: 'delta', scale: 1, unit: 's', size: 4, sentinel: 2147483647 },
   { name: 'elevation_gain', type: 'int32', encoding: 'delta', scale: 0.1, unit: 'm', size: 4, sentinel: 2147483647 },
+  // Version 8 (F-68 XS-2): running dynamics.
+  { name: 'vertical_oscillation', type: 'uint16', encoding: 'raw', scale: 0.1, unit: 'cm', size: 2, sentinel: 65535 },
+  { name: 'ground_contact_time', type: 'uint16', encoding: 'raw', scale: 1, unit: 'ms', size: 2, sentinel: 65535 },
+  { name: 'stride_length', type: 'uint16', encoding: 'raw', scale: 0.001, unit: 'm', size: 2, sentinel: 65535 },
+  { name: 'vertical_ratio', type: 'uint16', encoding: 'raw', scale: 0.1, unit: '%', size: 2, sentinel: 65535 },
 ];
 
 /** Metric streams in §2 order: the key order of `WorkoutData.metrics`. */

@@ -19,7 +19,7 @@ type column struct {
 	valid []bool
 }
 
-// Encode writes w as a data file, format version 7. It is deterministic (the
+// Encode writes w as a data file, format version 8. It is deterministic (the
 // same workout gives identical bytes, W-9) and returns an error instead of
 // panicking when w breaks an invariant the format relies on (W-1). Errors
 // never contain coordinates (W-10).

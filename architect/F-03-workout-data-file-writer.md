@@ -2,7 +2,7 @@
 
 - **Version:** 1.11
 - **Status:** accepted
-- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044); v1.7 of 12 Nov 2026 (format version 4, F-46, ADR-046); v1.8 of 13 Nov 2026 (format version 5, F-48, ADR-048); v1.9 of 13 Nov 2026 (format version 6, F-49, ADR-049); v1.10 of 14 Nov 2026 (version 6 amended in place before its release: `basis` may sit next to `from`, §5.9); v1.11 of 22 Nov 2026 (format version 7, F-65, ADR-060)
+- **Date:** 11 Oct 2026; v1.4 of 22 Oct 2026; v1.5 of 26 Oct 2026 (format version 2, F-17 B-1, ADR-029); v1.6 of 11 Nov 2026 (format version 3, F-43 and F-44, ADR-044); v1.7 of 12 Nov 2026 (format version 4, F-46, ADR-046); v1.8 of 13 Nov 2026 (format version 5, F-48, ADR-048); v1.9 of 13 Nov 2026 (format version 6, F-49, ADR-049); v1.10 of 14 Nov 2026 (version 6 amended in place before its release: `basis` may sit next to `from`, §5.9); v1.11 of 22 Nov 2026 (format version 7, F-65, ADR-060); v1.12 of 24 Nov 2026 (format version 8, F-68)
 - **History:** [architect/history/F-03-workout-data-file-writer.md](history/F-03-workout-data-file-writer.md) (change log, closed questions)
 - **Feature:** [`features/F-03-workout-data-file-writer.md`](../features/F-03-workout-data-file-writer.md)
 - **Depends on:** TD (system-wide picture), [F-02 design](F-02-fit-parsing-and-normalisation.md) v1.6, [ADR-001](ADR-001-repository-layout-and-build-entry-point.md), [ADR-002](ADR-002-bundle-size-budget-measurement.md) (decimal KB), [ADR-004](ADR-004-parser-corpus-and-golden-reports.md) rev. 3, [ADR-005](ADR-005-workout-data-file-format-v1.md), [ADR-006](ADR-006-brotli-pre-compression.md)
@@ -122,9 +122,9 @@ func Brotli(src []byte) ([]byte, error)
 
 ---
 
-## Data file format, version 7 (normative)
+## Data file format, version 8 (normative)
 
-(v1.5) Version 2 adds the streams 11 and 12 of §2 and nothing else; the header, the metadata schema and every other rule are those of version 1. (v1.6) Version 3 adds the top-level `device` (§5.1, §5.7) and the summary's pool keys (§5.2) and nothing else (ADR-044). (v1.7) Version 4 adds the lap's `trigger` (§5.3) and the summary's `pool_length_recorded_m` (§5.2) and nothing else (ADR-046). (v1.8) Version 5 adds the top-level `lengths` (§5.1, §5.8), the lap's `stroke` (§5.3) and the summary's `stroke` (§5.2) and nothing else (ADR-048). (v1.9) Version 6 adds the top-level `zones` (§5.1, §5.9) and nothing else (ADR-049). (v1.11) Version 7 adds the lap trigger code `added` (§5.3) and nothing else (ADR-060).
+(v1.5) Version 2 adds the streams 11 and 12 of §2 and nothing else; the header, the metadata schema and every other rule are those of version 1. (v1.6) Version 3 adds the top-level `device` (§5.1, §5.7) and the summary's pool keys (§5.2) and nothing else (ADR-044). (v1.7) Version 4 adds the lap's `trigger` (§5.3) and the summary's `pool_length_recorded_m` (§5.2) and nothing else (ADR-046). (v1.8) Version 5 adds the top-level `lengths` (§5.1, §5.8), the lap's `stroke` (§5.3) and the summary's `stroke` (§5.2) and nothing else (ADR-048). (v1.9) Version 6 adds the top-level `zones` (§5.1, §5.9) and nothing else (ADR-049). (v1.11) Version 7 adds the lap trigger code `added` (§5.3) and nothing else (ADR-060). (v1.12) Version 8 adds the streams 13 to 16 of §2 and nothing else ([F-68](F-68-extra-sensor-streams.md) XS-2).
 
 This section is the format description required by the feature's scope. It is written for an independent decoder in any language. Terms: *N* is the sample count; *L* is the metadata length; `align4(x)` is the smallest multiple of 4 that is ≥ x. All multi-byte integers are **little-endian two's complement**. Byte positions count from 0 at the start of the file.
 
@@ -133,7 +133,7 @@ This section is the format description required by the feature's scope. It is wr
 | Bytes | Type | Field | Value |
 | --- | --- | --- | --- |
 | 0–3 | 4 × ASCII | magic | `WEXD` (`57 45 58 44`) |
-| 4–5 | uint16 | format version | `7` |
+| 4–5 | uint16 | format version | `8` |
 | 6–9 | uint32 | sample count *N* | ≥ 1 |
 | 10–13 | uint32 | metadata length *L* | length of the JSON in bytes |
 | 14 … 14+L−1 | UTF-8 | metadata | one JSON object (§5), no BOM, no trailing newline |
@@ -159,11 +159,16 @@ There is one column per **present** stream. A stream that has no valid sample in
 | 10 | `temperature` | `int8` | `raw` | `1` | `degC` | 1 | −128 … 126 | 127 | 1 °C |
 | 11 | `moving_time` | `int32` | `delta` | `1` | `s` | 1 | 0 … 1,000,000,000 | 2147483647 (never occurs) | 1 s |
 | 12 | `elevation_gain` | `int32` | `delta` | `0.1` | `m` | 10 | 0 … 1,000,000,000 | 2147483647 (never occurs) | 0.1 m |
+| 13 | `vertical_oscillation` | `uint16` | `raw` | `0.1` | `cm` | 10 | 0 … 65,534 | 65535 | 1 mm |
+| 14 | `ground_contact_time` | `uint16` | `raw` | `1` | `ms` | 1 | 0 … 65,534 | 65535 | 1 ms |
+| 15 | `stride_length` | `uint16` | `raw` | `0.001` | `m` | 1,000 | 0 … 65,534 | 65535 | 1 mm |
+| 16 | `vertical_ratio` | `uint16` | `raw` | `0.1` | `%` | 10 | 0 … 65,534 | 65535 | 0.1 % |
 
 - **Decoded value** = stored absolute integer × `scale`, in `unit`. For delta columns, the "stored absolute integer" is the running sum from §3.
 - **Cadence** is per minute: steps for samples in running, walking and hiking sessions, revolutions or strokes otherwise (F-02 R-5). The viewer chooses the label from the session's sport (`sessions[].sport` and its sample range).
 - **Latitude and longitude** are both present or both absent. At every index both are valid or both are missing.
-- **Sizes in bytes:** `int32` 4, `uint16` 2, `uint8` 1, `int8` 1. With every stream present, one sample takes 35 bytes (v1.5; 27 in version 1).
+- **Sizes in bytes:** `int32` 4, `uint16` 2, `uint8` 1, `int8` 1. With every stream present, one sample takes 43 bytes (v1.12; 35 in versions 2 to 7, 27 in version 1).
+- **Running dynamics (v1.12, F-68 XS-1).** Streams 13 to 16 come from the FIT `record` fields `vertical_oscillation`, `stance_time` (ground contact time), `step_length` (stride length) and `vertical_ratio`; a raw 0 is missing. Like cadence they are dropped at transition samples (R-13), cut by trim and kept in hidden sections; no lap, session or summary value exists for them.
 - **Cumulative streams (v1.5, ADR-029).** `moving_time` is the moving time in seconds within `[0, time_offset[i]]` (F-02 R-7, R-13.M included); `elevation_gain` is the elevation gain in metres up to sample *i* (F-02 R-8, a climb counts as it rises). Both start at 0 (moving time counts from offset 0), never decrease, and end at the summary's derived moving time and gain (`elevation_gain` to 0.1 m; if timer events lie outside the samples, the last `moving_time` value carries them). They have no missing samples. `moving_time` is absent when the workout has no moving-time source, `elevation_gain` when it has fewer than two altitudes; absence is by W-2 as for any stream. They are not charted. A range's moving time or gain is the difference of two values. Hiding (F-16) does not change them
 
 ### 3. Values, quantisation and encodings
@@ -324,7 +329,7 @@ Keys `heart_rate`, then `power`, each absent when the workout has no zone values
 A reader rejects the file, with an error and never a crash, when any of these holds:
 
 1. Fewer than 14 bytes, or magic ≠ `WEXD`.
-2. Version ≠ the reader's version (exactly `7`; there are no readers for other versions, TD Versioning).
+2. Version ≠ the reader's version (exactly `8`; there are no readers for other versions, TD Versioning).
 3. *N* = 0, or `14 + L` > file length.
 4. The metadata is not valid UTF-8 JSON, or a key from §5.1 is missing or has the wrong type. **Nested keys (v1.3):** a nested value of the wrong type (for example a lap `start` that is a string) is rejected by every reader. A **missing or `null`** nested key (a key of `time_zone`, §5.3, §5.5, §5.7 or the four always-present keys of §5.8, or a `null` array element) is not covered by the writer's output, since the writer always emits every key; Go `Decode` zero-fills it, F-04 rejects it. Both are allowed by this format; neither affects a file the writer produced. (v1.9) A `zones` entry with an unknown kind, neither `from` nor `basis`, or a value outside §5.9 is rejected by both readers (v1.10: both keys together are valid).
 5. `streams` is empty, its first entry is not `time_offset`, a name is unknown or repeated, the names are not in §2 order (v1.2), exactly one of `latitude` and `longitude` is present (v1.2), or a descriptor differs from its §2 row.
@@ -368,7 +373,7 @@ The descriptors carry `byte_offset` 416, 436, 456, 476 and 484. The file length 
 
 ### 9. Versioning
 
-`Version = 6` (v1.9, F-49; 5 from F-48, 4 from F-46, 3 from F-43 and F-44, 2 from F-17, 1 before). Any change to §1–§7 bumps it. The writer, the F-04 reader, this section and the golden files change together. Only one version is live at a time: every deploy regenerates every workout (TD Versioning, F-30), so readers support exactly one version (ADR-005 item 9). (v1.4, OQ-55) Exception: a workout kept after a failed rebuild keeps its previous data file and the previous bundle that reads it until a later run rebuilds it; an old bundle is deleted only once no kept workout refers to it. Each reader still supports exactly one version (ADR-005 rev. 1 item 9).
+`Version = 8` (v1.12, F-68; 7 from F-65, 6 from F-49, 5 from F-48, 4 from F-46, 3 from F-43 and F-44, 2 from F-17, 1 before). Any change to §1–§7 bumps it. The writer, the F-04 reader, this section and the golden files change together. Only one version is live at a time: every deploy regenerates every workout (TD Versioning, F-30), so readers support exactly one version (ADR-005 item 9). (v1.4, OQ-55) Exception: a workout kept after a failed rebuild keeps its previous data file and the previous bundle that reads it until a later run rebuilds it; an old bundle is deleted only once no kept workout refers to it. Each reader still supports exactly one version (ADR-005 rev. 1 item 9).
 
 ---
 
@@ -544,7 +549,7 @@ cd $(SERVER_DIR) && go test ./internal/ingest -run '^TestCorpus$$' -update && go
 | 3 Round trip within resolution, sentinels where missing | `TestRoundTripCorpus`; unit tests Round trip, Delta, Quantisation |
 | 4 Indoor: no latitude/longitude | `TestRoundTripCorpus` on the three files without positions; `testdata/datafile/synthetic/indoor-no-gps.json` has no position entries |
 | 5 4-hour ride under 500 KB as `.br`; sizes recorded | `TestSizeBudget4h` in CI; `MEASUREMENTS.md` section for synthetic files; real-file sizes by manufacturer in the QA report |
-| 6 Format description exists and matches the writer | This document, section "Data file format, version 7", which `Decode` implements; the golden files in `testdata/datafile/synthetic/`. **The cross-language check ("checked by the F-04 decoder tests") completes in F-04** (F-04 AC 2 reads these fixtures). F-03 QA verifies that the description, `Decode` and the fixtures agree, and does not block on F-04's tests |
+| 6 Format description exists and matches the writer | This document, section "Data file format, version 8", which `Decode` implements; the golden files in `testdata/datafile/synthetic/`. **The cross-language check ("checked by the F-04 decoder tests") completes in F-04** (F-04 AC 2 reads these fixtures). F-03 QA verifies that the description, `Decode` and the fixtures agree, and does not block on F-04's tests |
 
 ## Open questions
 

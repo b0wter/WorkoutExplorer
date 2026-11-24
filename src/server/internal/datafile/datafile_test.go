@@ -24,8 +24,8 @@ func TestHeader(t *testing.T) {
 	if string(b[:4]) != "WEXD" {
 		t.Errorf("magic = %q", b[:4])
 	}
-	if v := binary.LittleEndian.Uint16(b[4:]); v != 7 {
-		t.Errorf("version = %d, want 7", v)
+	if v := binary.LittleEndian.Uint16(b[4:]); v != 8 {
+		t.Errorf("version = %d, want 8", v)
 	}
 	if n := binary.LittleEndian.Uint32(b[6:]); n != 10 {
 		t.Errorf("sample count = %d, want 10", n)
@@ -49,7 +49,7 @@ func TestHeader(t *testing.T) {
 	if got := f.Streams[0].Descriptor.ByteOffset; got != first {
 		t.Errorf("first column at %d, want align4(14 + L) = %d", got, first)
 	}
-	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 7 {
+	if f.MetadataLength != l || f.SampleCount != 10 || f.Version != 8 {
 		t.Errorf("File = version %d, N %d, L %d", f.Version, f.SampleCount, f.MetadataLength)
 	}
 }
@@ -857,7 +857,7 @@ func TestFixtureWorkedExample(t *testing.T) {
 	if err := json.Unmarshal(got, &fx); err != nil {
 		t.Fatal(err)
 	}
-	if fx.FixtureVersion != 1 || fx.FormatVersion != 7 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
+	if fx.FixtureVersion != 1 || fx.FormatVersion != 8 || fx.ByteLength != len(b) || fx.SampleCount != 5 || fx.MetadataLength != l {
 		t.Errorf("fixture header = %+v", fx)
 	}
 	want := []st{

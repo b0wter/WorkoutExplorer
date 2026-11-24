@@ -16,6 +16,10 @@ const SECTION_2 = [
   ['temperature', 'int8', 'raw', 1, 'degC', 1, 127],
   ['moving_time', 'int32', 'delta', 1, 's', 4, 2147483647],
   ['elevation_gain', 'int32', 'delta', 0.1, 'm', 4, 2147483647],
+  ['vertical_oscillation', 'uint16', 'raw', 0.1, 'cm', 2, 65535],
+  ['ground_contact_time', 'uint16', 'raw', 1, 'ms', 2, 65535],
+  ['stride_length', 'uint16', 'raw', 0.001, 'm', 2, 65535],
+  ['vertical_ratio', 'uint16', 'raw', 0.1, '%', 2, 65535],
 ] as const;
 
 describe('format constants', () => {
@@ -27,7 +31,7 @@ describe('format constants', () => {
 
   it('header constants match F-03 §1', () => {
     expect(MAGIC).toBe('WEXD');
-    expect(VERSION).toBe(7);
+    expect(VERSION).toBe(8);
     expect(HEADER_SIZE).toBe(14);
   });
 

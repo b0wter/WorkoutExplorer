@@ -159,6 +159,7 @@ func (p *Parser) parse(ctx context.Context, data []byte, o *outcome) (workout.Wo
 		return workout.Workout{}, p.errorOf(o, KindInternal, "", fmt.Errorf("decode stopped: %w", cause))
 	}
 
+	fillStryd(l.rec.Records, l.strydSamples)
 	rec := l.rec
 	rec.Device.Model = l.model()
 	rec.Zones = l.zones.zones()
