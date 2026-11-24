@@ -193,8 +193,14 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 		}
 	}
 	notifyCtx, stopNotify := context.WithCancel(context.WithoutCancel(ctx))
+	notifyDone := make(chan struct{})
 	if notifier != nil {
-		go notifier.Run(notifyCtx) // pending notifications are dropped at shutdown (ADR-039 item 3)
+		go func() {
+			defer close(notifyDone)
+			notifier.Run(notifyCtx) // pending notifications are dropped at shutdown (ADR-039 item 3)
+		}()
+	} else {
+		close(notifyDone)
 	}
 	// expire is one pass: reports past R-3's ceiling, then the workouts,
 	// whose checkpoint also takes the pruned reports out of the WAL.
@@ -261,6 +267,8 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	closeApp := func() error {
 		once.Do(func() { close(done); stopNotify() })
 		wg.Wait() // a running pass finishes before the database closes
+		// QA-70-r1-1: an in-flight send ends (cancelled) and its revoke runs (5 s deadline) before the database closes.
+		<-notifyDone
 		return db.Close()
 	}
 	mux := http.NewServeMux()

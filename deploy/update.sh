@@ -127,6 +127,7 @@ notify_url_ok() {
 	u=$2
 	[ "${#u}" -le 2048 ] || return 1
 	printf '%s' "$u" | LC_ALL=C grep -Eqx "[]A-Za-z0-9._~:/?@!\$&'()*+,;=%[-]+" || return 1
+	printf '%s' "$u" | grep -Eq '%($|[^0-9A-Fa-f]|[0-9A-Fa-f]($|[^0-9A-Fa-f]))' && return 1 # a % needs two hex digits (Go: same)
 	case $u in https://*) plain= ;; http://*) plain=1 ;; *) return 1 ;; esac
 	rest=${u#*://}
 	auth=${rest%%[/?]*}
@@ -139,7 +140,14 @@ notify_url_ok() {
 	[ -n "$plain" ] || return 0
 	host=$(printf '%s' "$auth" | sed 's/:[0-9]\{1,5\}$//')
 	o='(0|[1-9][0-9]?|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
-	printf '%s' "$host" | grep -Eqx "(127\.$o\.$o\.$o|10\.$o\.$o\.$o|192\.168\.$o\.$o|172\.(1[6-9]|2[0-9]|3[01])\.$o\.$o|\[::1\]|\[[Ff][CcDd][0-9A-Fa-f]{2}:[0-9A-Fa-f:.]*\])"
+	printf '%s' "$host" | grep -Eqx "(127\.$o\.$o\.$o|10\.$o\.$o\.$o|192\.168\.$o\.$o|172\.(1[6-9]|2[0-9]|3[01])\.$o\.$o|\[::1\])" && return 0
+	# fc00::/7 as a valid IPv6 literal without an IPv4 part: one "::" and at most 7 groups, or no "::" and 8 (as netip parses it)
+	l=${host#[}
+	l=${l%]}
+	[ "$l" != "$host" ] && printf '%s' "$l" | grep -Eqx '[Ff][CcDd][0-9A-Fa-f]{2}(:{1,2}[0-9A-Fa-f]{1,4})*(::)?' || return 1
+	dc=$(printf '%s' "$l" | grep -o '::' | wc -l)
+	gc=$(printf '%s' "$l" | tr ':' '\n' | grep -c .)
+	{ [ "$dc" -eq 0 ] && [ "$gc" -eq 8 ]; } || { [ "$dc" -eq 1 ] && [ "$gc" -le 7 ]; }
 }
 # alert <text>: one message through the one service set in .env (F-70 NS-11, AU-11), else the log line
 # is the alert. The settings are read as data. The secrets (Pushover keys, the ntfy or callback URL and
@@ -171,7 +179,7 @@ alert() {
 	code=$({
 		printf 'url = "%s"\n' "$nu"
 		[ -z "$nt" ] || printf 'header = "Authorization: Bearer %s"\n' "$nt"
-	} | curl -q -sS --max-time 10 -o /dev/null -w '%{http_code}' --noproxy '*' --proto "=$proto" -K - "$@" 2>/dev/null)
+	} | curl -q -g -sS --max-time 10 -o /dev/null -w '%{http_code}' --noproxy '*' --proto "=$proto" -K - "$@" 2>/dev/null)
 	case $code in 2??) ;; *) say "the $nk alert could not be sent" ;; esac
 }
 

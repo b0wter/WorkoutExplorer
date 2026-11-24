@@ -84,7 +84,7 @@ COMPOSE_FILE=compose.yaml:compose.notify.yaml                      # the publish
 COMPOSE_FILE=compose.yaml:compose.build.yaml:compose.notify.yaml   # self-builders (section 9)
 ```
 
-Then `docker compose up -d`. Check: `docker compose logs app | grep 'server started'` shows `"notifications":true`. Report one of your own published workouts from its page; a message arrives within seconds.
+Then `docker compose up -d`. Check: `docker compose logs app | grep 'server started'` shows `"notify":"ntfy"` (or `callback`, `pushover`) and the `notify_host`. Report one of your own published workouts from its page; a message arrives within seconds.
 
 To turn it off: comment out both settings, remove `:compose.notify.yaml` from `COMPOSE_FILE`, `docker compose up -d`.
 

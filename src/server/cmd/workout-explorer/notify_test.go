@@ -289,3 +289,37 @@ func TestAboutNotifyBlocks(t *testing.T) {
 		t.Errorf("off: %q", got)
 	}
 }
+
+// TestShutdownRevokesInFlight (QA-70-r1-1, F-70 AC 5, NS-7): closeApp waits for
+// a send in flight and its revoke, so a key never confirmed stays not valid.
+func TestShutdownRevokesInFlight(t *testing.T) {
+	got, release := make(chan struct{}, 1), make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got <- struct{}{}
+		select {
+		case <-r.Context().Done():
+		case <-release:
+		}
+	}))
+	defer srv.Close()
+	defer close(release)
+	a := openNotifyApp(t, t.TempDir(), settings{notifyKind: "ntfy", notifyURL: srv.URL + testTopic})
+	pub, _ := a.published("ride-30min.fit")
+	if rec := a.report(pub, "spam", "", "198.51.100.1:1"); rec.Code != 204 {
+		t.Fatal(rec.Code)
+	}
+	select {
+	case <-got:
+	case <-time.After(5 * time.Second):
+		t.Fatal("send never started")
+	}
+	if len(a.hashes()) != 1 {
+		t.Fatalf("no key issued: %v", a.hashes())
+	}
+	if err := a.close(); err != nil {
+		t.Fatal(err)
+	}
+	if h := a.hashes(); len(h) != 0 {
+		t.Errorf("key left valid after shutdown: %v", h)
+	}
+}
