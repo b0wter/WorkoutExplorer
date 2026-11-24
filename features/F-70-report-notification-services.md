@@ -21,11 +21,11 @@ A hoster who does not use Pushover gets report notifications through a service t
 - **Services** (OQ-338): Pushover stays; added: ntfy (any server, topic URL, optional access token) and a generic HTTP callback. Gotify, Matrix and others go through the callback or a small bridge the hoster runs. Exactly one service at a time; setting two exits 2 (OQ-339).
 - **Callback body** (OQ-345): one HTTPS POST per message with a fixed JSON object `{"report": 12, "reason": "Personal data", "more": 0, "view_url": "…", "delete_url": "…"}`, `delete_url` absent when no key was issued; no templating.
 - **Content:** the same for every service: report number, reason in words, viewing link, delete link, "(+N more)" folding; never the title, the reporter's message or anything about the reporter (INF-4). Same 10-per-hour limit and same delete-key rules (INF-6).
-- **Configuration** (OQ-340): environment settings only, read once at start with strict formats; off by default. `WORKOUT_EXPLORER_NOTIFY_KIND` (`ntfy` or `callback`), `WORKOUT_EXPLORER_NOTIFY_URL` (ntfy topic URL or callback URL) and optional `WORKOUT_EXPLORER_NOTIFY_TOKEN` (sent as a bearer token); Pushover keeps its two settings. HTTPS only, except `http://` to a loopback or private address. A wrong or incomplete combination exits 2 naming the setting, never its value.
+- **Configuration** (OQ-340): environment settings only, read once at start with strict formats; off by default. `WORKOUT_EXPLORER_NOTIFY_KIND` (`ntfy` or `callback`), `WORKOUT_EXPLORER_NOTIFY_URL` (ntfy topic URL or callback URL) and optional `WORKOUT_EXPLORER_NOTIFY_TOKEN` (sent as a bearer token); Pushover keeps its two settings. HTTPS only, except `http://` to a literal loopback or private IP address (no host names, not 100.64.0.0/10; F70-Q2, user, 24 Nov 2026). A wrong or incomplete combination exits 2 naming the setting, never its value.
 - **Secrets** (OQ-342): the whole URL and the token are secrets; logs show only the kind and the host. No `_FILE` variant; the env file only.
-- **Failure handling** (OQ-341): as Pushover today: one try, 10 s timeout, no redirects followed, one WARN line, no retry, no queue. A report is stored and confirmed whether or not its notification is sent (INF-4).
+- **Failure handling** (OQ-341): as Pushover today: one try, 10 s timeout, no redirects followed, one WARN line, no retry, no queue. A failed send revokes that report's delete key, Pushover included (replaces F-37 DK-3's "a failed send keeps the key"; acknowledged by the user, 24 Nov 2026). A report is stored and confirmed whether or not its notification is sent (INF-4).
 - **Updater alerts** (OQ-343): the updater (F-52, F-60) sends its failure alert through the same chosen service.
-- **Revocation** (OQ-344): as today, every delete key is revoked at a start with notifications off (ADR-042); no automatic revocation on a change of service or URL. RUNBOOK tells the hoster to start once with notifications off when switching service or after a leaked topic or token.
+- **Revocation** (OQ-344, changed by F70-Q1, user, 24 Nov 2026): every delete key is revoked at a start with notifications off (ADR-042), and automatically at the first start after the service, URL or token changes (Pushover settings included). The server keeps only a salted hash of the settings in a small file in the data directory; the first start after the upgrade revokes the delete links still out, once. RUNBOOK tells the hoster that a switch or a changed topic or token revokes open delete links, and that after a leak they change the topic or token.
 - **Disclosure:** the About page names the chosen service (or "your own server" for a callback) and what it learns (INF-1); RUNBOOK, `example.env` and the three install paths explain each service and the route out.
 
 ## Out of scope
@@ -46,7 +46,7 @@ A hoster who does not use Pushover gets report notifications through a service t
 - [ ] Two services set, an invalid URL, `http://` to a public address or a token without a URL: exit 2 naming the setting, value never printed.
 - [ ] Endpoint down, timing out (10 s), answering 4xx/5xx or redirecting: report stored and confirmed, one WARN line without secret, no delete key issued for that report.
 - [ ] Rate limit: the 11th report within an hour is folded into the next message as today, on every service.
-- [ ] A start with notifications off revokes every delete key; changing service or URL alone does not; a failed update alerts through the chosen service.
+- [ ] A start with notifications off revokes every delete key; so does the first start after the service, URL, token or a Pushover setting changed, and the first start after the upgrade; a restart with unchanged settings keeps them; the data directory holds no setting in plain text; a failed update alerts through the chosen service.
 - [ ] About page names the service; RUNBOOK, `example.env`, DOCKER, PODMAN and BAREMETAL docs cover it; tests with a local fake endpoint per service, none contacting a real service in CI.
 
 ## Open questions
@@ -56,5 +56,5 @@ A hoster who does not use Pushover gets report notifications through a service t
 - [x] **OQ-341 Failure handling.** Decided (user, 24 Nov 2026) as suggested; now in Scope "Failure handling".
 - [x] **OQ-342 Secret handling.** Decided (user, 24 Nov 2026) as suggested; now in Scope "Secrets".
 - [x] **OQ-343 Updater alerts.** Decided (user, 24 Nov 2026) as suggested; now in Scope "Updater alerts".
-- [x] **OQ-344 Revoking delete links on a change.** Decided (user, 24 Nov 2026) as suggested; now in Scope "Revocation".
+- [x] **OQ-344 Revoking delete links on a change.** Decided (user, 24 Nov 2026) as suggested, then changed the same day (F70-Q1): revoked automatically on a change; now in Scope "Revocation".
 - [x] **OQ-345 Callback body.** Decided (user, 24 Nov 2026) as suggested; now in Scope "Callback body".
