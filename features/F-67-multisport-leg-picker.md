@@ -1,6 +1,6 @@
 # F-67 Multisport leg picker
 
-- **Status:** planned (user, 24 Nov 2026); listed last in the build order; open questions OQ-315 to OQ-325 open
+- **Status:** planned (user, 24 Nov 2026); listed last in the build order; decided (24 Nov 2026): OQ-315 to OQ-325 as suggested (user)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** frontend (no data file or server change: the legs come from `meta.sessions`, F-42; backend only if the architect wants the picker's row reserved in the server-rendered page, see Constraints)
 - **Lane:** normal (no new data, nothing stored, no coordinates leave the published data)
@@ -53,15 +53,18 @@ On a "Multisport" workout, a viewer looks at one leg at a time with its speed in
 - [ ] Entry bundle within 62,000 bytes gzip (size check in CI) and LCP unchanged within noise; no layout jump of the charts when the picker appears; leg switch and scrubbing budgets above met; every corpus file renders.
 - [ ] New texts in all four languages.
 
+## Decisions (user, 24 Nov 2026)
+- OQ-315 to OQ-325: decided as suggested (see Open questions); Scope and acceptance criteria follow them.
+
 ## Open questions
-- [ ] **OQ-315 Transitions in the picker.** Suggest: not listed; only sport legs. A leg view shows only that leg; T1 and T2 stay visible in "Whole workout" and in the laps tables (F-64). Alternative: T1 and T2 as small entries. Affects Scope "Picker", AC 1.
-- [ ] **OQ-316 Leg view or range.** Suggest: picking a leg is a view (zoom) only: no range is selected, no range panel, no `#range=` link. Selecting the leg as a range stays with the leg heading row (AP-8, F-64), which is already shareable (AP-19). Alternative: picking also selects the leg as a range. Affects AP-7, AP-19, AC 5.
-- [ ] **OQ-317 Map.** Suggest: picking a leg fits the map once to that leg's visible route (as the initial fit, padding as today); "Whole workout" refits the whole route; the rest of the route stays drawn as now; no move when the leg has no visible positions (pool swim, hidden). Not in fullscreen (no picker there). Alternative: the map never moves (as for ranges, AP-19). Affects AP-3, AC 6.
-- [ ] **OQ-318 Laps and splits tables.** Suggest: unchanged; all per-leg tables stay (F-64). Alternative: show only the picked leg's tables. Affects AP-8, AC 6.
-- [ ] **OQ-319 Range and leg view together.** Suggest: an existing range stays selected when a leg is picked (panel unchanged, shaded where in view); selecting a range from a row, bar, best effort or `#range=` link that is not inside the shown leg switches the picker to "Whole workout". Alternative: picking a leg clears the range. Affects AP-7, AP-8, AP-19, AC 5.
-- [ ] **OQ-320 URL and history.** Suggest: the choice is not stored anywhere (no fragment, no browser storage, no history entry); every load opens on "Whole workout". Alternative: `#leg=2` next to `#range=`. Affects AP-19, AC 7.
-- [ ] **OQ-321 Whole-workout speed axis.** Suggest: stays one speed axis in km/h or mph labelled "Speed", as today; only the readout follows the leg (Scope). Alternative: hide the speed chart in the whole view (contradicts "keep speed visible"). Affects AP-4, AC 2.
-- [ ] **OQ-322 Range panel unit.** Suggest: a range inside one leg shows its average in that leg's unit (as F-64 tables); a range across legs shows km/h or mph. Alternative: leave the panel as today (km/h). Affects AP-7.
-- [ ] **OQ-323 Axis origin in a leg view.** Suggest: time and distance stay counted from the workout start (AP-5), so the readout, laps and range links agree. Alternative: from the leg start. Affects AP-5, AC 2.
-- [ ] **OQ-324 Repeated sports** (duathlon: run, bike, run). Suggest: number them only when a sport repeats ("Run 1 · Bike · Run 2"), in the picker only. Alternative: plain names as F-42 ("Run · Bike · Run"). Affects AC 1.
-- [ ] **OQ-325 Edit page.** Suggest: the edit page gets the same picker (same charts). Alternative: viewing page only. Affects Scope "Pages".
+- [x] **OQ-315 Transitions in the picker.** Decided (user, 24 Nov 2026) as suggested: not listed; only sport legs. A leg view shows only that leg; T1 and T2 stay visible in "Whole workout" and in the laps tables (F-64). Alternative: T1 and T2 as small entries. Affects Scope "Picker", AC 1.
+- [x] **OQ-316 Leg view or range.** Decided (user, 24 Nov 2026) as suggested: picking a leg is a view (zoom) only: no range is selected, no range panel, no `#range=` link. Selecting the leg as a range stays with the leg heading row (AP-8, F-64), which is already shareable (AP-19). Alternative: picking also selects the leg as a range. Affects AP-7, AP-19, AC 5.
+- [x] **OQ-317 Map.** Decided (user, 24 Nov 2026) as suggested: picking a leg fits the map once to that leg's visible route (as the initial fit, padding as today); "Whole workout" refits the whole route; the rest of the route stays drawn as now; no move when the leg has no visible positions (pool swim, hidden). Not in fullscreen (no picker there). Alternative: the map never moves (as for ranges, AP-19). Affects AP-3, AC 6.
+- [x] **OQ-318 Laps and splits tables.** Decided (user, 24 Nov 2026) as suggested: unchanged; all per-leg tables stay (F-64). Alternative: show only the picked leg's tables. Affects AP-8, AC 6.
+- [x] **OQ-319 Range and leg view together.** Decided (user, 24 Nov 2026) as suggested: an existing range stays selected when a leg is picked (panel unchanged, shaded where in view); selecting a range from a row, bar, best effort or `#range=` link that is not inside the shown leg switches the picker to "Whole workout". Alternative: picking a leg clears the range. Affects AP-7, AP-8, AP-19, AC 5.
+- [x] **OQ-320 URL and history.** Decided (user, 24 Nov 2026) as suggested: the choice is not stored anywhere (no fragment, no browser storage, no history entry); every load opens on "Whole workout". Alternative: `#leg=2` next to `#range=`. Affects AP-19, AC 7.
+- [x] **OQ-321 Whole-workout speed axis.** Decided (user, 24 Nov 2026) as suggested: stays one speed axis in km/h or mph labelled "Speed", as today; only the readout follows the leg (Scope). Alternative: hide the speed chart in the whole view (contradicts "keep speed visible"). Affects AP-4, AC 2.
+- [x] **OQ-322 Range panel unit.** Decided (user, 24 Nov 2026) as suggested: a range inside one leg shows its average in that leg's unit (as F-64 tables); a range across legs shows km/h or mph. Alternative: leave the panel as today (km/h). Affects AP-7.
+- [x] **OQ-323 Axis origin in a leg view.** Decided (user, 24 Nov 2026) as suggested: time and distance stay counted from the workout start (AP-5), so the readout, laps and range links agree. Alternative: from the leg start. Affects AP-5, AC 2.
+- [x] **OQ-324 Repeated sports** (duathlon: run, bike, run). Decided (user, 24 Nov 2026) as suggested: number them only when a sport repeats ("Run 1 · Bike · Run 2"), in the picker only. Alternative: plain names as F-42 ("Run · Bike · Run"). Affects AC 1.
+- [x] **OQ-325 Edit page.** Decided (user, 24 Nov 2026) as suggested: the edit page gets the same picker (same charts). Alternative: viewing page only. Affects Scope "Pages".
