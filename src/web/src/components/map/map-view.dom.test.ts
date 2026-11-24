@@ -1034,6 +1034,16 @@ describe('pixel ratio follows devicePixelRatio (F-07 D-8, QA-06-r4-1)', () => {
     handle.fit(-1, -1);
     expect(map.fits[3][0]).toEqual([8.0, 47.0, 8.07, 47.0]);
   });
+
+  it('QA-67-r1-1: fit(-1, -1, true) only resets the target; the next resize fits the route', async () => {
+    const s = setup();
+    const { handle, map } = await mounted(s);
+    handle.fit(2, 6);
+    handle.fit(-1, -1, true);
+    expect(map.fits).toHaveLength(1);
+    map.fire('resize');
+    expect(map.fits[1][0]).toEqual([8.0, 47.0, 8.07, 47.0]);
+  });
 });
 
 describe('fit padding in two columns (F-13 D-18)', () => {

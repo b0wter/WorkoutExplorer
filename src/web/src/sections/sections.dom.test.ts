@@ -7,6 +7,7 @@ import { decodeDataFile, type Session, type WorkoutData } from '../lib/datafile'
 import { sectionRanges, sections } from '../lib/sections';
 import { createSelectionStore } from '../lib/selection';
 import type { ChartView } from '../components/charts/uplot-options';
+import { resetI18n, use } from '../lib/i18n';
 import { decorator, pickable, startSections } from '.';
 
 function golden(name: string): WorkoutData {
@@ -16,7 +17,10 @@ function golden(name: string): WorkoutData {
   return r.data;
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  resetI18n();
+});
 
 describe('sections chunk', () => {
   const data = golden('triathlon');
@@ -93,21 +97,22 @@ describe('F-67 leg picker', () => {
     expect(labels([s('transition', 0), s('cycling', 200)], 100)).toEqual([]); // the ride has no samples
   });
 
-  function start(withBar = true) {
+  function start(withBar = true, ready = true) {
     const slot = document.createElement('div');
     if (withBar) slot.innerHTML = '<div class="toolbar"><span class="axis-toggle"></span></div>';
     const look: { view: ChartView; decorator(): void } = { view: null, decorator: () => {} };
     const selection = createSelectionStore(n, (f) => f());
     const fits: number[][] = [];
-    const maps: ((m: { fit(a: number, b: number): void }) => void)[] = [];
+    const maps: ((m: { fit(a: number, b: number, still?: boolean): void }) => void)[] = [];
     startSections(data, look, () => {}, selection, (cb) => maps.push(cb), slot);
     const pick = slot.querySelector<HTMLSelectElement>('select.wx-leg-pick');
+    const flush = (): void => maps.splice(0).forEach((cb) => cb({ fit: (a, b, still) => fits.push(still ? [a, b, 1] : [a, b]) }));
     const choose = (k: number): void => {
       pick!.selectedIndex = k;
       pick!.dispatchEvent(new Event('change'));
-      maps.splice(0).forEach((cb) => cb({ fit: (a, b) => fits.push([a, b]) }));
+      if (ready) flush();
     };
-    return { slot, look, selection, pick, choose, fits };
+    return { slot, look, selection, pick, choose, fits, flush };
   }
 
   it('AC 1, LP-2: a native select after the axis toggle, "Whole workout · Swim · Ride · Run", opening on the whole workout', () => {
@@ -145,5 +150,23 @@ describe('F-67 leg picker', () => {
     expect(look.view).toBeNull();
     expect(pick!.selectedIndex).toBe(0);
     expect(fits).toEqual([[660, 2460]]);
+  });
+
+  it('QA-67-r1-1: the automatic return resets the map target to the whole route without a move (LP-9), also before the map is ready', () => {
+    const { choose, selection, fits, flush } = start(true, false);
+    choose(2);
+    selection.set(100, 200);
+    expect(fits).toEqual([]);
+    flush();
+    expect(fits).toEqual([[660, 2460], [-1, -1, 1]]);
+  });
+
+  it('AC 4: a language switch keeps the chosen leg and view, with translated texts', () => {
+    const { look, choose, pick } = start();
+    choose(3);
+    use('de', { wholeWorkout: 'Ganzes Training' }, document);
+    expect(pick!.selectedIndex).toBe(3);
+    expect(pick!.options[0].text).toBe('Ganzes Training');
+    expect(look.view?.sport).toBe('running');
   });
 });

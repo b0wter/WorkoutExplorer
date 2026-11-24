@@ -140,7 +140,7 @@ export interface RouteMapHandle {
   sampleAt(x: number, y: number): number;
   /** F-67 LP-9: fits the camera once to the positioned samples a..b (a < 0: the whole route), as the
    *  initial fit, and refits there on resize until the viewer moves; no move without a position. */
-  fit(a: number, b: number): void;
+  fit(a: number, b: number, still?: boolean): void;
   destroy(): void;
 }
 
@@ -879,13 +879,14 @@ export async function mountRouteMap(options: MountOptions): Promise<RouteMapHand
     control(el, position = 'bottom-left'): void {
       if (!destroyed) map.addControl({ onAdd: () => el, onRemove: () => el.remove() }, position);
     },
-    fit(a, b): void {
+    fit(a, b, still): void {
       if (destroyed) return;
       let box: [number, number, number, number] = [Infinity, Infinity, -Infinity, -Infinity];
       if (a < 0) box = [...route.bounds];
       else for (let i = a; i <= b; i++) if (lat[i] === lat[i]) box = [Math.min(box[0], lon[i]), Math.min(box[1], lat[i]), Math.max(box[2], lon[i]), Math.max(box[3], lat[i])];
       if (!(box[0] <= box[2])) return;
       fitTo = box;
+      if (still) return; // LP-9: the automatic return only resets the refit target
       moved = false;
       refit();
     },

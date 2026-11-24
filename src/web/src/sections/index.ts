@@ -47,7 +47,7 @@ export function pickable(secs: readonly Section[], n: number): { leg: Leg; label
 }
 
 /** The map seam the picker uses (LP-9). */
-export type FitMap = (cb: (m: { fit(a: number, b: number): void }) => void) => unknown;
+export type FitMap = (cb: (m: { fit(a: number, b: number, still?: boolean): void }) => void) => unknown;
 
 /** The chunk's entry: leg heading ranges into the laps enhancer (MS-6, F-64 LL-3), the decorator into
  *  the charts and, in the charts' axis toolbar row (`slot`), the leg picker (F-67 LP-2). */
@@ -90,6 +90,7 @@ export function startSections(
       if (a >= 0 && v && (a < v.a || b > v.b)) {
         look.view = null;
         pick.selectedIndex = 0;
+        map?.((m) => m.fit(-1, -1, true));
       }
     });
   }

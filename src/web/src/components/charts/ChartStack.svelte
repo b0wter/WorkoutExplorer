@@ -161,7 +161,7 @@
     </div>
    {/if}
    {#key units + scheme + axis.kind + lang() + view?.a}
-    <CursorReadout {data} {cursor} {units} />
+    <CursorReadout {data} {cursor} {units} sport={view?.sport} />
     <div class="chart-area" bind:this={area}>
       {#if drawable}
         {#each charts as spec, k (spec.metric)}

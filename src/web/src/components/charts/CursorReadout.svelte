@@ -16,13 +16,13 @@
     cursor: CursorStore;
     /** Fixed for the life of this instance (ChartStack keys on it). */
     units?: Units;
+    sport?: string;
   }
 
-  let { data, cursor, units = 'metric' }: Props = $props();
+  let { data, cursor, units = 'metric', sport }: Props = $props();
 
   // F-67 LP-10: on a multisport workout the fields read in the sport of the leg under the cursor
   // (speed or pace), '–' for speed in a transition; the labels re-render only when that sport changes.
-  let sport = $state<string>();
   const fields = $derived(readoutFields(data, units, sport));
   let row: HTMLDivElement;
 

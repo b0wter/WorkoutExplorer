@@ -1085,6 +1085,30 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
     expect(m.cursor.get()).toBe(BIKE.b);
   });
 
+  it('QA-67-r1-2: a fresh leg view labels the readout in the leg sport before any hover', () => {
+    const { m, pick } = start();
+    pick(RUN);
+    const label = () => [...m.target.querySelectorAll('.readout .label')].map((e) => e.textContent).find((x) => /Pace|Speed/.test(x ?? ''));
+    expect(label()).toBe('Pace');
+  });
+
+  it('AC 4: a units switch keeps the leg view and its zoom, and reads the pace per mile', () => {
+    const cursor = createCursorStore(n, (f) => f());
+    const h = lookHarness(data, cursor);
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const app = mount(ChartStack, { target, props: h.props });
+    current = { data, cursor, target, reported: [], ready: () => 0, active: () => 0, app };
+    layout(900);
+    h.view(RUN);
+    flushSync();
+    h.set('imperial', 'light');
+    flushSync();
+    layout(900);
+    expect(speedTitle(current as unknown as Mounted)).toBe('Pace · /mi');
+    expect((env.charts.at(-1)!.u as unknown as Scales).scales.x.min).toBe(data.time[RUN.a]);
+  });
+
   it('AC 3 (LP-10): the whole-view readout reads pace /km in the run, /100 m in the swim, km/h on the bike, – in T1 and T2', () => {
     const { m } = start();
     const speedCell = () => [...m.target.querySelectorAll('.readout .cell')].find((c) => /Pace|Speed/.test(c.querySelector('.label')?.textContent ?? ''));
