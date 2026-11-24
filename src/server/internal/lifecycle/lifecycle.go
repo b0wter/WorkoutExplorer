@@ -44,15 +44,20 @@ type Deps struct {
 // Service runs the workout operations.
 type Service struct {
 	d Deps
-	// mu serialises the owner's writes: token check, row change and hook (F-12 O-7).
+	// mu serialises the writes that change a row and run the hook: PATCH,
+	// publish and the commit of the preview-map PUT (F-12 O-7, ADR-061).
+	// Deletes, expiry and the owner reads never take it.
 	mu sync.Mutex
+	// claims holds the internal IDs with an owner write in flight: one PATCH
+	// or publish per workout, a second gets ErrBusy (ADR-061 item 4).
+	claims sync.Map
+	// ownerRead admits one owner read that parses the original at a time:
+	// the trimmed owner view and the preview-frame GET (ADR-061 item 3).
+	ownerRead chan struct{}
 	// uncheckpointed: a row was deleted and the WAL not yet checkpointed.
 	uncheckpointed atomic.Bool
 	// mapSlot admits one basemap upload at a time (F-36 MC-4).
 	mapSlot atomic.Bool
-	// frameSlot admits one preview-frame build at a time, taken before the
-	// original is read, so waiting GETs hold no memory (F-36 MC-4).
-	frameSlot atomic.Bool
 }
 
 // New returns a Service. A nil Logger writes nothing.
@@ -66,7 +71,7 @@ func New(d Deps) *Service {
 	if d.Logger == nil {
 		d.Logger = slog.New(slog.DiscardHandler)
 	}
-	return &Service{d: d}
+	return &Service{d: d, ownerRead: make(chan struct{}, 1)}
 }
 
 // Created is what the sharer gets back: the two values the links are made from.
@@ -316,7 +321,8 @@ func (s *Service) SweepPublic(ctx context.Context) (int, int64, error) {
 // after 48 h too) is deleted through Delete, then the public sweep runs and
 // its freed bytes are released, then the WAL is checkpointed if a row went.
 // The WAL is checkpointed on every pass (F-27 R-10).
-// Each step holds the O-7 lock, so no owner write can revive a due row (X-3).
+// No step waits for the O-7 lock (ADR-061): the Live re-check inside every
+// update (X-3) keeps a due row from being revived.
 // A failed row or list is logged and the pass goes on; the next pass
 // retries. The returned error joins every failure.
 func (s *Service) Expire(ctx context.Context) error {
@@ -328,9 +334,7 @@ func (s *Service) Expire(ctx context.Context) error {
 		errs = append(errs, err)
 	}
 	for _, r := range due {
-		s.mu.Lock()
 		err := s.Delete(ctx, r.ID, r.PublicID)
-		s.mu.Unlock()
 		if err != nil {
 			s.d.Logger.Error("expiry failed", "stage", "delete", "id", r.ID, "error", err.Error())
 			errs = append(errs, err)
@@ -339,9 +343,7 @@ func (s *Service) Expire(ctx context.Context) error {
 		s.d.Logger.Info("workout deleted", "id", r.ID, "by", "expiry")
 	}
 	if s.d.Public != nil {
-		s.mu.Lock()
 		n, freed, err := s.SweepPublic(ctx)
-		s.mu.Unlock()
 		s.d.Storage.Release(freed)
 		if err != nil {
 			s.d.Logger.Error("expiry failed", "stage", "sweep", "error", err.Error())

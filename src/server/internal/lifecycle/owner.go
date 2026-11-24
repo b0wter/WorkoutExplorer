@@ -26,6 +26,9 @@ import (
 // a row past its deadline (F-21 X-1, drafts after 48 h too), or an absent, malformed or wrong token. Nothing tells them apart.
 var ErrNotFound = errors.New("lifecycle: not found")
 
+// ErrBusy: another owner write of the same workout is in flight (ADR-061 item 4).
+var ErrBusy = errors.New("lifecycle: another change of this workout is in progress")
+
 // InvalidSettingsError is a refused settings change; Message is a short plain
 // sentence for the person editing (F-12 design, Endpoints).
 type InvalidSettingsError struct{ Message string }
@@ -248,6 +251,22 @@ func (s *Service) ownerFail(stage, id string, err error) error {
 	return &ServerError{Stage: stage, Err: err}
 }
 
+// writeFail is ownerFail for the stages of a write: if the workout's row is
+// gone, a delete won the race and the answer is not found, with no ERROR line
+// (ADR-061 item 5).
+func (s *Service) writeFail(ctx context.Context, stage, id string, err error) error {
+	if exists, xerr := s.d.Repo.WorkoutExists(ctx, id); xerr == nil && !exists {
+		return ErrNotFound
+	}
+	return s.ownerFail(stage, id, err)
+}
+
+// claim takes the one-write-per-workout claim of ADR-061 item 4.
+func (s *Service) claim(id string) bool {
+	_, loaded := s.claims.LoadOrStore(id, struct{}{})
+	return !loaded
+}
+
 // Get returns the row of the workout (F-12: read the settings).
 func (s *Service) Get(ctx context.Context, publicID, token string) (Record, error) {
 	return s.lookup(ctx, publicID, token)
@@ -256,10 +275,17 @@ func (s *Service) Get(ctx context.Context, publicID, token string) (Record, erro
 // Update applies a settings change (PATCH, O-3, O-7, O-11). The error is
 // ErrNotFound, an *InvalidSettingsError or a *ServerError.
 func (s *Service) Update(ctx context.Context, publicID, token string, p SettingsPatch) (Record, error) {
+	rec, err := s.lookup(ctx, publicID, token) // strangers neither claim nor queue (QA-12-r1-2)
+	if err != nil {
+		return Record{}, err
+	}
+	if !s.claim(rec.ID) {
+		return Record{}, ErrBusy
+	}
+	defer s.claims.Delete(rec.ID)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	rec, err := s.lookup(ctx, publicID, token)
-	if err != nil {
+	if rec, err = s.lookup(ctx, publicID, token); err != nil {
 		return Record{}, err
 	}
 	sctx := context.WithoutCancel(ctx)
@@ -296,7 +322,7 @@ func (s *Service) Update(ctx context.Context, publicID, token string, p Settings
 	case errors.As(err, &ie):
 		return Record{}, ie
 	case err != nil:
-		return Record{}, s.ownerFail("update", rec.ID, err)
+		return Record{}, s.writeFail(sctx, "update", rec.ID, err)
 	case !found:
 		return Record{}, ErrNotFound
 	}
@@ -326,15 +352,19 @@ func ApplyPublish(r Record, now time.Time) Record {
 // failed publish can be repeated. The error is ErrNotFound or a *ServerError;
 // after a ServerError the row may already be unlisted with no page.
 func (s *Service) Publish(ctx context.Context, publicID, token string) (Record, error) {
-	// Strangers must not queue on the write lock (QA-12-r1-2); the check is
-	// repeated under the lock.
-	if _, err := s.lookup(ctx, publicID, token); err != nil {
-		return Record{}, err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	// Strangers must not claim or queue (QA-12-r1-2); the check is repeated
+	// under the lock.
 	rec, err := s.lookup(ctx, publicID, token)
 	if err != nil {
+		return Record{}, err
+	}
+	if !s.claim(rec.ID) {
+		return Record{}, ErrBusy
+	}
+	defer s.claims.Delete(rec.ID)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if rec, err = s.lookup(ctx, publicID, token); err != nil {
 		return Record{}, err
 	}
 	sctx := context.WithoutCancel(ctx)
@@ -351,7 +381,7 @@ func (s *Service) Publish(ctx context.Context, publicID, token string) (Record, 
 	case errors.Is(err, ErrNotFound):
 		return Record{}, ErrNotFound
 	case err != nil:
-		return Record{}, s.ownerFail("publish", rec.ID, err)
+		return Record{}, s.writeFail(sctx, "publish", rec.ID, err)
 	case !found:
 		return Record{}, ErrNotFound
 	}
@@ -369,23 +399,27 @@ func (s *Service) Publish(ctx context.Context, publicID, token string) (Record, 
 // longer a live unlisted workout, the public folder is removed (P-6, the F-12
 // cross-process hand-off). Called under the O-7 lock.
 func (s *Service) changed(ctx context.Context, before, after Record) error {
+	var herr error
 	if s.d.Hook != nil {
-		if err := s.d.Hook.WorkoutChanged(ctx, before, after); err != nil {
-			return s.ownerFail("hook", after.ID, err)
+		herr = s.d.Hook.WorkoutChanged(ctx, before, after)
+	}
+	if s.d.Public != nil {
+		// Also after a failed hook: a build that raced a delete may have
+		// written a folder (ADR-061 item 5).
+		cur, found, err := s.d.Repo.WorkoutByPublicID(ctx, after.PublicID)
+		switch {
+		case err != nil:
+			if herr == nil {
+				return s.ownerFail("recheck", after.ID, err)
+			}
+		case !(found && cur.Visibility == Unlisted && cur.Live(s.d.Now())):
+			if _, err := s.d.Public.Remove(after.PublicID); err != nil && herr == nil {
+				return s.ownerFail("recheck", after.ID, err)
+			}
 		}
 	}
-	if s.d.Public == nil {
-		return nil
-	}
-	cur, found, err := s.d.Repo.WorkoutByPublicID(ctx, after.PublicID)
-	if err != nil {
-		return s.ownerFail("recheck", after.ID, err)
-	}
-	if found && cur.Visibility == Unlisted && cur.Live(s.d.Now()) {
-		return nil
-	}
-	if _, err := s.d.Public.Remove(after.PublicID); err != nil {
-		return s.ownerFail("recheck", after.ID, err)
+	if herr != nil {
+		return s.writeFail(ctx, "hook", after.ID, herr)
 	}
 	return nil
 }
@@ -427,18 +461,17 @@ func (s *Service) open(ctx context.Context, publicID, token, file string, name f
 // DeleteByOwner deletes the workout through Delete (O-10). A second call
 // finds no row and answers ErrNotFound (AC 5).
 func (s *Service) DeleteByOwner(ctx context.Context, publicID, token string) error {
-	// Strangers must not queue on the write lock (QA-12-r1-2); the check is
-	// repeated under the lock.
-	if _, err := s.lookup(ctx, publicID, token); err != nil {
-		return err
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	rec, err := s.lookup(ctx, publicID, token)
 	if err != nil {
 		return err
 	}
-	if err := s.Delete(context.WithoutCancel(ctx), rec.ID, rec.PublicID); err != nil {
+	// No O-7 (ADR-061 item 2). A call that did not remove the row lost to
+	// another delete: not found (AC 5).
+	deleted, err := s.deleteRow(context.WithoutCancel(ctx), rec.ID, rec.PublicID)
+	if !deleted {
+		return ErrNotFound
+	}
+	if err != nil {
 		return s.ownerFail("delete", rec.ID, err)
 	}
 	s.d.Logger.Info("workout deleted", "id", rec.ID, "by", "owner")
@@ -447,11 +480,9 @@ func (s *Service) DeleteByOwner(ctx context.Context, publicID, token string) err
 }
 
 // DeleteByOperator deletes the workout of this row in any state through
-// Delete, under the O-7 lock, then checkpoints (F-27 R-8). A failed
+// Delete, without the O-7 lock (ADR-061), then checkpoints (F-27 R-8). A failed
 // checkpoint is logged and not an error.
 func (s *Service) DeleteByOperator(ctx context.Context, r Record) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	deleted, err := s.deleteRow(ctx, r.ID, r.PublicID)
 	if err != nil {
 		return err
@@ -534,7 +565,7 @@ func (s *Service) resolveTrim(ctx context.Context, rec Record, p SettingsPatch) 
 	case errors.Is(err, ErrTrimTooShort):
 		return p, invalid("At least 1 minute of the workout must remain.")
 	case err != nil:
-		return p, s.ownerFail("trim", rec.ID, err)
+		return p, s.writeFail(ctx, "trim", rec.ID, err)
 	}
 	p.TrimStart, p.TrimEnd = OptTime{Set: true, At: a}, OptTime{Set: true, At: b}
 	return p, nil
@@ -557,14 +588,18 @@ type TrimmedView struct {
 
 // View returns the owner view of rec. Without a trim it is the stored
 // steps and ST-6's suggestion, with no parse. With a trim it is computed
-// per read from one parse under the O-7 lock; any failure gives no trimmed
+// per read from one parse in the owner-read slot, waiting for it while the request lasts; any failure gives no trimmed
 // values, no steps and no suggestion, never an error.
 func (s *Service) View(ctx context.Context, rec Record) OwnerView {
 	if (rec.TrimStartAt == nil && rec.TrimEndAt == nil) || s.d.Trimmer == nil {
 		return OwnerView{Steps: rec.HidingSteps, Suggested: s.SuggestedTitle(rec)}
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	select { // taken before the original is read (ADR-061 item 3)
+	case s.ownerRead <- struct{}{}:
+		defer func() { <-s.ownerRead }()
+	case <-ctx.Done():
+		return OwnerView{}
+	}
 	v, err := s.d.Trimmer.TrimmedView(ctx, rec)
 	if err != nil {
 		return OwnerView{}

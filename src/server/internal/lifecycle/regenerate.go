@@ -72,9 +72,7 @@ func (s *Service) Regenerate(ctx context.Context, publicID string, p Parser) (Ou
 		}
 		// ingest has logged the rejection with the device model and id.
 		dctx := context.WithoutCancel(ctx)
-		s.mu.Lock()
 		err := s.Delete(dctx, id, before.PublicID)
-		s.mu.Unlock()
 		if err != nil {
 			// Only a failure of the row step keeps the workout; after it, a
 			// leftover folder goes at serve's next start (QA-30-r1-3).

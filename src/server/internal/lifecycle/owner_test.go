@@ -524,7 +524,7 @@ func TestOwnerWritesAreSerialised(t *testing.T) {
 				return
 			}
 			_, err := s.Update(context.Background(), c.PublicID, c.EditToken, SettingsPatch{HideStartM: ip(300 * (i % 2))})
-			if err != nil && err != ErrNotFound {
+			if err != nil && err != ErrNotFound && err != ErrBusy {
 				t.Error(err)
 			}
 		}()

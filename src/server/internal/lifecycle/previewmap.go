@@ -48,10 +48,12 @@ func (s *Service) PreviewFrame(ctx context.Context, publicID, token string) (Map
 	if s.d.Frames == nil {
 		return MapFrame{}, ErrNotFound
 	}
-	if !s.frameSlot.CompareAndSwap(false, true) {
+	select { // the frame does not wait (ADR-061 item 3)
+	case s.ownerRead <- struct{}{}:
+		defer func() { <-s.ownerRead }()
+	default:
 		return MapFrame{}, ErrMapBusy
 	}
-	defer s.frameSlot.Store(false)
 	fr, ok, err := s.d.Frames.Frame(ctx, rec)
 	if err != nil {
 		if gone(ctx, err) {
@@ -115,7 +117,7 @@ func (s *Service) PutPreviewMap(ctx context.Context, publicID, token, key string
 	// Under the lock, so no settings change can slip between this frame and the store.
 	fr, ok, err := s.d.Frames.Frame(sctx, rec)
 	if err != nil {
-		return s.ownerFail("frame", rec.ID, err)
+		return s.writeFail(sctx, "frame", rec.ID, err)
 	}
 	if !ok || fr.Key != key {
 		s.d.Logger.Info("preview map refused", "id", rec.ID, "reason", "stale")
@@ -126,7 +128,7 @@ func (s *Service) PutPreviewMap(ctx context.Context, publicID, token, key string
 	freed, err := s.d.Files.StoreMap(rec.ID, key, stored)
 	if err != nil {
 		s.d.Storage.Release(int64(len(stored)))
-		return s.ownerFail("map store", rec.ID, err)
+		return s.writeFail(sctx, "map store", rec.ID, err)
 	}
 	s.d.Storage.Release(freed)
 	if rec.Visibility != Unlisted {
