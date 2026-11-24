@@ -123,3 +123,4 @@ QA reports for Workout Explorer, written by the senior-qa-engineer agent: one re
 
 - **Verdict:** ready, ready with conditions, not ready.
 - **Status:** open (findings being fixed), superseded (a later round exists), closed (verdict ready, feature done).
+| [F-67-multisport-leg-picker-r1.md](F-67-multisport-leg-picker-r1.md) | F-67 Multisport leg picker | 1 | 2026-11-24 | ready with conditions | 0 | 0 | open (2131806; make ci green, vitest 2,401, entry 60,963/62,000 (+398, ceiling 400), owner chunk 19,946 (ceiling 20,000); Go flake not reproduced in 4 runs. Minors: r1-1 stale map refit target after the LP-8 return (frontend, architect note), r1-2 readout label in a fresh leg view reads the workout sport until hover (frontend), r1-3 no test for AC 4 units/language keep the leg (frontend), r1-4 LP-6 doc contradicts code (architect). Conditions: manual checks in the report (100 ms switch, 60 fps, 360 px, themes, keyboard, map fit, LCP, edit page)) |
