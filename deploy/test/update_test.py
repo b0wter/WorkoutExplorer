@@ -626,6 +626,12 @@ class Test(unittest.TestCase):
         self.assertEqual(len(self.host.notes), 1)
         self.assertNotIn("Authorization", self.host.notes[0]["headers"])
 
+    def test_notify_url_brackets_are_not_globbed(self):
+        """QA-70-r1-2: [ ] in a valid URL go to curl as they are (-g): one request, the same path."""
+        self.notify_on("ntfy", "http://127.0.0.1:%d/ntfy/a[b]?x[1-3]=y" % self.host.hport)
+        self.failing_deploy()
+        self.assertEqual([n["path"] for n in self.host.notes], ["/ntfy/a[b]?x[1-3]=y"])
+
     def test_notify_redirect_is_not_followed(self):
         self.notify_on("ntfy", "https://127.0.0.1:%d/redir/secretTopic" % self.host.port)
         _, out, err = self.failing_deploy()

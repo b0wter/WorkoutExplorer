@@ -271,6 +271,7 @@ func Host(raw string) string {
 var (
 	urlChars   = regexp.MustCompile(`^[A-Za-z0-9\-._~:/?\[\]@!$&'()*+,;=%]+$`)
 	authority  = regexp.MustCompile(`^([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?$`)
+	badPercent = regexp.MustCompile(`%($|[^0-9A-Fa-f]|[0-9A-Fa-f]($|[^0-9A-Fa-f]))`) // url.Parse checks the path only; update.sh checks the whole URL
 	tokenChars = regexp.MustCompile(`^[A-Za-z0-9._~+/-]+=*$`)
 )
 
@@ -279,7 +280,7 @@ var (
 func CheckURL(kind Kind, raw string) error {
 	bad := errors.New("must be an https URL of at most 2048 characters (http only to a loopback or private IP address; ntfy needs a topic path)")
 	plain := strings.HasPrefix(raw, "http://")
-	if len(raw) > 2048 || !urlChars.MatchString(raw) || strings.Contains(raw, "#") || !(plain || strings.HasPrefix(raw, "https://")) {
+	if len(raw) > 2048 || !urlChars.MatchString(raw) || strings.Contains(raw, "#") || badPercent.MatchString(raw) || !(plain || strings.HasPrefix(raw, "https://")) {
 		return bad
 	}
 	if _, err := url.Parse(raw); err != nil {
@@ -301,7 +302,9 @@ func CheckURL(kind Kind, raw string) error {
 	if strings.HasPrefix(m[1], "[") && aerr != nil {
 		return bad
 	}
-	if plain && (aerr != nil || addr.Is4In6() || !(addr.IsLoopback() || addr.IsPrivate())) {
+	// Plain http to IPv6: the canonical ::1 or a fc00::/7 literal without an IPv4 part; update.sh accepts the same set.
+	if plain && (aerr != nil || addr.Is4In6() || addr.Is6() && strings.Contains(m[1], ".") ||
+		!(addr.IsPrivate() || addr.IsLoopback() && (addr.Is4() || m[1] == "[::1]"))) {
 		return bad
 	}
 	return nil

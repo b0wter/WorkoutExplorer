@@ -143,7 +143,7 @@ printf '[Container]\nNetwork=workout-explorer-egress.network\n' | sudo -u workou
 wx daemon-reload && wx restart
 ```
 
-`wx logs | grep 'server started'` shows `"notifications":true`. To turn it off, remove `notify.conf` and the keys, `daemon-reload`, `restart`; the app then reaches no host at all.
+`wx logs | grep 'server started'` shows `"notify":"ntfy"` (or `callback`, `pushover`) and the `notify_host`. To turn it off, remove `notify.conf` and the keys, `daemon-reload`, `restart`; the app then reaches no host at all.
 
 ## 9. Updating
 
