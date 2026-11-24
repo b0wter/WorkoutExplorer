@@ -58,3 +58,5 @@ Synthetic files only (ADR-004).
 | --- | --- | --- | --- |
 | OQ-91 (resolved 31 Oct 2026, with changes: sport icon, card values per PC-3, N = 40; decision log) | Card look and name length: layout, labels, and N (feature scope: "decided once the card's look is visible") | Engineer renders three synthetic cards (ride with HR, fully hidden run, indoor without HR) at N = 40; the user reviews them and sets N and the look once, as OQ-58 and OQ-63 did | Ticking AC 1 and the manual ACs; not the build |
 | OQ-92 (resolved 31 Oct 2026, as suggested) | Name characters the Go fonts cannot draw (emoji, CJK, …) | Drop them **in the image only**; if nothing drawable remains, the image shows the default title (sport and date). `og:title` keeps the full name, which messengers draw with their own fonts. Alternative: embed a wide-coverage font (several MB, one more licence) | PC-4 detail only; B-1 builds the suggestion unless the user objects |
+
+(note, 24 Nov 2026, CR2-01) The route stroke draws at most 60,000 samples (every k-th above that), so a crafted 500k zigzag renders in under a second; routes up to 60,000 samples are unchanged.
