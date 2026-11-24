@@ -943,3 +943,38 @@ describe('comparison chart (F-51; AP-23)', () => {
     expect(r.section?.querySelector(':scope > .compare')).toBeNull(); // F-64 LL-7: charts per leg instead
   });
 });
+
+describe('time presets (F-69 AC 3, 7; TS-4, TS-5, TS-8; QA-69-r1-1)', () => {
+  it('5 min: moving-time cells match the boundaries, a row tap selects that row, the range and choice survive units and language', async () => {
+    resetI18n();
+    const p = open(ride(), 'metric', true);
+    p.button('Splits')?.click();
+    p.selection.set(10, 20);
+    p.choose('5 min');
+    expect([p.selection.start(), p.selection.end()]).toEqual([10, 20]); // range kept
+    const M = p.data.movingTime!;
+    const preset = splitChoice(p.data.meta, 1e9, M[M.length - 1]).presets.find((x) => x.label === '5 min')!;
+    const bounds = presetBounds(M, preset, null);
+    const rows = p.rows('.splits');
+    expect(rows).toHaveLength(bounds.length - 1);
+    rows.forEach((r, i) => expect(r.cells[1].textContent).toBe(formatElapsed(M[bounds[i + 1]] - M[bounds[i]])));
+    rows[1].click();
+    p.frame();
+    expect([p.selection.start(), p.selection.end()]).toEqual([bounds[1], bounds[2]]);
+    const stats = createRangeStats(p.data);
+    expect(formatElapsed(stats.query(p.selection.start(), p.selection.end(), emptyValues()).moving)).toBe(rows[1].cells[1].textContent);
+    const range = [p.selection.start(), p.selection.end()];
+    p.units.set('imperial');
+    expect(p.select()?.selectedOptions[0].text).toBe('5 min');
+    expect(p.rows('.splits')).toHaveLength(bounds.length - 1);
+    try {
+      use('de', { splitTime: 'Zeit (Test)' }, document);
+      await vi.waitFor(() => expect(p.select()!.querySelector('optgroup')?.label).toBe('Zeit (Test)'));
+      expect(p.select()?.selectedOptions[0].text).toBe('5 min');
+      expect(p.rows('.splits')).toHaveLength(bounds.length - 1);
+    } finally {
+      resetI18n();
+    }
+    expect([p.selection.start(), p.selection.end()]).toEqual(range);
+  });
+});
