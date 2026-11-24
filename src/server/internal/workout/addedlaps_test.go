@@ -41,7 +41,7 @@ func checkParts(t *testing.T, w, out Workout) {
 			continue
 		}
 		var want Totals
-		completeTotals(&w.Samples, &want, l.Start, l.End, tl)
+		completeTotals(newRangeIndex(&w.Samples), &want, l.Start, l.End, tl)
 		if !reflect.DeepEqual(l.Totals, want) {
 			t.Errorf("lap %d [%d, %d]: totals %+v, want the range values %+v", i, l.Start, l.End, l.Totals, want)
 		}

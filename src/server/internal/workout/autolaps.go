@@ -38,6 +38,7 @@ func RemoveAutoLaps(w Workout) Workout {
 		return k
 	}
 	var tl *sportTimeline
+	var ix *rangeIndex
 	out := make([]Lap, 0, len(w.Laps))
 	removed := false
 	for i := 0; i < len(w.Laps); {
@@ -53,6 +54,7 @@ func RemoveAutoLaps(w Workout) Workout {
 		removed = true
 		if tl == nil {
 			tl = newSportTimeline(w.Sessions, w.hints)
+			ix = newRangeIndex(&w.Samples)
 		}
 		m := Lap{Start: w.Laps[i].Start, End: w.Laps[i].End, Trigger: w.Laps[j].Trigger}
 		for _, p := range w.Laps[i : j+1] {
@@ -65,7 +67,7 @@ func RemoveAutoLaps(w Workout) Workout {
 				m.Stroke = "mixed"
 			}
 		}
-		completeTotals(&w.Samples, &m.Totals, m.Start, m.End, tl)
+		completeTotals(ix, &m.Totals, m.Start, m.End, tl)
 		out = append(out, m)
 		i = j + 1
 	}
