@@ -1,15 +1,12 @@
-# Continue here (state of 23 Nov 2026)
+# Continue here (state of 24 Nov 2026)
 
 Follow the lean workflow in `CLAUDE.md`. Keep reports to the user short; ask when in doubt.
 
 ## Current
 
 - **Every planned feature is built.** No row of `features/README.md` is `not started`, in architecture or in implementation. Last built: F-63, F-64, F-65 (owner-added laps), F-66 (remove auto-laps), each QA "ready with conditions".
-- **Last release: v0.10.0** (F-60, elevation-gain overlay). Unreleased on `main`: F-58, F-55, F-57, F-56, F-53, F-54, F-61, F-62, F-63, F-64, F-65, F-66, the edit page add-controls UI fixes (`architect/UI-edit-page-add-controls.md`) and the F-58 summary bar.
-- **Before the next release** (user decision 21 Nov: release after the hand checks):
-  - the user's hand checks in the Waiting on column of `features/README.md`;
-  - a local run of the migrations (schema v9 F-55, v10 F-56, v11 F-65, v12 F-66; all forward-only, F-55's irreversible) plus `regenerate` (data file v7);
-  - the Caddy minor check and the GitHub changelog (`CLAUDE.md`, Releases).
+- **Last release: v0.11.0** (24 Nov 2026): F-53 to F-58, F-61 to F-66, the pin dialog and the edit page UI fixes; schema v12, data file v7. Nothing unreleased on `main` yet.
+- **Before the next release:** the Caddy minor check and the GitHub changelog (`CLAUDE.md`, Releases); the user's open hand checks in the Waiting on column.
 - **Open minors** (small lane): QA-65-r2-1 (test: focus to the next × after a removal). The rest are listed in Waiting on.
 - **Open UI questions** (not decided, nothing blocked): `architect/UI-edit-page-add-controls.md`, "Open".
 
