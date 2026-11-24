@@ -66,4 +66,4 @@
     <span class="edit-status" role="status">{busy || status}</span>
   </p>
 </main>
-<footer class="foot generic-foot" {@attach impressum}><a href="/about">{tc('about')}</a></footer>
+<footer class="foot generic-foot" {@attach impressum}><a href="/about">{tc('about')}</a> <a class="gh" href="https://github.com/b0wter/WorkoutExplorer">{tc('source')}</a></footer>

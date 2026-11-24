@@ -38,7 +38,8 @@
   "lapsNotePace": "* Le temps inclut les pauses ; l'allure est la moyenne de l'appareil, en général sur le temps de déplacement seul.",
   "lapsNoteSpeed": "* Le temps inclut les pauses ; la vitesse est la moyenne de l'appareil, en général sur le temps de déplacement seul.",
   "about": "À propos",
-  "report": "Signaler"
+  "report": "Signaler",
+  "source": "Code source et tickets sur GitHub"
  },
  "dialog": {
   "closeDialog": "Fermer"
@@ -493,7 +494,9 @@
   "shortcutHint": "Sur un iPhone ou un iPad ? Importez depuis le menu de partage avec {link}. {more}",
   "shortcutLink": "ce raccourci",
   "shortcutMore": "En savoir plus",
-  "uploadAbout": "À propos"
+  "uploadAbout": "À propos",
+  "uploadSource": "Open source : {link}",
+  "uploadSourceLink": "signalez des bogues ou proposez des idées sur GitHub"
  },
  "markup/static": {
   "ab_aboutWorkoutExplorer": "À propos de Workout Explorer",

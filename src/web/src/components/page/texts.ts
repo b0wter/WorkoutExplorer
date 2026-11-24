@@ -14,6 +14,7 @@ export const en = {
   lapsNoteSpeed: "* Time includes pauses; speed is the device's own average, usually over moving time only.",
   about: 'About',
   report: 'Report',
+  source: 'Source & issues on GitHub',
 };
 
 export const t = texts(en);
