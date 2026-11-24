@@ -567,5 +567,15 @@
   "genericGone": "Este entrenamiento ha caducado o no está disponible.",
   "genericAbout": "Acerca de",
   "ab_title": "Acerca de - Workout Explorer"
+ },
+ "dynamics": {
+  "dynVerticalOscillation": "Oscilación vertical",
+  "dynGroundContact": "Tiempo de contacto con el suelo",
+  "dynStrideLength": "Longitud de zancada",
+  "dynVerticalRatio": "Ratio vertical",
+  "dynVerticalOscillationShort": "Osc. vert.",
+  "dynGroundContactShort": "Contacto",
+  "dynStrideLengthShort": "Zancada",
+  "dynVerticalRatioShort": "Ratio vert."
  }
 }

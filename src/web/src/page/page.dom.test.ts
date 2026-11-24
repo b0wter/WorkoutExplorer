@@ -298,6 +298,35 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(zones?.hidden).toBe(false);
   });
 
+  it('F-68 XS-9: no running dynamics, no dynamics chunk', async () => {
+    vi.doMock('../dynamics', () => {
+      throw new Error('chunk failed');
+    });
+    try {
+      await open('ride-30min');
+      expect(console.warn).not.toHaveBeenCalledWith('page: dynamics chunk failed');
+      expect(stubLog.chartStack).toHaveLength(1);
+    } finally {
+      vi.doUnmock('../dynamics');
+    }
+  });
+
+  it('F-68 XS-9: a file with running dynamics loads the chunk before the charts mount; a failed chunk warns and the page still starts', async () => {
+    const g = loadGolden().find((x) => x.name === 'run-dynamics');
+    if (!g) throw new Error('no golden run-dynamics');
+    respond = () => new Response(g.bin.slice(0), { status: 200 });
+    vi.doMock('../dynamics', () => {
+      throw new Error('chunk failed');
+    });
+    try {
+      await open('ride-30min');
+      expect(console.warn).toHaveBeenCalledWith('page: dynamics chunk failed');
+      expect(stubLog.chartStack).toHaveLength(1);
+    } finally {
+      vi.doUnmock('../dynamics');
+    }
+  });
+
   it('F-49 ZN-8: no zone values, no zones chunk', async () => {
     vi.doMock('../zones', () => {
       throw new Error('chunk failed');

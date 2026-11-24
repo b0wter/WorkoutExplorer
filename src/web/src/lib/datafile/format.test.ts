@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GAP_SECONDS, HEADER_SIZE, MAGIC, METRIC_ORDER, METRIC_UNITS, STREAM_SPECS, VERSION, align4 } from './format';
+import { DYNAMICS_ORDER, GAP_SECONDS, HEADER_SIZE, MAGIC, METRIC_ORDER, METRIC_UNITS, STREAM_SPECS, VERSION, align4 } from './format';
 import * as publicSurface from './index';
 
 // F-03 §2 written out literally: name, type, encoding, scale, unit, size, sentinel; array index = order.
@@ -36,7 +36,8 @@ describe('format constants', () => {
   });
 
   it('METRIC_ORDER is §2 order without time and position', () => {
-    expect(METRIC_ORDER).toEqual(['altitude', 'distance', 'speed', 'heart_rate', 'cadence', 'power', 'temperature']);
+    expect(METRIC_ORDER).toEqual(['altitude', 'distance', 'speed', 'heart_rate', 'cadence', 'power', 'temperature', ...DYNAMICS_ORDER]);
+    expect(DYNAMICS_ORDER).toEqual(['vertical_oscillation', 'ground_contact_time', 'stride_length', 'vertical_ratio']);
   });
 
   it('METRIC_UNITS are the §2 unit strings', () => {
@@ -61,7 +62,7 @@ describe('format constants', () => {
 
   it('index.ts exports exactly the public surface', () => {
     expect(Object.keys(publicSurface).sort()).toEqual(
-      ['GAP_SECONDS', 'METRIC_ORDER', 'METRIC_UNITS', 'decodeDataFile', 'loadDataFile'].sort(),
+      ['DYNAMICS_ORDER', 'GAP_SECONDS', 'METRIC_ORDER', 'METRIC_UNITS', 'decodeDataFile', 'loadDataFile'].sort(),
     );
   });
 });

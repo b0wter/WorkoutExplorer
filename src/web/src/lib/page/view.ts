@@ -3,9 +3,8 @@
 // only the edit page's owner chunk carries it (F-19, bundle budget). The Go builder (F-15) must
 // reproduce the committed samples exactly.
 
-import type { WorkoutData } from '../datafile';
+import { METRIC_ORDER, type WorkoutData } from '../datafile';
 import type { Units } from '../format';
-import { presentCharts } from '../charts';
 import { routePresence } from '../route/presence';
 import { formatDate, formatLocalStart, sportIcon, sportName } from '../format/dates';
 import { sections, lapsBySection } from '../sections';
@@ -34,7 +33,8 @@ export function defaultTitle(sport: string, startTime: string, offsetSeconds: nu
 /** Readout cells: time, distance if present, then one per chart (F-05); 'has-distance' with a
  *  distance stream reserves the axis toolbar row (F-17 R-8). */
 function chartsClass(data: WorkoutData): string {
-  const n = presentCharts(data).length;
+  // Every charted stream with a value, as the server counts them; the dynamics chunk may not be loaded yet (F-68).
+  const n = METRIC_ORDER.filter((m) => m !== 'distance' && data.metrics[m]?.some((v) => v === v)).length;
   if (n === 0) return '';
   const distance = data.metrics.distance !== undefined;
   const cells = 1 + (distance ? 1 : 0) + n;

@@ -8,6 +8,7 @@
   import { en, t } from '../../page/texts';
   import type { WorkoutData } from '../../lib/datafile';
   import type { SelectionStore } from '../../lib/selection';
+  import { dynamics } from '../../lib/charts';
   import { createRangeStats, emptyValues, type RangeField, type RangeValues } from '../../lib/range';
   import {
     MISSING_TEXT,
@@ -102,6 +103,7 @@
   let root: HTMLDivElement;
   let cells: HTMLElement[] = [];
   let current: Units = untrack(() => units);
+  let extra: ReturnType<NonNullable<typeof dynamics.range>> | undefined;
 
   function write(a: number, b: number): void {
     if (a < 0 || cells.length === 0) return;
@@ -112,13 +114,16 @@
 
   onMount(() => {
     cells = [...root.querySelectorAll<HTMLElement>('.value')];
-    return selection.subscribe(write);
+    extra = dynamics.range?.(root, data, selection, current); // F-68: the dynamics' cells, from the lazy chunk
+    const off = selection.subscribe(write);
+    return () => (off(), extra?.destroy());
   });
 
   // A units change rewrites the values (labels and units are markup).
   $effect(() => {
     current = units;
     lang(); // F-54: decimal separators
+    extra?.update(units);
     untrack(() => write(selection.start(), selection.end()));
   });
 </script>

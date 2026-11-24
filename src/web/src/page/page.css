@@ -536,7 +536,7 @@ html[data-hold] body {
 }
 @media (min-width: 640px) {
   .charts {
-    --r: 1;
+    --r: var(--r8, 1);
   }
   #charts-slot .readout,
   #map-slot .readout {
@@ -569,6 +569,10 @@ html:not(.wx-fs) .wx-strip,
 .charts-4 { --area: 604px; }
 .charts-5 { --area: 748px; }
 .charts-6 { --area: 892px; }
+.charts-7 { --area: 1036px; }
+.charts-8 { --area: 1180px; }
+.charts-9 { --area: 1324px; }
+.charts-10 { --area: 1468px; }
 .cells-1 { --r4: 1; }
 .cells-2 { --r4: 1; }
 .cells-3 { --r4: 1; }
@@ -577,6 +581,10 @@ html:not(.wx-fs) .wx-strip,
 .cells-6 { --r4: 2; }
 .cells-7 { --r4: 2; }
 .cells-8 { --r4: 2; }
+.cells-9 { --r4: 3; --r8: 2; }
+.cells-10 { --r4: 3; --r8: 2; }
+.cells-11 { --r4: 3; --r8: 2; }
+.cells-12 { --r4: 3; --r8: 2; }
 .load-error {
   margin: 16px 0;
   color: var(--muted);

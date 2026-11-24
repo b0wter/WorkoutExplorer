@@ -2,7 +2,8 @@
 // "Which charts, in which order", "Readout"; AP-4). All labels, units, colours
 // and formatters live here and in format.ts, so F-14 changes one place.
 
-import type { WorkoutData } from '../datafile';
+import type { DynamicsName, WorkoutData } from '../datafile';
+import type { SelectionStore } from '../selection';
 import {
   MISSING_TEXT,
   distanceUnit,
@@ -25,15 +26,18 @@ import {
 import { heartRateUnit } from '../format';
 import { t } from './texts';
 
-export type ChartMetric = 'altitude' | 'speed' | 'heart_rate' | 'power' | 'cadence' | 'temperature';
+type BaseMetric = 'altitude' | 'speed' | 'heart_rate' | 'power' | 'cadence' | 'temperature';
+export type ChartMetric = BaseMetric | DynamicsName;
 
 /** AP-4 order. Differs from METRIC_ORDER (cadence and power swap; distance is not charted). */
-export const CHART_ORDER: readonly ChartMetric[] = ['altitude', 'speed', 'heart_rate', 'power', 'cadence', 'temperature'];
+export const CHART_ORDER: readonly BaseMetric[] = ['altitude', 'speed', 'heart_rate', 'power', 'cadence', 'temperature'];
 
 export interface ChartSpec {
   readonly metric: ChartMetric;
   /** 'Elevation', 'Speed', 'Heart rate', 'Power', 'Cadence', 'Temperature'. */
   readonly label: string;
+  /** Readout and range panel label where the chart's is too long (F-68); default `label`. */
+  readonly short?: string;
   /** Display unit: 'm' or 'ft', 'km/h' or 'mph' or a pace unit, 'bpm', 'W', 'rpm' or 'spm' or '/min', '°C' or '°F'. */
   readonly unit: string;
   /** F-03 §2 unit → display unit (speed × 3.6, feet, °F; a pace is seconds per pace unit, unclipped; NaN for a missing sample or a stop). */
@@ -67,7 +71,7 @@ function spec(
 }
 
 /** The six chart specs for a sport and unit system (F-14 D-11). The speed chart of a pace sport is a pace chart. */
-export function chartSpecs(sport: string, units: Units): Readonly<Record<ChartMetric, ChartSpec>> {
+export function chartSpecs(sport: string, units: Units): Readonly<Record<BaseMetric, ChartSpec>> {
   const speedSpec = isPaceSport(sport)
     ? (() => {
         // A stop has no pace (NaN: a gap, '–'). The real pace is returned; the chart clips it (chartValues).
@@ -110,10 +114,19 @@ function hasValue(values: Float64Array | undefined): boolean {
   return false;
 }
 
+/** F-68 XS-9: what the lazy src/dynamics chunk installs (the page awaits it before the charts mount when the
+ *  file has one of the streams): the running dynamics' specs, and the range panel's extra cells. Without
+ *  the chunk those streams have no chart and no cell. */
+export const dynamics: {
+  specs(units: Units): readonly ChartSpec[];
+  /** Appends the cells before `.actions` in `root`; the result follows a units change or is destroyed. */
+  range?(root: HTMLElement, data: WorkoutData, selection: SelectionStore, units: Units): { update(units: Units): void; destroy(): void };
+} = { specs: () => [] };
+
 /** Specs in CHART_ORDER for streams present in data with at least one non-NaN value. */
 export function presentCharts(data: WorkoutData, units: Units = 'metric', sport = data.meta.sport): readonly ChartSpec[] {
   const specs = chartSpecs(sport, units);
-  return CHART_ORDER.filter((m) => hasValue(data.metrics[m])).map((m) => specs[m]);
+  return [...CHART_ORDER.filter((m) => hasValue(data.metrics[m])).map((m) => specs[m]), ...dynamics.specs(units).filter((s) => hasValue(data.metrics[s.metric]))];
 }
 
 export interface ReadoutField {
@@ -141,7 +154,7 @@ export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?
     const { toDisplay, format } = spec;
     fields.push({
       key: spec.metric,
-      label: spec.label,
+      label: spec.short ?? spec.label,
       unit: spec.unit,
       text: (i) => {
         const v = values[i];
