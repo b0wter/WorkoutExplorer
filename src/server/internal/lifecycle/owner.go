@@ -468,6 +468,9 @@ func (s *Service) DeleteByOwner(ctx context.Context, publicID, token string) err
 	// No O-7 (ADR-061 item 2). A call that did not remove the row lost to
 	// another delete: not found (AC 5).
 	deleted, err := s.deleteRow(context.WithoutCancel(ctx), rec.ID, rec.PublicID)
+	if err != nil && !deleted { // a failed row delete is a server fault, not a 404 (QA-CR-r2-1)
+		return s.ownerFail("delete", rec.ID, err)
+	}
 	if !deleted {
 		return ErrNotFound
 	}
