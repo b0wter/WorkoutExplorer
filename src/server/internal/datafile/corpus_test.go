@@ -394,3 +394,25 @@ func checkCumulativeStreams(t *testing.T, w workout.Workout, f File) {
 		}
 	}
 }
+
+// TestRun12hAllStreams: the 12-hour gate file carries every stream (ten
+// charts, F-68 AC 7); its size is logged (the 500 KB rule is for 4 hours).
+func TestRun12hAllStreams(t *testing.T) {
+	w := parseFile(t, filepath.Join(corpusDir, "synthetic", "run-12h-dynamics.fit"))
+	bin, err := Encode(w)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := Decode(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Streams) != len(specs) || len(w.Samples.Offset) != 43_200 {
+		t.Fatalf("streams %v, samples %d", streamNames(f), len(w.Samples.Offset))
+	}
+	br, err := precompress.Brotli(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("run-12h-dynamics: data.bin %d bytes, data.bin.br %d bytes", len(bin), len(br))
+}

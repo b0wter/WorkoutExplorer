@@ -231,6 +231,7 @@ func corpus() []file {
 		targetRide(),
 		dynamicsRun("run-dynamics.fit", 61, 61, 1799),
 		runDynamics4h(),
+		runDynamics12h(),
 		strydOnly(),
 		strydAndNative(),
 		strydTwoApps(),

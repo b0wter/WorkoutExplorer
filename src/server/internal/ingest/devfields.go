@@ -32,11 +32,12 @@ type strydReader struct {
 	cands []devKey              // pairs whose current description qualifies, in file order of first description
 	types map[devKey]proto.Type // the value type each promises
 	bad   map[devKey]bool       // pairs that wrote a value of another shape (array, string, other type)
+	src   *devKey               // the pair that gave the first valid value: locked as the source (XS-4)
 }
 
 // reset starts a new FIT sequence (XS-4).
 func (s *strydReader) reset() {
-	s.cands, s.types, s.bad = nil, nil, nil
+	s.cands, s.types, s.bad, s.src = nil, nil, nil, nil
 }
 
 func (s *strydReader) drop(k devKey) {
@@ -118,6 +119,9 @@ func qualifies(f *mesgdef.FieldDescription) (proto.Type, bool) {
 // current description promises marks its pair as not usable.
 func (s *strydReader) power(m *proto.Message) (float64, bool) {
 	for _, k := range s.cands {
+		if s.src != nil && k != *s.src {
+			continue
+		}
 		if s.bad[k] {
 			continue
 		}
@@ -127,10 +131,16 @@ func (s *strydReader) power(m *proto.Message) (float64, bool) {
 				continue
 			}
 			if d.Value.Type() != s.types[k] {
-				s.bad[k] = true
+				if s.src == nil { // before the lock the pair is unusable; after it only this record is missing
+					s.bad[k] = true
+				}
 				return 0, false
 			}
-			return validWatts(d.Value)
+			w, ok := validWatts(d.Value)
+			if ok && s.src == nil {
+				s.src = &k
+			}
+			return w, ok
 		}
 		return 0, false // the source has no value in this record
 	}
@@ -138,7 +148,7 @@ func (s *strydReader) power(m *proto.Message) (float64, bool) {
 }
 
 // validWatts converts a scalar value that is not its base type's invalid
-// value and is finite.
+// value and lies in native power's range, 0 to 65,534 W (QA-68-r1-1).
 func validWatts(v proto.Value) (float64, bool) {
 	var x float64
 	switch v.Type() {
@@ -179,7 +189,7 @@ func validWatts(v proto.Value) (float64, bool) {
 	default:
 		return 0, false
 	}
-	if math.IsNaN(x) || math.IsInf(x, 0) {
+	if math.IsNaN(x) || x < 0 || x > math.MaxUint16-1 { // native power's range; also rejects Inf
 		return 0, false
 	}
 	return x, true
