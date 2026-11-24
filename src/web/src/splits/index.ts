@@ -12,7 +12,7 @@ import type { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit, Un
 import type { codeWord, lapsGroup } from '../lib/page';
 import { hasStrokeCounts, lengthRows } from '../lib/lengths';
 import { createRangeStats, emptyValues, type RangeStats } from '../lib/range';
-import { partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset, type SplitChoice } from '../lib/splits';
+import { movingOf, partialLast, poolDistance, presetBounds, splitChoice, type Pool, type Preset, type SplitChoice } from '../lib/splits';
 import { sectionRanges, sections } from '../lib/sections';
 import type { UnitsStore } from '../lib/units';
 import type { LapsSeams } from '../page/laps';
@@ -70,14 +70,14 @@ function lengthsTable([lapsGroup, codeWord, formatElapsed, formatSpeedOrPace]: F
 }
 
 /** Range values over each split, as lap totals (one source for the table and the chart, F-51 SC-3). */
-function splitTotals(stats: RangeStats, bounds: number[]): { totals: Totals }[] {
+function splitTotals(stats: RangeStats, bounds: number[], time: boolean): { totals: Totals }[] {
   const out = emptyValues();
   const totals: { totals: Totals }[] = [];
   for (let i = 1; i < bounds.length; i++) {
     const v = stats.query(bounds[i - 1], bounds[i], out);
     totals.push({
       totals: {
-        elapsed_time: v.elapsed,
+        elapsed_time: time ? v.moving : v.elapsed, // F-69 TS-4: a time split shows moving time
         distance: v.distance,
         avg_speed: v.speed,
         ascent: v.gain,
@@ -105,6 +105,27 @@ function splitsTable(laps: Fmt[0], doc: Document, sport: string, totals: { total
 
 type View = 'Laps' | 'Splits' | 'Lengths';
 const viewName = (v: View): string => t(`view${v}`);
+
+/** The drop-down's options: distance presets, then the "Time" group (F-69 TS-3). */
+function fillSelect(select: HTMLSelectElement, presets: readonly Preset[]): void {
+  select.replaceChildren();
+  let group: HTMLOptGroupElement | null = null;
+  presets.forEach((p, i) => {
+    if (p.time && !group) {
+      group = select.ownerDocument.createElement('optgroup');
+      select.appendChild(group);
+    }
+    (p.time ? group! : select).appendChild(new Option(p.label, String(i)));
+  });
+  relabel(select, presets);
+}
+
+/** Names follow the language ('Half marathon', "Time"); the options stay, so the selection stays. */
+function relabel(select: HTMLSelectElement, presets: readonly Preset[]): void {
+  presets.forEach((p, i) => (select.options[i].text = p.label));
+  const g = select.querySelector('optgroup');
+  if (g) g.label = t('splitTime');
+}
 
 /** A comparison chart with the slots and caption it draws (F-51; one per sport leg table, F-64 LL-7). */
 interface Drawn {
@@ -152,7 +173,10 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   const boxes: Partial<Record<View, HTMLElement>> = server ? { Laps: server } : {};
   const pairs: Partial<Record<View, number[]>> = {};
   // LL-5: a multisport workout has no workout-wide drop-down.
-  let choice = d && !secs ? splitChoice(data.meta, d[d.length - 1] - d[0]) : null;
+  const lapSwim = data.meta.sessions.some((s) => s.sub_sport === 'lap_swimming');
+  const m = data.movingTime;
+  const single = (): SplitChoice => splitChoice(data.meta, d![d!.length - 1] - d![0], movingOf(m, 0, data.sampleCount - 1, lapSwim));
+  let choice = d && !secs ? single() : null;
   let preset = choice?.presets[choice.index];
   const seam = seams.splits;
   // SC-7, LL-7: the enhancer's one mark notification, fanned out to every chart (a chart without the
@@ -208,7 +232,8 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     // A sport leg splits when its distance advances over its window; the pool rule only for a lap swim (PS-1).
     const advance = d && b > a ? d[b] - d[a] : 0;
     const summary = sorted[k]?.sub_sport === 'lap_swimming' ? data.meta.summary : {};
-    const pick = s.sport !== 'transition' && advance > 0 ? () => splitChoice({ sport: s.sport, summary }, advance) : null;
+    const moving = movingOf(data.movingTime, a, b, sorted[k]?.sub_sport === 'lap_swimming');
+    const pick = s.sport !== 'transition' && advance > 0 ? () => splitChoice({ sport: s.sport, summary }, advance, moving) : null;
     const select = pick ? h3.appendChild(doc.createElement('select')) : null;
     const note = !pick && s.sport !== 'transition' ? block.appendChild(doc.createElement('p')) : null;
     const leg: Leg = { sport: s.sport, a, b, block, name, pick, select, note, pairs: [] };
@@ -216,7 +241,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     if (pick && select) {
       const c = pick();
       select.className = 'split-select';
-      select.append(...c.presets.map((p, i) => new Option(p.label, String(i))));
+      fillSelect(select, c.presets);
       select.value = String(c.index);
       // LL-6: rebuilds this leg's table and chart only; the selection store is untouched.
       select.addEventListener('change', () => {
@@ -238,10 +263,10 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     if (!leg.pick || !leg.select) return;
     const c = leg.pick();
     leg.select.setAttribute('aria-label', t('splitDistance'));
-    c.presets.forEach((p, i) => (leg.select!.options[i].text = p.label));
+    relabel(leg.select, c.presets);
     const p = c.presets[+leg.select.value];
-    const bounds = presetBounds(d!, p, c.pool, a, b);
-    const totals = splitTotals(stats!, bounds);
+    const bounds = presetBounds(p.time ? m! : d!, p, c.pool, a, b);
+    const totals = splitTotals(stats!, bounds, !!p.time);
     const wrap = doc.createElement('div');
     wrap.className = 'laps-scroll splits';
     wrap.appendChild(splitsTable(fmt[0], doc, leg.sport, totals, units.get(), p, c.pool));
@@ -249,7 +274,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     else leg.block.appendChild(wrap);
     leg.wrap = wrap;
     leg.pairs.push(...bounds.slice(1).flatMap((x, i) => [bounds[i], x]));
-    const partial = partialLast(d!, bounds, p, c.pool);
+    const partial = partialLast(p.time ? m! : d!, bounds, p, c.pool);
     const rows = wrap.querySelectorAll('tbody tr');
     const slots = totals.map((x, i) => ({ row: rows[i], totals: x.totals, label: String(i + 1), partial: partial && i === totals.length - 1, ...net(bounds[i], bounds[i + 1]) }));
     leg.drawn ??= { chart: newChart(leg.block, leg.sport), slots, caption: () => '' }; // SC-9: last in its block
@@ -272,11 +297,11 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     } else if (view === 'Splits') {
       wrap = doc.createElement('div');
       wrap.className = 'laps-scroll splits';
-      const bounds = presetBounds(d!, preset!, choice!.pool);
-      const totals = splitTotals(stats!, bounds);
+      const bounds = presetBounds(preset!.time ? m! : d!, preset!, choice!.pool);
+      const totals = splitTotals(stats!, bounds, !!preset!.time);
       wrap.appendChild(splitsTable(fmt[0], doc, data.meta.sport, totals, units.get(), preset!, choice!.pool));
       pairs.Splits = bounds.slice(1).flatMap((b, i) => [bounds[i], b]);
-      const partial = partialLast(d!, bounds, preset!, choice!.pool);
+      const partial = partialLast(preset!.time ? m! : d!, bounds, preset!, choice!.pool);
       const rows = wrap.querySelectorAll('tbody tr');
       const slots = totals.map((t, i) => ({ row: rows[i], totals: t.totals, label: String(i + 1), partial: partial && i === totals.length - 1, ...net(bounds[i], bounds[i + 1]) }));
       charts.Splits = [{ chart: chart!, slots, caption: () => t('splitsCaption', { preset: preset!.label }) }];
@@ -327,7 +352,7 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
   if (choice) {
     select.className = 'split-select';
     select.setAttribute('aria-label', t('splitDistance'));
-    select.append(...choice.presets.map((p, i) => new Option(p.label, String(i))));
+    fillSelect(select, choice.presets);
     select.value = String(choice.index);
     select.addEventListener('change', () => {
       preset = choice!.presets[+select.value];
@@ -352,8 +377,8 @@ export function startSplits(root: ParentNode, data: WorkoutData, units: UnitsSto
     select.setAttribute('aria-label', t('splitDistance'));
     // Preset names follow the language ('Half marathon'): the choice is made again, the index kept.
     if (choice && d) {
-      choice = splitChoice(data.meta, d[d.length - 1] - d[0]);
-      choice.presets.forEach((p, i) => (select.options[i].text = p.label));
+      choice = single();
+      relabel(select, choice.presets);
       preset = choice.presets[+select.value];
     }
     names = sections(data.meta)?.map((s) => s.name) ?? []; // leg names (sportName follows the language)
