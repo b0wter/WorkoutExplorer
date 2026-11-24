@@ -16,8 +16,9 @@
 # usage; 128 + signal when killed; otherwise deploy.sh's status (1 refused or not healthy,
 # 3 regenerate unfinished, 4 clean-up, 5 bare metal: root must install changed files first).
 # DEPLOY_DIR (default /srv/workout-explorer) is the deploy directory. WX_UPDATE_RELEASES,
-# WX_UPDATE_PUSHOVER and WX_HOST_ROOT (a prefix for /etc, /usr) replace the release host, the
-# Pushover endpoint and the host's root for tests only; none weakens the check, which trusts only
+# WX_UPDATE_PUSHOVER, WX_UPDATE_NOTIFY_DRYRUN (check the notification settings, send nothing) and
+# WX_HOST_ROOT (a prefix for /etc, /usr) replace the release host, the Pushover endpoint, the
+# alert and the host's root for tests only; none weakens the check, which trusts only
 # the pinned key.
 set -u
 dir=${DEPLOY_DIR:-/srv/workout-explorer}
@@ -119,15 +120,59 @@ stop_() {
 	fi
 	done_ "$@"
 }
-# alert <text>: one Pushover message when both keys are set (else the log line is the alert);
-# the secrets go to curl on stdin, never on a command line (AU-11). <text> holds fixed words only.
+# notify_url_ok <kind> <url>: F-70 NS-3, the set internal/notify accepts (deploy/test/notify-url-cases.tsv
+# is run by both test suites): only RFC 3986 characters, at most 2048, no fragment or userinfo, https,
+# or http only to a literal loopback or private IPv4 address, [::1] or [fc../[fd.. address; ntfy needs a topic path.
+notify_url_ok() {
+	u=$2
+	[ "${#u}" -le 2048 ] || return 1
+	printf '%s' "$u" | LC_ALL=C grep -Eqx "[]A-Za-z0-9._~:/?@!\$&'()*+,;=%[-]+" || return 1
+	case $u in https://*) plain= ;; http://*) plain=1 ;; *) return 1 ;; esac
+	rest=${u#*://}
+	auth=${rest%%[/?]*}
+	path=${rest#"$auth"}
+	path=${path%%\?*}
+	printf '%s' "$auth" | grep -Eqx '([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?' || return 1
+	port=$(printf '%s' "$auth" | sed -n 's/.*:\([0-9]\{1,5\}\)$/\1/p')
+	[ -z "$port" ] || { [ "$port" -ge 1 ] && [ "$port" -le 65535 ]; } || return 1
+	[ "$1" != ntfy ] || { [ -n "$path" ] && [ "$path" != / ]; } || return 1
+	[ -n "$plain" ] || return 0
+	host=$(printf '%s' "$auth" | sed 's/:[0-9]\{1,5\}$//')
+	o='(0|[1-9][0-9]?|1[0-9][0-9]|2[0-4][0-9]|25[0-5])'
+	printf '%s' "$host" | grep -Eqx "(127\.$o\.$o\.$o|10\.$o\.$o\.$o|192\.168\.$o\.$o|172\.(1[6-9]|2[0-9]|3[01])\.$o\.$o|\[::1\]|\[[Ff][CcDd][0-9A-Fa-f]{2}:[0-9A-Fa-f:.]*\])"
+}
+# alert <text>: one message through the one service set in .env (F-70 NS-11, AU-11), else the log line
+# is the alert. The settings are read as data. The secrets (Pushover keys, the ntfy or callback URL and
+# token) go to curl on stdin, never on a command line. <text> holds fixed words and a validated tag only.
 alert() {
 	pt=$(envval WORKOUT_EXPLORER_PUSHOVER_TOKEN) pu=$(envval WORKOUT_EXPLORER_PUSHOVER_USER)
-	printf '%s' "$pt$pu" | grep -Eqx '[A-Za-z0-9]{60}' || return 0
-	m=$(printf '%s' "$1" | sed 's/%/%25/g; s/ /%20/g; s/(/%28/g; s/)/%29/g')
-	printf 'token=%s&user=%s&title=Workout%%20Explorer&message=%s' "$pt" "$pu" "$m" |
-		curl -q --proto =https -fsS --max-time 10 -o /dev/null --data-binary @- "$pushover" 2>/dev/null ||
-		say "the Pushover alert could not be sent"
+	nk=$(envval WORKOUT_EXPLORER_NOTIFY_KIND) nu=$(envval WORKOUT_EXPLORER_NOTIFY_URL) nt=$(envval WORKOUT_EXPLORER_NOTIFY_TOKEN)
+	if [ -z "$nk$nu$nt" ]; then
+		printf '%s' "$pt$pu" | grep -Eqx '[A-Za-z0-9]{60}' || return 0
+		m=$(printf '%s' "$1" | sed 's/%/%25/g; s/ /%20/g; s/(/%28/g; s/)/%29/g')
+		printf 'token=%s&user=%s&title=Workout%%20Explorer&message=%s' "$pt" "$pu" "$m" |
+			curl -q --proto =https -fsS --max-time 10 -o /dev/null --data-binary @- "$pushover" 2>/dev/null ||
+			say "the Pushover alert could not be sent"
+		return 0
+	fi
+	if [ -n "$pt$pu" ] || { [ "$nk" != ntfy ] && [ "$nk" != callback ]; } || [ -z "$nu" ] || ! notify_url_ok "$nk" "$nu" ||
+		{ [ -n "$nt" ] && { [ "${#nt}" -gt 256 ] || ! printf '%s' "$nt" | grep -Eqx '[A-Za-z0-9._~+/-]+=*'; }; }; then
+		say "notification settings invalid; no alert"
+		return 0
+	fi
+	[ -z "${WX_UPDATE_NOTIFY_DRYRUN:-}" ] || { say "notification settings valid"; return 0; } # tests: validate only
+	case $nu in http://*) proto=http ;; *) proto=https ;; esac
+	if [ "$nk" = ntfy ]; then
+		set -- -H 'Title: Workout Explorer' --data-raw "$1"
+	else
+		set -- -H 'Content-Type: application/json' --data-raw "{\"alert\":\"$1\"}"
+	fi
+	# Any 2xx is success; a redirect is not followed and counts as a failure.
+	code=$({
+		printf 'url = "%s"\n' "$nu"
+		[ -z "$nt" ] || printf 'header = "Authorization: Bearer %s"\n' "$nt"
+	} | curl -q -sS --max-time 10 -o /dev/null -w '%{http_code}' --noproxy '*' --proto "=$proto" -K - "$@" 2>/dev/null)
+	case $code in 2??) ;; *) say "the $nk alert could not be sent" ;; esac
 }
 
 # A run killed by systemd's timeout, a hang-up or Ctrl-C still ends with its log line; once

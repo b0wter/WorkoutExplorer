@@ -57,7 +57,7 @@ sudo chown -R deploy:deploy /srv/workout-explorer   # last: from now on root wri
 
 (Then the Caddy pin and `apt install caddy`, section 1.)
 
-Settings: `/etc/workout-explorer/.env` (in this guide, `.env` means this file), from `example.env` as in RUNBOOK.md, "Configure", **owned by root, group `deploy`, `0640`**: `sudo install -o root -g deploy -m 0640 "$w"/example.env /etc/workout-explorer/.env`, then `sudoedit /etc/workout-explorer/.env`. systemd reads it for the app, `update.sh` reads its switch, key and Pushover keys; Caddy never sees it. Only the `WORKOUT_EXPLORER_*` keys and `WX_UPDATE_PUBLIC_KEY` (the key you pinned) matter; do not set `WORKOUT_EXPLORER_TRUSTED_PROXY` (the app trusts loopback, where Caddy runs). The operator file and Impressum (RUNBOOK.md, "The About page: operator file") go to `/etc/workout-explorer/operator/`, root's, files `0644` (the app reads them): `sudo install -m 0644 "$w"/operator.example.txt /etc/workout-explorer/operator/about.txt`, `sudoedit` it, and set `WORKOUT_EXPLORER_OPERATOR_FILE=/etc/workout-explorer/operator/about.txt` (Impressum likewise). `update.sh` refuses to run (exit 2) while a `.env` or `operator` is in `/srv/workout-explorer`.
+Settings: `/etc/workout-explorer/.env` (in this guide, `.env` means this file), from `example.env` as in RUNBOOK.md, "Configure", **owned by root, group `deploy`, `0640`**: `sudo install -o root -g deploy -m 0640 "$w"/example.env /etc/workout-explorer/.env`, then `sudoedit /etc/workout-explorer/.env`. systemd reads it for the app, `update.sh` reads its switch, key and notification settings; Caddy never sees it. Only the `WORKOUT_EXPLORER_*` keys and `WX_UPDATE_PUBLIC_KEY` (the key you pinned) matter; do not set `WORKOUT_EXPLORER_TRUSTED_PROXY` (the app trusts loopback, where Caddy runs). The operator file and Impressum (RUNBOOK.md, "The About page: operator file") go to `/etc/workout-explorer/operator/`, root's, files `0644` (the app reads them): `sudo install -m 0644 "$w"/operator.example.txt /etc/workout-explorer/operator/about.txt`, `sudoedit` it, and set `WORKOUT_EXPLORER_OPERATOR_FILE=/etc/workout-explorer/operator/about.txt` (Impressum likewise). `update.sh` refuses to run (exit 2) while a `.env` or `operator` is in `/srv/workout-explorer`.
 
 ## 3. Start
 
@@ -77,7 +77,7 @@ Both services restart after a crash, an out-of-memory kill or a reboot. Stop: `s
 
 ## 4. Notifications (optional)
 
-Set both Pushover keys in `.env` (RUNBOOK.md, "Notifications"), then lift the app's outbound block (Caddy's stays):
+Set the notification service in `.env` (Pushover keys, or ntfy or callback settings; RUNBOOK.md, "Notifications"). A service on this host (`http://127.0.0.1:...`) needs no drop-in; for one on the LAN write your own `notify-lan.conf` with `IPAddressAllow=<address>` instead of `notify.conf` (`deploy.sh` byte-compares only `notify.conf`). Otherwise lift the app's outbound block (Caddy's stays):
 
 ```sh
 sudo install -d /etc/systemd/system/workout-explorer.service.d

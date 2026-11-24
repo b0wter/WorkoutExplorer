@@ -53,6 +53,7 @@ func (f *fakeStore) SetDeleteKeyHash(_ context.Context, id int64, h [32]byte) (b
 	return f.found, f.err
 }
 
+func (f *fakeStore) ClearDeleteKey(context.Context, int64) error    { return f.err }
 func (f *fakeStore) ClearDeleteKeys(context.Context) (int64, error) { return f.pruneN, f.err }
 
 func (f *fakeStore) ReportByDeleteKey(_ context.Context, h [32]byte, after, now time.Time) (KeyedReport, bool, error) {

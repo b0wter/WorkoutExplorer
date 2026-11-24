@@ -94,6 +94,14 @@ func (d *DB) SetDeleteKeyHash(ctx context.Context, reportID int64, hash [32]byte
 	return n == 1, nil
 }
 
+// ClearDeleteKey removes the delete key of one report (F-70 NS-7).
+func (d *DB) ClearDeleteKey(ctx context.Context, reportID int64) error {
+	if _, err := d.db.ExecContext(ctx, "UPDATE reports SET delete_key_hash = NULL WHERE id = ?", reportID); err != nil {
+		return fmt.Errorf("store: clear delete key: %w", err)
+	}
+	return nil
+}
+
 // ClearDeleteKeys removes every delete key (DK-5) and returns how many.
 func (d *DB) ClearDeleteKeys(ctx context.Context) (int64, error) {
 	res, err := d.db.ExecContext(ctx, "UPDATE reports SET delete_key_hash = NULL WHERE delete_key_hash IS NOT NULL")

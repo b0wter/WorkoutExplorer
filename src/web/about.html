@@ -73,6 +73,18 @@
       <p data-t="ab_whenAWorkout2">When a workout is reported, the operator gets a notification through Pushover. Pushover learns the report number, the reason and the workout's viewing link (which opens the public page), plus a single-use link to delete the workout that is valid for up to 30 days. It never learns the reporter's message or the workout's title. Anyone with access to the operator's Pushover account or unlocked phone could use that link once to delete the reported workout.</p>
       <!--/wx:pushover-->
 
+      <!--wx:ntfy-->
+      <h2 data-t="ab_reportNotifications">Report notifications</h2>
+      <p data-t="ab_ntfyNotify">When a workout is reported, the operator gets a notification through ntfy, a push service. The ntfy server learns the report number, the reason and the workout's viewing link (which opens the public page), plus a single-use link to delete the workout that is valid for up to 30 days. It never learns the reporter's message or the workout's title. Anyone who can read the operator's ntfy topic or unlocked phone could use that link once to delete the reported workout.</p>
+      <p data-t="ab_ntfyServer">The ntfy server is:</p>
+      <p><code><!--wx:notify-host--></code></p>
+      <!--/wx:ntfy-->
+
+      <!--wx:callback-->
+      <h2 data-t="ab_reportNotifications">Report notifications</h2>
+      <p data-t="ab_callbackNotify">When a workout is reported, the operator's own server receives a notification. It learns the report number, the reason and the workout's viewing link (which opens the public page), plus a single-use link to delete the workout that is valid for up to 30 days. It never learns the reporter's message or the workout's title. Anyone with access to that server could use that link once to delete the reported workout.</p>
+      <!--/wx:callback-->
+
       <!--wx:shortcut-->
       <h2 id="shortcut" data-t="ab_uploadFromYour">Upload from your iPhone</h2>
       <p data-t="ab_theOperatorOffers">The operator offers a Shortcut for iPhone that uploads a FIT file from the share sheet and opens its edit page in Safari. Add it from this link: <a href="<!--wx:shortcut-url-->" data-p="link"><!--wx:shortcut-url--></a></p>

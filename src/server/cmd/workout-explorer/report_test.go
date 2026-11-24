@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -418,11 +419,21 @@ func TestPushoverSettings(t *testing.T) {
 	if _, err := os.Stat(dir); err == nil {
 		t.Error("data directory created")
 	}
-	if f := startedFields(settings{pushoverToken: testPushToken, pushoverUser: testPushUser}); !slices.Contains(f, any("notifications")) || f[len(f)-1] != true || slices.Contains(f, any(testPushToken)) {
-		t.Errorf("started fields %v", f)
-	}
-	if f := startedFields(settings{}); f[len(f)-1] != false {
-		t.Errorf("started fields %v", f)
+	// NS-8: the service and, for ntfy and callback, the host only; never a path, token or key.
+	for _, c := range []struct {
+		s          settings
+		name, host string
+	}{
+		{settings{pushoverToken: testPushToken, pushoverUser: testPushUser}, "pushover", ""},
+		{settings{notifyKind: "ntfy", notifyURL: "https://ntfy.example.org:8443/secretTopic?k=v", notifyToken: "tk_x"}, "ntfy", "ntfy.example.org:8443"},
+		{settings{notifyKind: "callback", notifyURL: "https://hooks.example.org/in", notifyToken: "tk_x"}, "callback", "hooks.example.org"},
+		{settings{}, "off", ""},
+	} {
+		f := startedFields(c.s)
+		if !slices.Contains(f, any("notify")) || f[len(f)-3] != c.name || f[len(f)-1] != c.host || fmt.Sprint(f) != fmt.Sprint(startedFields(c.s)) ||
+			strings.Contains(fmt.Sprint(f), "secretTopic") || strings.Contains(fmt.Sprint(f), "tk_x") || strings.Contains(fmt.Sprint(f), testPushToken) {
+			t.Errorf("started fields %v", f)
+		}
 	}
 }
 
@@ -491,11 +502,11 @@ func TestReportNotification(t *testing.T) {
 		t.Errorf("second message %q", m) // 9 queued fit the queue: none folded
 	}
 	deadline := time.Now().Add(5 * time.Second)
-	for !strings.Contains(a.logs.String(), `"msg":"notification failed","status":500`) && time.Now().Before(deadline) {
+	for !strings.Contains(a.logs.String(), `"msg":"notification failed","kind":"pushover","status":500`) && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	logs := a.logs.String()
-	if !strings.Contains(logs, `"msg":"notification failed","status":500`) {
+	if !strings.Contains(logs, `"msg":"notification failed","kind":"pushover","status":500`) {
 		t.Errorf("no failure line: %s", logs)
 	}
 	if strings.Contains(logs, testPushToken) || strings.Contains(logs, testPushUser) || strings.Contains(logs, reportMarker) || strings.Contains(logs, pub) {

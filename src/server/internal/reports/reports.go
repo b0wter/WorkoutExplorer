@@ -68,6 +68,7 @@ type Store interface {
 	DeleteReportsFiledBy(ctx context.Context, t time.Time) (int64, error)
 	SetDeleteKeyHash(ctx context.Context, reportID int64, hash [32]byte) (bool, error)
 	ClearDeleteKeys(ctx context.Context) (int64, error)
+	ClearDeleteKey(ctx context.Context, reportID int64) error
 	// ReportByDeleteKey and ConsumeDeleteKey match a key only while it is
 	// valid (DK-4): report filed after filedAfter, workout row alive at now.
 	ReportByDeleteKey(ctx context.Context, hash [32]byte, filedAfter, now time.Time) (KeyedReport, bool, error)
@@ -216,8 +217,16 @@ func (s *Service) IssueDeleteLink(ctx context.Context, reportID int64) (string, 
 	return "", false
 }
 
-// ClearDeleteKeys removes every delete key (F-37 DK-5: serve without
-// Pushover); the count is logged when above zero.
+// RevokeDeleteLink removes the key issued for a report whose notification
+// failed (F-70 NS-7); a failure is one WARN line with the report ID only.
+func (s *Service) RevokeDeleteLink(ctx context.Context, reportID int64) {
+	if err := s.d.Store.ClearDeleteKey(ctx, reportID); err != nil {
+		s.d.Logger.Warn("delete key not revoked", "id", reportID)
+	}
+}
+
+// ClearDeleteKeys removes every delete key (F-37 DK-5: serve with
+// notifications off, F-70 NS-13: a changed service); the count is logged when above zero.
 func (s *Service) ClearDeleteKeys(ctx context.Context) error {
 	n, err := s.d.Store.ClearDeleteKeys(ctx)
 	if err != nil {

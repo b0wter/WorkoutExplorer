@@ -30,7 +30,7 @@ describe('About page', () => {
   });
 
   it('has each server marker exactly once, the version at least once', () => {
-    for (const m of ['<!--wx:attributions-->', '<!--wx:operator-->', '<!--wx:pushover-->', '<!--/wx:pushover-->', '<!--wx:shortcut-->', '<!--/wx:shortcut-->', '<!--wx:updates-->', '<!--/wx:updates-->']) {
+    for (const m of ['<!--wx:attributions-->', '<!--wx:operator-->', '<!--wx:pushover-->', '<!--/wx:pushover-->', '<!--wx:ntfy-->', '<!--/wx:ntfy-->', '<!--wx:callback-->', '<!--/wx:callback-->', '<!--wx:notify-host-->', '<!--wx:shortcut-->', '<!--/wx:shortcut-->', '<!--wx:updates-->', '<!--/wx:updates-->']) {
       expect(count(m), m).toBe(1);
     }
     expect(count('<!--wx:version-->')).toBeGreaterThan(0);

@@ -16,10 +16,10 @@ import (
 	"workout-explorer/internal/httpapi"
 	"workout-explorer/internal/ingest"
 	"workout-explorer/internal/lifecycle"
+	"workout-explorer/internal/notify"
 	"workout-explorer/internal/places"
 	"workout-explorer/internal/privatedir"
 	"workout-explorer/internal/publish"
-	"workout-explorer/internal/pushover"
 	"workout-explorer/internal/reports"
 	"workout-explorer/internal/shell"
 	"workout-explorer/internal/store"
@@ -37,12 +37,15 @@ type settings struct {
 	uploadsIPv6          int           // per IPv6 /64; 0: 60 (tests)
 	pushoverToken        string        // both set: report notifications on (ADR-039); secrets, never logged or printed
 	pushoverUser         string
-	pushoverEndpoint     string // "": pushover.Endpoint; tests point it at a fake
-	operatorFile         string // WORKOUT_EXPLORER_OPERATOR_FILE, for the missing-file warning
-	operatorHTML         string // the rendered operator file (F-29 AB-8); "": the placeholder
-	iosShortcutURL       string // the iOS Shortcut link of the About page (F-34) and the upload hint (F-63); "": neither
-	impressumHTML        string // the rendered Impressum file (F-38 IM-1); "": no Impressum, no page, no footer link
-	autoUpdate           bool   // WORKOUT_EXPLORER_AUTO_UPDATE=on: the About page's update sentence (F-52 AU-12, PT-9a)
+	pushoverEndpoint     string      // "": notify.Endpoint; tests point it at a fake
+	notifyKind           notify.Kind // ntfy or callback (F-70); "": neither. Pushover keys and a kind never come together
+	notifyURL            string      // secret: the whole URL; only its host is logged or shown (NS-8)
+	notifyToken          string      // secret: bearer token, optional
+	operatorFile         string      // WORKOUT_EXPLORER_OPERATOR_FILE, for the missing-file warning
+	operatorHTML         string      // the rendered operator file (F-29 AB-8); "": the placeholder
+	iosShortcutURL       string      // the iOS Shortcut link of the About page (F-34) and the upload hint (F-63); "": neither
+	impressumHTML        string      // the rendered Impressum file (F-38 IM-1); "": no Impressum, no page, no footer link
+	autoUpdate           bool        // WORKOUT_EXPLORER_AUTO_UPDATE=on: the About page's update sentence (F-52 AU-12, PT-9a)
 	// onParser is called with the parser newApp built; nil in production.
 	onParser func(*ingest.Parser)
 	// onService is called with the service and the storage total newApp
@@ -53,6 +56,29 @@ type settings struct {
 	wrapUploader func(httpapi.Uploader) httpapi.Uploader
 	// expiryEvery is the period of the expiry pass; 0: expiryPeriod. Tests only.
 	expiryEvery time.Duration
+}
+
+// notifyConfig is the notifier's configuration; ok false: notifications are off.
+func (s settings) notifyConfig() (c notify.Config, ok bool) {
+	switch {
+	case s.notifyKind != "":
+		return notify.Config{Kind: s.notifyKind, URL: s.notifyURL, Token: s.notifyToken}, true
+	case s.pushoverToken != "":
+		return notify.Config{Kind: notify.Pushover, URL: s.pushoverEndpoint, Token: s.pushoverToken, User: s.pushoverUser}, true
+	}
+	return notify.Config{}, false
+}
+
+// notifyService is what the About page may name: the kind and, for ntfy, the host (NS-8).
+func (s settings) notifyService() about.Notify {
+	c, ok := s.notifyConfig()
+	switch {
+	case !ok:
+		return about.Notify{}
+	case c.Kind == notify.Ntfy:
+		return about.Notify{Kind: string(c.Kind), Host: notify.Host(c.URL)}
+	}
+	return about.Notify{Kind: string(c.Kind)}
 }
 
 // expiryPeriod leaves room in SH-10's 60 s for the lock waits of F-21 X-6.
@@ -71,7 +97,7 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	if err != nil {
 		return nil, nil, err
 	}
-	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notifications: s.pushoverToken != "", Shortcut: s.iosShortcutURL, Impressum: impressum, Updates: s.autoUpdate})
+	aboutPage, err := about.Load(s.webDir, about.Values{Operator: s.operatorHTML, Version: version, Notify: s.notifyService(), Shortcut: s.iosShortcutURL, Impressum: impressum, Updates: s.autoUpdate})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -136,21 +162,33 @@ func newApp(ctx context.Context, dataDir string, s settings, logger *slog.Logger
 	}
 	// Reports (F-27): notifications only when both secrets are set; each sent
 	// one carries a delete link issued by reports (F-37 DK-3).
-	var notifier *pushover.Notifier
+	var notifier *notify.Notifier
 	var reps *reports.Service
-	if s.pushoverToken != "" {
-		notifier = pushover.New(s.pushoverToken, s.pushoverUser, s.pushoverEndpoint, func(ctx context.Context, id int64) (string, bool) {
+	ncfg, notifyOn := s.notifyConfig()
+	if notifyOn {
+		notifier = notify.New(ncfg, func(ctx context.Context, id int64) (string, bool) {
 			return reps.IssueDeleteLink(ctx, id)
-		}, logger)
+		}, func(ctx context.Context, id int64) { reps.RevokeDeleteLink(ctx, id) }, logger)
 	}
 	deps := reports.Deps{Store: db, Deleter: svc, BaseURL: s.baseURL, Logger: logger}
 	if notifier != nil {
 		deps.Notifier = notifier
 	}
 	reps = reports.New(deps)
-	if notifier == nil {
-		// F-37 DK-5: without Pushover no delete link may work; this is also the revocation path.
+	// F-37 DK-5: with notifications off no delete link may work; F-70 NS-13: nor
+	// after a change of service, URL or token. The state file is written after
+	// the clearing, so a crash in between clears again.
+	commit, err := notifyChanged(dataDir, s)
+	if err != nil {
+		return fail(err)
+	}
+	if notifier == nil || commit != nil {
 		if err := reps.ClearDeleteKeys(ctx); err != nil {
+			return fail(err)
+		}
+	}
+	if commit != nil {
+		if err := commit(); err != nil {
 			return fail(err)
 		}
 	}
