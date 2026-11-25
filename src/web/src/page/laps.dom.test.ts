@@ -869,7 +869,7 @@ describe('comparison chart (F-51; AP-23)', () => {
     const sel = overlay(p)!;
     sel.value = 'elevation';
     sel.dispatchEvent(new Event('change'));
-    expect([...chart(p)!.querySelectorAll('.compare-axis.right span')].map((s) => s.textContent)).toEqual(['27 m', '', '9 m']);
+    expect([...chart(p)!.querySelectorAll('.compare-axis.right span')].map((s) => s.textContent)).toEqual(['27 m', '9 m']);
     expect(chart(p)?.querySelectorAll('.ov-altitude circle')).toHaveLength(2);
     expect(chart(p)?.querySelector('.ov-altitude line.zero')).toBeNull();
     p.units.set('imperial');
