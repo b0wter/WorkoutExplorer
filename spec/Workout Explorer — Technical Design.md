@@ -114,6 +114,7 @@ The parser reads the messages below and builds one normalised workout: sessions,
 - Session totals from the device are shown as recorded, also when positions are hidden for privacy (AP-2, SH-9). After a trim (UP-6), totals are recomputed from the remaining streams; pool lengths trimmed away or cut by the trim are dropped, and the Lengths cell counts the remaining active ones (F-48 PL-6). Values for a selected range (AP-7) are computed in the browser from the streams; moving time and gain come from the server's cumulative streams (ADR-029).
 - Suggested title (UP-5, wording and rules there; F-45): the town is the GeoNames `name` field (local spelling, UTF-8), not `asciiname`; time of day uses the workout's UTC offset (time zones below). The GeoNames licence needs an attribution line on the site.
 - Irregular sampling (smart recording) is resampled to 1 s only where gaps are under 5 s; longer gaps stay gaps, so pauses draw as breaks.
+- Speed spikes (UP-12, [F-74](../architect/F-74-speed-spike-filter.md) SP-1 to SP-6): in legs with positions, a run of at most 5 s of recorded speed samples, each clearly above the level on both sides, after which speed returns to that level, becomes missing, together with the samples gap filling interpolated from it. Moving time still uses the speed before removal. A session with a removed sample takes its max speed from its remaining samples instead of the device's value (AP-2).
 
 **Edge cases to test**
 
