@@ -27,7 +27,7 @@ Shares booked since revision 17 (decision 4):
 
 | Feature | Target / ceiling | Measured | Entry after |
 | --- | --- | --- | --- |
-| F-74 robust chart axis (AX-5), from the reserve, user 25 Nov 2026 | 100 / 150 | open | open |
+| F-74 robust chart axis (AX-5), from the reserve, user 25 Nov 2026 | 100 / 150 | 148 (QA measurement) | 61,886 |
 
 ## Decision
 

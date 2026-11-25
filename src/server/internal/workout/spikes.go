@@ -18,7 +18,7 @@ const (
 	spikeBandRel    = 0.25 // run = above level + max(rel*level, abs)
 	spikeBandAbs    = 1.0  // m/s
 	spikeMarginRel  = 0.5  // every run sample >= level + rel*level + abs
-	spikeMarginAbs  = 2.0  // m/s
+	spikeMarginAbs  = 5.0  // m/s; a roll between stops reaches ~3, a 30 km/h-plus glitch from a stop clears it (QA-74-r1-1)
 )
 
 func spikeBand(l float64) float64   { return math.Max(spikeBandRel*l, spikeBandAbs) }

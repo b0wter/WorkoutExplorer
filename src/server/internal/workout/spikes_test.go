@@ -143,6 +143,24 @@ func TestSpeedSpikeStandstillJitter(t *testing.T) {
 	}
 }
 
+// QA-74-r1-1: a real roll between stops stays; a glitch from a stop goes.
+func TestSpeedSpikeRollBetweenStops(t *testing.T) {
+	for _, tc := range []struct {
+		v    float64
+		gone bool
+	}{{2.5, false}, {85 * kmh, true}} {
+		w := Normalise(spikeRide("cycling", seq(0, 199), func(s int) float64 {
+			if s == 100 || s == 101 {
+				return tc.v
+			}
+			return 0
+		}, true))
+		if math.IsNaN(w.Samples.Speed[100]) != tc.gone {
+			t.Errorf("v=%v: removed=%v, want %v", tc.v, !tc.gone, tc.gone)
+		}
+	}
+}
+
 func TestSpeedSpikeUntouched(t *testing.T) {
 	bump := burst(100, 1, 85)
 	t.Run("indoor without positions", func(t *testing.T) {
