@@ -48,7 +48,7 @@
      left-aligned like the panel's; the unit may shift when the digit count changes (user 29 Oct 2026). -->
 <div class="readout" bind:this={row}>
   {#each fields as field (field.key)}
-    <div class="cell">
+    <div class="cell" title={field.title}>
       <div class="label">{field.label}</div>
       <div class="val"><span class="value">{MISSING_TEXT}</span>{#if field.unit}&nbsp;<span class="unit">{field.unit}</span>{/if}</div>
     </div>

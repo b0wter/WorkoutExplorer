@@ -390,6 +390,7 @@ html[data-hold] body {
   }
   .ctl {
     flex: none;
+    max-width: 100%; /* a narrow column (two-column layout) wraps the controls instead of overflowing */
   }
   .ctl-btns,
   .ctl-sel {
@@ -491,6 +492,10 @@ html[data-hold] body {
 .readout .cell,
 .range-panel .cell {
   white-space: nowrap;
+}
+.readout .label {
+  overflow: hidden; /* long labels (German) ellipsize instead of overlapping the next cell */
+  text-overflow: ellipsis;
 }
 .readout .label,
 .range-panel .label {

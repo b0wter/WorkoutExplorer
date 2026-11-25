@@ -66,8 +66,9 @@ function spec(
   decimals: number,
   colour: string,
   format: (v: number) => string = (v) => formatFixed(v, decimals),
+  short?: string,
 ): ChartSpec {
-  return { metric, label, unit, toDisplay, decimals, format, colour, invert: false };
+  return { metric, label, short, unit, toDisplay, decimals, format, colour, invert: false };
 }
 
 /** The six chart specs for a sport and unit system (F-14 D-11). The speed chart of a pace sport is a pace chart. */
@@ -78,14 +79,14 @@ export function chartSpecs(sport: string, units: Units): Readonly<Record<BaseMet
         const toDisplay = (v: number): number => (v >= STOP_SPEED ? paceSeconds(sport, units, v) : NaN);
         return { ...spec('speed', t('chartPace'), speedOrPaceUnit(sport, units), toDisplay, 0, '#1f6fc5', formatPace), invert: true, incrs: PACE_INCRS };
       })()
-    : spec('speed', t('chartSpeed'), speedOrPaceUnit(sport, units), (v) => toSpeed(v, units), 1, '#1f6fc5');
+    : spec('speed', t('chartSpeed'), speedOrPaceUnit(sport, units), (v) => toSpeed(v, units), 1, '#1f6fc5', undefined, t('readoutSpeed'));
   return {
     altitude: spec('altitude', t('chartElevation'), elevationUnit(units), (v) => toElevation(v, units), 0, '#5b8c3a'),
     speed: speedSpec,
-    heart_rate: spec('heart_rate', t('chartHeartRate'), heartRateUnit(), identity, 0, '#d0312d'),
+    heart_rate: spec('heart_rate', t('chartHeartRate'), heartRateUnit(), identity, 0, '#d0312d', undefined, t('readoutHeartRate')),
     power: spec('power', t('chartPower'), 'W', identity, 0, '#8a3ffc'),
     cadence: spec('cadence', t('chartCadence'), cadenceUnit(sport), identity, 0, '#0f8b8d'),
-    temperature: spec('temperature', t('chartTemperature'), temperatureUnit(units), (v) => toTemperature(v, units), 0, '#d97706'),
+    temperature: spec('temperature', t('chartTemperature'), temperatureUnit(units), (v) => toTemperature(v, units), 0, '#d97706', undefined, t('readoutTemperature')),
   };
 }
 
@@ -133,6 +134,8 @@ export interface ReadoutField {
   readonly key: 'elapsed' | 'distance' | ChartMetric;
   /** 'Time', 'Distance', or the chart's label. */
   readonly label: string;
+  /** The full name where `label` is abbreviated (the cell's tooltip). */
+  readonly title?: string;
   /** '' for elapsed, 'km' or 'mi' for distance. */
   readonly unit: string;
   /** Value at a sample index, formatted; '–' for a missing sample. */
@@ -155,6 +158,7 @@ export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?
     fields.push({
       key: spec.metric,
       label: spec.short ?? spec.label,
+      title: spec.short === undefined ? undefined : spec.label,
       unit: spec.unit,
       text: (i) => {
         const v = values[i];

@@ -178,6 +178,11 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
 
 describe('page.css layout structure (D-17 to D-19)', () => {
   const css = readWebFile('src/page/page.css');
+
+  it('header controls wrap inside a narrow column; long readout labels ellipsize', () => {
+    expect(css).toMatch(/\.ctl \{\s*flex: none;\s*max-width: 100%;/);
+    expect(css).toMatch(/\.readout \.label \{\s*overflow: hidden;[^}]*text-overflow: ellipsis;/);
+  });
   const block = (query: string): string => {
     const i = css.indexOf(query);
     expect(i, query).toBeGreaterThan(-1);
