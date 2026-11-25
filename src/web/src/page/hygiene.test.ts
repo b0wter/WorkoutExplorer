@@ -99,8 +99,24 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(css).toMatch(/^\.howto:not\(\.ready\),\n\.gpx:not\(\.ready\) \{\s*visibility: hidden;/m);
   });
 
-  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])('.charts-%s reserves exactly what ChartStack sets for its chart area', (n) => {
-    expect(rule('.charts-' + n)).toContain(`--area: ${chartAreaHeight(n, DEFAULT_CHART_HEIGHT)}px`);
+  // F-76 TC-4: --area is computed from --n and --plot; for both sizes it equals chartAreaHeight.
+  it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])('.charts-%s reserves exactly what ChartStack sets for its chart area, at 120 px and 200 px', (n) => {
+    expect(rule('.charts-' + n)).toBe(` --n: ${n}; `);
+    const area = (plot: number): number => n * (plot + 24) + 28; // calc(var(--n) * (var(--plot) + 24px) + 28px)
+    expect(rule('.charts')).toContain('--area: calc(var(--n) * (var(--plot) + 24px) + 28px)');
+    for (const plot of [DEFAULT_CHART_HEIGHT, 200]) expect(area(plot)).toBe(chartAreaHeight(n, plot));
+  });
+
+  it('F-76 TC-4: --plot is 120 px, 200 px with data-chart-size, and the cap sits only inside the landscape query', () => {
+    expect(rule('.charts')).toContain(`--plot: ${DEFAULT_CHART_HEIGHT}px;`);
+    expect(css).toMatch(/^\[data-chart-size='tall'\] \.charts \{\s*--plot: 200px;/m);
+    expect(css).toMatch(/@property --plot \{\s*syntax: '<length>';\s*inherits: true;\s*initial-value: 120px;/);
+    const cap = /--plot: clamp\(120px, 100s?vh - var\(--r\) \* 29px - 16px - 24px, 200px\);/g;
+    const land = css.indexOf('@media (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {');
+    const body = css.slice(land, css.indexOf('\n}\n', land));
+    expect([...css.matchAll(cap)]).toHaveLength(2);
+    expect([...body.matchAll(cap)]).toHaveLength(2);
+    expect(body.indexOf('100vh - var(--r)')).toBeLessThan(body.indexOf('100svh - var(--r)')); // vh fallback first
   });
 
   it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])('.cells-%s reserves the readout rows of a 4-column grid (8 columns: --r8)', (k) => {
@@ -123,9 +139,9 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     expect(rule('.charts')).toContain('calc(var(--bar) + var(--r) * 29px + 16px + var(--area) + var(--hint))');
   });
 
-  it('F-17: the hint row is always reserved with charts, the axis toolbar row only with has-distance', () => {
-    expect(rule('.charts')).toMatch(/--bar: 0px;[^}]*--hint: 24px;/);
-    expect(rule('.charts.has-distance')).toContain('--bar: 40px');
+  it('F-17, F-76 TC-7: the hint row and the toolbar row are always reserved with charts (the row holds the size toggle)', () => {
+    expect(rule('.charts')).toMatch(/--bar: 40px;[^}]*--hint: 24px;/);
+    expect(css).not.toContain('.charts.has-distance');
     const stack = readWebFile('src/components/charts/ChartStack.svelte');
     expect(stack).toMatch(/\.toolbar \{\s*box-sizing: border-box;\s*height: 40px;/);
     expect(stack).toMatch(/\.select-hint \{\s*height: 20px;\s*margin: 4px 0 0;/);
@@ -173,10 +189,11 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
     const rest = css
       .replace(/(\.has-map \.map-slot \{[^}]*\})/g, (m) => m.replace(/height: 100l?vh;/g, ''))
       .replace(/--pin-h: 35l?vh;/g, '')
-      .replace('@supports (height: 1lvh)', '');
+      .replace('@supports (height: 1lvh)', '')
+      .replace(/--plot: clamp\(120px, 100s?vh[^;]*;/g, ''); // F-76 TC-4: the landscape cap of the tall charts
     expect(rest).not.toMatch(/\d(vh|dvh|svh|lvh)\b/);
     expect(css).toMatch(/\.has-map \.map-slot \{[^}]*height: 100vh;\s*height: 100lvh;/);
-    expect(css).not.toMatch(/dvh|svh/);
+    expect(css).not.toMatch(/dvh/);
   });
 });
 

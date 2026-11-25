@@ -4,6 +4,7 @@ import { texts } from '../i18n';
 export const en = {
   axisTime: 'Time',
   axisDistance: 'Distance',
+  chartsTall: 'Taller charts',
   chartElevation: 'Elevation',
   chartSpeed: 'Speed',
   chartPace: 'Pace',

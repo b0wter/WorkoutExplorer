@@ -439,18 +439,27 @@ html[data-hold] body {
   font-size: 11px;
   line-height: 13px;
 }
-/* Charts: axis toolbar (--bar, F-17 R-8: only with a distance stream) + readout rows (--r) + chart
-   area (--area, F-05 chartAreaHeight(n, 120)) + the selection hint (--hint, F-17 R-12: 4 px gap and
+/* Charts: toolbar row (--bar, F-17 R-8, F-76 TC-7: always, it holds the size toggle) + readout rows (--r) + chart
+   area (--area = F-05 chartAreaHeight(n, --plot), F-76 TC-4) + the selection hint (--hint, F-17 R-12: 4 px gap and
    one 20 px line; the viewing page's box: see .howto). The readout grid has fixed tracks, so its row count is known before the bundle
    runs: 4 columns below 640 px and in the short-landscape right column, 8 (one row) otherwise. */
+/* F-76 TC-4: the plot height, 120 px or 200 px with the toggle (data-chart-size, set by the head script
+   and ChartStack). ChartStack reads it back with getComputedStyle (TC-5), so CSS and canvas agree. */
+@property --plot {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 120px;
+}
 .charts {
+  --plot: 120px;
+  --area: calc(var(--n) * (var(--plot) + 24px) + 28px);
   --r: var(--r4);
-  --bar: 0px;
+  --bar: 40px; /* 32 px toolbar + 8 px gap above the readout */
   --hint: 24px;
   height: calc(var(--bar) + var(--r) * 29px + 16px + var(--area) + var(--hint)); /* + the readout card's 4 px padding top and bottom + its 8 px bottom margin (gap to the first chart title) */
 }
-.charts.has-distance {
-  --bar: 40px; /* 32 px toolbar + 8 px gap above the readout */
+[data-chart-size='tall'] .charts {
+  --plot: 200px;
 }
 #charts-slot .readout {
   margin-bottom: 8px;
@@ -469,16 +478,16 @@ html[data-hold] body {
 .charts.load-failed {
   height: auto;
 }
-.charts-1 { --area: 172px; }
-.charts-2 { --area: 316px; }
-.charts-3 { --area: 460px; }
-.charts-4 { --area: 604px; }
-.charts-5 { --area: 748px; }
-.charts-6 { --area: 892px; }
-.charts-7 { --area: 1036px; }
-.charts-8 { --area: 1180px; }
-.charts-9 { --area: 1324px; }
-.charts-10 { --area: 1468px; }
+.charts-1 { --n: 1; }
+.charts-2 { --n: 2; }
+.charts-3 { --n: 3; }
+.charts-4 { --n: 4; }
+.charts-5 { --n: 5; }
+.charts-6 { --n: 6; }
+.charts-7 { --n: 7; }
+.charts-8 { --n: 8; }
+.charts-9 { --n: 9; }
+.charts-10 { --n: 10; }
 .cells-1 { --r4: 1; }
 .cells-2 { --r4: 1; }
 .cells-3 { --r4: 1; }
@@ -596,6 +605,11 @@ tbody tr:nth-child(even) {
    containing block reaches above the charts and the panel sticks to the bottom of the right
    column. The readout is the 4-column card: the right column is narrower than 608 px. */
 @media (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  /* F-76 TC-4: tall is capped so one chart fits the window: minus the readout card, the title row and the top padding. */
+  [data-chart-size='tall'] .charts {
+    --plot: clamp(120px, 100vh - var(--r) * 29px - 16px - 24px, 200px);
+    --plot: clamp(120px, 100svh - var(--r) * 29px - 16px - 24px, 200px);
+  }
   .page.has-map {
     max-width: none;
     padding: 0;

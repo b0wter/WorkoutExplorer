@@ -23,8 +23,8 @@
     cursor: CursorStore;
     /** The range selection (F-17 R-1), one per WorkoutData like the cursor; absent: no selection. */
     selection?: SelectionStore;
-    /** Plot area height of every chart in CSS px; default DEFAULT_CHART_HEIGHT.
-     *  Read once per `data` value (D-15): changing it without a new `data` has no effect. */
+    /** Fallback plot area height in CSS px (default DEFAULT_CHART_HEIGHT) where the page CSS gives no
+     *  `--plot` (bench pages, jsdom). With the page CSS the height is read from it (F-76 TC-5). */
     chartHeight?: number;
     /** The viewer's unit system and the colour scheme (F-14 D-10, D-11): a change recreates the uPlot
      *  instances and the readout (new axes, colours, field functions); the root, the chart area's
@@ -37,6 +37,8 @@
     initialAxis?: AxisKind;
     /** Called when the viewer picks an axis with the toggle (the page remembers it). */
     onaxis?: (axis: AxisKind) => void;
+    /** Called when the viewer flips the size toggle (F-76 TC-3: the page remembers it). */
+    onsize?: (tall: boolean) => void;
     /** The range hint (F-39 HU-3); default `plain`. The page owns it: × only reports through onhint. */
     hint?: HintMode;
     onhint?: () => void;
@@ -46,7 +48,7 @@
     view?: ChartView;
   }
 
-  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, hint = 'plain', onhint, decorate, view }: Props = $props();
+  let { data, cursor, selection, chartHeight, units = 'metric', scheme = 'light', onready, initialAxis, onaxis, onsize, hint = 'plain', onhint, decorate, view }: Props = $props();
 
   // A wiring bug, not a data problem: one cursor store per WorkoutData (ADR-008).
   // Reads only the two sampleCount values: never cursor.get() or subscribe.
@@ -72,11 +74,22 @@
   const distanceX = $derived(data.metrics.distance ? distanceAxis(data.metrics.distance) : null);
   // LP-5: a leg whose distance does not advance is drawn on time; the viewer's choice stays.
   const axis = $derived(axisKind === 'distance' && distanceX && (!view || distanceX.at[view.b] > distanceX.at[view.a]) ? distanceX : timeX);
-  // chartHeight is read once per data value (D-15): untracked, so only a new data re-reads it.
-  const plotHeight = $derived.by(() => {
-    void data;
-    return untrack(() => chartHeight ?? DEFAULT_CHART_HEIGHT);
-  });
+  // F-76 TC-3 to TC-6: CSS owns the plot height (--plot on .charts, 120 px or 200 px); the stack reads it
+  // at mount, on every width measurement and after a toggle. No number (no page CSS): the fallback.
+  const root = document.documentElement;
+  let tall = $state(root.dataset.chartSize === 'tall');
+  let plotHeight = $state(untrack(() => chartHeight ?? DEFAULT_CHART_HEIGHT));
+  const readPlot = (): void => {
+    const v = parseFloat(getComputedStyle(stack).getPropertyValue('--plot'));
+    plotHeight = v > 0 ? v : (chartHeight ?? DEFAULT_CHART_HEIGHT);
+  };
+  function pickSize(): void {
+    tall = !tall;
+    if (tall) root.dataset.chartSize = 'tall';
+    else delete root.dataset.chartSize;
+    onsize?.(tall);
+    readPlot();
+  }
   let stack: HTMLDivElement;
   /** The chart area of the current data value (a new element per {#key data}). */
   let area = $state<HTMLDivElement | null>(null);
@@ -115,6 +128,7 @@
         frame = requestAnimationFrame(() => {
           frame = 0;
           width = pending;
+          readPlot();
           measured = true;
         });
       }
@@ -122,6 +136,7 @@
     // Layout custom properties, one write (no style= attribute, v1.3: Svelte's style runtime
     // costs about 790 bytes gzip). The root has no height (D-16, v1.4).
     stack.style.cssText = `--y-axis-width:${Y_AXIS_SIZE}px;--title-row-height:${TITLE_ROW_HEIGHT}px`;
+    readPlot();
     observer.observe(stack);
     return () => {
       observer.disconnect();
@@ -148,9 +163,9 @@
 <!-- tabindex -1: the ×'s focus lands here when it removes itself (QA-39-r1-2). -->
 <div class="chart-stack" tabindex="-1" bind:this={stack}>
   {#key data}
-   {#if data.metrics.distance && charts.length > 0}
-    <!-- The row is reserved by the page with any distance stream (has-distance); the control only
-         when the distance advances (R-8). -->
+   {#if charts.length > 0}
+    <!-- The row is reserved by the page with any charts (--bar, F-76 TC-7): the axis control only
+         when the distance advances (R-8), the size toggle always, last and to the right. -->
     <div class="toolbar">
       {#if distanceX}
         <span class="axis-toggle">
@@ -158,6 +173,7 @@
             type="button" aria-pressed={axis.kind === 'distance'} onclick={() => pickAxis('distance')}>{t('axisDistance')}</button>
         </span>
       {/if}
+      <button type="button" class="size-toggle" aria-pressed={tall} onclick={pickSize}>{t('chartsTall')}</button>
     </div>
    {/if}
    {#key units + scheme + axis.kind + lang() + view?.a}
@@ -224,7 +240,20 @@
     font: inherit;
     font-size: 13px;
   }
-  .axis-toggle button[aria-pressed='true'] {
+  .size-toggle {
+    flex: none;
+    margin-left: auto;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--line, #c4c8cc);
+    border-radius: 6px;
+    background: var(--bg, #fff);
+    color: var(--fg, #111);
+    font: inherit;
+    font-size: 13px;
+  }
+  .axis-toggle button[aria-pressed='true'],
+  .size-toggle[aria-pressed='true'] {
     background: var(--accent, #1f6fc5);
     color: var(--on-accent, #fff);
   }

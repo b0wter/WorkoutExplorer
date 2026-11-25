@@ -204,6 +204,7 @@ function setup(
     selection?: SelectionStore;
     initialAxis?: 'time' | 'distance';
     onaxis?: (a: 'time' | 'distance') => void;
+    onsize?: (tall: boolean) => void;
     hint?: 'plain' | 'once' | 'none';
     onhint?: () => void;
     look?: Look;
@@ -236,6 +237,7 @@ function setup(
   if (options.selection) props.selection = options.selection;
   if (options.initialAxis) props.initialAxis = options.initialAxis;
   if (options.onaxis) props.onaxis = options.onaxis;
+  if (options.onsize) props.onsize = options.onsize;
   if (options.hint) props.hint = options.hint;
   if (options.onhint) props.onhint = options.onhint;
   const look = options.look;
@@ -309,6 +311,69 @@ describe('ChartStack in jsdom', () => {
     layout(800);
     expect(overs(m).map((o) => o.style.height)).toEqual(['80px', '80px', '80px']);
     expect(areaOf(m)?.style.height).toBe(`${chartAreaHeight(3, 80)}px`);
+  });
+
+  // F-76 TC-3 to TC-6: the page CSS owns --plot; the stack reads it and resizes in place.
+  describe('size toggle (F-76)', () => {
+    const plotCss = () => {
+      const real = window.getComputedStyle.bind(window);
+      vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+        const cs = real(el, pseudo);
+        return new Proxy(cs, {
+          get: (t, k) => (k === 'getPropertyValue' ? (n: string) => (n === '--plot' ? (document.documentElement.dataset.chartSize === 'tall' ? '200px' : '120px') : t.getPropertyValue(n)) : Reflect.get(t, k)),
+        });
+      });
+    };
+    const sizeToggle = (m: Mounted) => m.target.querySelector<HTMLButtonElement>('.size-toggle')!;
+    afterEach(() => delete document.documentElement.dataset.chartSize);
+
+    it('a click sets 200 px on every chart with one setSize each and no new instance; again returns to 120 px; the stores stay', () => {
+      plotCss();
+      const picked: boolean[] = [];
+      const data = golden('no-distance-with-gps');
+      const selection = createSelectionStore(data.sampleCount, (f) => requestAnimationFrame(() => f()));
+      const m = setup(data, { selection, onsize: (t) => picked.push(t) });
+      layout(800);
+      selection.set(2, 5);
+      m.cursor.set(3);
+      const count = env.charts.length;
+      expect(overs(m).map((o) => o.style.height)).toEqual(['120px', '120px', '120px']);
+      expect(sizeToggle(m).getAttribute('aria-pressed')).toBe('false');
+      for (const c of env.charts) c.log.length = 0;
+      sizeToggle(m).click();
+      flushSync();
+      expect(document.documentElement.dataset.chartSize).toBe('tall');
+      expect(sizeToggle(m).getAttribute('aria-pressed')).toBe('true');
+      expect(env.charts).toHaveLength(count);
+      expect(env.charts.map((c) => c.log)).toEqual(Array(count).fill(['setSize']));
+      expect(overs(m).map((o) => o.style.height)).toEqual(['200px', '200px', '200px']);
+      expect(areaOf(m)?.style.height).toBe(`${chartAreaHeight(3, 200)}px`);
+      expect([selection.start(), selection.end(), m.cursor.get()]).toEqual([2, 5, 3]);
+      sizeToggle(m).click();
+      flushSync();
+      expect(document.documentElement.dataset.chartSize).toBeUndefined();
+      expect(overs(m).map((o) => o.style.height)).toEqual(['120px', '120px', '120px']);
+      expect(picked).toEqual([true, false]);
+    });
+
+    it('starts at the size the head script chose, and reports the choice only on a click', () => {
+      plotCss();
+      document.documentElement.dataset.chartSize = 'tall';
+      const picked: boolean[] = [];
+      const m = setup(golden('no-distance-with-gps'), { onsize: (t) => picked.push(t) });
+      layout(800);
+      expect(picked).toEqual([]);
+      expect(sizeToggle(m).getAttribute('aria-pressed')).toBe('true');
+      expect(overs(m).map((o) => o.style.height)).toEqual(['200px', '200px', '200px']);
+    });
+
+    it('without page CSS the fallback is chartHeight, also after a click', () => {
+      const m = setup(golden('no-distance-with-gps'), { chartHeight: 80 });
+      layout(800);
+      sizeToggle(m).click();
+      flushSync();
+      expect(overs(m).map((o) => o.style.height)).toEqual(['80px', '80px', '80px']);
+    });
   });
 
   it('gives a workout without charts a chart area of height 0', () => {
@@ -761,10 +826,11 @@ describe('F-17 range selection and x-axis toggle', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('AC 1: no toolbar without distance; a ride has the Time / Distance toggle, time first', () => {
+  it('AC 1: no axis toggle without distance (the toolbar holds the size toggle only, F-76 TC-7); a ride has the Time / Distance toggle, time first', () => {
     const indoor = setup(golden('indoor-no-distance-no-gps'));
     layout(900);
-    expect(indoor.target.querySelector('.toolbar')).toBeNull();
+    expect(indoor.target.querySelectorAll('.toolbar button')).toHaveLength(1);
+    expect(indoor.target.querySelector('.axis-toggle')).toBeNull();
     unmount(indoor.app);
     indoor.target.remove();
     const { m } = withSelection(golden('ride-4h'));
@@ -790,7 +856,7 @@ describe('F-17 range selection and x-axis toggle', () => {
     const picked: string[] = [];
     const m = setup(golden('indoor-no-distance-no-gps'), { initialAxis: 'distance', onaxis: (a) => picked.push(a) });
     layout(900);
-    expect(m.target.querySelector('.toolbar')).toBeNull();
+    expect(m.target.querySelector('.axis-toggle')).toBeNull();
     expect(env.charts.length).toBeGreaterThan(0);
     expect(picked).toEqual([]);
   });

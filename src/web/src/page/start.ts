@@ -304,6 +304,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
         // AP-5: the remembered axis; a workout without distance shows time and stores nothing.
         initialAxis: prefs.axis() ?? 'time',
         onaxis: prefs.setAxis,
+        onsize: prefs.setCharts,
         get hint() {
           return look.hint;
         },

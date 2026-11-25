@@ -56,16 +56,15 @@
   let { spec, data, cursor, axis, selection, units = 'metric', width, height, isBottom, decorate, view, onfirstdata }: Props = $props();
 
   let host: HTMLDivElement;
-  let layout: ((w: number, f?: ChartDecorator) => void) | null = null;
+  let layout: ((w: number, h: number, f?: ChartDecorator) => void) | null = null;
 
   type MutableInput = { -readonly [K in keyof GestureInput]: GestureInput[K] };
 
   onMount(() => {
-    // Props are fixed for the life of this instance (ChartStack keys on data).
+    // Props but width and height are fixed for the life of this instance (ChartStack keys on data).
     const s = spec;
     const d = data;
     const c = cursor;
-    const plotHeight = height;
     const bottom = isBottom;
     const firstData = onfirstdata;
     const ax = axis;
@@ -92,7 +91,7 @@
     const css = getComputedStyle(host);
     const prop = (name: string, fallback: string): string => css.getPropertyValue(name).trim() || fallback;
     const ink = { line: prop('--c-' + s.metric, s.colour), axis: prop('--muted', '#555'), grid: prop('--grid', 'rgba(0,0,0,0.1)') };
-    const opts = buildOptions(s, d, { width, height: plotHeight, isBottom: bottom }, ink, scale);
+    const opts = buildOptions(s, d, { width, height, isBottom: bottom }, ink, scale);
     // AP-26: the range is computed once here; uPlot calls it on setData and setSize only.
     const clip = axisClip(s, values);
     opts.scales!.y.range = () => uPlot.rangeNum(clip[0], clip[1], 0.1, true);
@@ -154,13 +153,18 @@
     // Cached plot rectangle (CSS px, viewport). null = stale.
     let rect: DOMRect | null = null;
     let lastWidth = -1;
+    let lastHeight = -1;
     let firstLayoutDone = false;
 
-    layout = (w: number, f?: ChartDecorator): void => {
-      if (w !== lastWidth) {
+    // F-76 TC-6: a width or a height change; buckets depend on the width only, so a height-only change is one setSize.
+    layout = (w: number, h: number, f?: ChartDecorator): void => {
+      if (w !== lastWidth || h !== lastHeight) {
+        const widthChanged = w !== lastWidth;
         lastWidth = w;
+        lastHeight = h;
         u.batch(() => {
-          u.setSize({ width: w, height: outerHeight(plotHeight, bottom) });
+          u.setSize({ width: w, height: outerHeight(h, bottom) });
+          if (!widthChanged) return;
           // setSize computes u.bbox synchronously (canvas px); never read from the DOM.
           const buckets = bucketCount(u.bbox.width / uPlot.pxRatio, uPlot.pxRatio);
           if (buckets < 1) return;
@@ -178,7 +182,7 @@
       }
       f?.(over, (i) => u.valToPos(at[i], 'x'));
     };
-    layout(width);
+    layout(width, height);
 
     // Pointer input → gesture reducer → cursor.set. One reused input object.
     let state: GestureState = IDLE;
@@ -317,13 +321,14 @@
     };
   });
 
-  // Width changes (resize, rotation; AC 6): ChartStack coalesces them to one
+  // Width and height changes (resize, rotation; AC 6; the size toggle, F-76): ChartStack coalesces them to one
   // animation frame. Not on the scrubbing path.
   // The decoration too (F-42 MS-7): on these and when it arrives.
   $effect(() => {
     const w = width;
+    const h = height;
     const f = decorate;
-    if (layout) layout(w, f);
+    if (layout) layout(w, h, f);
   });
 </script>
 
