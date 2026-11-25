@@ -53,7 +53,7 @@ T-4 not needed (T-1 to T-3 saved 2,786, above the 1,500 condition). The estimate
    | R-3 | **API code texts (LG-6) are not in the activity entry** | They go in the lazy chunk(s) that send API requests; the upload entry keeps its own |
 
    Not allowed as a remedy: shortened or numeric keys, minified English, or dropping the switch back to English without reloading data.
-7. **Size review of 25 Nov 2026 (before F-74): trim T-1 to T-3 after F-74, before the next feature that adds entry code.** Estimates are from the 11 Nov 2026 attribution and F-25's measurement, not re-measured; the engineer measures each step. "Budget" = the bytes leave the counted entry but most viewers still load them after first paint; "real" = viewers who do not need them never download them.
+7. **Size review of 25 Nov 2026 (before F-74): trim T-1 to T-3 after F-74, before the next feature that adds entry code.** Estimates are from the 11 Nov 2026 attribution and F-25's measurement, not re-measured; the engineer measures each step. "Budget" = the bytes leave the counted entry but most viewers still load them after first paint; "real" = viewers who do not need them never download them. *Note (QA-75-r1-3): with T-2 the splitter handle appears only once the map is ready; a failed map (no WebGL, MapLibre error) leaves a two-column page without a splitter. Accepted (F-13 D-17).*
 
    | # | Change | Est. saving | Kind | Cost and risk |
    | --- | --- | --- | --- | --- |
