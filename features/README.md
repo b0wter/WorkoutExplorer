@@ -5,7 +5,7 @@ The product specification and technical design (`../spec/`), cut into features t
 **How to use this folder**
 
 - Each `F-NN-*.md` file is one feature: goal, scope, out of scope and acceptance criteria. The spec is still the source of truth; requirement IDs link each feature back to it.
-- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026; then F-53, F-58, F-54, F-57, F-55, F-56, 14 Nov 2026 (F-58 before F-54, so its texts are translated once); F-57 moved after F-54 when it became a route download; F-59 before F-52, then F-60 right after F-52, 15 Nov 2026; after F-60: F-58, F-55, F-57, F-56, F-53, F-54, user 19 Nov 2026; F-61 right after F-54, user 20 Nov 2026; F-62 listed last, no build-order position yet, 20 Nov 2026; F-62 next, user 21 Nov 2026; F-63 listed last, no build-order position yet, 22 Nov 2026; F-64 listed last, no build-order position yet, 22 Nov 2026; F-65 listed last, no build-order position yet, 22 Nov 2026; then F-63, F-64, F-65 in that order, user 22 Nov 2026 ("continue"); F-66 listed last, 23 Nov 2026; F-67 listed last, 24 Nov 2026; F-68, F-69, F-70 listed last, no build-order position yet, 24 Nov 2026; then F-69, F-70, F-68 in that order, next after current work, user 24 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
+- The table order is the build order (mostly by number; F-31 comes before F-24, decided 31 Oct 2026; F-24 deferred to phase 3 and listed last, decided 2 Nov 2026; F-35 first in phase 2, then F-36, then F-34, decided 7 Nov 2026; F-37 after F-34, decided 9 Nov 2026; F-38 after F-37, decided 9 Nov 2026; F-39 then F-40 after F-38, decided 9 Nov 2026; F-41 after F-40, 9 Nov 2026; F-42 after F-41, 9 Nov 2026; F-43 then F-44 after F-42, 11 Nov 2026; F-45 after F-44, 11 Nov 2026; F-46 after F-45, 12 Nov 2026; F-47 after F-46, 12 Nov 2026; F-48 after F-47, 13 Nov 2026; F-49 then F-50 after F-48, 13 Nov 2026, split proposed; F-51 after F-50, 14 Nov 2026, then moved before F-50 by the user the same day; F-52 after F-50 and F-24 discarded, 14 Nov 2026; then F-53, F-58, F-54, F-57, F-55, F-56, 14 Nov 2026 (F-58 before F-54, so its texts are translated once); F-57 moved after F-54 when it became a route download; F-59 before F-52, then F-60 right after F-52, 15 Nov 2026; after F-60: F-58, F-55, F-57, F-56, F-53, F-54, user 19 Nov 2026; F-61 right after F-54, user 20 Nov 2026; F-62 listed last, no build-order position yet, 20 Nov 2026; F-62 next, user 21 Nov 2026; F-63 listed last, no build-order position yet, 22 Nov 2026; F-64 listed last, no build-order position yet, 22 Nov 2026; F-65 listed last, no build-order position yet, 22 Nov 2026; then F-63, F-64, F-65 in that order, user 22 Nov 2026 ("continue"); F-66 listed last, 23 Nov 2026; F-67 listed last, 24 Nov 2026; F-68, F-69, F-70 listed last, no build-order position yet, 24 Nov 2026; then F-69, F-70, F-68 in that order, next after current work, user 24 Nov 2026; F-71, F-72, F-73 listed last in that order, user 25 Nov 2026). Check **Depends on** before starting. Backend and frontend features without a dependency between them can run in parallel (e.g. F-08–F-12 alongside F-13, F-14 and F-17).
 - **Owner** names the agent that builds it: `backend` (senior-backend-engineer), `frontend` (senior-frontend-engineer), or `both`.
 - **Status** and **Waiting on** are kept by the main session (orchestrator), not by the requirements engineer. Values: `not started`, `architecture`, `implementation`, `qa rN` (QA round N running or its findings being fixed), `waiting on user` (QA says ready except for conditions only the user can resolve; **Waiting on** names them), `done` (QA ready or conditions met, and committed).
 - A feature is done when every acceptance criterion is ticked. Phase 1 starts only after the gate in F-07 has passed.
@@ -84,8 +84,11 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-69](F-69-time-based-splits.md) | Time-based splits | — | frontend | F-46, F-48, F-51, F-54, F-64 | ready with conditions (QA r1, 24 Nov 2026), minors fixed | user: 360 px light/dark, ride-12h 1 min (no chart, 60 fps), stop row elapsed vs moving, triathlon legs (no pool group), DE/ES/FR keep preset (qa/F-69-time-based-splits-r1.md) |
 | [F-70](F-70-report-notification-services.md) | Report notifications through other services | — | backend | F-27, F-29, F-37, F-52, F-59, F-60 | ready with conditions (QA r2, 24 Nov 2026), minors fixed | user: real ntfy message on phone incl. delete button on iOS (F70-V1), no link on lock screen; About with ntfy in four languages (sentence only with ntfy); one updater failure alert arrives once (qa/F-70-report-notification-services-r2.md) |
 | [F-68](F-68-extra-sensor-streams.md) | Extra sensor streams | — | both (backend first) | F-02, F-03, F-04, F-05, F-17, F-47, F-49, F-50, F-54 | ready with conditions (QA r1, 24 Nov 2026), minors fixed | F68-Q1: Stryd field strings unverified (needs someone with a Stryd file); user: 360 px portrait/landscape in DE/ES/FR (no jump, labels fit), both themes, imperial units, 60 fps scrub with all ten charts (qa/F-68-extra-sensor-streams-r1.md) |
+| [F-71](F-71-comparison-chart-asymmetric-axis.md) | Comparison chart: non-symmetric value axis | — | frontend | F-51; F-64, F-69 | not started | |
+| [F-72](F-72-swim-distance-in-yards.md) | Swim distance in yards | — | frontend | F-14, F-44, F-46, F-48, F-54, F-56, F-64, F-65, F-67, F-69 | not started | |
+| [F-73](F-73-remembered-split-without-layout-jump.md) | Remembered map split without a layout jump | — | both (frontend first; backend: CSP hash) | F-13, F-17, F-22, F-54 | not started | |
 
-Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-70.
+Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-73.
 
 ## Backlog
 
@@ -99,10 +102,7 @@ Requirement IDs stay. Priority (Must/Should/Could) and phase stay on existing en
 
 ### Ideas
 
-- F-51 chart: non-symmetric pace axis (median not centred; space above sized to the fastest bar, below to the slowest), so recovery laps are drawn instead of clipped (AP-23; user 14 Nov 2026)
 - Compare two workouts on charts and map, aligned by distance or time (notes: decision log, 6 Nov 2026; conflicts with the 30-day lifetime)
-- Swim distance in yards (DS-2)
-- No layout jump on load with a remembered map/content split: inline head script allowed by a CSP hash (AP-17, OQ-88)
 
 ### Discarded ideas
 
@@ -143,7 +143,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-8 Laps and splits | Must | F-18; lap triggers, splits only without laps: F-46 (phase 2); stroke column, lengths view: F-48 (phase 2); laps and splits per multisport leg: F-64 (planned); owner-added laps: F-65 (planned); remove auto-laps: F-66 (planned) |
 | AP-9 Route colouring | Should | F-25 |
 | AP-15 Fullscreen map (MVP part) | Should | F-26 (pins in fullscreen: phase 2) |
-| AP-17 Two columns on wide screens | Must | F-13, F-17 (splitter), F-19 |
+| AP-17 Two columns on wide screens | Must | F-13, F-17 (splitter), F-19; remembered split without a layout jump: F-73 (planned) |
 | AP-18 Pinned map on a phone | Must | F-13, F-19, F-26 |
 | AP-21 Cursor readout in the fullscreen map | Must | F-33 |
 | AP-19 Range in the link | Could (phase 2) | F-40 (phase 2) |
@@ -155,7 +155,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AP-16 Pool length and lengths in the summary | Could (phase 2) | F-44 (phase 2) |
 | AP-10 Heart-rate and power zones | Could (phase 2) | F-49 (phase 2) |
 | AP-11 Power curve and best efforts | Could (phase 2) | F-50 (phase 2) |
-| AP-23 Lap and split comparison chart | Could (phase 2) | F-51 (phase 2) |
+| AP-23 Lap and split comparison chart | Could (phase 2) | F-51 (phase 2); non-symmetric value axis: F-71 (planned) |
 | AP-24 How the summary is computed (dialog) | — (planned) | F-58 |
 | AP-25 Show my location on the map (opt-in, kept in the browser) | — (planned) | F-62 |
 | SH-1 Unguessable URL | Must | F-09, F-15 |
@@ -175,7 +175,7 @@ Every requirement with priority Must or Should is in the MVP: the scope table ma
 | AC-6 Published page with both links | Must | F-20, F-22 |
 | AC-7 My workouts page on this device (drafts included) | — (planned) | F-53 |
 | DS-1 Units, drop-down | Must | F-14, F-18; F-46 (phase 2) |
-| DS-2 Sport-specific pace/speed | Must | F-14, F-25 |
+| DS-2 Sport-specific pace/speed | Must | F-14, F-25; swim distance in yards on imperial pages: F-72 (planned) |
 | DS-3 English | Must | F-11, F-13, F-14, F-28 |
 | DS-4 Light and dark theme | Should | F-14, F-15, F-29; F-38 (Impressum page, phase 2) |
 | DS-5 Summary tints | Could (phase 2) | F-41 (phase 2) |
@@ -858,6 +858,12 @@ Updated: spec (non-goals, scope table, AP-4, AP-20, INF-4, NFR Privacy); F-68, F
 **Decided on 24 Nov 2026, F70-Q1 and F70-Q2** (user, INF-4, INF-6; F-70): OQ-344 changed: every delete key is revoked automatically at the first start after the notification service, URL or token changes (salted hash of the settings in a file in the data directory; the first start after the upgrade revokes outstanding links once). Plain `http` only to a literal loopback or private IP, no host names, not 100.64.0.0/10. Acknowledged: a failed send revokes that report's delete key, Pushover included (replaces F-37 DK-3's "a failed send keeps the key"). Updated: F-70 (Scope "Configuration", "Failure handling", "Revocation", AC 49, OQ-344); architect/INDEX.md (F70-Q1, F70-Q2).
 
 **Decided on 24 Nov 2026, F70-Q3** (user, INF-1, INF-4, INF-6; F-70; QA-70-r1-6): ntfy requests do not send `Firebase: no`; a public ntfy server such as ntfy.sh may pass messages, viewing and delete links included, to Google (FCM) and Apple (APNs) for fast delivery. Accepted ("reacting fast matters more than a malicious actor at Google deleting workouts") on condition that the About page discloses it whenever ntfy is configured and the RUNBOOK explains it, including that a self-hosted ntfy with `upstream-base-url` sends only a poll request; `Firebase: no` is not offered as an option. Updated: spec INF-1, NFR Privacy; F-70 (Scope "ntfy and push providers", new AC); architect/INDEX.md (F70-Q3).
+
+**Decided on 25 Nov 2026, three ideas planned** (user: "build ideas 1, 3 and 4"; listed last in the build order, F-71, F-72, F-73 in that order):
+- **Comparison chart: non-symmetric value axis** (AP-23; F-71, frontend, small lane): the median line is no longer centred; on one scale the space above is sized to the fastest bar and below to the slowest, so recovery laps are drawn whole. Replaces the 14 Nov 2026 percentile cap (comparison chart scale entry, QA-51-r2-1); edge limits stay. Assumed: OQ-346 (cap dropped), OQ-347 (fast edge ≤ 2× reference speed in every sport, slow edge in pace sports ≤ 3× reference pace).
+- **Swim distance in yards** (DS-2; F-72, frontend, normal lane): replaces DS-2's "yards Later" (13 Nov 2026). Assumed: OQ-348 (every swim on an imperial page; metric pages unchanged), OQ-349 (units drop-down unchanged), OQ-350 (metric swims stay in km), OQ-351 (multisport: only the swim leg's tables and leg view).
+- **Remembered split without a layout jump** (AP-17; F-73, both, normal lane): the existing head script applies the stored split before the first paint, new CSP hash under ADR-032 item 3; ends the accepted jump (decision log 29 Oct 2026, F-13 D-10 exception) and settles OQ-88's "not now" (31 Oct 2026). No open product question.
+Updated: spec (scope table, AP-17, AP-23, DS-2, roadmap); F-71, F-72, F-73 (new); this file (table, order note, Ideas, coverage, feature count).
 
 **Decided on 14 Nov 2026, backlog classified** (user): Planned, with draft feature files: AC-7 my workouts on this device (F-53), DS-3 widened to a translated interface in German, Spanish and French (new DS-6, F-54), SH-3 privacy zones (F-55), PIN-1 to PIN-8 map pins (F-56), PIN-9 GPX export with pins (F-57), built after F-52 in that order. Ideas: extra sensor streams, compare two workouts, time-based splits, splits per multisport leg, swim yards, no split jump on load, report notifications through other services. Discarded: photos on pins, share target / PWA (browser storage differs between Safari and a home-screen app, which would confuse users), keyboard chart control, GPS dropouts as gaps, GPX/TCX upload, browser fullscreen API (OQ-100), the "revisit if seen" risks. Closed as built: confirm before publishing (no confirmation); the provisional OQ-23, OQ-25, OQ-28 are final. Fixes done: spec questions DS-5 and SH-12 ticked; OQ-4, OQ-167, OQ-168, OQ-185, OQ-195 accepted as built; open user checks moved from `CONTINUE.md` into Waiting on (F-01, F-11, F-13, F-17, F-32); F-22 and F-32 Waiting on reworded. Updated: spec (scope table, SH-3, PIN-3, AC-3, new AC-7, DS-3, new DS-6, open questions); F-53 to F-57 (new); `architect/INDEX.md`, F-02, F-46, F-48, F-49 architecture docs; F-09, F-12 (`allow_download` removed); `CONTINUE.md`; this file (table, Ideas, Discarded ideas, coverage, Phase 2 list).
 
