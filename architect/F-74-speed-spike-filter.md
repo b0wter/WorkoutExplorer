@@ -1,7 +1,7 @@
 # F-74 Speed spike filter and robust chart axis: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (25 Nov 2026). Normal lane. OQ-352 to OQ-358 and the axis bottom decided (feature file). F74-Q1 blocks the frontend step, F74-Q2 and F74-Q3 do not (below)
+- **Status:** accepted (25 Nov 2026). Normal lane. OQ-352 to OQ-358 and the axis bottom decided (feature file). F74-Q1 decided (user, 25 Nov 2026), ADR-011 size review done (rev. 17); F74-Q2 and F74-Q3 do not block (below)
 - **Feature:** [`features/F-74-speed-spike-filter.md`](../features/F-74-speed-spike-filter.md)
 - **Requirements:** UP-12, AP-26; AP-2, AP-24; AP-4, AP-6, AP-7, AP-9, AP-12, UP-6, SH-8, DS-6; NFR Performance
 - **Builds on:** [F-02](F-02-fit-parsing-and-normalisation.md) R-3, R-7, R-10, R-11; [F-08](F-08-fit-validation-and-recovery.md) R-13; [F-47](F-47-trim.md) TR-5; [F-30](F-30-regenerate-command.md); [F-05](F-05-stacked-charts-with-shared-cursor.md); [F-67](F-67-multisport-leg-picker.md) LP-4; [F-58](F-58-summary-explained.md) SE-1; ADR-009, ADR-011, ADR-029
@@ -50,7 +50,7 @@
 
 | ID | Question | Blocks | Owner |
 | --- | --- | --- | --- |
-| F74-Q1 | AP-26 and the AC "entry bundle size unchanged" cannot hold: the axis rule is part of chart drawing, which is in the entry (AX-5). Also, ADR-011 (F-72 Cost) asks for a size review before the next feature that adds entry code. Suggestion: accept up to 150 bytes gzip from the reserve (about 260); the architect runs the ADR-011 size review before the frontend step | Frontend step | user |
+| F74-Q1 | **Decided (user, 25 Nov 2026): accepted.** Up to 150 bytes gzip from the reserve (262); size review done, ADR-011 rev. 17 decision 7. Requirements reword the AC "entry bundle size unchanged" | Nothing | requirements |
 | F74-Q2 | AP-26's "1.5 × p99.5 / + 15 %" read relative to 0 for speed, power and cadence and relative to the 0.5th percentile for every other metric (AX-2). For heart rate the AC's top is then 154.5, not 172.5 bpm, while the clipping itself is as the AC expects. Suggestion: accept; requirements reword AP-26 and the AC | Nothing (suggestion built) | user, requirements |
 | F74-Q3 | AP-24 line shown whenever the summary has a speed or pace, also for indoor workouts, because the dialog cannot see positions (AX-6). Suggestion: accept | Nothing (suggestion built) | user |
 
@@ -58,6 +58,5 @@
 
 | To | What |
 | --- | --- |
-| Architect | ADR-011 size review before the frontend step (F74-Q1) |
 | Requirements | AP-26 wording and the F-74 axis ACs per F74-Q2; the AC "entry unchanged" per F74-Q1 |
 | Main session | Release notes: "run `regenerate`" as an upgrade step (SP-8) |
