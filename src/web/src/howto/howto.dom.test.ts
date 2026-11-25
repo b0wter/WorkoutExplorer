@@ -65,6 +65,22 @@ describe('openHowto', () => {
   });
 });
 
+describe('close ×', () => {
+  it('opens scrolled to the top, closes with the ×, has no bottom button', () => {
+    openHowto(document);
+    expect(dialog().scrollTop).toBe(0);
+    expect(dialog().querySelector('.dlg-actions')).toBeNull();
+    expect(dialog().querySelectorAll('button')).toHaveLength(1);
+    const body = dialog().querySelector('.dlg-body')!;
+    const x = dialog().querySelector<HTMLButtonElement>('button.dlg-x')!;
+    expect(x.getAttribute('aria-label')).toBe('Close');
+    expect(body.firstElementChild).toBe(x);
+    expect(body.lastElementChild!.tagName).toBe('P');
+    x.click();
+    expect(dialog().open).toBe(false);
+  });
+});
+
 // jsdom lays nothing out: check the rules that keep a tall dialog scrolling inside itself, not the page.
 describe('dialog scrolling (info dialogs, Report)', () => {
   it.each([
