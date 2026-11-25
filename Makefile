@@ -26,7 +26,7 @@ DEV_BASE_URL ?= http://127.0.0.1:8088
         lint lint-server lint-web \
         test test-server test-web \
         build build-server build-web attributions precompress-assets \
-        size ci caddy caddy-check image deploy-archive docker-check update-check corpus corpus-update corpus-gen prototype-data prototype-serve dev-server dev-web clean
+        size ci ui-test caddy caddy-check image deploy-archive docker-check update-check corpus corpus-update corpus-gen prototype-data prototype-serve dev-server dev-web clean
 
 # ---- dependencies ---------------------------------------------------------
 
@@ -95,6 +95,13 @@ size: build-web
 # ---- CI -------------------------------------------------------------------
 
 ci: lint test build size caddy-check docker-check update-check
+
+# ---- browser UI suite (not part of ci: about 15 minutes) ---------------------
+
+# Playwright (Chromium, WebKit) against its own build and server in build/ui-test/; see src/web/e2e/README.md.
+# UI_ARGS are Playwright arguments, e.g. make ui-test UI_ARGS='--project=webkit -g F-73'.
+ui-test: deps-web caddy
+	sh $(WEB_DIR)/e2e/run.sh '$(abspath $(CADDY_PINNED))' $(UI_ARGS)
 
 # ---- Caddy (F-22 H-7, H-12; F-59 IP-6, IP-19) ---------------------------------
 
