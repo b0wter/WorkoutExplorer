@@ -1,6 +1,6 @@
 # F-74 Speed spike filter and robust chart axis
 
-- **Status:** planned (25 Nov 2026); open questions OQ-352 to OQ-358 decided 25 Nov 2026 (user)
+- **Status:** planned (25 Nov 2026); open questions OQ-352 to OQ-358 and F74-Q1 to F74-Q3 decided 25 Nov 2026 (user)
 - **Category:** Planned (backlog scheme of 14 Nov 2026; no phase, no priority)
 - **Owner:** both (backend first: filter, summary; frontend: chart axis, AP-24 line)
 - **Lane:** normal (changes the published speed stream and max speed; not privacy)
@@ -25,8 +25,8 @@ A one-second GPS glitch (a ride at ~26 km/h with one sample at ~85 km/h) no long
 - **Max speed:** a leg where samples were removed takes its max speed from the highest remaining sample instead of the device's `max_speed` (AP-2); legs without removals keep the device value. Multi-leg max as today (maximum over legs). After a trim (UP-6) as today.
 - **Unchanged:** moving time (a removed sample counts as moving or stopped as it would have before removal), total distance and the distance stream (the catch-up stays, accepted), average speed, laps, splits, best efforts, comparison chart, heart rate, elevation, power, cadence, temperature, the stored original.
 - **Follows the speed stream:** charts (gap in speed or pace), cursor readout (missing-value dash), route colouring by speed (AP-9; removed samples count as missing).
-- **Robust axis (AP-26), front end, every line chart:** viewing and edit page, whole-workout and leg views. Top: the true maximum, unless max > 1.5 × p99.5 of the samples shown; then top = p99.5 + 15 %, and samples above are drawn clipped at the top edge. Bottom of an axis not anchored at 0: the mirrored rule (p0.5, 15 % below). Pace charts apply the rule to the pace values as drawn, so a fast outlier is clipped at the fast end. No sample removed or changed, no marker; cursor readout and range panel show true values. Bar charts keep their own rule (AP-23, F-71). Computed once per series and view, not per frame. Chart code stays lazy: nothing added to the viewing page's entry bundle (ADR-011).
-- **AP-24 dialog:** one general line that short GPS speed spikes are removed and max speed ignores them; no count; in English, German, Spanish and French (DS-6).
+- **Robust axis (AP-26), front end, every line chart:** viewing and edit page, whole-workout and leg views; the rule as worded in AP-26 (zero-based for speed, power and cadence; measured from the 0.5th percentile for every other metric, top and bottom; pace on pace values). No sample removed or changed, no marker; cursor readout and range panel show true values. Bar charts keep their own rule (AP-23, F-71). Computed once per series and view, not per frame. Entry bundle: at most 150 bytes gzip added, from the ~260-byte reserve (ADR-011).
+- **AP-24 dialog:** one general line that short GPS speed spikes are removed and max speed ignores them; no count; shown whenever the summary has a speed or pace, indoor workouts included; in English, German, Spanish and French (DS-6).
 - **Existing workouts:** get the filter at the next `regenerate` (F-30).
 - **No setting:** always on, nothing for the sharer to choose, nothing new stored.
 
@@ -43,15 +43,16 @@ Tests use synthetic FIT files and synthetic series only (real files are never co
 - [ ] Moving time, total distance, the distance stream, average speed, laps, splits, best efforts and every other stream are identical with and without the spike; a leg without a removed spike keeps the device's `max_speed`.
 - [ ] Running file with a 1-s spike: removed; best pace ignores it.
 - [ ] Pool swim, an indoor ride without positions, and a triathlon's transitions: speed unchanged. A triathlon's bike leg with a spike: removed.
-- [ ] Axis, normal series (3,600 samples, 20 to 30 km/h, max 30): the axis top reaches 30 km/h, as before F-74.
-- [ ] Axis, one far outlier (the same series plus one sample at 200 bpm in a heart-rate series of 120 to 150 bpm, or one 85 km/h speed sample in a file the filter did not touch, such as a 6-s glitch): the axis top is p99.5 + 15 % (before any tick rounding the chart already does); the outlier is drawn at the top edge; the cursor readout at it shows its true value.
+- [ ] Axis, normal series (3,600 samples, 20 to 30 km/h, max 30; and a heart-rate series of 120 to 150 bpm): the axis is as before F-74.
+- [ ] Axis, one far outlier in a zero-based metric (the speed series plus a 6-s glitch at 85 km/h, kept by the filter): axis top 30 × 1.15 = 34.5 km/h (before any tick rounding the chart already does); the glitch drawn at the top edge; the cursor readout there shows 85 km/h.
+- [ ] Axis, one far outlier in another metric (the heart-rate series, 120 to 150 bpm, plus one sample at 200 bpm): axis top 150 + 0.15 × 30 = 154.5 bpm; the sample drawn at the top edge, readout 200 bpm. The same series in °C and °F (temperature) clips the same sample.
 - [ ] Axis, outliers above 0.5 % of the samples (e.g. a 10-min climb at higher power): no clipping, axis reaches the maximum.
-- [ ] Axis bottom: an elevation series with one sample 500 m below the rest gets a clipped bottom by the mirrored rule; an axis anchored at 0 is unchanged.
+- [ ] Axis bottom: an elevation series (100 to 200 m) with one sample at −400 m gets bottom 100 − 15 = 85 m; speed, power and cadence axes have no bottom rule. Series of 200 samples or fewer: nothing clipped.
 - [ ] Pace chart of a run with a 6-s fast glitch (kept by the filter): the fast end of the axis is clipped by the rule, the glitch drawn at that edge.
 - [ ] Leg view (F-67) and edit page: the rule uses the samples of that view.
 - [ ] AP-24 dialog shows the spike line in all four languages.
 - [ ] `regenerate` on a workout uploaded before F-74 with a spike: the rebuilt page shows the gap and the corrected max speed.
-- [ ] Viewing page entry bundle size unchanged; LCP and 60 fps scrubbing on ride-12h unchanged.
+- [ ] Viewing page entry bundle grows by at most 150 bytes gzip (measured before and after); LCP and 60 fps scrubbing on ride-12h unchanged.
 
 ## Decisions (user, 25 Nov 2026)
 - [x] **OQ-352 Dips.** Only upward spikes are removed; dips stay.
@@ -61,4 +62,7 @@ Tests use synthetic FIT files and synthetic series only (real files are never co
 - [x] **OQ-356 Owner switch.** None; always on.
 - [x] **OQ-357 Distance catch-up.** Accepted; stays in the distance stream.
 - [x] **OQ-358 Explanation.** No marker and no hover text (the marker is replaced by the robust axis, AP-26); one general line in the AP-24 dialog, in all four languages.
-- [x] **Axis bottom** (requirements engineer, delegated by the user): the rule is mirrored for axes not anchored at 0, so a single low glitch (barometric elevation, slow end of a pace axis) is clipped the same way.
+- [x] **Axis bottom** (requirements engineer, delegated by the user): mirrored for metrics not anchored at 0.
+- [x] **F74-Q1 Entry bundle.** AP-26 may add up to 150 bytes gzip to the viewing page's entry, from the ~260-byte reserve (charts are in the entry).
+- [x] **F74-Q2 Offset-free rule.** Speed, power and cadence measured from 0, every other metric from the 0.5th percentile (AP-26); heart-rate example top 154.5 bpm.
+- [x] **F74-Q3 AP-24 line.** Shown whenever the summary has a speed or pace, indoor workouts included.
