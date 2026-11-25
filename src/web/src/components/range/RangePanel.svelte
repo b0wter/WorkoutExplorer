@@ -9,6 +9,7 @@
   import type { WorkoutData } from '../../lib/datafile';
   import type { SelectionStore } from '../../lib/selection';
   import { dynamics } from '../../lib/charts';
+  import type { ChartView } from '../charts/uplot-options';
   import { createRangeStats, emptyValues, type RangeField, type RangeValues } from '../../lib/range';
   import {
     MISSING_TEXT,
@@ -34,12 +35,14 @@
     data: WorkoutData;
     selection: SelectionStore;
     units?: Units;
+    /** F-72 YD-2, YD-7: the charts' leg view; its sport sets the distance unit (the whole view: the workout's). */
+    view?: ChartView;
     /** F-40 SR-7: the page's copy action for "Copy link to this selection"; no button without it
      *  (edit page). The panel knows no clipboard or URL rules. */
     oncopy?: (button: HTMLButtonElement) => void;
   }
 
-  let { data, selection, units = 'metric', oncopy }: Props = $props();
+  let { data, selection, units = 'metric', view = null, oncopy }: Props = $props();
 
   // F-67 LP-10 (OQ-322): a range inside one multisport section reads speed in that section's unit.
   const meta = untrack(() => data.meta);
@@ -64,7 +67,7 @@
   function unitOf(f: RangeField, u: Units): string {
     switch (f) {
       case 'distance':
-        return distanceUnit(u);
+        return distanceUnit(u, dsport());
       case 'gain':
         return elevationUnit(u);
       case 'speed':
@@ -85,7 +88,7 @@
   function text(f: RangeField, v: RangeValues, u: Units): string {
     switch (f) {
       case 'distance':
-        return formatDistance(v.distance, u);
+        return formatDistance(v.distance, u, dsport());
       case 'elapsed':
       case 'moving':
         return formatElapsed(v[f]);
@@ -103,6 +106,7 @@
   let root: HTMLDivElement;
   let cells: HTMLElement[] = [];
   let current: Units = untrack(() => units);
+  const dsport = (): string => view?.sport ?? meta.sport;
   let extra: ReturnType<NonNullable<typeof dynamics.range>> | undefined;
 
   function write(a: number, b: number): void {
@@ -122,6 +126,7 @@
   // A units change rewrites the values (labels and units are markup).
   $effect(() => {
     current = units;
+    dsport(); // a leg view change rewrites the distance unit and value (F-72 YD-7)
     lang(); // F-54: decimal separators
     extra?.update(units);
     untrack(() => write(selection.start(), selection.end()));

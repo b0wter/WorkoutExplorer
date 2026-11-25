@@ -4,7 +4,7 @@
   // (no Svelte reactivity on the hot path, D-10). Values come from the
   // full-resolution arrays (D-9) through readoutFields, which decides which
   // fields exist. No aria-live: it would be announced up to 60 times a second.
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import type { WorkoutData } from '../../lib/datafile';
   import type { CursorStore } from '../../lib/cursor';
   import type { Units } from '../../lib/format';
@@ -23,7 +23,9 @@
 
   // F-67 LP-10: on a multisport workout the fields read in the sport of the leg under the cursor
   // (speed or pace), '–' for speed in a transition; the labels re-render only when that sport changes.
-  const fields = $derived(readoutFields(data, units, sport));
+  // F-72 YD-2: the distance unit follows the view's sport, never the section under the cursor.
+  const dist = untrack(() => sport ?? data.meta.sport);
+  const fields = $derived(readoutFields(data, units, sport, dist));
   let row: HTMLDivElement;
 
   onMount(() => {
@@ -35,7 +37,7 @@
     const c = cursor;
     return c.subscribe((i) => {
       const s = secs && i !== null ? sportIn(secs, i) : sport;
-      if (s !== sport) f = readoutFields(data, units, (sport = s));
+      if (s !== sport) f = readoutFields(data, units, (sport = s), dist);
       for (let k = 0; k < f.length; k++) els[k].textContent = i === null || (s === 'transition' && f[k].key === 'speed') ? MISSING_TEXT : f[k].text(i);
     });
   });

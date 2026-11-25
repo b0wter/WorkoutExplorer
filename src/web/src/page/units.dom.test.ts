@@ -347,7 +347,7 @@ describe('enhanceUnits (D-2, D-5)', () => {
     page = renderSample('pool-swim');
     enhanceUnits(document.body, meta('pool-swim'), createUnitsStore('imperial'));
     expect(document.querySelector('.metric[data-k="speed"] .u')?.textContent).toBe('/100 yd');
-    expect(document.querySelector('.metric[data-k="distance"] .u')?.textContent).toBe('mi');
+    expect(document.querySelector('.metric[data-k="distance"] .u')?.textContent).toBe('yd'); // F-72
   });
 
   it('keeps the pool cells as recorded in both unit systems (F-44 PS-5, DS-1)', () => {
@@ -358,7 +358,7 @@ describe('enhanceUnits (D-2, D-5)', () => {
         enhanceUnits(document.body, meta(golden), createUnitsStore(units));
         const text = (k: string, part: string) => document.querySelector(`.metric[data-k="${k}"] .${part}`)?.textContent;
         expect([text('pool', 'n'), text('pool', 'u'), text('lengths', 'n')], `${sample} ${units}`).toEqual(['25', unit, '40']);
-        expect(document.querySelector('.metric[data-k="distance"] .u')?.textContent).toBe(units === 'imperial' ? 'mi' : 'km');
+        expect(document.querySelector('.metric[data-k="distance"] .u')?.textContent).toBe(units === 'imperial' ? 'yd' : 'km'); // F-72
       }
     }
   });

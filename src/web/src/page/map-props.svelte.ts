@@ -43,6 +43,8 @@ export interface Look {
   decorator(key: string, f: ChartDecorator): void;
   /** F-67 LP-3: the charts' leg view, memory only; written by the sections chunk. */
   view: ChartView;
+  /** Called after a view change (the fullscreen strip remounts for the leg's distance unit, F-72 YD-7). */
+  onview?: () => void;
 }
 
 export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme: ThemeChoice = 'system', hint: HintMode = 'plain'): Look {
@@ -88,6 +90,7 @@ export function createLook(units: UnitsStore, dark: MediaQueryList | null, theme
     },
     set view(next) {
       v = next;
+      this.onview?.();
     },
     store: units,
   };

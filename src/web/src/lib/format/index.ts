@@ -9,12 +9,13 @@ import { t } from './texts';
 
 let sepLang = 'en';
 let sep = '.';
+let nf: Intl.NumberFormat; // the language's number format (not for English), also the yard grouping
 /** The language's decimal separator, from Intl once per language (LG-7); '.' for English. */
 function decimal(): string {
   const l = lang();
   if (l !== sepLang) {
     sepLang = l;
-    sep = l === 'en' ? '.' : (new Intl.NumberFormat(l).formatToParts(1.5).find((p) => p.type === 'decimal')?.value ?? '.');
+    sep = l === 'en' ? '.' : ((nf = new Intl.NumberFormat(l)).formatToParts(1.5).find((p) => p.type === 'decimal')?.value ?? '.');
   }
   return sep;
 }
@@ -55,13 +56,22 @@ const M_PER_YARD = 0.9144;
 const FEET_PER_M = 1 / 0.3048;
 const MPS_TO_MPH = 3600 / M_PER_MILE;
 
-/** Metres → kilometres or miles with 2 decimals; NaN → '–'. */
-export function formatDistance(metres: number, units: Units = 'metric'): string {
-  return formatFixed(metres / (units === 'metric' ? 1000 : M_PER_MILE), 2);
+/** F-72 YD-1: the one rule. Imperial swimming is in yards; everything else km or mi. `sport` is the
+ *  scope sport of what the surface shows (YD-2); without one the rule gives km or mi as before. */
+/** Metres per distance unit: 1000, 1609.344 or, for imperial swimming, 0.9144 (yards). */
+export const distanceMetres = (units: Units, sport?: string): number => (units === 'imperial' ? (sport === 'swimming' ? M_PER_YARD : M_PER_MILE) : 1000);
+
+/** Whole yards, grouped: English by hand, de/es/fr through the language's Intl.NumberFormat (YD-5, LG-7). */
+const formatYards = (yd: number): string => (decimal(), sepLang === 'en' ? ('' + yd).replace(/\B(?=(\d{3})+$)/g, ',') : nf.format(yd));
+
+/** Metres → kilometres or miles with 2 decimals, or whole yards (YD-5); NaN → '–'. */
+export function formatDistance(metres: number, units: Units = 'metric', sport?: string): string {
+  const m = distanceMetres(units, sport);
+  return m < 1 && metres >= 0 ? formatYards(Math.round(metres / m)) : formatFixed(metres / m, 2); // NaN (never a negative distance) takes formatFixed's '–'
 }
 
-/** 'km' or 'mi'. */
-export const distanceUnit = (units: Units): string => (units === 'metric' ? 'km' : 'mi');
+/** 'km', 'mi' or 'yd'. */
+export const distanceUnit = (units: Units, sport?: string): string => (units === 'metric' ? 'km' : sport === 'swimming' ? 'yd' : 'mi');
 /** 'm' or 'ft'. */
 export const elevationUnit = (units: Units): string => (units === 'metric' ? 'm' : 'ft');
 /** '°C' or '°F'. */

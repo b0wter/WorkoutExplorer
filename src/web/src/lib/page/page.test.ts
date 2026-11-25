@@ -297,12 +297,12 @@ describe('imperial builders (F-14 D-2, D-5; AC 1, 4, 6)', () => {
     expect(laps?.Columns.map((c) => c.Label)).toContain('Gain (ft)');
     expect(laps?.Columns.map((c) => c.Label)).toContain('Speed (mph)*');
   });
-  it('a run shows min/mi; a swim shows miles with pace per 100 yd (OQ-67)', () => {
+  it('a run shows min/mi; a swim shows yards with pace per 100 yd (OQ-67, F-72)', () => {
     const r = spec('run-30min');
     expect(summaryItems(r.meta.sport, r.meta.summary, 'imperial').find((x) => x.Key === 'speed')?.Unit).toBe('/mi');
     const s = spec('pool-swim');
     const items = summaryItems(s.meta.sport, s.meta.summary, 'imperial');
-    expect(items.find((x) => x.Key === 'distance')?.Unit).toBe('mi');
+    expect(items.find((x) => x.Key === 'distance')?.Unit).toBe('yd');
     expect(items.find((x) => x.Key === 'speed')?.Unit).toBe('/100 yd');
   });
 });

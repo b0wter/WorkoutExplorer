@@ -55,7 +55,7 @@ export function summaryItems(sport: string, s: Summary, units: Units = 'metric')
     if (v !== undefined) items.push({ Key: key, Label: t(label), Value: fmt(v), Unit: unit, Max: '' });
   };
   const int = (v: number): string => formatFixed(v, 0);
-  one('distance', 'distance', has(s, 'distance'), distanceUnit(units), (v) => formatDistance(v, units));
+  one('distance', 'distance', has(s, 'distance'), distanceUnit(units, sport), (v) => formatDistance(v, units, sport));
   one('moving_time', 'movingTime', has(s, 'moving_time'), '', formatElapsed);
   one('elapsed_time', 'elapsedTime', has(s, 'elapsed_time'), '', formatElapsed);
   one('calories', 'calories', has(s, 'calories'), 'kcal', int);
@@ -99,7 +99,7 @@ export function lapsGroup(sport: string, laps: readonly (Pick<Lap, 'totals'> & {
   const speedLabel = t(pace ? 'colPace' : 'colSpeed', { u: speedOrPaceUnit(sport, units) });
   const cols: { key: string; label: string; cell: (t: Totals) => string }[] = [
     { key: 'elapsed_time', label: t('colTime'), cell: (o) => cellOf(o, 'elapsed_time', formatElapsed) },
-    { key: 'distance', label: t('colDistance', { u: distanceUnit(units) }), cell: (o) => cellOf(o, 'distance', (v) => formatDistance(v, units)) },
+    { key: 'distance', label: t('colDistance', { u: distanceUnit(units, sport) }), cell: (o) => cellOf(o, 'distance', (v) => formatDistance(v, units, sport)) },
     { key: 'avg_speed', label: speedLabel, cell: (o) => cellOf(o, 'avg_speed', (v) => formatSpeedOrPace(sport, v, units)) },
     { key: 'ascent', label: t('colGain', { u: elevationUnit(units) }), cell: (o) => cellOf(o, 'ascent', (v) => formatFixed(toElevation(v, units), 0)) },
     { key: 'avg_heart_rate', label: t('colHeartRate', { u: heartRateUnit() }), cell: (o) => cellOf(o, 'avg_heart_rate', (v) => formatFixed(v, 0)) },

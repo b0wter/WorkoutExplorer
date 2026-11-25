@@ -9,7 +9,7 @@
 import type uPlot from 'uplot';
 import type { WorkoutData } from '../../lib/datafile';
 import { formatElapsed, formatFixed, type ChartAxis, type ChartSpec } from '../../lib/charts';
-import { distanceUnit, type Units } from '../../lib/format';
+import { distanceMetres, distanceUnit, formatDistance, type Units } from '../../lib/format';
 
 // Layout constants (design v1.2): each defined once. CSS that needs one of them
 // reads a custom property that ChartStack sets from these values.
@@ -40,19 +40,19 @@ export interface XScale {
   readonly label: (v: number, incr: number) => string;
 }
 
-const M_PER_MILE = 1609.344;
 const STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500];
-
-/** The time scale ([time[0], time[N−1]], elapsed labels) or the distance scale (round km or mi). */
-export function xScale(axis: ChartAxis, units: Units = 'metric'): XScale {
+/** The time scale ([time[0], time[N−1]], elapsed labels) or the distance scale (round km, mi or yd; `sport` is the view's, YD-2). */
+export function xScale(axis: ChartAxis, units: Units = 'metric', sport?: string): XScale {
   if (axis.kind === 'time') return { min: axis.min, max: axis.max, incrs: X_INCRS, label: (v) => formatElapsed(v) };
-  const unit = units === 'metric' ? 1000 : M_PER_MILE;
-  const name = ' ' + distanceUnit(units);
+  const unit = distanceMetres(units, sport);
+  const name = ' ' + distanceUnit(units, sport);
+  const yd = unit < 1; // yards: whole-yard steps, the km steps × 10 (1, 2, 5, 10, … F-72 YD-6)
+  const step = yd ? unit * 10 : unit;
   return {
     min: axis.min,
     max: axis.max,
-    incrs: STEPS.map((k) => k * unit),
-    label: (v, incr) => formatFixed(v / unit, incr < unit * 0.99 ? 1 : 0) + name,
+    incrs: STEPS.map((k) => k * step),
+    label: (v, incr) => (yd ? formatDistance(v, units, sport) : formatFixed(v / unit, incr < unit * 0.99 ? 1 : 0)) + name,
   };
 }
 

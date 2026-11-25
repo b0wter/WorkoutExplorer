@@ -27,7 +27,7 @@ import { ordered } from '../lib/sections/order';
 import { loadErrorText } from './load-error';
 import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
-import { mountStrip } from './strip';
+import { mountStrip } from './strip.svelte';
 import type { DataFileResult, WorkoutData, WorkoutMeta } from '../lib/datafile';
 import type { ZoneSource } from '../zones';
 import type { EffortWindow } from '../efforts';
@@ -76,6 +76,9 @@ function mountRangePanel(root: ParentNode, data: WorkoutData, selection: Selecti
       selection,
       get units() {
         return look.units;
+      },
+      get view() {
+        return look.view;
       },
       oncopy,
     },
@@ -289,7 +292,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     onPinMap.forEach((f) => f(h));
     addPinToggle(root, mapSlot);
     const box = mapSlot.querySelector<HTMLElement>('.route-map');
-    if (box) mountStrip(box, data, cursor, units); // F-33 CR-2: the fullscreen box holds it
+    if (box) mountStrip(box, data, cursor, look); // F-33 CR-2: the fullscreen box holds it
     recorder?.mapReady();
   }, edit, prefs) : null;
   const ready = (): void => {

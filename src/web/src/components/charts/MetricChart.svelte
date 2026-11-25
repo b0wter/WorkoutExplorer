@@ -82,7 +82,7 @@
     // presentCharts only gives specs of present streams.
     // Converted once, so a pace stop (NaN) is a gap before decimation and the min/max view stays honest.
     const values = chartValues(s, (d.metrics[s.metric] as Float64Array).subarray(a, b + 1));
-    const scale = { ...xScale(ax, units), min: at[a], max: at[b] > at[a] ? at[b] : at[a] + 1 };
+    const scale = { ...xScale(ax, units, view?.sport ?? d.meta.sport), min: at[a], max: at[b] > at[a] ? at[b] : at[a] + 1 };
     const xMin = scale.min;
     const xMax = scale.max;
 
