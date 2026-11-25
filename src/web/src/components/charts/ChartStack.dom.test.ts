@@ -31,7 +31,7 @@ import { formatDistance } from '../../lib/format';
 
 interface UPlotLike {
   readonly over: HTMLDivElement;
-  readonly bbox: { width: number };
+  readonly bbox: { width: number; left: number };
   valToPos(v: number, scale: string): number;
   posToVal(v: number, scale: string): number;
   setSize(s: { width: number; height: number }): void;
@@ -1037,6 +1037,14 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
     expect(back.map((r) => r.data.at(-1))).toEqual(whole);
     expect(speedTitle(m)).toBe('Speed · km/h');
     expect(overs(m).every((o) => o.style.overflow === '')).toBe(true);
+  });
+
+  it('every chart of a leg keeps the same plot left edge, also one with no data in the leg', () => {
+    const { pick } = start();
+    for (const leg of [SWIM, BIKE, RUN]) {
+      const lefts = pick(leg).map((r) => r.u.bbox.left);
+      expect(new Set(lefts).size).toBe(1);
+    }
   });
 
   it('AC 2: swim reads per 100 m; bike km/h; the run pace axis fits the run (its samples only)', () => {

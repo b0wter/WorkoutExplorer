@@ -218,7 +218,7 @@
  "lib/format": {
   "bpm": "bpm",
   "rpm": "tr/min",
-  "spm": "pas/min",
+  "spm": "spm",
   "perMin": "/min",
   "expires": "Expire {when}",
   "expiresNow": "Expire maintenant",

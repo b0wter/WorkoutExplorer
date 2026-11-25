@@ -91,7 +91,11 @@
     const css = getComputedStyle(host);
     const prop = (name: string, fallback: string): string => css.getPropertyValue(name).trim() || fallback;
     const ink = { line: prop('--c-' + s.metric, s.colour), axis: prop('--muted', '#555'), grid: prop('--grid', 'rgba(0,0,0,0.1)') };
-    const u = new uPlot(buildOptions(s, d, { width, height: plotHeight, isBottom: bottom }, ink, scale), undefined, host);
+    const opts = buildOptions(s, d, { width, height: plotHeight, isBottom: bottom }, ink, scale);
+    // A leg with no data in this stream: uPlot drops the y axis (and its gutter) when the scale has
+    // no range, which shifts the plot left of the other charts; a fixed range keeps Y_AXIS_SIZE.
+    if (!values.some((v) => v === v)) opts.scales!.y = { auto: false, range: [0, 1] };
+    const u = new uPlot(opts, undefined, host);
     const over = u.over;
     // LP-7: a leg view cuts the cursor line, shade and decorations at the plot edge.
     if (view) over.style.overflow = 'hidden';
