@@ -271,7 +271,7 @@ describe('wiring (F-06 "Wiring")', () => {
     }
   });
 
-  it('lap rows are tappable only once the range panel is mounted (L-7, QA-18-r1-3)', async () => {
+  it('lap rows are live from ready(); a tap before the range chunk lands is kept and the panel shows when it lands (F-75 AC 2, QA-75-r1-2)', async () => {
     const g = loadGolden().find((x) => x.name === 'ride-30min');
     if (!g) throw new Error('no golden ride-30min');
     respond = () => new Response(g.bin.slice(0), { status: 200 }); // rows match the data file (L-2)
@@ -279,13 +279,13 @@ describe('wiring (F-06 "Wiring")', () => {
     const [charts] = stubLog.chartStack;
     const row = document.querySelector<HTMLElement>('section.laps tbody tr');
     row?.click();
-    expect(charts.selection?.start()).toBe(-1);
-    expect(document.querySelector('section.laps')?.classList.contains('live')).toBe(false);
+    expect(charts.selection?.start()).toBe(-1); // before ready(): not live yet
     charts.onready?.();
-    await vi.waitFor(() => expect(document.getElementById('range-slot')?.childElementCount).toBeGreaterThan(0), { timeout: 10000 }); // lazy chunk (ADR-011 T-1)
-    expect(document.getElementById('range-slot')?.childElementCount).toBeGreaterThan(0);
+    expect(document.getElementById('range-slot')?.childElementCount).toBe(0); // chunk not landed (await-free, deterministic)
     row?.click();
     expect(charts.selection?.start()).toBe(0);
+    await vi.waitFor(() => expect(document.getElementById('range-slot')?.childElementCount).toBeGreaterThan(0), { timeout: 10000 });
+    expect(document.getElementById('range-slot')?.hidden).toBe(false);
   });
 
   it('F-49 ZN-8: zone values load the zones chunk after the charts\' first paint; it fills the slot after the laps', async () => {
