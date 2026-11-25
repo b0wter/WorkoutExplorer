@@ -276,7 +276,10 @@ describe('theme (F-14 D-9, AC 7, AC 8)', () => {
   });
 
   it('the lazy map CSS has no colour literal either', () => {
-    expect(readWebFile('src/components/map/map-view.css')).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
+    // Except the route colouring's tokens (F-25 C-5; ADR-011 T-3 moved them here from page.css): the part after their marker.
+    const css = readWebFile('src/components/map/map-view.css');
+    expect(css).toContain('ADR-011 decision 7 T-3');
+    expect(css.slice(0, css.indexOf('/* ADR-011 decision 7 T-3'))).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
   });
 
   it('both pages declare the colour scheme in the head, so the first paint follows the system', () => {

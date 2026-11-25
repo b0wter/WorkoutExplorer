@@ -17,10 +17,9 @@ What the entry is made of was last attributed on 11 Nov 2026 (review link above)
 
 | Item | Bytes gzip |
 | --- | --- |
-| Entry on main, 25 Nov 2026, before F-74's code | **61,738** |
-| of which unbooked since F-72's close (61,577): the F-72 follow-ups (a leg switch clears the range; empty leg charts without ticks) | +161 |
+| Entry on main, 25 Nov 2026, after F-75 (T-1 to T-3: 61,886 → 59,100) | **59,100** |
 | Budget | 62,000 |
-| **Reserve** | **262**; **112** after F-74's ceiling |
+| **Reserve** | **2,900** |
 | Owner chunk `start.svelte` (lazy; F-19 ceiling 20,000) | 19,439 (F-72) |
 
 Shares booked since revision 17 (decision 4):
@@ -28,10 +27,15 @@ Shares booked since revision 17 (decision 4):
 | Feature | Target / ceiling | Measured | Entry after |
 | --- | --- | --- | --- |
 | F-74 robust chart axis (AX-5), from the reserve, user 25 Nov 2026 | 100 / 150 | 148 (QA measurement) | 61,886 |
+| F-75 T-1 range panel and `lib/range` lazy (`page/range-panel.ts`) | est. 1,200 to 1,500 | −1,457 | 60,429 |
+| F-75 T-2 map-only glue (`page/map-glue.ts`, re-exported by `map-view`) and its CSS in the map chunk | est. 700 to 900 | −958 | 59,471 |
+| F-75 T-3 route-colouring tokens in `map-view.css` | est. 200 to 250 | −371 | 59,100 |
+
+T-4 not needed (T-1 to T-3 saved 2,786, above the 1,500 condition). The estimate was met; the reserve is above the 1,000 trigger (decision 5).
 
 ## Decision
 
-1. **Static (counted): only what every viewer needs before the map.** The data file reader (F-04), the charts and cursor (F-05), the page glue and enhancers of the server markup (F-13, F-14, F-18), the i18n core (F-54), and the small static part of each lazy feature (its condition and `import()` site). Exceptions decided in decision 7 (not yet built): the range panel (F-17) and the map-only glue leave the entry.
+1. **Static (counted): only what every viewer needs before the map.** The data file reader (F-04), the charts and cursor (F-05), the page glue and enhancers of the server markup (F-13, F-14, F-18), the i18n core (F-54), and the small static part of each lazy feature (its condition and `import()` site). Exceptions decided in decision 7 (built in F-75): the range panel (F-17) and the map-only glue leave the entry.
 2. **Behind `import()` (not counted):** the map and everything that only works with it (MapLibre, `map-view`, route colouring, fullscreen, location); owner UI (`edit/start.svelte`, the published page); report form; How to use and the summary dialog with their shared dialog shell; multisport sections; splits, lengths and comparison chart; zones; best efforts; pins; GPX; dynamics; My workouts; the language loader, the prefix reader, the header language pass and the language files; the scrub recorder. **Rule:** code that serves only some workouts, only the owner, or only runs after a viewer's action belongs here. Prefer joining an existing lazy chunk to a new `import()` site: every site adds its hashed file names to the entry's preload list (about 15 to 30 gzip per file).
 3. **Separate entries, each with its own ceiling** (`ENTRY_LIMITS`): upload (ADR-024), delete link, Impressum, About and generic pages. They must not import `uplot` or `lib/charts`, and share no chunk with the activity entry.
 4. **Shares.** A feature that adds entry code states a target and a ceiling in its design. The engineer measures the entry before and after and books the figure in the table above; follow-ups count against the feature. Above the ceiling: stop and report.

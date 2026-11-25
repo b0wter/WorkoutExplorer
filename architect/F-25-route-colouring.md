@@ -49,6 +49,7 @@
 
 | What | Decision |
 | --- | --- |
+| Deviation (F-75, ADR-011 decision 7 T-3) | The palette, `--range-outline` and `--route-fade` are in `map-view.css` (same three theme selectors), not in the static theme block; `map-style.ts` keeps its fallbacks | Entry bytes (371) |
 | Static | The units prop wiring plus C-5's palette properties in the static theme block (253 bytes gzip measured at v0.1, QA-25-r1-1). v0.2 grows them from 14 to 23 per block (three blocks): delta **at most 600 bytes** gzip, from the reserve (2,601 → at least 2,000, above ADR-011's 1,000 trigger). Above: stop and report; the fallback is moving the palettes into the lazy map CSS, which needs the F-14 D-9 hygiene rule changed |
 | Lazy | F-25's own lazy delta at most **3,000** bytes gzip, reported beside F-06's lazy figure. Above: stop and report |
 
