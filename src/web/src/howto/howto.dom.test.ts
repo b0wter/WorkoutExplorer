@@ -66,18 +66,24 @@ describe('openHowto', () => {
 });
 
 describe('close ×', () => {
-  it('opens scrolled to the top, closes with the ×, has no bottom button', () => {
+  it('has a fixed header with title and ×; the body opens at the top; × closes; no bottom button', () => {
     openHowto(document);
-    expect(dialog().scrollTop).toBe(0);
-    expect(dialog().querySelector('.dlg-actions')).toBeNull();
-    expect(dialog().querySelectorAll('button')).toHaveLength(1);
-    const body = dialog().querySelector('.dlg-body')!;
-    const x = dialog().querySelector<HTMLButtonElement>('button.dlg-x')!;
+    const d = dialog();
+    const head = d.querySelector('.dlg-head')!;
+    const body = d.querySelector<HTMLElement>('.dlg-body')!;
+    expect(d.firstElementChild).toBe(head);
+    expect(head.nextElementSibling).toBe(body);
+    expect(head.firstElementChild!.tagName).toBe('H2');
+    expect(head.querySelector('h2')!.textContent).toBe('How to use this page');
+    const x = head.querySelector<HTMLButtonElement>('button.dlg-x')!;
     expect(x.getAttribute('aria-label')).toBe('Close');
-    expect(body.firstElementChild).toBe(x);
-    expect(body.lastElementChild!.tagName).toBe('P');
+    expect(body.querySelector('h2, button, .dlg-actions')).toBeNull();
+    expect(d.querySelectorAll('button')).toHaveLength(1);
+    body.scrollTop = 50;
+    openHowto(document);
+    expect(body.scrollTop).toBe(0);
     x.click();
-    expect(dialog().open).toBe(false);
+    expect(d.open).toBe(false);
   });
 });
 
@@ -95,5 +101,19 @@ describe('dialog scrolling (info dialogs, Report)', () => {
     const lock = css.match(new RegExp(`html:has\\(dialog\\.${cls}\\[open\\]\\) \\{([^}]*)\\}`))![1];
     expect(lock).toMatch(/overflow: hidden;/);
     expect(lock).toMatch(/scrollbar-gutter: stable;/);
+  });
+
+  it('header is fixed, only the body scrolls, overscroll contained, fits the viewport', () => {
+    const file = '../dialog/dialog.css'; // a variable: vite would turn a literal into an asset URL
+    const css = (readFileSync(new URL(file, import.meta.url), 'utf8') as string).replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = (sel: string): string => css.match(new RegExp(sel.replace(/[[\]().]/g, '\\$&') + ' \\{([^}]*)\\}'))![1];
+    expect(rule('.dlg[open]')).toMatch(/display: flex;[\s\S]*flex-direction: column;/);
+    expect(rule('.dlg-head')).toMatch(/flex: none;/);
+    expect(rule('.dlg-head')).toMatch(/border-bottom: 1px solid var\(--line\);/);
+    expect(rule('.dlg-body')).toMatch(/flex: 1 1 auto;/);
+    expect(rule('.dlg-body')).toMatch(/min-height: 0;/);
+    expect(rule('.dlg-body')).toMatch(/overflow-y: auto;/);
+    expect(rule('.dlg-body')).toMatch(/overscroll-behavior: contain;/);
+    expect(css).toMatch(/@media \(pointer: coarse\) \{\s*\.dlg-x \{\s*min-width: 44px;\s*height: 44px;/);
   });
 });

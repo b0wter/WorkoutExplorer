@@ -6,32 +6,37 @@
 import './dialog.css';
 import { t } from './texts';
 
-/** Opens the dialog of class `cls` with a title and the given lines, then a × button (top right). With an
+/** Opens the dialog of class `cls` with a title and the given lines, then a header (title, × top right). With an
  *  `anchor`, at 1024 px and wider (F-13 D-17), its top-right corner sits on the anchor's, inside
- *  the viewport (OQ-258); narrower, centred. `actions` replace the × as a bottom row (the pin dialog). */
+ *  the viewport (OQ-258); narrower, centred. `actions` replace the × as a bottom row of the scrolling body (the pin dialog). */
 export function openDialog(doc: Document, cls: string, title: string, lines: readonly Node[], anchor?: Element, actions?: readonly Node[]): HTMLDialogElement {
   const d = doc.querySelector<HTMLDialogElement>('dialog.' + cls) ?? build(doc, cls);
   const h = doc.createElement('h2');
   h.id = cls + '-title';
   h.textContent = title;
-  const bar = doc.createElement('p');
-  bar.className = 'dlg-actions';
-  const top: Node[] = [];
-  if (actions) bar.append(...actions);
-  else {
-    // A sticky × at the top right, first in focus order: showModal focuses it without scrolling the content.
-    const x = doc.createElement('button');
+  const head = doc.createElement('div');
+  head.className = 'dlg-head';
+  head.append(h);
+  let bar: HTMLParagraphElement | null = null;
+  if (actions) {
+    bar = doc.createElement('p');
+    bar.className = 'dlg-actions';
+    bar.append(...actions);
+  } else {
+    // First in focus order: showModal focuses it without scrolling anything. The header never scrolls.
+    const x = head.appendChild(doc.createElement('button'));
     x.type = 'button';
     x.className = 'dlg-x';
     x.textContent = '×';
     x.setAttribute('aria-label', t('closeDialog'));
     x.addEventListener('click', () => d.close());
-    top.push(x);
   }
-  d.firstElementChild!.replaceChildren(...top, h, ...lines, ...(actions ? [bar] : []));
+  const body = d.querySelector('.dlg-body')!;
+  body.replaceChildren(...lines, ...(bar ? [bar] : []));
+  d.firstElementChild!.replaceWith(head);
   d.removeAttribute('style');
   d.showModal();
-  d.scrollTop = 0;
+  body.scrollTop = 0;
   const win = doc.defaultView;
   if (anchor && win?.matchMedia?.('(min-width: 1024px)').matches) {
     const r = anchor.getBoundingClientRect();
@@ -48,7 +53,7 @@ function build(doc: Document, cls: string): HTMLDialogElement {
   d.setAttribute('aria-labelledby', cls + '-title');
   const body = doc.createElement('div');
   body.className = 'dlg-body';
-  d.appendChild(body);
+  d.append(doc.createElement('div'), body); // the header is put in place on every open
   // The dialog has no padding, so a click on the dialog itself is a click on the backdrop. Only when the press began
   // there too: a text selection dragged out of a field ends on the backdrop and must not close.
   let down: EventTarget | null = d;
