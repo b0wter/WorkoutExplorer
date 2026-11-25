@@ -2,6 +2,12 @@
 
 History of [architect/F-13-activity-page-layout.md](../F-13-activity-page-layout.md).
 
+## 25 Nov 2026: D-10 stored-split exception replaced by F-73
+
+D-10's exception as it was (29 Oct 2026, F-17 QA-17-r1-2):
+
+> *Exception (29 Oct 2026, F-17 QA-17-r1-2): a split the viewer stored (AP-17) is applied synchronously at the start of the page glue, before any `await`; if that runs after the first paint, the one shift it causes is accepted as the viewer's own choice. (User, 29 Oct 2026: accepted for now also on a cached reload, as module scripts run after the first paint; a later fix may be a small inline `<head>` script setting `--map-w` before the first paint, allowed by its CSP hash in F-22.)*
+
 ## 1.1, 24 Oct 2026: two columns on desktop, pinnable map on the phone
 
 User decision of 24 Oct 2026 (decision log, `features/README.md`). Changes:
