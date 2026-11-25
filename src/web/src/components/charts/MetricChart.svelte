@@ -94,7 +94,11 @@
     const opts = buildOptions(s, d, { width, height: plotHeight, isBottom: bottom }, ink, scale);
     // A leg with no data in this stream: uPlot drops the y axis (and its gutter) when the scale has
     // no range, which shifts the plot left of the other charts; a fixed range keeps Y_AXIS_SIZE.
-    if (!values.some((v) => v === v)) opts.scales!.y = { auto: false, range: [0, 1] };
+    if (!values.some((v) => v === v)) {
+      opts.scales!.y = { auto: false, range: [0, 1] };
+      // ...but no labels, ticks or grid, which would read as a 0 to 1 scale.
+      Object.assign(opts.axes![1], { values: (_u: uPlot, t: number[]) => t.map(() => ''), ticks: { show: false }, grid: { show: false } });
+    }
     const u = new uPlot(opts, undefined, host);
     const over = u.over;
     // LP-7: a leg view cuts the cursor line, shade and decorations at the plot edge.

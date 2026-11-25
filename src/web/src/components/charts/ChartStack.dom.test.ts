@@ -1045,6 +1045,16 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
       const lefts = pick(leg).map((r) => r.u.bbox.left);
       expect(new Set(lefts).size).toBe(1);
     }
+    // The swim has no power: its chart keeps the gutter but shows no tick labels.
+    const swim = pick(SWIM);
+    const empty = swim.filter((r) => r.data.at(-1)?.y.every((v) => v === null));
+    expect(empty.length).toBeGreaterThan(0);
+    for (const r of empty) {
+      // uPlot draws tick text on canvas, so the axis options are what can be checked.
+      const y = (r.u as unknown as { axes: { values: (u: unknown, s: number[]) => string[]; grid: { show: boolean } }[] }).axes[1];
+      expect(y.values(r.u, [0, 0.5, 1]).join('')).toBe('');
+      expect(y.grid.show).toBe(false);
+    }
   });
 
   it('AC 2: swim reads per 100 m; bike km/h; the run pace axis fits the run (its samples only)', () => {
