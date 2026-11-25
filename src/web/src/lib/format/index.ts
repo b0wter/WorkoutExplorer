@@ -70,7 +70,7 @@ export function formatDistance(metres: number, units: Units = 'metric', sport?: 
   return m < 1 && metres >= 0 ? formatYards(Math.round(metres / m)) : formatFixed(metres / m, 2); // NaN (never a negative distance) takes formatFixed's '–'
 }
 
-/** 'km', 'mi' or 'yd'. */
+/** 'km', 'mi' or 'yd'. The swim test repeats distanceMetres': deriving one from the other cost +17 gzip in the entry (F-72 QA-72-r1-2). */
 export const distanceUnit = (units: Units, sport?: string): string => (units === 'metric' ? 'km' : sport === 'swimming' ? 'yd' : 'mi');
 /** 'm' or 'ft'. */
 export const elevationUnit = (units: Units): string => (units === 'metric' ? 'm' : 'ft');

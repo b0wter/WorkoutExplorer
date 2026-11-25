@@ -27,6 +27,7 @@ import { swapHarness } from './swap-props.test-helper.svelte';
 import { lookHarness } from './look-props.test-helper.svelte';
 import { createLook, type Look } from '../../page/map-props.svelte';
 import { createUnitsStore } from '../../lib/units';
+import { formatDistance } from '../../lib/format';
 
 interface UPlotLike {
   readonly over: HTMLDivElement;
@@ -239,6 +240,7 @@ function setup(
   const look = options.look;
   if (look) Object.defineProperty(props, 'decorate', { get: () => look.decorate, enumerable: true });
   if (look) Object.defineProperty(props, 'view', { get: () => look.view, enumerable: true });
+  if (look) Object.defineProperty(props, 'units', { get: () => look.units, enumerable: true });
   const app = mount(ChartStack, { target, props: props as never });
   flushSync();
   current = { data, cursor, target, reported, ready: () => ready, active: () => active, app };
@@ -1002,8 +1004,8 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
   const titles = (m: Mounted) => [...m.target.querySelectorAll('.chart-title')].map((e) => e.textContent ?? '');
   const speedTitle = (m: Mounted) => titles(m).find((x) => /^(Pace|Speed) /.test(x));
   const pressed = (m: Mounted) => [...m.target.querySelectorAll('.axis-toggle button')].map((b) => b.getAttribute('aria-pressed'));
-  const start = (axis: 'time' | 'distance' = 'time', d: WorkoutData = data) => {
-    const look = createLook(createUnitsStore('metric'), null);
+  const start = (axis: 'time' | 'distance' = 'time', d: WorkoutData = data, units: 'metric' | 'imperial' = 'metric') => {
+    const look = createLook(createUnitsStore(units), null);
     const selection = createSelectionStore(n, (f) => requestAnimationFrame(() => f()));
     const m = setup(d, { look, selection, initialAxis: axis });
     layout(900);
@@ -1126,5 +1128,27 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
     expect(at(1000).slice(0, 2)).toEqual(['Speed', 'km/h']);
     expect(at(630)[2]).toBe('–'); // T1
     expect(at(2490)[2]).toBe('–'); // T2
+  });
+
+  // F-72 YD-2, YD-6 (QA-72-r1-1): the chart's axis takes the leg view's sport; the readout's distance
+  // never follows the section under the cursor.
+  it('F-72: imperial distance axis labels in yards in the swim leg view, miles in the whole view', () => {
+    const { pick } = start('distance', data, 'imperial');
+    const labels = (rs: Recorded[], m: number, incr: number): string[] =>
+      rs.flatMap((r) => (r.u as unknown as { axes: { values: (...a: unknown[]) => string[] }[] }).axes[0].values(null, [m], 0, 0, incr));
+    expect(labels(pick(SWIM), 1000 * 0.9144, 100 * 0.9144)).toContain('1,000 yd');
+    expect(labels(pick(null), 1609.344, 1609.344)).toContain('1 mi');
+    expect(labels(pick(BIKE), 1609.344, 1609.344)).toContain('1 mi');
+  });
+
+  it('F-72: scrubbing over the swim in the whole view keeps the distance in miles (F72-Q2)', () => {
+    const { m } = start('time', data, 'imperial');
+    const dist = () => [...m.target.querySelectorAll('.readout .cell')].find((c) => c.querySelector('.label')?.textContent === 'Distance');
+    for (const i of [300, 1000, 300]) {
+      m.cursor.set(i);
+      env.frame();
+      flushSync();
+      expect([dist()?.querySelector('.unit')?.textContent, dist()?.querySelector('.value')?.textContent]).toEqual(['mi', formatDistance(data.metrics.distance![i], 'imperial', 'multisport')]);
+    }
   });
 });
