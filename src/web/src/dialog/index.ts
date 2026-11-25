@@ -6,9 +6,9 @@
 import './dialog.css';
 import { t } from './texts';
 
-/** Opens the dialog of class `cls` with a title and the given lines, then a Close button. With an
+/** Opens the dialog of class `cls` with a title and the given lines, then a × button (top right). With an
  *  `anchor`, at 1024 px and wider (F-13 D-17), its top-right corner sits on the anchor's, inside
- *  the viewport (OQ-258); narrower, centred. `actions` replace the Close button (the pin dialog). */
+ *  the viewport (OQ-258); narrower, centred. `actions` replace the × as a bottom row (the pin dialog). */
 export function openDialog(doc: Document, cls: string, title: string, lines: readonly Node[], anchor?: Element, actions?: readonly Node[]): HTMLDialogElement {
   const d = doc.querySelector<HTMLDialogElement>('dialog.' + cls) ?? build(doc, cls);
   const h = doc.createElement('h2');
@@ -16,16 +16,22 @@ export function openDialog(doc: Document, cls: string, title: string, lines: rea
   h.textContent = title;
   const bar = doc.createElement('p');
   bar.className = 'dlg-actions';
+  const top: Node[] = [];
   if (actions) bar.append(...actions);
   else {
-    const close = bar.appendChild(doc.createElement('button'));
-    close.type = 'button';
-    close.textContent = t('closeDialog');
-    close.addEventListener('click', () => d.close());
+    // A sticky × at the top right, first in focus order: showModal focuses it without scrolling the content.
+    const x = doc.createElement('button');
+    x.type = 'button';
+    x.className = 'dlg-x';
+    x.textContent = '×';
+    x.setAttribute('aria-label', t('closeDialog'));
+    x.addEventListener('click', () => d.close());
+    top.push(x);
   }
-  d.firstElementChild!.replaceChildren(h, ...lines, bar);
+  d.firstElementChild!.replaceChildren(...top, h, ...lines, ...(actions ? [bar] : []));
   d.removeAttribute('style');
   d.showModal();
+  d.scrollTop = 0;
   const win = doc.defaultView;
   if (anchor && win?.matchMedia?.('(min-width: 1024px)').matches) {
     const r = anchor.getBoundingClientRect();
