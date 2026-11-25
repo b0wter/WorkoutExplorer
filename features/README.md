@@ -31,7 +31,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-14](F-14-units-and-theme.md) | Units, pace or speed, and theme | 1 | frontend | F-13 | done | |
 | [F-15](F-15-publish-pipeline-and-static-page.md) | Publish pipeline and static page | 1 | backend | F-12, F-13, F-14 | done | QA-15-r2-1 → F-21/F-30 design; r1-3 → F-22 |
 | [F-16](F-16-start-and-end-hiding.md) | Start and end hiding | 1 | both | F-15 | done | |
-| [F-17](F-17-range-selection-and-axis-toggle.md) | Range selection and x-axis toggle | 1 | both (backend first) | F-13 | done | user: on the phone, does a cached reload with a stored split still jump (accepted only for an uncached first load, F-13 D-10) |
+| [F-17](F-17-range-selection-and-axis-toggle.md) | Range selection and x-axis toggle | 1 | both (backend first) | F-13 | done | — (stored-split jump fixed by F-73) |
 | [F-18](F-18-laps-and-splits-table.md) | Laps and splits table | 1 | both (backend first) | F-17 | done | |
 | [F-19](F-19-edit-page-and-settings.md) | Edit page: draft view and settings panel | 1 | both (backend first) | F-12, F-13 | done | |
 | [F-20](F-20-publish-share-delete-controls.md) | Publish, Share and delete controls | 1 | both (backend first) | F-15, F-19 | done | network log check (user) |
@@ -86,7 +86,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | [F-68](F-68-extra-sensor-streams.md) | Extra sensor streams | — | both (backend first) | F-02, F-03, F-04, F-05, F-17, F-47, F-49, F-50, F-54 | ready with conditions (QA r1, 24 Nov 2026), minors fixed | F68-Q1: Stryd field strings unverified (needs someone with a Stryd file); user: 360 px portrait/landscape in DE/ES/FR (no jump, labels fit), both themes, imperial units, 60 fps scrub with all ten charts (qa/F-68-extra-sensor-streams-r1.md) |
 | [F-71](F-71-comparison-chart-asymmetric-axis.md) | Comparison chart: non-symmetric value axis | — | frontend | F-51; F-64, F-69 | not started | |
 | [F-72](F-72-swim-distance-in-yards.md) | Swim distance in yards | — | frontend | F-14, F-44, F-46, F-48, F-54, F-56, F-64, F-65, F-67, F-69 | not started | |
-| [F-73](F-73-remembered-split-without-layout-jump.md) | Remembered map split without a layout jump | — | both (frontend first; backend: CSP hash) | F-13, F-17, F-22, F-54 | not started | |
+| [F-73](F-73-remembered-split-without-layout-jump.md) | Remembered map split without a layout jump | — | both (frontend first; backend: CSP hash) | F-13, F-17, F-22, F-54 | ready with conditions (QA r1, 25 Nov 2026), minors fixed | user: hand checks 1–6 in qa/F-73-remembered-split-without-layout-jump-r1.md (stored split desktop and phone landscape, bad values, one column, no CSP errors, JS off) |
 
 Phase 0: 7 features. Phase 1: 25 features. Phase 2: 18 features (F-35, F-36, F-34, F-37, F-38, F-39, F-40, F-41, F-42, F-43, F-44, F-45, F-46, F-47, F-48, F-49, F-50, F-51, detailed). F-24 discarded 14 Nov 2026 (see [Discarded ideas](#discarded-ideas)). New features have no phase (backlog scheme, 14 Nov 2026): F-52 to F-73.
 
