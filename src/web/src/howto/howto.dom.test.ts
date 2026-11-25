@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // The How to use dialog (F-39 HU-7; AC 3, AC 4). jsdom has no showModal: a minimal stand-in.
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // @ts-expect-error no @types/node here; vitest runs in node
 import { readFileSync } from 'node:fs';
 import { openHowto } from './index';
@@ -115,5 +115,45 @@ describe('dialog scrolling (info dialogs, Report)', () => {
     expect(rule('.dlg-body')).toMatch(/overflow-y: auto;/);
     expect(rule('.dlg-body')).toMatch(/overscroll-behavior: contain;/);
     expect(css).toMatch(/@media \(pointer: coarse\) \{\s*\.dlg-x \{\s*min-width: 44px;\s*height: 44px;/);
+  });
+});
+
+describe('page lock while open (iOS Safari)', () => {
+  let scrollTo: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+      this.open = false;
+      this.dispatchEvent(new Event('close'));
+    };
+    Object.defineProperty(window, 'scrollY', { value: 340, configurable: true });
+    scrollTo = vi.fn();
+    window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
+  });
+  const locked = (): void => {
+    const st = document.body.style;
+    expect([st.position, st.top, st.left, st.right, st.width]).toEqual(['fixed', '-340px', '0px', '0px', '100%']);
+  };
+  const unlocked = (): void => {
+    expect(document.body.getAttribute('style') ?? '').toBe('');
+    expect(scrollTo).toHaveBeenCalledWith({ left: 0, top: 340, behavior: 'instant' });
+  };
+  it('pins the body at -scrollY and restores on ×', () => {
+    openHowto(document);
+    locked();
+    dialog().querySelector<HTMLButtonElement>('.dlg-x')!.click();
+    unlocked();
+  });
+  it('restores on Esc (close event)', () => {
+    openHowto(document);
+    locked();
+    dialog().open = false;
+    dialog().dispatchEvent(new Event('close'));
+    unlocked();
+  });
+  it('restores on backdrop click', () => {
+    openHowto(document);
+    locked();
+    dialog().click();
+    unlocked();
   });
 });

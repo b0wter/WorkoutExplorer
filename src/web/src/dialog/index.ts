@@ -35,6 +35,7 @@ export function openDialog(doc: Document, cls: string, title: string, lines: rea
   body.replaceChildren(...lines, ...(bar ? [bar] : []));
   d.firstElementChild!.replaceWith(head);
   d.removeAttribute('style');
+  lockPage(doc, d);
   d.showModal();
   body.scrollTop = 0;
   const win = doc.defaultView;
@@ -45,6 +46,28 @@ export function openDialog(doc: Document, cls: string, title: string, lines: rea
     d.style.cssText = `margin:0;inset:${top}px auto auto ${left}px`;
   }
   return d;
+}
+
+// iOS Safari scrolls the document behind a modal despite overflow:hidden, so the body is pinned instead and the
+// scroll position restored on close (the `close` event covers ×, Esc, backdrop and the Android back gesture).
+function lockPage(doc: Document, d: HTMLDialogElement): void {
+  if (d.open) return; // refilled while open: already locked, scrollY is now 0
+  const win = doc.defaultView!;
+  const y = win.scrollY;
+  const st = doc.body.style;
+  st.cssText += `;position:fixed;top:${-y}px;left:0;right:0;width:100%`;
+  d.addEventListener(
+    'close',
+    () => {
+      st.removeProperty('position');
+      st.removeProperty('top');
+      st.removeProperty('left');
+      st.removeProperty('right');
+      st.removeProperty('width');
+      win.scrollTo({ left: 0, top: y, behavior: 'instant' }); // instant: page.css may smooth-scroll
+    },
+    { once: true },
+  );
 }
 
 function build(doc: Document, cls: string): HTMLDialogElement {
