@@ -402,8 +402,8 @@ describe('mapPixelRatio (F-07 D-8, QA-06-r4-1)', () => {
   });
 });
 
-describe('class colour fallbacks match page.css (QA-25-r2-2)', () => {
-  const css: string = readFileSync(new URL('../../page/page.css', import.meta.url), 'utf8');
+describe('class colour fallbacks match map-view.css (QA-25-r2-2; the tokens moved there, ADR-011 T-3)', () => {
+  const css: string = readFileSync(new URL('./map-view.css', import.meta.url), 'utf8');
   const block = (from: number) => {
     const end = css.indexOf('}', from);
     const m = new Map<string, string>();

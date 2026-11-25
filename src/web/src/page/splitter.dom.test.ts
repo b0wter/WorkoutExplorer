@@ -2,7 +2,8 @@
 // The map/content splitter (user decision 28 Oct 2026): drag writes a clamped --map-w on the
 // layout wrapper, a tap does nothing, a double tap removes it, and it is added only once.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
+import { restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
+import { addSplitter } from './map-glue';
 import { createViewerPrefs } from '../lib/prefs';
 import { readWebFile } from '../../test-support/source.mjs';
 

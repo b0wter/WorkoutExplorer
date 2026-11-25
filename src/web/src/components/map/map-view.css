@@ -213,3 +213,202 @@ html.wx-fs .maplibregl-pseudo-fullscreen {
 .wx-loc-note:empty {
   display: none;
 }
+
+/* ADR-011 decision 7 T-2 (F-75): the map-only glue's CSS (pin toggle, fullscreen strip, splitter) loads with this chunk. */
+/* F-33: the readout strip at the bottom of the fullscreen map (CR-3 to CR-7), the same card on
+   the same fixed tracks, opaque, square, taking no input. Shown only in fullscreen with a cursor. */
+.wx-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+html:not(.wx-fs) .wx-strip,
+.wx-strip[hidden] {
+  display: none;
+}
+#map-slot .readout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 8px;
+  padding: 4px 10px;
+  background: var(--bg);
+  border-radius: 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 640px) {
+  #map-slot .readout {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+/* Map pin toggle (D-19, AP-18): an icon button in MapLibre's top-right control stack, under fullscreen. */
+.map-pin {
+  color: black; /* MapLibre's buttons stay light in both themes */
+}
+.map-pin svg {
+  display: block;
+  margin: auto;
+}
+.map-pin:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.map-pin[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Phone in portrait (or any one-column window that is not a short landscape one): the pinned map
+   (D-19). The map box sticks inside .layout, which reaches to the end of the laps; the readout
+   sticks under it. 35 % of the large viewport (so the browser bar never resizes it) stays under
+   40 % of the screen height (AP-18). Short landscape screens have two columns and no toggle (F-17). */
+@media (max-width: 1023.98px) and (orientation: portrait), (max-width: 1023.98px) and (min-height: 500.02px) {
+  .layout {
+    --pin-h: 35vh;
+  }
+  @supports (height: 1lvh) {
+    .layout {
+      --pin-h: 35lvh;
+    }
+  }
+  .layout.pinned .map-slot {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    height: var(--pin-h);
+  }
+  .layout.pinned #charts-slot .readout {
+    top: var(--pin-h);
+  }
+}
+
+/* Splitter between map and content in both two-column layouts (user 28 Oct 2026; splitter.ts) and no pin toggle there.
+   Inside the map box at its right edge; below the map's controls (z-index 2), above the canvas. */
+.splitter {
+  display: none;
+}
+@media (min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
+  .map-pin-group {
+    display: none;
+  }
+  .has-map .splitter {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 12px;
+    cursor: col-resize;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .has-map .splitter::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 3px;
+    width: 4px;
+    height: 40px;
+    margin-top: -20px;
+    border-radius: 2px;
+    background: var(--muted);
+  }
+}
+@media (pointer: coarse) {
+  .has-map .splitter {
+    width: 28px;
+  }
+}
+
+/* ADR-011 decision 7 T-3 (F-75): the route colouring's tokens, only the map reads them (map-style.ts, which has fallbacks); the same three theme selectors as page.css. */
+/* F-25 C-5: route colouring classes. Sequential (speed, pace, heart rate, power: low → high): blue → yellow →
+   orange-red, order on the blue–yellow axis, lightness splits yellow from red; diverging (gradient): blue descent,
+   sand flat, orange-red climb. Not the route's magenta, not the grey of hidden sections. Dark: no dark blue.
+   The selected range with colouring on (F-25 C-9): its outline, and the opacity of the route outside it. */
+:root {
+  --seq-0: #1b3f97;
+  --seq-1: #0057a8;
+  --seq-2: #0070ab;
+  --seq-3: #0088a9;
+  --seq-4: #04a19b;
+  --seq-5: #7ab05a;
+  --seq-6: #dcae00;
+  --seq-7: #e58900;
+  --seq-8: #df6800;
+  --seq-9: #d34900;
+  --seq-10: #c02e00;
+  --seq-11: #a81900;
+  --div-0: #163990;
+  --div-1: #1656a4;
+  --div-2: #2574b0;
+  --div-3: #488bb2;
+  --div-4: #6e9db3;
+  --div-5: #b3a381;
+  --div-6: #c8843d;
+  --div-7: #c76414;
+  --div-8: #be4400;
+  --div-9: #ab2c00;
+  --div-10: #902014;
+  --range-outline: #4d4d4d;
+  --route-fade: 0.35;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --seq-0: #5283e0;
+    --seq-1: #4c9be1;
+    --seq-2: #3fb3df;
+    --seq-3: #4bc8d5;
+    --seq-4: #55d7be;
+    --seq-5: #91df7f;
+    --seq-6: #fcd948;
+    --seq-7: #ffb635;
+    --seq-8: #ff9625;
+    --seq-9: #fb7b28;
+    --seq-10: #f16127;
+    --seq-11: #e54728;
+    --div-0: #4c7dd9;
+    --div-1: #519ae2;
+    --div-2: #61b1e6;
+    --div-3: #84c5e4;
+    --div-4: #a7d3e1;
+    --div-5: #e4d6ba;
+    --div-6: #f4bc74;
+    --div-7: #f99b44;
+    --div-8: #f77e35;
+    --div-9: #f16127;
+    --div-10: #e54728;
+    --range-outline: #b8b8b8;
+    --route-fade: 0.4;
+  }
+}
+:root[data-theme='dark'] {
+  --seq-0: #5283e0;
+  --seq-1: #4c9be1;
+  --seq-2: #3fb3df;
+  --seq-3: #4bc8d5;
+  --seq-4: #55d7be;
+  --seq-5: #91df7f;
+  --seq-6: #fcd948;
+  --seq-7: #ffb635;
+  --seq-8: #ff9625;
+  --seq-9: #fb7b28;
+  --seq-10: #f16127;
+  --seq-11: #e54728;
+  --div-0: #4c7dd9;
+  --div-1: #519ae2;
+  --div-2: #61b1e6;
+  --div-3: #84c5e4;
+  --div-4: #a7d3e1;
+  --div-5: #e4d6ba;
+  --div-6: #f4bc74;
+  --div-7: #f99b44;
+  --div-8: #f77e35;
+  --div-9: #f16127;
+  --div-10: #e54728;
+  --range-outline: #b8b8b8;
+  --route-fade: 0.4;
+}

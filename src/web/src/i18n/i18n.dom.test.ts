@@ -160,7 +160,7 @@ describe('no interface text outside the tables (LG-8)', () => {
 // Files that assign HTML: constants, SVG, markup shells or fetched files, never a text. A new file here
 // (or a text passed to one of them through a variable) is a decision, so it fails until listed.
 // Gap (F-62): English text that TypeScript builds with textContent or setAttribute is not scanned.
-const HTML_ASSIGNERS = ['edit/start.svelte.ts', 'efforts/index.ts', 'splits/chart.ts', 'impressum/page.ts', 'page/enhance.ts', 'components/map/map-view.ts', 'report/form.ts', 'lib/i18n/index.ts'];
+const HTML_ASSIGNERS = ['edit/start.svelte.ts', 'efforts/index.ts', 'splits/chart.ts', 'impressum/page.ts', 'page/enhance.ts', 'page/map-glue.ts', 'components/map/map-view.ts', 'report/form.ts', 'lib/i18n/index.ts'];
 
 describe('texts never reach HTML parsing (LG-7)', () => {
   const code = import.meta.glob(['../**/*.ts', '../**/*.svelte', '!../**/*.test.ts', '!../**/testing/**'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;

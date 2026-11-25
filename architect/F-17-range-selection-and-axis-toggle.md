@@ -83,6 +83,7 @@ The chart, panel and map components never import each other; they meet in the st
 | --- | --- |
 | Share | 4,000 bytes gzip (ADR-011), measured early with a temporary import. Estimate about 3,800: gestures, axis and shading about 1,700; panel and CSS about 1,000; statistics and store about 700; toggle, decoder and glue about 400. The map part is lazy (0 counted); its lazy delta is reported against F-06's 5,000 |
 | Over the share | Up to 500 from the reserve, reported, while the reserve stays ≥ 1,000 (F-14 precedent). Beyond that, stop and report. The first remedy is to load `RangePanel` with `import()` on the first range |
+| Deviation (F-75, ADR-011 decision 7 T-1) | The panel and `lib/range` are a lazy chunk, `import()`ed from the charts' `onready` (`page/range-panel.ts`); the slot stays empty (zero height) until it lands, a range set before then shows the panel when it does | Entry bytes (ADR-011) |
 | Ledger | Measured at F-17 QA r1: entry 54,936, F-17 with its follow-ups (splitter, prefs, readout restyle) 4,715 against F-14's closing entry of 50,221 (ADR-011's base; QA's 4,716 used 50,220). The 715 over the share are accepted (more than the 500 allowance; ADR-011 rev. 9). Reserve 3,564 after F-18's 1,500. The r2 fixes may add at most 100 more; the figure at F-17 close is final |
 | Data file | +8 raw bytes per sample. The compressed growth is measured on `ride-4h` and `ride-12h` and reported (ADR-029) |
 

@@ -23,6 +23,8 @@ import { FullscreenControl, LngLat, Map as MapLibreMap, Marker, NavigationContro
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import './map-view.css';
+// ADR-011 decision 7 T-2: the page's map-only glue travels in this chunk (page/map-glue.ts).
+export { addPinToggle, addSplitter, mountStrip } from '../../page/map-glue';
 import { onLanguage } from '../../lib/i18n';
 import { mapLocale, t } from './map-texts';
 import type { WorkoutData } from '../../lib/datafile';

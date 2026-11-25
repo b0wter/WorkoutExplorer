@@ -15,19 +15,17 @@ import { loadGroup, onLanguage, pageLang } from '../lib/i18n';
 import { routePresence } from '../lib/route';
 import ChartStack from '../components/charts/ChartStack.svelte';
 import RouteMap from '../components/map/RouteMap.svelte';
-import RangePanel from '../components/range/RangePanel.svelte';
 import { defaultUnits, createUnitsStore } from '../lib/units';
 import { createViewerPrefs, type KeyValueStore } from '../lib/prefs';
-import { parseRangeLink, rangeFragment } from '../lib/rangelink';
-import { copier, copyField, enhanceCopyLink, viewingUrl, type ClipboardNav, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, loadHeader, addLangSelect, addPinToggle, addThemeSelect, addUnitsSelect } from './enhance';
+import { parseRangeLink } from '../lib/rangelink';
+import { enhanceCopyLink, viewingUrl, enhanceExpiry, enhanceGpx, enhanceHowto, enhanceReport, enhanceSummaryInfo, enhanceUnits, loadHeader, addLangSelect, addThemeSelect, addUnitsSelect } from './enhance';
 import { enhanceLaps } from './laps';
 import { codeWord, distanceAdvances, lapsGroup } from '../lib/page';
 import { formatElapsed, formatSpeedOrPace, isPaceSport, speedOrPaceUnit } from '../lib/format';
 import { ordered } from '../lib/sections/order';
 import { loadErrorText } from './load-error';
-import { addSplitter, restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
+import { restoreSplit, LANDSCAPE_QUERY, type SplitterStorage } from './splitter';
 import { createLook, createMapProps, type Look } from './map-props.svelte';
-import { mountStrip } from './strip.svelte';
 import type { DataFileResult, WorkoutData, WorkoutMeta } from '../lib/datafile';
 import type { ZoneSource } from '../zones';
 import type { EffortWindow } from '../efforts';
@@ -55,52 +53,6 @@ function showLoadError(root: ParentNode, text: () => string): void {
     host.classList.add('load-failed');
     onLanguage(() => (p.textContent = text())); // F-54: a switch, or the language file arriving after the failure
   }
-}
-
-/** The range panel (F-17 R-9): mounted after the charts' first paint into #range-slot. The slot
- *  is hidden while there is no range; only the two transitions touch it, never a frame of a drag. */
-function mountRangePanel(root: ParentNode, data: WorkoutData, selection: SelectionStore, look: Look, oncopy?: (button: HTMLButtonElement) => void): void {
-  const slot = root.querySelector<HTMLElement>('#range-slot');
-  if (!slot) return;
-  let shown: boolean | null = null;
-  selection.subscribe((a) => {
-    const on = a >= 0;
-    if (on === shown) return;
-    shown = on;
-    slot.hidden = !on;
-  });
-  mount(RangePanel, {
-    target: slot,
-    props: {
-      data,
-      selection,
-      get units() {
-        return look.units;
-      },
-      get view() {
-        return look.view;
-      },
-      oncopy,
-    },
-  });
-}
-
-/** "Copy link to this selection" (F-40 SR-7): the viewing link plus the current range's fragment,
- *  through Copy link's routine. The fallback field never shows another range than the current one. */
-function rangeCopy(viewUrl: string, data: WorkoutData, selection: SelectionStore, nav: ClipboardNav): (button: HTMLButtonElement) => void {
-  const url = (): string => viewUrl + '#' + rangeFragment(data.time, selection.start(), selection.end());
-  let field: HTMLInputElement | null = null;
-  selection.subscribe(() => {
-    field?.remove();
-    field = null;
-  });
-  let copy: ((url: string) => void) | null = null;
-  return (button) => {
-    copy ??= copier(button, nav, (u) => {
-      if (selection.start() >= 0 && u === url() && button.parentElement) field = copyField(button.parentElement, u);
-    });
-    copy(url());
-  };
 }
 
 /** The edit page's seam (F-19 E-5): its already-decoded draft instead of the preload, and the
@@ -290,9 +242,13 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
     performance.mark('wx-page:map-ready');
     pinMap = h;
     onPinMap.forEach((f) => f(h));
-    addPinToggle(root, mapSlot);
-    const box = mapSlot.querySelector<HTMLElement>('.route-map');
-    if (box) mountStrip(box, data, cursor, look); // F-33 CR-2: the fullscreen box holds it
+    // ADR-011 decision 7 T-2: the map-only glue lives in the map-view chunk, already loaded now.
+    void import('../components/map/map-view').then((m) => {
+      m.addPinToggle(root, mapSlot);
+      const box = mapSlot.querySelector<HTMLElement>('.route-map');
+      if (box) m.mountStrip(box, data, cursor, look); // F-33 CR-2: the fullscreen box holds it
+      m.addSplitter(root, mapSlot, split);
+    });
     recorder?.mapReady();
   }, edit, prefs) : null;
   const ready = (): void => {
@@ -331,7 +287,6 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
   };
   if (map && mapSlot) {
     mount(RouteMap, { target: mapSlot, props: map.props });
-    addSplitter(root, mapSlot, split);
   }
   if (chartsSlot) {
     mount(ChartStack, {
@@ -362,8 +317,9 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
         onready: () => {
           performance.mark('wx-page:charts-ready');
           recorder?.chartsReady();
-          mountRangePanel(root, data, selection, look, viewUrl ? rangeCopy(viewUrl, data, selection, win.navigator) : undefined);
           ready();
+          // ADR-011 decision 7 T-1: the panel and lib/range are a lazy chunk; a range set before it lands shows when it does.
+          import('./range-panel').then((m) => m.mountRangePanel(root, data, selection, look, viewUrl, win.navigator), () => console.warn('page: range chunk failed'));
         },
       },
     });

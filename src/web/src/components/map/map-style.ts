@@ -73,7 +73,7 @@ export const MAP_COLOURS = {
 
 type MapColours = { readonly [K in keyof typeof MAP_COLOURS]: string };
 
-/** Custom property of each colour (page.css theme block). */
+/** Custom property of each colour (map-view.css, ADR-011 T-3). */
 const COLOUR_PROPERTIES: Readonly<Record<keyof typeof MAP_COLOURS, string>> = {
   background: '--map-bg',
   casing: '--route-casing',
@@ -92,7 +92,7 @@ const COLOUR_PROPERTIES: Readonly<Record<keyof typeof MAP_COLOURS, string>> = {
 };
 
 /** The colour classes' light values, the fallback of `--seq-0…11` (speed, pace, heart rate, power: low → high)
- *  and `--div-0…10` (gradient: descent, flat, climb) in page.css (F-25 C-5). Feature property `c` of wx-colour
+ *  and `--div-0…10` (gradient: descent, flat, climb) in map-view.css (F-25 C-5, ADR-011 T-3). Feature property `c` of wx-colour
  *  and wx-range indexes this list: 0–11 sequential, 12–22 diverging; in wx-range, NO_VALUE is an edge without one. */
 export const CLASS_COLOURS: readonly string[] = [
   '#1b3f97', '#0057a8', '#0070ab', '#0088a9', '#04a19b', '#7ab05a', '#dcae00', '#e58900', '#df6800', '#d34900', '#c02e00', '#a81900',
