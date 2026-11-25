@@ -19,7 +19,6 @@ import { mount } from 'svelte';
 import './edit.css';
 import ActivityPage from '../components/page/ActivityPage.svelte';
 import EditPanel from '../components/edit/EditPanel.svelte';
-import PublishedView from '../components/edit/PublishedView.svelte';
 import { loadDataFile, type Summary, type WorkoutMeta, type Zones } from '../lib/datafile';
 import { summaryItems } from '../lib/page';
 import type { ChartDecorator } from '../components/charts/uplot-options';
@@ -181,7 +180,7 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
     mineList.remove();
     showGeneric(doc);
   };
-  if (owner.kind === 'published') return startPublished(host, owner, loc.origin, mineList, gone);
+  if (owner.kind === 'published') return import('./published').then((m) => m.startPublished(host, owner, loc.origin, mineList, gone, () => actions(doc, owner, mineList), (msg) => showMessage(host, msg)));
   const [got, result] = await Promise.all([owner.settings(), loadDataFile(owner.draft)]);
   if (!got.ok && got.notFound) return gone();
   if (!result.ok && result.error.code === 'http-status' && result.error.status === 404) return gone();
@@ -571,32 +570,4 @@ export async function startEdit(host: HTMLElement, win: Window = window, loc: Ow
       },
     });
   }
-}
-
-/** The published page (C-5): the settings only; a draft goes to the edit page with replace. */
-async function startPublished(host: HTMLElement, owner: OwnerClient, origin: string, mineList: ReturnType<typeof list>, gone: () => void): Promise<void> {
-  const doc = host.ownerDocument;
-  const got = await owner.settings();
-  if (!got.ok) return got.notFound ? gone() : showMessage(host, said(got));
-  if (got.value.visibility === 'draft') return owner.toEdit(true);
-  mineList.update(got.value);
-  const ui = actions(doc, owner, mineList);
-  doc.title = 'Workout Explorer';
-  host.replaceChildren();
-  mount(PublishedView, {
-    target: host,
-    props: {
-      origin,
-      viewUrl: got.value.view_url,
-      editLink: owner.editLink!,
-      get busy() {
-        return ui.busy;
-      },
-      get status() {
-        return ui.status;
-      },
-      onback: () => owner.toEdit(false),
-      ondelete: () => void ui.remove(),
-    },
-  });
 }
