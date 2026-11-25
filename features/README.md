@@ -16,7 +16,7 @@ The product specification and technical design (`../spec/`), cut into features t
 | ID | Title | Phase | Owner | Depends on | Status | Waiting on |
 | --- | --- | --- | --- | --- | --- | --- |
 | [F-74](F-74-speed-spike-filter.md) | Speed spike filter and robust chart axis | — | both (backend first) | F-02, F-05, F-08, F-30, F-42, F-47, F-54, F-58, F-67, F-68 | done | Regenerate, leg view, LCP/60 fps unchecked; QA-74-r1-3, r1-6 (Minor, frontend) |
-| [F-75](F-75-entry-bundle-trims.md) | Entry bundle trims (ADR-011 T-1 to T-3) | — | frontend | F-74 | not started | |
+| [F-75](F-75-entry-bundle-trims.md) | Entry bundle trims (ADR-011 T-1 to T-3) | — | frontend | F-74 | ready with conditions (QA r1, 25 Nov 2026) | LCP/60 fps on ride-12h unmeasured; QA-75-r1-1 to r1-4 (Minor, frontend; r1-3 no splitter without WebGL accepted) |
 | [F-76](F-76-taller-charts.md) | Taller charts | — | both (frontend first; backend: CSP hash) | F-05, F-14, F-22, F-54, F-73, F-74, F-75 | architecture | |
 | [F-01](F-01-project-skeleton-and-ci.md) | Project skeleton and CI | 0 | both | — | done | checked by the user 12 Nov; user: GitHub Actions run on a `v*` tag |
 | [F-02](F-02-fit-parsing-and-normalisation.md) | FIT parsing and normalisation | 0 | backend | F-01 | done | |
