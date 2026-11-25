@@ -28,6 +28,8 @@ for (const name of ['interval-run', 'ride-12h']) {
 test('F-71: the interval run shows the slow recovery laps against the fast reps (bar heights differ, axis is not symmetric)', async ({ page }) => {
   await open(page, workout('interval-run').view, { storage: { 'wx.units': 'metric' } });
   await page.locator('section.laps').scrollIntoViewIfNeeded();
+  await expect(svg(page)).toBeVisible();
+  await expect(svg(page).locator('line.ref')).toHaveCount(1);
   const bars = await svg(page).locator('rect.bar').evaluateAll((r) => r.map((b) => b.getBoundingClientRect().height));
   expect(Math.max(...bars)).toBeGreaterThan(Math.min(...bars) * 1.5);
   const ref = await svg(page).locator('line.ref').evaluate((l) => { const r = l.getBoundingClientRect(), s = l.closest('svg').getBoundingClientRect(); return (r.top - s.top) / s.height; });
