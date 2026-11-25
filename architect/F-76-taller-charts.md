@@ -1,7 +1,7 @@
 # F-76 Taller charts: architecture
 
 - **Version:** 0.1
-- **Status:** accepted (25 Nov 2026); normal lane; built after F-75 is merged; four assumptions under Open points
+- **Status:** accepted (25 Nov 2026); normal lane; built after F-75 is merged; four points decided by the user 25 Nov 2026 (below); no open points
 - **Feature:** [`features/F-76-taller-charts.md`](../features/F-76-taller-charts.md) (OQ-359 to OQ-367 decided)
 - **Requirements:** DS-8; AP-4, AP-6, AP-7, AP-17, AP-18, AP-19, DS-1, DS-6, INF-1; NFR Performance
 - **Builds on:** [F-73](F-73-remembered-split-without-layout-jump.md) RS-1 to RS-7 (head script, hash rotation); [F-05](F-05-stacked-charts-with-shared-cursor.md) D-15, D-16; [F-17](F-17-range-selection-and-axis-toggle.md) R-8; [F-67](F-67-multisport-leg-picker.md) LP-2; [ADR-011](ADR-011-activity-page-bundle-allocation.md) rev. 17; [ADR-016](ADR-016-scrubbing-smoothness-measurement-and-gate.md); [ADR-032](ADR-032-response-headers-in-caddy.md) item 3. No new ADR
@@ -42,9 +42,9 @@ Mutants that must fail a check: chart-size statement after the split statement; 
 | Architect (in place, with the build) | F-05 D-15: height live per TC-6. F-17 R-8 and F-67 LP-2: toolbar row always with charts, picker checks distance itself (TC-7) |
 | Requirements | TD Load order step 1 and the `lib/prefs` line: `wx.charts`, `data-chart-size` (TC-1, TC-2) |
 
-## Open points (assumed; the user answers by number)
+## Decided points (user, 25 Nov 2026, as suggested)
 
-1. Workouts without a distance stream gain the 40 px toolbar row for the toggle alone (TC-7). Suggestion: accept.
-2. Browsers without registered custom properties (Firefox before 128, Safari before 16.4): in short landscape the charts draw at 120 px inside the capped reservation, a gap below (TC-5). Suggestion: accept.
-3. Pages published before the release ignore the stored size until rebuilt or expired (TC-2, as F-73 RS-6). Suggestion: accept, no forced rebuild.
-4. Label wording in de/es/fr: proposed by the engineer, reviewed on screen at 360 px.
+1. Workouts without a distance stream gain the 40 px toolbar row for the toggle alone (TC-7).
+2. Browsers without registered custom properties (Firefox before 128, Safari before 16.4): in short landscape the charts draw at 120 px inside the capped reservation, a gap below (TC-5).
+3. Pages published before the release ignore the stored size until rebuilt or expired (TC-2, as F-73 RS-6); no forced rebuild.
+4. Label wording in de/es/fr: proposed by the engineer; the user checks German on screen at 360 px.
