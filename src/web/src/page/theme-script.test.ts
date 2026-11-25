@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { readWebFile } from '../../test-support/source.mjs';
 import { PREF_KEYS } from '../lib/prefs';
+import { LANDSCAPE_QUERY } from './splitter';
 
 const inline = (html: string): string[] => [...html.matchAll(/<script>([^<]*)<\/script>/g)].map((m) => m[1]);
 const [script] = inline(readWebFile('index.html'));
@@ -13,11 +14,13 @@ interface Run {
   fetched: string[];
   timers: (() => void)[];
   win: { wxLang?: unknown };
+  root: Record<string, string>;
 }
 /** Runs the script against stand-ins: storage, root element, the held meta's attributes, browser languages. */
-function runAll(getItem: (k: string) => string | null, languages: readonly string[] | undefined = ['en'], meta: Record<string, string> | null = null): Run {
-  const html = { dataset: {} as Record<string, string> };
-  const r: Run = { dataset: html.dataset, fetched: [], timers: [], win: {} };
+function runAll(getItem: (k: string) => string | null, languages: readonly string[] | undefined = ['en'], meta: Record<string, string> | null = null, matchMedia: ((q: string) => { matches: boolean }) | null = () => ({ matches: false })): Run {
+  const root: Record<string, string> = {};
+  const html = { dataset: {} as Record<string, string>, style: { setProperty: (k: string, v: string) => void (root[k] = v) } };
+  const r: Run = { dataset: html.dataset, fetched: [], timers: [], win: {}, root };
   const doc = { documentElement: html, querySelector: (q: string) => (q === 'meta[data-hold]' && meta ? { getAttribute: (a: string) => meta[a] ?? null } : null) };
   const nav = { languages, language: 'en-GB' };
   const fetch = (u: string) => (r.fetched.push(u), Promise.resolve('response'));
@@ -25,7 +28,7 @@ function runAll(getItem: (k: string) => string | null, languages: readonly strin
     expect(ms).toBe(500);
     r.timers.push(f);
   };
-  new Function('localStorage', 'document', 'navigator', 'window', 'fetch', 'setTimeout', script)({ getItem }, doc, nav, r.win, fetch, setTimeout);
+  new Function('localStorage', 'document', 'navigator', 'window', 'fetch', 'setTimeout', 'matchMedia', script)({ getItem }, doc, nav, r.win, fetch, setTimeout, matchMedia);
   return r;
 }
 function attrs(getItem: (k: string) => string | null): Record<string, string> {
@@ -51,8 +54,52 @@ describe('theme head script', () => {
     const hash = `'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`;
     // F-39 HU-2: the previous script's hash may follow until no published page carries it.
     for (const file of ['../../deploy/Caddyfile', '../server/cmd/workout-explorer/caddy_test.go']) {
-      expect(scriptSrc(readWebFile(file)).slice(0, 2)).toEqual(["'self'", hash]);
+      const src = scriptSrc(readWebFile(file));
+      expect(src.slice(0, 2)).toEqual(["'self'", hash]);
+      expect(src).toContain("'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='"); // F-73 RS-6: older hashes stay
+      expect(src).toContain("'sha256-O55BZSok+26ER+X6MzVA5nes+xUDGDoeXwJKDKzdalw='");
     }
+  });
+
+  it('follows the viewport meta in every page (F-73 RS-5)', () => {
+    for (const f of ['index.html', 'edit.html', 'upload.html', 'about.html', 'generic.html', 'my-workouts.html']) {
+      const html = readWebFile(f);
+      expect(html.indexOf('<meta name="viewport"'), f).toBeGreaterThan(-1);
+      expect(html.indexOf('<meta name="viewport"'), f).toBeLessThan(html.indexOf('<script>'));
+    }
+  });
+
+  // F-73 RS-1, RS-2: the stored split before the first paint (the bundle comparison is in splitter.dom.test.ts).
+  describe('split', () => {
+    const wide = (v: string | null) => (k: string) => (k === PREF_KEYS.wide ? v : k === PREF_KEYS.landscape ? '35' : null);
+    const split = (getItem: (k: string) => string | null, landscape = false) => runAll(getItem, ['en'], null, () => ({ matches: landscape })).root['--map-w'];
+
+    it('reads the layout key by the splitter query, from the prefs keys', () => {
+      expect(script).toContain(LANDSCAPE_QUERY);
+      expect(script).toContain(PREF_KEYS.wide);
+      expect(script).toContain(PREF_KEYS.landscape);
+      expect(split(wide('60'))).toBe('60%');
+      expect(split(wide('60'), true)).toBe('35%');
+      const asked: string[] = [];
+      runAll(() => null, ['en'], null, (q) => (asked.push(q), { matches: false }));
+      expect(asked).toEqual([LANDSCAPE_QUERY]);
+    });
+
+    it('applies only 30 to 70 in the prefs format', () => {
+      for (const v of ['30', '60', '70', '45.5', '60.00']) expect(split(wide(v)), v).toBe(v + '%');
+      for (const v of ['20', '29.99', '70.01', '80', 'abc', '50%', '1e2', '', null]) expect(split(wide(v)), String(v)).toBeUndefined();
+    });
+
+    it('is silent when storage or matchMedia fails, and theme, hint and language still apply', () => {
+      const keys: Record<string, string> = { 'wx.theme': 'dark', 'wx.hint.done': '1', 'wx.lang': 'de', [PREF_KEYS.wide]: '60' };
+      const r = runAll((k) => keys[k] ?? null, ['en'], null, null);
+      expect(r.root).toEqual({});
+      expect(r.dataset).toEqual({ theme: 'dark', hint: 'done', lang: 'de' });
+      const throwing = runAll(() => {
+        throw new Error('SecurityError');
+      });
+      expect(throwing.root).toEqual({});
+    });
   });
 
   it('sets data-theme only for a stored light or dark, from the prefs key', () => {
