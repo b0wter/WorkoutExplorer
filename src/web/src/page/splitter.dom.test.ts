@@ -186,4 +186,18 @@ describe('head script split', () => {
     expect(layout.style.getPropertyValue('--map-w')).toBe('');
     expect(document.documentElement.style.getPropertyValue('--map-w')).toBe('');
   });
+
+  it('rotating into a layout with nothing stored leaves no --map-w anywhere (QA-73-r1-2)', () => {
+    document.documentElement.style.setProperty('--map-w', '60%');
+    const store: Record<string, string> = { 'wx.split.wide': '60' };
+    const prefs = createViewerPrefs(() => ({ getItem: (k) => store[k] ?? null, setItem: () => {}, removeItem: () => {} }));
+    let change = (): void => {};
+    const landscape = { matches: false, addEventListener: (_: string, f: () => void) => (change = f) } as unknown as MediaQueryList;
+    const { layout } = setup({ prefs, landscape });
+    expect(layout.style.getPropertyValue('--map-w')).toBe('60.00%');
+    (landscape as { matches: boolean }).matches = true;
+    change();
+    expect(layout.style.getPropertyValue('--map-w')).toBe('');
+    expect(document.documentElement.style.getPropertyValue('--map-w')).toBe('');
+  });
 });

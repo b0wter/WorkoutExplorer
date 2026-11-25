@@ -57,6 +57,7 @@ describe('theme head script', () => {
       const src = scriptSrc(readWebFile(file));
       expect(src.slice(0, 2)).toEqual(["'self'", hash]);
       expect(src).toContain("'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='"); // F-73 RS-6: older hashes stay
+      expect(src).toContain("'sha256-oU85smkdewIErbjHrk9QZ1FiICdjcwU0koHX7ul9Dpw='");
       expect(src).toContain("'sha256-O55BZSok+26ER+X6MzVA5nes+xUDGDoeXwJKDKzdalw='");
     }
   });
