@@ -33,8 +33,9 @@ test('F-74: a 1 s spike is removed: max speed is the ride speed, the readout the
 test('F-74: a 6 s glitch is kept: true value in the readout and max speed, chart axis clipped (AP-26)', async ({ page, isMobile }) => {
   await open(page, workout('glitch-ride').view, METRIC);
   expect(await maxSpeed(page)).toBeGreaterThan(80);
-  // Taps do not move the cursor like a swipe does, so the readout is checked with a mouse only.
-  if (!isMobile) expect(await scan(page, SPIKE_AT, 'Speed', /8\d\.\d\s*km\/h/), 'readout shows the true value').toMatch(/8\d\.\d/);
+  // Taps do not move the cursor like a swipe does, and a 6 s spike is under one pixel of a phone-width chart: the readout is
+  // checked with a mouse on a wide chart only (BACKLOG: touch scrubbing helper).
+  if (!isMobile && page.viewportSize().width >= 600) expect(await scan(page, SPIKE_AT, 'Speed', /8\d\.\d\s*km\/h/), 'readout shows the true value').toMatch(/8\d\.\d/);
   // The glitch is drawn at the top edge, and the axis is not stretched to 85 km/h: the 26 km/h line's noise spans a visible band.
   const m = await lineMetrics(page);
   expect(m.top).toBeLessThan(0.07); // the plot starts 8 px (6 %) below the canvas top
