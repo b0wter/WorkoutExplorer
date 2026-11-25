@@ -256,7 +256,7 @@ func TestTransitionAllowListComplete(t *testing.T) {
 	for i := 0; i < v.NumField(); i++ {
 		name := v.Type().Field(i).Name
 		switch {
-		case name == "Offset" || name == "Filled" || name == "inserted" || name == "MovingTime" || name == "Gain":
+		case name == "Offset" || name == "Filled" || name == "inserted" || name == "unfiltered" || name == "MovingTime" || name == "Gain":
 			// the cumulative series of F-17 B-1 (ADR-029) are derived after R-13
 		case isStream[v.Field(i).Addr().Pointer()]:
 			matched++

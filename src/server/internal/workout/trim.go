@@ -77,6 +77,14 @@ func Trim(w Workout, a, b int) Workout {
 			}
 		}
 	}
+	for i, v := range s.unfiltered { // F-74 SP-5
+		if i >= a && i <= b {
+			if ns.unfiltered == nil {
+				ns.unfiltered = map[int]float64{}
+			}
+			ns.unfiltered[i-a] = v
+		}
+	}
 	settlePresence(&ns)
 
 	// Sessions and laps: clipped; those with nothing left are gone.

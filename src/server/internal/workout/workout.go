@@ -143,6 +143,10 @@ type Samples struct {
 	// the start and end hiding measures over recorded fixes only (F-16
 	// H-3). Never encoded.
 	inserted []bool
+	// unfiltered holds the speed before the F-74 spike filter for every
+	// sample it made missing (sparse; nil: none). Only moving time reads it
+	// (SP-5). Never encoded.
+	unfiltered map[int]float64
 }
 
 // Inserted reports whether sample i was inserted by gap filling (R-3).

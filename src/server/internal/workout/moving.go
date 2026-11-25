@@ -71,6 +71,9 @@ func movingTime(timer []TimerEvent, s Samples, tl *sportTimeline) (*float64, str
 			var speed float64
 			if s.Speed != nil {
 				speed = s.Speed[i]
+				if u, ok := s.unfiltered[i]; ok { // F-74 SP-5
+					speed = u
+				}
 			} else {
 				speed = (s.Distance[i] - s.Distance[i-1]) / float64(dt)
 			}

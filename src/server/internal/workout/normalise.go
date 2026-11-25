@@ -48,6 +48,9 @@ func Normalise(rec Recording) Workout {
 	maskTransitions(&w, tl)
 	settlePresence(&w.Samples)
 
+	// F-74 UP-12 (SP-1): speed spikes, after R-13 and R-4, before R-6/R-7/R-10/R-11.
+	removeSpeedSpikes(&w)
+
 	// Integrity first: the record leg of the summary needs Truncated.
 	w.Integrity = rec.Integrity
 
