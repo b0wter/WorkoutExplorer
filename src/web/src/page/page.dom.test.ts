@@ -227,26 +227,10 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(map.load).toBe(false);
 
     charts.onready?.();
+    await settle();
     flushSync();
     expect(map.load).toBe(true);
     expect(stubLog.calls).toEqual(['RouteMap', 'ChartStack']); // no remount
-  });
-
-  it('lap rows are tappable only once the range panel is mounted (L-7, QA-18-r1-3)', async () => {
-    const g = loadGolden().find((x) => x.name === 'ride-30min');
-    if (!g) throw new Error('no golden ride-30min');
-    respond = () => new Response(g.bin.slice(0), { status: 200 }); // rows match the data file (L-2)
-    await open();
-    const [charts] = stubLog.chartStack;
-    const row = document.querySelector<HTMLElement>('section.laps tbody tr');
-    row?.click();
-    expect(charts.selection?.start()).toBe(-1);
-    expect(document.querySelector('section.laps')?.classList.contains('live')).toBe(false);
-    charts.onready?.();
-    flushSync();
-    expect(document.getElementById('range-slot')?.childElementCount).toBeGreaterThan(0);
-    row?.click();
-    expect(charts.selection?.start()).toBe(0);
   });
 
   it('F-42 MS-9: a multisport workout loads the sections chunk after the charts\' first paint: decorator and leg heading taps (F-64 LL-3)', async () => {
@@ -259,6 +243,7 @@ describe('wiring (F-06 "Wiring")', () => {
     await settle();
     expect(charts.decorate).toBeUndefined();
     charts.onready?.();
+    await settle();
     await vi.waitFor(() => expect(typeof charts.decorate).toBe('function'));
     sep?.click();
     expect(charts.selection?.start()).toBe(0);
@@ -276,6 +261,7 @@ describe('wiring (F-06 "Wiring")', () => {
       await open('triathlon');
       const [charts] = stubLog.chartStack;
       charts.onready?.();
+      await settle();
       await vi.waitFor(() => expect(console.warn).toHaveBeenCalledWith('page: sections chunk failed'));
       expect(console.warn).toHaveBeenCalledTimes(1);
       expect(charts.decorate).toBeUndefined();
@@ -283,6 +269,23 @@ describe('wiring (F-06 "Wiring")', () => {
     } finally {
       vi.doUnmock('../sections');
     }
+  });
+
+  it('lap rows are tappable only once the range panel is mounted (L-7, QA-18-r1-3)', async () => {
+    const g = loadGolden().find((x) => x.name === 'ride-30min');
+    if (!g) throw new Error('no golden ride-30min');
+    respond = () => new Response(g.bin.slice(0), { status: 200 }); // rows match the data file (L-2)
+    await open();
+    const [charts] = stubLog.chartStack;
+    const row = document.querySelector<HTMLElement>('section.laps tbody tr');
+    row?.click();
+    expect(charts.selection?.start()).toBe(-1);
+    expect(document.querySelector('section.laps')?.classList.contains('live')).toBe(false);
+    charts.onready?.();
+    await vi.waitFor(() => expect(document.getElementById('range-slot')?.childElementCount).toBeGreaterThan(0), { timeout: 10000 }); // lazy chunk (ADR-011 T-1)
+    expect(document.getElementById('range-slot')?.childElementCount).toBeGreaterThan(0);
+    row?.click();
+    expect(charts.selection?.start()).toBe(0);
   });
 
   it('F-49 ZN-8: zone values load the zones chunk after the charts\' first paint; it fills the slot after the laps', async () => {
@@ -294,6 +297,7 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(zones?.previousElementSibling?.matches('section.laps')).toBe(true);
     expect([zones?.hidden, zones?.childElementCount]).toEqual([true, 0]);
     stubLog.chartStack[0].onready?.();
+    await settle();
     await vi.waitFor(() => expect(zones?.querySelectorAll('.zones-kind')).toHaveLength(2));
     expect(zones?.hidden).toBe(false);
   });
@@ -335,6 +339,7 @@ describe('wiring (F-06 "Wiring")', () => {
       await open('ride-30min');
       stubLog.chartStack[0].onready?.();
       await settle();
+      await settle();
       expect(console.warn).not.toHaveBeenCalledWith('page: zones chunk failed');
       expect(slot('zones-slot')?.hidden).toBe(true);
     } finally {
@@ -348,6 +353,7 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(efforts?.previousElementSibling?.id).toBe('zones-slot');
     expect([efforts?.hidden, efforts?.childElementCount]).toEqual([true, 0]);
     stubLog.chartStack[0].onready?.();
+    await settle();
     await vi.waitFor(() => expect(efforts?.querySelector('h2')?.textContent).toBe('Best efforts'));
     expect(efforts?.hidden).toBe(false);
   });
@@ -363,6 +369,7 @@ describe('wiring (F-06 "Wiring")', () => {
       await open('indoor-unknown-zone');
       stubLog.chartStack[0].onready?.();
       await settle();
+      await settle();
       expect(console.warn).not.toHaveBeenCalledWith('page: efforts chunk failed');
       expect(slot('efforts-slot')?.hidden).toBe(true);
     } finally {
@@ -377,6 +384,7 @@ describe('wiring (F-06 "Wiring")', () => {
     await open('two-rides');
     const [charts] = stubLog.chartStack;
     charts.onready?.();
+    await settle();
     await new Promise((r) => setTimeout(r, 50));
     expect(charts.decorate).toBeUndefined();
     expect(document.querySelector('tr.laps-section')).toBeNull();
@@ -392,6 +400,7 @@ describe('wiring (F-06 "Wiring")', () => {
     // Runs before the ?measure test in this file: the mock factory counts only the first import.
     await open();
     stubLog.chartStack[0].onready?.();
+    await settle();
     stubLog.routeMap[0].onmapready?.();
     flushSync();
     expect(rec.imports).toBe(0);
@@ -410,6 +419,7 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(stubLog.calls).toEqual(['createRecorder', 'RouteMap', 'ChartStack']);
 
     stubLog.chartStack[0].onready?.();
+    await settle();
     expect(stubLog.calls.slice(3)).toEqual(['chartsReady']);
     stubLog.routeMap[0].onmapready?.();
     expect(stubLog.calls.slice(3)).toEqual(['chartsReady', 'mapReady']);
@@ -422,6 +432,7 @@ describe('wiring (F-06 "Wiring")', () => {
     expect(has('wx-page:data-ready')).toBe(1);
     expect(has('wx-page:charts-ready')).toBe(0);
     stubLog.chartStack[0].onready?.();
+    await settle();
     expect(has('wx-page:charts-ready')).toBe(1);
     stubLog.routeMap[0].onmapready?.();
     expect(has('wx-page:map-ready')).toBe(1);
@@ -454,6 +465,7 @@ describe('range panel (F-17 R-9, AC 4, AC 5)', () => {
     expect(rangeSlot().childElementCount).toBe(0);
     expect(rangeSlot().hidden).toBe(false); // the template's empty, zero-height slot
     stubLog.chartStack[0].onready?.();
+    await settle();
     flushSync();
     expect(rangeSlot().querySelector('.range-panel')).not.toBeNull();
     expect(rangeSlot().hidden).toBe(true);
@@ -462,6 +474,7 @@ describe('range panel (F-17 R-9, AC 4, AC 5)', () => {
   it('a range shows the panel with its values; the clear control clears it and hides the panel', async () => {
     await open();
     stubLog.chartStack[0].onready?.();
+    await settle();
     flushSync();
     const sel = stubLog.chartStack[0].selection;
     if (!sel) throw new Error('no selection');
@@ -481,6 +494,7 @@ describe('range panel (F-17 R-9, AC 4, AC 5)', () => {
   it('a units change rewrites the panel without a new range', async () => {
     await open();
     stubLog.chartStack[0].onready?.();
+    await settle();
     flushSync();
     const sel = stubLog.chartStack[0].selection;
     sel?.set(100, 3000);
@@ -615,6 +629,7 @@ describe('range link (F-40 SR-1 to SR-8; AP-19)', () => {
     await startPage(document, window, seam && decoded.ok ? { data: decoded, hidden: [], onlook() {}, onzones() {}, onefforts() {}, explain: () => ({ sport: 'cycling', summary: {}, sessions: [], lengths: [], zones: false }) } : undefined);
     await settle();
     stubLog.chartStack[0].onready?.();
+    await settle();
     flushSync();
   }
 
@@ -927,6 +942,7 @@ describe('map pins loading (F-56 PN-7, PN-9; AC 45)', () => {
     await settle();
     expect(fetchMock.mock.calls.map((c) => String(c[0])).some((u) => u.includes('/pins.'))).toBe(false);
     stubLog.chartStack[0].onready?.();
+    await settle();
     await vi.waitFor(() => expect(document.querySelector('.pin-row')?.textContent).toMatch(/^Gravel/));
     expect(fetchMock.mock.calls.map((c) => String(c[0]))).toContain(page.model.Pins.URL);
   });
@@ -934,6 +950,7 @@ describe('map pins loading (F-56 PN-7, PN-9; AC 45)', () => {
   it('no pins file: no slot, no pins request, no list', async () => {
     await open('ride-30min');
     stubLog.chartStack[0].onready?.();
+    await settle();
     await settle();
     expect(document.querySelector('.pins-slot')).toBeNull();
     expect(fetchMock.mock.calls.map((c) => String(c[0])).some((u) => u.includes('pins'))).toBe(false);
