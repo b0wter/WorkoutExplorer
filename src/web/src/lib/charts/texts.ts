@@ -11,6 +11,10 @@ export const en = {
   chartPower: 'Power',
   chartCadence: 'Cadence',
   chartTemperature: 'Temperature',
+  // Readout labels (cells are narrow; the other languages abbreviate the long ones).
+  readoutSpeed: 'Speed',
+  readoutHeartRate: 'Heart rate',
+  readoutTemperature: 'Temperature',
 };
 
 export const t = texts(en);

@@ -180,7 +180,10 @@
   "chartHeartRate": "Frecuencia cardiaca",
   "chartPower": "Potencia",
   "chartCadence": "Cadencia",
-  "chartTemperature": "Temperatura"
+  "chartTemperature": "Temperatura",
+  "readoutSpeed": "Velocidad",
+  "readoutHeartRate": "FC",
+  "readoutTemperature": "Temp."
  },
  "lib/errors": {
   "bad_request": "No se aceptó la solicitud. Recarga la página e inténtalo de nuevo.",
