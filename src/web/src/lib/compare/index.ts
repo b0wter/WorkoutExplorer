@@ -33,6 +33,8 @@ export interface Comparison {
   /** Median and best of the counted rows, m/s. */
   readonly reference: number;
   readonly best: number;
+  /** The reference line's place, a fraction of the plot height (SC-11: not centred). */
+  readonly ref: number;
   /** The on-pace band, fractions. */
   readonly band: readonly [top: number, bottom: number];
   /** Speeds at the plot's top and bottom edge, m/s (SC-11: always real values). */
@@ -68,13 +70,16 @@ export function compare(rows: readonly CompareRow[], pace: boolean): Comparison 
   const m = counted.length >> 1;
   const reference = counted.length % 2 ? counted[m] : (counted[m - 1] + counted[m]) / 2;
   const best = counted[counted.length - 1];
-  // Up is faster: q = v for speed, −1/v for pace (linear in the shown pace); the axis is symmetric around q(reference).
+  // Up is faster: q = v for speed, −1/v for pace (linear in the shown pace); the axis is not centred (SC-11).
   const q = (v: number): number => (pace ? -1 / v : v);
   const qr = q(reference);
   const hi = q(reference * (1 + ON_PACE)) - qr;
   const lo = qr - q(reference * (1 - ON_PACE));
-  const h = halfRange(barred.map((v) => Math.abs(q(v) - qr)), Math.max(hi, lo), pace ? -qr / 2 : qr);
-  const y = (v: number): number => Math.min(1, Math.max(0, 0.5 - (q(v) - qr) / (2 * h)));
+  const up = reach(barred.map((v) => q(v) - qr), hi, pace ? -qr / 2 : qr);
+  const down = reach(barred.map((v) => qr - q(v)), lo, pace ? -2 * qr : qr);
+  const tot = up + down;
+  const y = (v: number): number => Math.min(1, Math.max(0, (up - (q(v) - qr)) / tot));
+  const ref = up / tot;
   const fromQ = (x: number): number => (pace ? -1 / x : x);
   return {
     bars: speeds.map((v) => {
@@ -82,25 +87,24 @@ export function compare(rows: readonly CompareRow[], pace: boolean): Comparison 
       const d = (v - reference) / reference;
       const e = ON_PACE + 1e-9; // inclusive despite float error (10.3 vs 10)
       const yv = y(v);
-      const clipped = Math.abs(q(v) - qr) > h * (1 + 1e-9);
-      return { y0: Math.min(yv, 0.5), y1: Math.max(yv, 0.5), cls: d > e ? 'faster' : d < -e ? 'slower' : 'pace', clipped };
+      const dq = q(v) - qr;
+      const clipped = dq > up * (1 + 1e-9) || -dq > down * (1 + 1e-9);
+      return { y0: Math.min(yv, ref), y1: Math.max(yv, ref), cls: d > e ? 'faster' : d < -e ? 'slower' : 'pace', clipped };
     }),
     reference,
     best,
-    band: [0.5 - hi / (2 * h), 0.5 + lo / (2 * h)],
-    top: fromQ(qr + h),
-    bottom: fromQ(qr - h),
+    ref,
+    band: [(up - hi) / tot, (up + lo) / tot],
+    top: fromQ(qr + up),
+    bottom: fromQ(qr - down),
     overlays: OVERLAYS.filter((k) => rows.some((r, i) => speeds[i] === speeds[i] && valueOf(r, k) === valueOf(r, k))),
   };
 }
 
-/** SC-11, in the shown quantity (any positive multiple of q: the rule only compares ratios). The cap
- *  is 3× the 75th-percentile deviation (nearest rank, the ⌈0.75·n⌉-th smallest), at least 3× the band
- *  edge. The half-range is the furthest bar, at most the cap and the edge limit, at least the band edge. */
-export function halfRange(deviations: readonly number[], band: number, limit: number): number {
-  const d = [...deviations].sort((a, b) => a - b);
-  const cap = 3 * Math.max(d[Math.ceil(0.75 * d.length) - 1] ?? 0, band);
-  return Math.max(band, Math.min(d[d.length - 1] ?? 0, cap, limit));
+/** SC-11, one side of the axis, in the shown quantity: the furthest bar on that side, at most the edge
+ *  limit, at least the band edge. No percentile cap: outlier laps are drawn whole. */
+export function reach(deviations: readonly number[], band: number, limit: number): number {
+  return Math.max(band, Math.min(Math.max(0, ...deviations), limit));
 }
 
 export interface Overlay {

@@ -120,17 +120,17 @@ export function createChart(
     const w = 100 / n;
     const bw = Math.min(0.7 * w, 6);
     const step = [1, 2, 5, 10, 20, 50].find((s) => Math.ceil(n / s) <= 12)!;
-    let svg = `<rect class="band" x="0" width="100%" y="${r2(yp(c.band[0]))}" height="${r2(yp(c.band[1]) - yp(c.band[0]))}"/><line class="ref" x1="0" x2="100%" y1="${yp(0.5)}" y2="${yp(0.5)}"/>`;
+    let svg = `<rect class="band" x="0" width="100%" y="${r2(yp(c.band[0]))}" height="${r2(yp(c.band[1]) - yp(c.band[0]))}"/><line class="ref" x1="0" x2="100%" y1="${yp(c.ref)}" y2="${yp(c.ref)}"/>`;
     c.bars.forEach((b, i) => {
       const mid = (i + 0.5) * w;
       if (b) {
         let top = yp(b.y0);
         let bot = yp(b.y1);
-        if (bot - top < 2) (b.y0 < 0.5 ? (top = bot - 2) : (bot = top + 2));
+        if (bot - top < 2) (b.y0 < c.ref ? (top = bot - 2) : (bot = top + 2));
         svg += `<rect class="bar ${b.cls}" data-i="${i}" x="${r2(mid - bw / 2)}%" width="${r2(bw)}%" y="${r2(top)}" height="${r2(bot - top)}"/>`;
         // SC-11: a clipped bar ends at the plot edge with a slanted break near its end (a shape, not a colour).
         if (b.clipped) {
-          const e = b.y0 < 0.5 ? top + 8 : bot - 12;
+          const e = b.y0 < c.ref ? top + 8 : bot - 12;
           svg += `<line class="cut" x1="${r2(mid - bw / 2 - 0.3)}%" x2="${r2(mid + bw / 2 + 0.3)}%" y1="${r2(e + 4)}" y2="${r2(e)}"/>`;
         }
       }
@@ -181,7 +181,7 @@ export function createChart(
       return a;
     };
     const values = el(doc, 'div', 'compare-plot');
-    values.append(axis('compare-axis', [text(c.top), text(c.reference), text(c.bottom)]), plot, axis('compare-axis right', ov ? [ovText(ov.max), '', ovText(ov.min)] : []));
+    values.append(axis('compare-axis', [text(c.top), text(c.bottom)]), plot, axis('compare-axis right', ov ? [ovText(ov.max), ovText(ov.min)] : []));
 
     const foot = el(doc, 'div', 'compare-foot', caption);
     const legend = el(doc, 'span', 'compare-legend');
