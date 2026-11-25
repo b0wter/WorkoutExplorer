@@ -480,7 +480,6 @@ html[data-hold] body {
    one look, a card of cells with a muted label line (13 px) over a value line (16 px), so a row is
    29 px. Each component keeps its own grid tracks; the readout's are fixed (below). */
 #charts-slot .readout,
-#map-slot .readout,
 .range-panel {
   display: grid;
   column-gap: 8px;
@@ -535,35 +534,16 @@ html[data-hold] body {
 #charts-slot .readout {
   margin-bottom: 8px;
 }
-#charts-slot .readout,
-#map-slot .readout {
+#charts-slot .readout {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 @media (min-width: 640px) {
   .charts {
     --r: var(--r8, 1);
   }
-  #charts-slot .readout,
-  #map-slot .readout {
+  #charts-slot .readout {
     grid-template-columns: repeat(8, minmax(0, 1fr));
   }
-}
-/* F-33: the readout strip at the bottom of the fullscreen map (CR-3 to CR-7), the same card on
-   the same fixed tracks, opaque, square, taking no input. Shown only in fullscreen with a cursor. */
-.wx-strip {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-html:not(.wx-fs) .wx-strip,
-.wx-strip[hidden] {
-  display: none;
-}
-#map-slot .readout {
-  background: var(--bg);
-  border-radius: 0;
 }
 .charts.load-failed {
   height: auto;
@@ -689,47 +669,6 @@ tbody tr:nth-child(even) {
   margin-left: 12px;
 }
 
-/* Map pin toggle (D-19, AP-18): an icon button in MapLibre's top-right control stack, under fullscreen. */
-.map-pin {
-  color: black; /* MapLibre's buttons stay light in both themes */
-}
-.map-pin svg {
-  display: block;
-  margin: auto;
-}
-.map-pin:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.map-pin[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-
-/* Phone in portrait (or any one-column window that is not a short landscape one): the pinned map
-   (D-19). The map box sticks inside .layout, which reaches to the end of the laps; the readout
-   sticks under it. 35 % of the large viewport (so the browser bar never resizes it) stays under
-   40 % of the screen height (AP-18). Short landscape screens have two columns and no toggle (F-17). */
-@media (max-width: 1023.98px) and (orientation: portrait), (max-width: 1023.98px) and (min-height: 500.02px) {
-  .layout {
-    --pin-h: 35vh;
-  }
-  @supports (height: 1lvh) {
-    .layout {
-      --pin-h: 35lvh;
-    }
-  }
-  .layout.pinned .map-slot {
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    height: var(--pin-h);
-  }
-  .layout.pinned #charts-slot .readout {
-    top: var(--pin-h);
-  }
-}
-
 /* Phone in landscape, a map: two columns (F-17, user 27 Oct 2026; F-13 AP-17), about 40 % map and
    60 % content, CSS only. The map is fixed on the left, as tall as the window (like the desktop's
    sticky map over a column as long as the page); .layout keeps one block flow, so the range slot's
@@ -782,9 +721,6 @@ tbody tr:nth-child(even) {
   .has-map #charts-slot .readout {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .map-pin-group {
-    display: none;
-  }
 }
 
 /* Desktop, a map: two columns (D-17), the map sticky in the left one, as tall as the window and
@@ -831,16 +767,8 @@ tbody tr:nth-child(even) {
     padding-top: 0;
     padding-bottom: 0;
   }
-  .map-pin-group {
-    display: none;
-  }
 }
 
-/* Splitter between map and content in both two-column layouts (user 28 Oct 2026; splitter.ts).
-   Inside the map box at its right edge; below the map's controls (z-index 2), above the canvas. */
-.splitter {
-  display: none;
-}
 @media (min-width: 1024px), (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {
   /* F-56 OQ-276: two columns, the pins list under the charts, above the range panel. */
   .has-map .pins-slot {
@@ -849,34 +777,5 @@ tbody tr:nth-child(even) {
   .has-map #range-slot,
   .has-map #range-slot ~ * {
     order: 2;
-  }
-  .has-map .splitter {
-    display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 1;
-    width: 12px;
-    cursor: col-resize;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .has-map .splitter::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 3px;
-    width: 4px;
-    height: 40px;
-    margin-top: -20px;
-    border-radius: 2px;
-    background: var(--muted);
-  }
-}
-@media (pointer: coarse) {
-  .has-map .splitter {
-    width: 28px;
   }
 }

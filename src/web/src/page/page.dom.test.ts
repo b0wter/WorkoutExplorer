@@ -773,7 +773,7 @@ describe('fullscreen readout strip (F-33 CR-2)', () => {
     slot('map-slot')?.append(box);
     expect(document.querySelector('.wx-strip')).toBeNull();
     stubLog.routeMap[0].onmapready?.();
-    expect(box.querySelector('.wx-strip .readout')).not.toBeNull();
+    await vi.waitFor(() => expect(box.querySelector('.wx-strip .readout')).not.toBeNull(), { timeout: 20000 }); // the glue arrives with the map-view chunk (ADR-011 T-2)
     page?.remove();
     resetStubLog();
     await open('indoor-ride');
@@ -790,7 +790,7 @@ describe('pin toggle (D-19, AP-18)', () => {
     expect(stubLog.routeMap[0].fill).toBe(true);
     expect(stubLog.routeMap[0].height).toBeUndefined();
     stubLog.routeMap[0].onmapready?.();
-    expect(buttons()).toHaveLength(1);
+    await vi.waitFor(() => expect(buttons()).toHaveLength(1), { timeout: 20000 }); // the glue arrives with the map-view chunk (ADR-011 T-2)
     expect(buttons()[0].getAttribute('aria-pressed')).toBe('false');
     expect(document.querySelector('.layout')?.classList.contains('pinned')).toBe(false);
   });
@@ -799,6 +799,7 @@ describe('pin toggle (D-19, AP-18)', () => {
     expect(localStorage.length).toBe(0);
     await open('ride-30min');
     stubLog.routeMap[0].onmapready?.();
+    await vi.waitFor(() => expect(buttons()).toHaveLength(1), { timeout: 20000 }); // the glue arrives with the map-view chunk (ADR-011 T-2)
     const b = buttons()[0] as HTMLButtonElement;
     b.click();
     expect(document.querySelector('.layout')?.classList.contains('pinned')).toBe(true);

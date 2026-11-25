@@ -108,14 +108,18 @@ describe('reserved sizes (D-10, AC 7: no layout shift)', () => {
   });
 
   it('the readout shares the range panel card; 29 px rows and its 8 px of padding are in the reserved height', () => {
-    const shared = css.match(/^#charts-slot \.readout,\n#map-slot \.readout,\n\.range-panel \{([^}]*)\}/m)?.[1] ?? '';
+    const shared = css.match(/^#charts-slot \.readout,\n\.range-panel \{([^}]*)\}/m)?.[1] ?? '';
     for (const d of ['display: grid', 'padding: 4px 10px', 'background: var(--card)', 'border-radius: 6px']) expect(shared, d).toContain(d);
     expect(shared).not.toMatch(/row-gap|(?<!column-)gap:/);
     expect(css).toMatch(/^\.readout \.label,\n\.range-panel \.label \{[^}]*line-height: 13px;/m);
     expect(css).toMatch(/^\.readout \.val,\n\.range-panel \.val \{[^}]*line-height: 16px;/m);
     expect(css).toMatch(/^\.readout \.unit,\n\.range-panel \.unit \{[^}]*line-height: 13px;/m);
-    expect(css).toMatch(/^#charts-slot \.readout,\n#map-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/m); // F-33: the strip shares the tracks
-    expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: var\(--r8, 1\);\s*\}\s*#charts-slot \.readout,\s*#map-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
+    expect(css).toMatch(/^#charts-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/m);
+    expect(css).toMatch(/@media \(min-width: 640px\) \{\s*\.charts \{\s*--r: var\(--r8, 1\);\s*\}\s*#charts-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
+    // F-33, ADR-011 T-2: the strip's card, with the same tracks, is the map stylesheet's.
+    const strip = readWebFile('src/components/map/map-view.css');
+    expect(strip).toMatch(/^#map-slot \.readout \{\s*display: grid;\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/m);
+    expect(strip).toMatch(/@media \(min-width: 640px\) \{\s*#map-slot \.readout \{\s*grid-template-columns: repeat\(8, minmax\(0, 1fr\)\);/);
     expect(rule('.charts')).toContain('calc(var(--bar) + var(--r) * 29px + 16px + var(--area) + var(--hint))');
   });
 
@@ -194,7 +198,7 @@ describe('page.css layout structure (D-17 to D-19)', () => {
     expect(two).toMatch(/\.has-map \.layout \{\s*display: grid;/);
     expect(two).toContain('minmax(608px, 1fr)');
     expect(two).toMatch(/\.has-map \.map-slot \{[^}]*position: sticky;/);
-    expect(two).toMatch(/\.map-pin-group \{\s*display: none;/);
+    expect(readWebFile('src/components/map/map-view.css')).toMatch(/\.map-pin-group \{\s*display: none;/); // T-2: the pin toggle's CSS
     expect(css).not.toMatch(/^\.layout \{[^}]*display: grid/m);
   });
 
@@ -202,28 +206,31 @@ describe('page.css layout structure (D-17 to D-19)', () => {
   const LANDSCAPE = '@media (max-width: 1023.98px) and (orientation: landscape) and (max-height: 500px) {';
 
   it('the pinned map is a portrait-phone rule (never a short landscape screen) and the readout sticks under it', () => {
-    const pin = block(PORTRAIT);
+    const mapCss = readWebFile('src/components/map/map-view.css'); // ADR-011 T-2: the pin toggle's CSS is the map stylesheet's
+    const mblock = (query: string): string => mapCss.slice(mapCss.indexOf(query), mapCss.indexOf('\n}\n', mapCss.indexOf(query)));
+    const pin = mblock(PORTRAIT);
     expect(pin).toMatch(/\.layout\.pinned \.map-slot \{[^}]*position: sticky;[^}]*top: 0;/);
     expect(pin).toMatch(/\.layout\.pinned #charts-slot \.readout \{\s*top: var\(--pin-h\);/);
-    expect(css.indexOf('.pinned')).toBeGreaterThan(css.indexOf(PORTRAIT));
+    expect(mapCss.indexOf('.pinned')).toBeGreaterThan(mapCss.indexOf(PORTRAIT));
+    expect(css).not.toContain('.pinned');
     expect(block(LANDSCAPE)).not.toContain('.pinned');
   });
 
   it('pinned height: 35lvh with a 35vh fallback (at most 40 %), no fixed short-landscape height, no dvh/svh', () => {
-    const phone = css.slice(css.indexOf(PORTRAIT), css.indexOf('@media (min-width: 1024px) {'));
+    const mapCss = readWebFile('src/components/map/map-view.css');
+    const phone = mapCss.slice(mapCss.indexOf(PORTRAIT), mapCss.indexOf('/* Splitter between'));
     expect(phone).not.toMatch(/dvh|svh/);
     // 35vh is the base value; 35lvh applies only where lvh is supported (a real fallback).
     expect(phone).toMatch(/\.layout \{\s*--pin-h: 35vh;\s*\}\s*@supports \(height: 1lvh\) \{\s*\.layout \{\s*--pin-h: 35lvh;/);
     const pct = [...phone.matchAll(/--pin-h: (\d+)l?vh;/g)].map((m) => Number(m[1]));
     expect(Math.max(...pct)).toBeLessThanOrEqual(40);
-    expect(css).not.toMatch(/--pin-h: \d+px/);
+    expect(mapCss).not.toMatch(/--pin-h: \d+px/);
   });
 
   it('F-17: short landscape with a map is two columns, 40 % map fixed full height, no pin toggle, 4-column readout', () => {
     const land = block(LANDSCAPE);
     expect(land).toMatch(/\.has-map \.layout \{\s*padding-left: var\(--map-w, 40%\);/);
     expect(land).toMatch(/\.has-map \.map-slot \{[^}]*position: fixed;[^}]*width: var\(--map-w, 40%\);[^}]*height: 100lvh;/);
-    expect(land).toMatch(/\.map-pin-group \{\s*display: none;/);
     expect(land).toMatch(/\.has-map #charts-slot \.readout \{\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
     expect(land).toMatch(/\.has-map \.charts \{\s*--r: var\(--r4\);/);
     expect(land).not.toContain('display: grid'); // one block flow: the range slot can stick

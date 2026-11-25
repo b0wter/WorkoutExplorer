@@ -11,7 +11,7 @@ import { decodeDataFile, type WorkoutData } from '../lib/datafile';
 import { createCursorStore, type CursorStore } from '../lib/cursor';
 import { createUnitsStore } from '../lib/units';
 import CursorReadout from '../components/charts/CursorReadout.svelte';
-import { mountStrip } from './strip.svelte';
+import { mountStrip } from './map-glue';
 import { createLook } from './map-props.svelte';
 
 function golden(name: string): WorkoutData {
@@ -93,7 +93,7 @@ describe('readout strip (F-33)', () => {
 
   it('page.css hides it outside fullscreen; inside it shows with a cursor', () => {
     const style = document.createElement('style');
-    style.textContent = readWebFile('src/page/page.css');
+    style.textContent = readWebFile('src/components/map/map-view.css'); // ADR-011 T-2: the strip's CSS is the map stylesheet's
     document.head.append(style);
     cleanup.push(() => style.remove());
     const { cursor, strip, flush } = setup();

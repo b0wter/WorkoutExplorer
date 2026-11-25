@@ -197,7 +197,10 @@ describe('axis and split (F-17 AC 12, 14, 15; QA-17-r1-2, QA-17-r1-4)', () => {
     expect(document.querySelector('.splitter')).toBeNull();
     resolve(new Response(bin('ride-30min').slice(0), { status: 200 }));
     await started;
-    expect(document.querySelector('#map-slot .splitter')).not.toBeNull();
+    stubLog.chartStack[0].onready?.();
+    stubLog.routeMap[0].onmapready?.();
+    // The handle comes with the map-view chunk (ADR-011 T-2), at map ready.
+    await vi.waitFor(() => expect(document.querySelector('#map-slot .splitter')).not.toBeNull(), { timeout: 20000 });
     expect(layout?.style.getPropertyValue('--map-w')).toBe('35.00%');
   });
 
@@ -206,8 +209,9 @@ describe('axis and split (F-17 AC 12, 14, 15; QA-17-r1-2, QA-17-r1-4)', () => {
     HTMLElement.prototype.setPointerCapture = () => {};
     await open();
     stubLog.chartStack[0].onaxis?.('distance');
-    const handle = document.querySelector<HTMLElement>('#map-slot .splitter');
-    if (!handle) throw new Error('no splitter');
+    stubLog.routeMap[0].onmapready?.();
+    await vi.waitFor(() => expect(document.querySelector('#map-slot .splitter')).not.toBeNull(), { timeout: 20000 });
+    const handle = document.querySelector<HTMLElement>('#map-slot .splitter')!;
     const at = (type: string, clientX: number): boolean =>
       handle.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX, pointerId: 1, button: 0 }));
     at('pointerdown', 0);
