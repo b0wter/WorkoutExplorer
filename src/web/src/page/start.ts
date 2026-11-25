@@ -248,7 +248,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
       const box = mapSlot.querySelector<HTMLElement>('.route-map');
       if (box) m.mountStrip(box, data, cursor, look); // F-33 CR-2: the fullscreen box holds it
       m.addSplitter(root, mapSlot, split);
-    });
+    }).catch(() => console.warn('page: map view chunk failed'));
     recorder?.mapReady();
   }, edit, prefs) : null;
   const ready = (): void => {
@@ -304,6 +304,7 @@ export async function startPage(root: ParentNode, win: Window = window, edit?: E
         // AP-5: the remembered axis; a workout without distance shows time and stores nothing.
         initialAxis: prefs.axis() ?? 'time',
         onaxis: prefs.setAxis,
+        onsize: prefs.setCharts,
         get hint() {
           return look.hint;
         },

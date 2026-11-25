@@ -174,6 +174,7 @@
  "lib/charts": {
   "axisTime": "Zeit",
   "axisDistance": "Distanz",
+  "chartsTall": "Höhere Diagramme",
   "chartElevation": "Höhe",
   "chartSpeed": "Geschwindigkeit",
   "chartPace": "Pace",
@@ -565,7 +566,7 @@
   "ab_copiesOutsideThis": "Kopien außerhalb dieser Website",
   "ab_copiesThatViewers": "Kopien, die Besucherinnen und Besucher bereits gespeichert haben, und bereits erstellte Linkvorschauen bleiben bei ihnen. Diese Website kann sie nicht löschen.",
   "ab_inYourBrowser": "In deinem Browser",
-  "ab_yourBrowserRemembers": "Dein Browser merkt sich deine Wahl der Einheiten, die x-Achse der Diagramme, die Aufteilung zwischen Karte und Inhalt (getrennt für breite Bildschirme und für niedrige Querformat-Bildschirme), das Design, die Kartenebene (Karte oder Satellit) und die Sprache der Oberfläche. Er speichert auch die Liste unter {link}: für jedes in diesem Browser hochgeladene oder bearbeitete Training Titel, Sportart, Datum, Status, Ablauf und Bearbeitungslink. Alle, die diesen Browser nutzen, können diese Bearbeitungslinks öffnen. All das liegt im Browserspeicher, nicht in einem Cookie, wird nie an den Server gesendet (von der Sprache sieht der Server nur, welche Sprachdatei dein Browser lädt) und bleibt, bis du die Website-Daten in deinem Browser löschst; der Eintrag eines Trainings verschwindet auch, wenn das Training abläuft oder hier gelöscht wird.",
+  "ab_yourBrowserRemembers": "Dein Browser merkt sich deine Wahl der Einheiten, die x-Achse und die Größe der Diagramme, die Aufteilung zwischen Karte und Inhalt (getrennt für breite Bildschirme und für niedrige Querformat-Bildschirme), das Design, die Kartenebene (Karte oder Satellit) und die Sprache der Oberfläche. Er speichert auch die Liste unter {link}: für jedes in diesem Browser hochgeladene oder bearbeitete Training Titel, Sportart, Datum, Status, Ablauf und Bearbeitungslink. Alle, die diesen Browser nutzen, können diese Bearbeitungslinks öffnen. All das liegt im Browserspeicher, nicht in einem Cookie, wird nie an den Server gesendet (von der Sprache sieht der Server nur, welche Sprachdatei dein Browser lädt) und bleibt, bis du die Website-Daten in deinem Browser löschst; der Eintrag eines Trainings verschwindet auch, wenn das Training abläuft oder hier gelöscht wird.",
   "ab_mineLink": "Meine Trainings",
   "ab_yourRights": "Deine Rechte",
   "ab_withTheEdit": "Mit dem Bearbeitungslink kannst du die gespeicherte FIT-Datei jederzeit herunterladen und das Training löschen. Ohne den Bearbeitungslink kann der Betreiber nicht prüfen, ob ein Training deins ist, aber jede Person kann ein Training melden.",

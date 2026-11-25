@@ -56,6 +56,7 @@ describe('theme head script', () => {
     for (const file of ['../../deploy/Caddyfile', '../server/cmd/workout-explorer/caddy_test.go']) {
       const src = scriptSrc(readWebFile(file));
       expect(src.slice(0, 2)).toEqual(["'self'", hash]);
+      expect(src).toContain("'sha256-QnlpnggjNgj6/bJESxN8vqyqRgf1z6PDFhppNHpQ6Jg='"); // F-76 TC-2: the F-73 hash stays
       expect(src).toContain("'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='"); // F-73 RS-6: older hashes stay
       expect(src).toContain("'sha256-oU85smkdewIErbjHrk9QZ1FiICdjcwU0koHX7ul9Dpw='");
       expect(src).toContain("'sha256-O55BZSok+26ER+X6MzVA5nes+xUDGDoeXwJKDKzdalw='");
@@ -115,6 +116,23 @@ describe('theme head script', () => {
     expect(attrs(store(null, '1'))).toEqual({ hint: 'done' });
     expect(attrs(store('dark', '1'))).toEqual({ theme: 'dark', hint: 'done' });
     for (const v of [null, '0', 'done', '1 ', '']) expect(attrs(store('light', v))).toEqual({ theme: 'light' });
+  });
+
+  // F-76 TC-1, TC-2.
+  describe('chart size', () => {
+    const store = (v: string | null) => (k: string) => (k === PREF_KEYS.charts ? v : null);
+    it('sets data-chart-size="tall" only for exactly "tall", from the prefs key', () => {
+      expect(script).toContain(PREF_KEYS.charts);
+      expect(attrs(store('tall'))).toEqual({ chartSize: 'tall' });
+      for (const v of [null, 'Tall', 'tall ', '1', '', 'normal']) expect(attrs(store(v)), String(v)).toEqual({});
+    });
+
+    it('sits after the hint statement and before the split statement, so a missing matchMedia keeps it', () => {
+      expect(script.indexOf('"wx.hint.done"')).toBeLessThan(script.indexOf('"wx.charts"'));
+      expect(script.indexOf('"wx.charts"')).toBeLessThan(script.indexOf('matchMedia'));
+      const keys: Record<string, string> = { 'wx.theme': 'dark', 'wx.hint.done': '1', 'wx.charts': 'tall', 'wx.lang': 'de' };
+      expect(runAll((k) => keys[k] ?? null, ['en'], null, null).dataset).toEqual({ theme: 'dark', hint: 'done', chartSize: 'tall', lang: 'de' });
+    });
   });
 
   it('is silent when storage throws', () => {

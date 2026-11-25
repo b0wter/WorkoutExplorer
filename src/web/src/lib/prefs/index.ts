@@ -36,6 +36,8 @@ export interface ViewerPrefs {
   howtoOpened(): boolean;
   setHowtoOpened(): void;
   setHintDone(): void;
+  /** F-76 TC-1: a setter only; the head script reads it (data-chart-size), the bundle never does. Off removes the key. */
+  setCharts(tall: boolean): void;
   /** F-54 LG-1: written only by the language drop-down, English included; read only by the head script. */
   setLang(lang: string): void;
   /** F-61 SL-2: the route map's layer; written only by the satellite toggle, read once when the map mounts. */
@@ -56,6 +58,8 @@ export const PREF_KEYS = {
   howto: 'wx.howto.opened',
   /** Also read by the inline head script (sets <html data-hint="done">, F-39 HU-2). */
   hint: 'wx.hint.done',
+  /** F-76 TC-1: `tall` or no entry; also read by the head script (sets <html data-chart-size="tall">). */
+  charts: 'wx.charts',
   /** F-54 LG-1: also read by the inline head script, which decides the page view's language. */
   lang: 'wx.lang',
   /** F-61 SL-2: never read by the head script or by the preview basemap. */
@@ -110,6 +114,7 @@ export function createViewerPrefs(storage: () => KeyValueStore | null | undefine
     howtoOpened: () => read(PREF_KEYS.howto) === '1',
     setHowtoOpened: () => write(PREF_KEYS.howto, '1'),
     setHintDone: () => write(PREF_KEYS.hint, '1'),
+    setCharts: (tall) => write(PREF_KEYS.charts, tall ? 'tall' : null),
     setLang: (lang) => write(PREF_KEYS.lang, lang),
     mapLayer: () => oneOf(PREF_KEYS.map, ['map', 'satellite'] as const) ?? 'map',
     setMapLayer: (layer) => write(PREF_KEYS.map, layer),

@@ -1,6 +1,6 @@
 // Multisport leg picker (F-67): a leg switch clears the range; charts without data in a leg stay aligned with the others.
 import { test, expect } from '@playwright/test';
-import { workout, open, hover, drag, desktopOnly, texts } from './helpers.mjs';
+import { workout, open, hover, drag, desktopOnly } from './helpers.mjs';
 
 test.describe('legs, mouse', () => {
   test.beforeEach(({ isMobile }) => { test.skip(isMobile, 'mouse scrubbing and range drag'); });
@@ -41,7 +41,7 @@ test.describe('legs, mouse', () => {
 
 test('F-67: the picker lists whole workout and each leg, and a leg view shows only its charts', async ({ page }) => {
   await open(page, workout('triathlon').view);
-  expect(await texts(page.locator('.wx-leg-pick option'))).toEqual(['Whole workout', 'Swim', 'Ride', 'Run']);
+  await expect(page.locator('.wx-leg-pick option')).toHaveText(['Whole workout', 'Swim', 'Ride', 'Run']); // lazy sections chunk: wait (QA-75-r1-1)
   await page.locator('.wx-leg-pick').selectOption({ label: 'Swim' });
   await expect(page.locator('.metric-chart').first()).toBeVisible();
 });

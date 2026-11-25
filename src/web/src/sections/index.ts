@@ -65,9 +65,10 @@ export function startSections(
   rows(sectionRanges(secs, n));
   look.decorator('legs', decorator(secs, n));
   // LP-2: no row without a distance stream, no picker without a sport leg (deviation, LP-1).
-  const bar = slot?.querySelector('.toolbar');
+  // F-76 TC-7: the toolbar row now exists with any charts, so the picker checks the distance stream itself and sits before the size toggle.
+  const bar = data.metrics.distance ? slot?.querySelector('.toolbar') : null;
   const picks = pickable(secs, n);
-  const pick = bar && picks.length ? bar.appendChild(bar.ownerDocument.createElement('select')) : null;
+  const pick = bar && picks.length ? bar.insertBefore(bar.ownerDocument.createElement('select'), bar.querySelector('.size-toggle')) : null;
   const fill = (s: readonly Section[]): void => {
     if (!pick) return;
     const k = pick.selectedIndex;

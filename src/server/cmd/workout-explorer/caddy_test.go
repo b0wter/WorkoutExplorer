@@ -31,7 +31,7 @@ import (
 
 // Asserted exactly, so a loosened policy fails the build (H-2, H-12).
 var securitySet = map[string]string{
-	"Content-Security-Policy":   "default-src 'self'; script-src 'self' 'sha256-QnlpnggjNgj6/bJESxN8vqyqRgf1z6PDFhppNHpQ6Jg=' 'sha256-O55BZSok+26ER+X6MzVA5nes+xUDGDoeXwJKDKzdalw=' 'sha256-oU85smkdewIErbjHrk9QZ1FiICdjcwU0koHX7ul9Dpw=' 'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://server.arcgisonline.com; img-src 'self' data: blob: https://tiles.openfreemap.org https://server.arcgisonline.com; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+	"Content-Security-Policy":   "default-src 'self'; script-src 'self' 'sha256-mb97ihupP87T2l1ynuK1Qi1gvyAwer8eQh+/66JQQ2w=' 'sha256-QnlpnggjNgj6/bJESxN8vqyqRgf1z6PDFhppNHpQ6Jg=' 'sha256-O55BZSok+26ER+X6MzVA5nes+xUDGDoeXwJKDKzdalw=' 'sha256-oU85smkdewIErbjHrk9QZ1FiICdjcwU0koHX7ul9Dpw=' 'sha256-z5SjeUWaAaA20n9xjEAw3BJBRbo/eoPKtoQHO3aO8bY='; worker-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://server.arcgisonline.com; img-src 'self' data: blob: https://tiles.openfreemap.org https://server.arcgisonline.com; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
 	"Referrer-Policy":           "no-referrer",
 	"X-Content-Type-Options":    "nosniff",
 	"Strict-Transport-Security": "max-age=31536000",

@@ -32,7 +32,7 @@
 .laps.legs .laps-legs h3 {
   cursor: pointer;
 }
-/* F-67 LP-2: the leg picker in the axis toolbar row, after the toggle; shrinks so 360 px never scrolls. */
+/* F-67 LP-2: the leg picker in the toolbar row, after the axis toggle and before the size toggle (F-76); shrinks so 360 px never scrolls. */
 .wx-leg-pick {
   min-width: 0;
   height: 28px;
