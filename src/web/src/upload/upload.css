@@ -28,6 +28,10 @@
 [data-state='ready'] .drop.over {
   border-color: var(--accent);
 }
+[data-state='checking'] .drop {
+  display: block;
+  visibility: hidden; /* reserves the drop zone's height until /api/status answers: no layout shift */
+}
 [data-state='ready'] .drop,
 [data-state='opening'] .drop,
 [data-state='uploading'] .drop,
