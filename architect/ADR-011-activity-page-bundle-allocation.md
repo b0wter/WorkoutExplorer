@@ -17,9 +17,9 @@ What the entry is made of was last attributed on 11 Nov 2026 (review link above)
 
 | Item | Bytes gzip |
 | --- | --- |
-| Entry on main, 25 Nov 2026, after F-75 (T-1 to T-3: 61,886 → 59,100) | **59,100** |
+| Entry, 25 Nov 2026, after F-75 (T-1 to T-3: 61,886 → 59,100), QA-75-r1-4 and F-76 | **59,438** |
 | Budget | 62,000 |
-| **Reserve** | **2,900** |
+| **Reserve** | **2,562** |
 | Owner chunk `start.svelte` (lazy; F-19 ceiling 20,000) | 19,439 (F-72) |
 
 Shares booked since revision 17 (decision 4):
@@ -30,6 +30,8 @@ Shares booked since revision 17 (decision 4):
 | F-75 T-1 range panel and `lib/range` lazy (`page/range-panel.ts`) | est. 1,200 to 1,500 | −1,457 | 60,429 |
 | F-75 T-2 map-only glue (`page/map-glue.ts`, re-exported by `map-view`) and its CSS in the map chunk | est. 700 to 900 | −958 | 59,471 |
 | F-75 T-3 route-colouring tokens in `map-view.css` | est. 200 to 250 | −371 | 59,100 |
+| QA-75-r1-4 `.catch` on the map-view import | – | 16 | 59,116 |
+| F-76 taller charts (size toggle, `--plot` read, live resize), from the reserve | 300 / 400 | 322 | 59,438 |
 
 T-4 not needed (T-1 to T-3 saved 2,786, above the 1,500 condition). The estimate was met; the reserve is above the 1,000 trigger (decision 5).
 
