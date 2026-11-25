@@ -151,6 +151,7 @@ vi.mock('uplot', async (importOriginal) => {
     return u;
   }
   Object.defineProperty(RecordedUPlot, 'pxRatio', { get: () => real.pxRatio });
+  (RecordedUPlot as unknown as { rangeNum: unknown }).rangeNum = (real as unknown as { rangeNum: unknown }).rangeNum;
   return { default: RecordedUPlot };
 });
 

@@ -462,6 +462,8 @@
   "endHiddenWithin": "final oculto en un radio de {r}",
   "startNotHidden": "inicio sin ocultar",
   "endNotHidden": "final sin ocultar",
+  "spikeName": "Picos de velocidad",
+  "spikeText": "Un pico breve de velocidad GPS (hasta 5 segundos, muy por encima de las velocidades cercanas) se elimina del gráfico de velocidad y de los colores de la ruta, y la velocidad máxima lo ignora.",
   "poolName": "Natación en piscina",
   "poolText": "Los largos solo cuentan los largos activos; los descansos no son largos.",
   "poolLengths": {

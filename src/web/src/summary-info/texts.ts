@@ -21,6 +21,8 @@ export const en = {
   avgTextTransitions: "The device's values for the whole workout, or the server's where the device recorded none. Heart rate includes the transitions; speed, cadence and power do not.",
   avgExample: '{label} {value}',
   avgMaxExample: '{label} {value}, max {max}',
+  spikeName: 'Speed spikes',
+  spikeText: 'A short GPS speed spike (up to 5 seconds, far above the speeds around it) is removed from the speed chart and the route colours, and the maximum speed ignores it.',
   rangeLapsName: 'Range panel and laps',
   rangeLapsText: "Computed from the recorded samples, so they can differ slightly from the device's totals.",
   trimName: 'Trim',
