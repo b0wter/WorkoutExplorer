@@ -33,7 +33,15 @@ func main() {
 	capPath := flag.String("cap-file", "", "write the all-caps file for the ADR-017 rev. 1 stop-rule measurement to this `path` and nothing else (never committed)")
 	capRecords := flag.Int("cap-records", 500_000, "records of the -cap-file")
 	capF68 := flag.Bool("cap-f68", false, "the -cap-file records also carry the four running dynamics and a Stryd power developer field (F-68 XS-11)")
+	e2e := flag.String("e2e", "", "write only the browser suite's extra files (src/web/e2e) to this `dir`")
 	flag.Parse()
+	if *e2e != "" {
+		if err := writeE2E(*e2e); err != nil {
+			fmt.Fprintf(os.Stderr, "corpusgen: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if *capPath != "" {
 		if err := writeCapFile(*capPath, *capRecords, *capF68); err != nil {
 			fmt.Fprintf(os.Stderr, "corpusgen: %v\n", err)

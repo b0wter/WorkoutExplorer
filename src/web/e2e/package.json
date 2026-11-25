@@ -1,0 +1,11 @@
+{
+  "name": "workout-explorer-e2e",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Browser UI suite (make ui-test); own package so that src/web's install, check and size budget never see Playwright.",
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  }
+}

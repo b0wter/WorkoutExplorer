@@ -3,6 +3,7 @@
 
 # Front-end dependencies
 /src/web/node_modules/
+/src/web/e2e/node_modules/
 
 # FIT files are never committed, except generated synthetic ones (ADR-004 rev. 2, rev. 3)
 *.[fF][iI][tT]
