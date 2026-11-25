@@ -11,7 +11,8 @@ import { decodeDataFile, type WorkoutData } from '../lib/datafile';
 import { createCursorStore, type CursorStore } from '../lib/cursor';
 import { createUnitsStore } from '../lib/units';
 import CursorReadout from '../components/charts/CursorReadout.svelte';
-import { mountStrip } from './strip';
+import { mountStrip } from './strip.svelte';
+import { createLook } from './map-props.svelte';
 
 function golden(name: string): WorkoutData {
   const g = loadGolden().find((x) => x.name === name);
@@ -44,7 +45,7 @@ function setup(data = golden('ride-4h')) {
   slot.append(box);
   document.body.append(page, slot);
   const inst = mount(CursorReadout, { target: page, props: { data, cursor, units: 'metric' } });
-  mountStrip(box, data, cursor, units);
+  mountStrip(box, data, cursor, createLook(units, null));
   flushSync();
   cleanup.push(() => {
     void unmount(inst);
@@ -129,5 +130,26 @@ describe('readout strip (F-33)', () => {
     expect(getComputedStyle(corner).bottom).not.toContain('--wx-strip');
     document.documentElement.classList.add('wx-fs');
     expect(getComputedStyle(corner).bottom).toBe('var(--wx-strip, 0px)');
+  });
+});
+
+describe('readout strip distance unit (F-72 YD-2, YD-7)', () => {
+  it('is miles in the whole view and yards in a swim leg view; remounted on the view change', () => {
+    const data = golden('triathlon');
+    const cursor = createCursorStore(data.sampleCount, (f) => f());
+    const look = createLook(createUnitsStore('imperial'), null);
+    const box = document.createElement('div');
+    document.body.append(box);
+    mountStrip(box, data, cursor, look);
+    cleanup.push(() => box.remove());
+    const unit = (): string | null | undefined => [...box.querySelectorAll('.cell')].find((c) => c.querySelector('.label')?.textContent === 'Distance')?.querySelector('.unit')?.textContent;
+    flushSync();
+    expect(unit()).toBe('mi');
+    look.view = { a: 0, b: 600, sport: 'swimming' };
+    flushSync();
+    expect(unit()).toBe('yd');
+    look.view = null;
+    flushSync();
+    expect(unit()).toBe('mi');
   });
 });

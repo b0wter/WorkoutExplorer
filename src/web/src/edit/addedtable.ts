@@ -42,7 +42,7 @@ export function startAddedTable(slot: HTMLElement, data: WorkoutData, added: Add
     list.replaceChildren(
       ...(rows.length ? [line([t('addedColLap'), t('addedColTime'), ...(dist ? [t('addedColDistance')] : [])], 'added-head')] : []),
       ...rows.map((r) => {
-        const li = line([String(r.n), formatElapsed(data.time[r.at] - data.time[0]), ...(dist ? [formatDistance(dist[r.at], u) + ' ' + distanceUnit(u)] : [])], '', !!r.dim);
+        const li = line([String(r.n), formatElapsed(data.time[r.at] - data.time[0]), ...(dist ? [formatDistance(dist[r.at], u, data.meta.sport) + ' ' + distanceUnit(u, data.meta.sport)] : [])], '', !!r.dim);
         const d = li.firstElementChild!;
         const b = make('button', 'added-x-btn', '×');
         b.type = 'button';

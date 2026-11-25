@@ -139,14 +139,14 @@ export interface ReadoutField {
   readonly text: (index: number) => string;
 }
 
-/** Readout fields in order: elapsed, distance (if the stream is present), then presentCharts(data) for `sport` (default the workout's; F-67 LP-10).
+/** Readout fields in order: elapsed, distance (if the stream is present; in `distSport`'s unit, fixed per instance, F-72 YD-2), then presentCharts(data) for `sport` (default the workout's; F-67 LP-10).
  *  Built once per WorkoutData; text() reads the full-resolution arrays (D-9). */
-export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?: string): readonly ReadoutField[] {
+export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?: string, distSport = data.meta.sport): readonly ReadoutField[] {
   const time = data.time;
   const fields: ReadoutField[] = [{ key: 'elapsed', label: t('axisTime'), unit: '', text: (i) => formatElapsed(time[i]) }];
   const distance = data.metrics.distance;
   if (distance !== undefined) {
-    fields.push({ key: 'distance', label: t('axisDistance'), unit: distanceUnit(units), text: (i) => formatDistance(distance[i], units) });
+    fields.push({ key: 'distance', label: t('axisDistance'), unit: distanceUnit(units, distSport), text: (i) => formatDistance(distance[i], units, distSport) });
   }
   for (const spec of presentCharts(data, units, sport)) {
     const values = data.metrics[spec.metric];

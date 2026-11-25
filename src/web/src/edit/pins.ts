@@ -85,7 +85,7 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const dist = data.metrics.distance;
     const u = view.units.get();
     const km = !!dist && r.every((i) => Number.isFinite(dist[i]));
-    const v = r.map((i) => (km ? formatDistance(dist![i], u) : formatElapsed(time[i] - time[0]))).join('–') + (km ? ' ' + distanceUnit(u) : '');
+    const v = r.map((i) => (km ? formatDistance(dist![i], u, data.meta.sport) : formatElapsed(time[i] - time[0]))).join('–') + (km ? ' ' + distanceUnit(u, data.meta.sport) : '');
     return r.length > 1 ? v : t('whereAt', { v });
   };
   /** Where an enabled item acts. */

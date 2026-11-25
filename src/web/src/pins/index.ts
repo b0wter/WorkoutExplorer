@@ -121,8 +121,8 @@ export function startPins(env: PinsEnv): PinsView {
   const where = (p: ShownPin): string => {
     if (!dist) return '';
     const u = units.get();
-    const d = (i: number): string => formatDistance(dist[i], u);
-    return (p.to === undefined ? d(p.from) : d(p.from) + '–' + d(p.to)) + ' ' + distanceUnit(u);
+    const d = (i: number): string => formatDistance(dist[i], u, data.meta.sport);
+    return (p.to === undefined ? d(p.from) : d(p.from) + '–' + d(p.to)) + ' ' + distanceUnit(u, data.meta.sport);
   };
 
   /** Every element of one pin carries data-pin and its type class; selection and legend reach all views through them. */
