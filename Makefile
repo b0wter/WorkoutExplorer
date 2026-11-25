@@ -98,10 +98,10 @@ ci: lint test build size caddy-check docker-check update-check
 
 # ---- browser UI suite (not part of ci: about 15 minutes) ---------------------
 
-# Playwright (Chromium, WebKit) against its own build and server in build/ui-test/; see src/web/e2e/README.md.
-# UI_ARGS are Playwright arguments, e.g. make ui-test UI_ARGS='--project=webkit -g F-73'.
+# Playwright (Chromium, WebKit, Firefox) against its own build and server in build/ui-test/; see src/web/e2e/README.md.
+# PROJECT=<name> runs one project (chromium, webkit, firefox, iPhone, Android, iPad, firefox-phone); UI_ARGS are further Playwright arguments, e.g. UI_ARGS='-g F-73'.
 ui-test: deps-web caddy
-	sh $(WEB_DIR)/e2e/run.sh '$(abspath $(CADDY_PINNED))' $(UI_ARGS)
+	sh $(WEB_DIR)/e2e/run.sh '$(abspath $(CADDY_PINNED))' $(if $(PROJECT),--project=$(PROJECT)) $(UI_ARGS)
 
 # ---- Caddy (F-22 H-7, H-12; F-59 IP-6, IP-19) ---------------------------------
 

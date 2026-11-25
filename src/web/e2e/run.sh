@@ -16,12 +16,14 @@ rm -rf "$out/data" "$out/results"
 mkdir -p "$out/data" "$out/results" "$out/fit"
 
 echo "ui-test: build"
+if [ -z "${UI_SKIP_BUILD:-}" ]; then # UI_SKIP_BUILD=1: reuse build/ui-test while writing tests
 (cd "$root/src/web" && npx vite build --outDir ../../build/ui-test/web --emptyOutDir >/dev/null && node scripts/bundled-licenses.mjs ../../build/ui-test/web/.vite/license.json)
 (cd "$root/src/server" && CGO_ENABLED=0 go build -o "$out/workout-explorer" ./cmd/workout-explorer &&
 	go run ./tools/attributions -web "$out/web" -binary "$out/workout-explorer" -compose "$root/deploy/compose.yaml" -caddyfile "$root/deploy/Caddyfile" &&
 	go run ./tools/brotliassets "$out/web/assets" &&
 	go run ./tools/corpusgen -e2e "$out/fit")
 (cd "$root/src/web/e2e" && npm ci --no-audit --no-fund >/dev/null)
+fi
 
 api_port=$(free_port)
 site_port=$(free_port)
