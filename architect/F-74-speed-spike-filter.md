@@ -40,6 +40,8 @@
 | Owner chunk | 0 (the edit page gets everything through `startPage`) |
 | Server | One pass over the speed stream per normalisation; sparse SP-5 record. ADR-017 unchanged |
 
+Notes (QA-74-r1-2, -5): a spike in the first or last two samples of a leg is kept (a side needs 2 samples) and its value may become max speed. The p99.5 uses a ceil index (needed for the AC's at most 200 samples); pace sorts twice; zero-based metrics are detected by name. The absolute spike margin is 5 m/s (QA-74-r1-1): a roll between stops (about 2.5 m/s) stays, an 85 km/h glitch from a stop is removed; a glitch below about 5 m/s from a stop is kept.
+
 ## Verification (what must be shown)
 
 - Every feature AC on synthetic FIT files and series. In addition: a smart-recorded spike (one recorded sample, 3 s and 4 s spacing) is removed together with its interpolated neighbours. A spike right after a stretch without speed (tunnel) is removed. Jitter at a standstill and a start from a stop are kept. A trimmed workout whose window holds a removed spike has the same moving time as the trimmed workout without the spike.
