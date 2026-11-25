@@ -72,6 +72,7 @@ export function openSummaryInfo(button: HTMLElement, f: Facts, units: Units, cel
       t(transitions ? 'avgTextTransitions' : 'avgText'),
       avg.Max ? t('avgMaxExample', { label: low(avg.Label), value: cell(avg), max: avg.Max + (avg.Unit ? ' ' + avg.Unit : '') }) : t('avgExample', { label: low(avg.Label), value: cell(avg) }),
     );
+  if (get('speed')) add(t('spikeName'), t('spikeText')); // AP-24 (F-74): any workout with a speed or pace
   add(t('rangeLapsName'), t('rangeLapsText'));
   const o = f.owner;
   if (TRIM_ENDS[trim]) {

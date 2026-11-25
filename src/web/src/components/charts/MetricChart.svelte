@@ -18,6 +18,7 @@
     LONG_PRESS_MS,
     blocksScroll,
     holdsTouch,
+    axisClip,
     bucketCount,
     chartValues,
     decimate,
@@ -92,6 +93,9 @@
     const prop = (name: string, fallback: string): string => css.getPropertyValue(name).trim() || fallback;
     const ink = { line: prop('--c-' + s.metric, s.colour), axis: prop('--muted', '#555'), grid: prop('--grid', 'rgba(0,0,0,0.1)') };
     const opts = buildOptions(s, d, { width, height: plotHeight, isBottom: bottom }, ink, scale);
+    // AP-26: the range is computed once here; uPlot calls it on setData and setSize only.
+    const clip = axisClip(s, values);
+    opts.scales!.y.range = () => uPlot.rangeNum(clip[0], clip[1], 0.1, true);
     // A leg with no data in this stream: uPlot drops the y axis (and its gutter) when the scale has
     // no range, which shifts the plot left of the other charts; a fixed range keeps Y_AXIS_SIZE.
     if (!values.some((v) => v === v)) {

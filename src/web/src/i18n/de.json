@@ -462,6 +462,8 @@
   "endHiddenWithin": "Ziel im Umkreis von {r} ausgeblendet",
   "startNotHidden": "Start nicht ausgeblendet",
   "endNotHidden": "Ziel nicht ausgeblendet",
+  "spikeName": "Geschwindigkeitsspitzen",
+  "spikeText": "Eine kurze GPS-Geschwindigkeitsspitze (bis zu 5 Sekunden, weit über den umliegenden Werten) wird aus dem Geschwindigkeitsdiagramm und den Routenfarben entfernt, und die Höchstgeschwindigkeit ignoriert sie.",
   "poolName": "Schwimmen im Becken",
   "poolText": "Bahnen zählen nur die aktiven Bahnen; Pausen sind keine Bahnen.",
   "poolLengths": {

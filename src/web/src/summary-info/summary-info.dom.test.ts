@@ -116,7 +116,7 @@ describe('AC 39 (SE-1): no trace of hiding on the viewing page', () => {
 describe('topics (AC 37, 38; SE-3)', () => {
   it('a ride: the always-topics and averages; no pool, transition, trim or zones line', async () => {
     const text = await dialogText(variant(decode('ride-30min'), 'whole'));
-    expect(topics(text)).toEqual(['Totals', 'Moving time', 'Elapsed time', 'Averages and maximums', 'Range panel and laps', 'Hidden start and end']);
+    expect(topics(text)).toEqual(['Totals', 'Moving time', 'Elapsed time', 'Averages and maximums', 'Speed spikes', 'Range panel and laps', 'Hidden start and end']);
     expect(text).not.toMatch(/transition/i);
     expect(text).toContain('This workout: 13.46 km in 29:59.');
     expect(text).toContain('This workout: 29:59 moving of 29:59 elapsed.');
@@ -132,6 +132,10 @@ describe('topics (AC 37, 38; SE-3)', () => {
     const text = await dialogText(variant(decode('triathlon'), 'whole'));
     expect(text).toMatch(/including pauses, transitions and gaps between legs\.This workout: [0-9:]+, including 2 transitions\./);
     expect(text).toContain('Heart rate includes the transitions; speed, cadence and power do not.');
+  });
+
+  it('AP-24 (F-74): the speed spike line when the summary has a speed', async () => {
+    expect(topics(await dialogText(variant(decode('ride-30min'), 'whole')))).toContain('Speed spikes');
   });
 
   it('a pool swim: the pool line; zones: the zones line', async () => {

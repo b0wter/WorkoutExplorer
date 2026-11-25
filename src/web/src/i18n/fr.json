@@ -462,6 +462,8 @@
   "endHiddenWithin": "arrivée masquée sur {r}",
   "startNotHidden": "départ non masqué",
   "endNotHidden": "arrivée non masquée",
+  "spikeName": "Pics de vitesse",
+  "spikeText": "Un bref pic de vitesse GPS (jusqu'à 5 secondes, bien au-dessus des vitesses voisines) est retiré du graphique de vitesse et des couleurs de l'itinéraire, et la vitesse maximale l'ignore.",
   "poolName": "Natation en bassin",
   "poolText": "Les longueurs ne comptent que les longueurs actives ; les repos ne sont pas des longueurs.",
   "poolLengths": {

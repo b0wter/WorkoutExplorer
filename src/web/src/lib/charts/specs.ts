@@ -106,6 +106,20 @@ export function chartValues(spec: ChartSpec, raw: Float64Array): Float64Array {
   return values;
 }
 
+/** AP-26 (F-74): [bottom, top] with a few far outliers cut off, else the data extremes. Works on the
+ *  drawn values; speed, power and cadence measure from 0, the others from the 0.5th percentile. */
+export function axisClip(spec: ChartSpec, values: Float64Array): [number, number] {
+  const v = values.filter((x) => x === x).sort();
+  const n = v.length;
+  const lo = v[((n - 1) * 0.005) | 0];
+  const hi = v[Math.ceil((n - 1) * 0.995)]; // = the maximum up to 200 samples: nothing clipped
+  const zero = !spec.invert && 'speed power cadence'.includes(spec.metric);
+  const r = zero ? 0 : lo;
+  const top = v[n - 1] - r > 1.5 * (hi - r) ? hi + 0.15 * (hi - r) : v[n - 1];
+  const bottom = !zero && hi - v[0] > 1.5 * (hi - lo) ? lo - 0.15 * (hi - lo) : v[0];
+  return [bottom, top];
+}
+
 /** The metric, speed (not pace) specs; tests and bench pages. The page uses chartSpecs. */
 export const CHART_SPECS = chartSpecs('', 'metric');
 

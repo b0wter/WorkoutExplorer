@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadGolden } from '../../../test-support/golden.mjs';
 import { decodeDataFile, type MetricName, type WorkoutData } from '../datafile';
-import { CHART_ORDER, CHART_SPECS, chartValues, decimate, presentCharts, readoutFields } from './index';
+import { CHART_ORDER, CHART_SPECS, axisClip, chartSpecs, chartValues, decimate, presentCharts, readoutFields } from './index';
 
 /** A WorkoutData built in the test: time 0..n−1, the given metrics. */
 function workout(n: number, metrics: Partial<Record<MetricName, number[]>>): WorkoutData {
@@ -262,5 +262,55 @@ describe('units and pace charts (F-14 D-11, OQ-66)', () => {
     expect(speed?.toDisplay(0)).toBeNaN();
     expect(speed?.toDisplay(1609.344 / 600)).toBeCloseTo(600, 6);
     expect(speed?.format(1440)).toBe('24:00');
+  });
+});
+
+// AP-26 (F-74): the robust axis rule on synthetic series.
+describe('axisClip', () => {
+  const series = (n: number, f: (i: number) => number, ...extra: [number, number][]): Float64Array => {
+    const v = Float64Array.from({ length: n }, (_, i) => f(i));
+    for (const [i, x] of extra) v[i] = x;
+    return v;
+  };
+  const speed = (i: number): number => 20 + (i % 11); // 20..30
+  const hr = (i: number): number => 120 + (i % 31); // 120..150
+  const specs = chartSpecs('cycling', 'metric');
+
+  it('normal speed and heart rate: no clip', () => {
+    expect(axisClip(specs.speed, series(3600, speed))).toEqual([20, 30]);
+    expect(axisClip(specs.heart_rate, series(3600, hr))).toEqual([120, 150]);
+  });
+  it('a 6-s 85 km/h glitch: top 34.5', () => {
+    const c = axisClip(specs.speed, series(3600, speed, [10, 85], [11, 85], [12, 85], [13, 85], [14, 85], [15, 85]));
+    expect(c[1]).toBeCloseTo(34.5, 9);
+    expect(c[0]).toBe(20);
+  });
+  it('heart rate 120 to 150 plus 200: top 154.5; °C and °F decide alike', () => {
+    expect(axisClip(specs.heart_rate, series(3600, hr, [5, 200]))?.[1]).toBeCloseTo(154.5, 9);
+    for (const u of ['metric', 'imperial'] as const) {
+      const t = chartSpecs('cycling', u).temperature;
+      const raw = series(3600, (i) => 10 + (i % 11), [5, 40]);
+      const [, top] = axisClip(t, chartValues(t, raw));
+      expect(top).toBeLessThan(Math.max(...chartValues(t, raw)));
+      expect(top).toBeCloseTo(t.toDisplay(10 + 10) + 0.15 * (t.toDisplay(20) - t.toDisplay(10)), 6);
+    }
+  });
+  it('outliers above 0.5 %: no clip', () => {
+    const c = axisClip(specs.power, series(3600, () => 150, ...Array.from({ length: 30 }, (_, i): [number, number] => [i, 400])));
+    expect(c).toEqual([150, 400]);
+  });
+  it('elevation bottom rule; speed has none', () => {
+    expect(axisClip(specs.altitude, series(3600, (i) => 100 + (i % 101), [7, -400]))).toEqual([85, 200]);
+    expect(axisClip(specs.speed, series(3600, speed, [7, 0]))).toEqual([0, 30]);
+  });
+  it('200 samples or fewer: nothing clipped', () => {
+    expect(axisClip(specs.speed, series(200, speed, [7, 85]))).toEqual([20, 85]);
+  });
+  it('pace: a fast glitch clips the fast end', () => {
+    const p = chartSpecs('running', 'metric').speed;
+    const raw = series(3600, (i) => 3 + (i % 11) / 10, [9, 15], [10, 15], [11, 15]);
+    const c = axisClip(p, chartValues(p, raw));
+    expect(c[0]).toBeGreaterThan(Math.min(...chartValues(p, raw)));
+    expect(c[1]).toBe(Math.max(...chartValues(p, raw)));
   });
 });
