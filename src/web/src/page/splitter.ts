@@ -43,6 +43,8 @@ export function restoreSplit(root: ParentNode, storage: SplitterStorage): void {
     else layout.style.removeProperty('--map-w');
   };
   restore();
+  // F-73 RS-3: the head script's root value (first paint) hands over to .layout, so a reset really resets.
+  layout.ownerDocument.documentElement.style.removeProperty('--map-w');
   storage.landscape?.addEventListener('change', restore);
 }
 

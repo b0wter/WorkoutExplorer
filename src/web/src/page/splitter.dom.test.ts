@@ -149,3 +149,55 @@ describe('remembered split (AP-17, decision log 29 Oct 2026)', () => {
     expect(readWebFile('src/page/page.css')).toContain('@media ' + LANDSCAPE_QUERY + ' {');
   });
 });
+
+// F-73 RS-2, RS-3: the head script's first-paint split and the bundle's handover.
+describe('head script split', () => {
+  const script = /<script>([^<]*)<\/script>/.exec(readWebFile('index.html'))![1];
+  const headValue = (stored: string | null, landscape: boolean): string | null => {
+    document.documentElement.style.removeProperty('--map-w');
+    const store = { getItem: (k: string) => (k === (landscape ? 'wx.split.landscape' : 'wx.split.wide') ? stored : null) };
+    new Function('localStorage', 'document', 'navigator', 'window', 'fetch', 'setTimeout', 'matchMedia', script)(store, document, { languages: ['en'] }, {}, () => {}, () => {}, () => ({ matches: landscape }));
+    return document.documentElement.style.getPropertyValue('--map-w') || null;
+  };
+  const bundleValue = (stored: string | null, landscape: boolean): string | null => {
+    document.documentElement.style.removeProperty('--map-w');
+    const prefs = createViewerPrefs(() => ({ getItem: () => stored, setItem: () => {}, removeItem: () => {} }));
+    const { layout } = setup({ prefs, landscape: { matches: landscape, addEventListener: () => {} } as unknown as MediaQueryList });
+    return layout.style.getPropertyValue('--map-w') || null;
+  };
+
+  it('sets the same number as the bundle for the same stored texts, in both layouts', () => {
+    for (const landscape of [false, true])
+      for (const v of ['20', '29.99', '30', '60', '70', '70.01', '80', 'abc', '50%', '1e2', '', '45.5', null])
+        expect(parseFloat(headValue(v, landscape) ?? 'NaN'), `${v} ${landscape}`).toEqual(parseFloat(bundleValue(v, landscape) ?? 'NaN'));
+  });
+
+  it('hands over to .layout: the value leaves the root, a reset leaves no value anywhere', () => {
+    document.documentElement.style.setProperty('--map-w', '60%');
+    const store: Record<string, string> = { 'wx.split.wide': '60' };
+    const prefs = createViewerPrefs(() => ({ getItem: (k) => store[k] ?? null, setItem: (k, v) => void (store[k] = v), removeItem: (k) => void delete store[k] }));
+    const { layout, el } = setup({ prefs, landscape: null });
+    expect(layout.style.getPropertyValue('--map-w')).toBe('60.00%');
+    expect(document.documentElement.style.getPropertyValue('--map-w')).toBe('');
+    fire(el, 'pointerdown', 10, { pointerType: 'mouse' });
+    fire(el, 'pointerup', 10, { pointerType: 'mouse' });
+    fire(el, 'pointerdown', 10, { pointerType: 'mouse' });
+    fire(el, 'pointerup', 10, { pointerType: 'mouse' });
+    expect(layout.style.getPropertyValue('--map-w')).toBe('');
+    expect(document.documentElement.style.getPropertyValue('--map-w')).toBe('');
+  });
+
+  it('rotating into a layout with nothing stored leaves no --map-w anywhere (QA-73-r1-2)', () => {
+    document.documentElement.style.setProperty('--map-w', '60%');
+    const store: Record<string, string> = { 'wx.split.wide': '60' };
+    const prefs = createViewerPrefs(() => ({ getItem: (k) => store[k] ?? null, setItem: () => {}, removeItem: () => {} }));
+    let change = (): void => {};
+    const landscape = { matches: false, addEventListener: (_: string, f: () => void) => (change = f) } as unknown as MediaQueryList;
+    const { layout } = setup({ prefs, landscape });
+    expect(layout.style.getPropertyValue('--map-w')).toBe('60.00%');
+    (landscape as { matches: boolean }).matches = true;
+    change();
+    expect(layout.style.getPropertyValue('--map-w')).toBe('');
+    expect(document.documentElement.style.getPropertyValue('--map-w')).toBe('');
+  });
+});
