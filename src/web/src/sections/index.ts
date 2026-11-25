@@ -79,7 +79,9 @@ export function startSections(
     pick.className = 'wx-leg-pick';
     fill(secs);
     // LP-3, LP-9: a view only (no range, OQ-316); the map fits once to the leg or the whole route.
+    // A leg switch clears the range (a range from another leg mixes units in the panel, F-72 YD-2a).
     pick.onchange = () => {
+      selection?.clear();
       const g = picks[pick.selectedIndex - 1]?.leg;
       look.view = g ? { a: g.start, b: g.end, sport: g.sport } : null;
       map?.((m) => (g ? m.fit(g.start, g.end) : m.fit(-1, -1)));

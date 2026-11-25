@@ -139,6 +139,14 @@ describe('F-67 leg picker', () => {
     expect(fits).toEqual([[2520, n - 1], [-1, -1]]);
   });
 
+  it('a leg switch clears the range (units differ per leg, F-72 YD-2a)', () => {
+    const { choose, selection } = start();
+    choose(1);
+    selection.set(10, 50);
+    choose(2);
+    expect(selection.start()).toBe(-1);
+  });
+
   it('LP-8 (OQ-319): a range inside the leg keeps it; one outside returns to the whole workout without moving the map; clearing keeps it', () => {
     const { look, choose, fits, selection, pick } = start();
     choose(2);
