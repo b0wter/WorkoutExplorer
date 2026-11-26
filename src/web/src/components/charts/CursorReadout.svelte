@@ -17,15 +17,17 @@
     /** Fixed for the life of this instance (ChartStack keys on it). */
     units?: Units;
     sport?: string;
+    /** F-67: the leg view's index range; cells only for charts with data in it. */
+    leg?: { a: number; b: number } | null;
   }
 
-  let { data, cursor, units = 'metric', sport }: Props = $props();
+  let { data, cursor, units = 'metric', sport, leg }: Props = $props();
 
   // F-67 LP-10: on a multisport workout the fields read in the sport of the leg under the cursor
   // (speed or pace), '–' for speed in a transition; the labels re-render only when that sport changes.
   // F-72 YD-2: the distance unit follows the view's sport, never the section under the cursor.
   const dist = untrack(() => sport ?? data.meta.sport);
-  const fields = $derived(readoutFields(data, units, sport, dist));
+  const fields = $derived(readoutFields(data, units, sport, dist, leg));
   let row: HTMLDivElement;
 
   onMount(() => {
@@ -37,7 +39,7 @@
     const c = cursor;
     return c.subscribe((i) => {
       const s = secs && i !== null ? sportIn(secs, i) : sport;
-      if (s !== sport) f = readoutFields(data, units, (sport = s), dist);
+      if (s !== sport) f = readoutFields(data, units, (sport = s), dist, leg);
       for (let k = 0; k < f.length; k++) els[k].textContent = i === null || (s === 'transition' && f[k].key === 'speed') ? MISSING_TEXT : f[k].text(i);
     });
   });

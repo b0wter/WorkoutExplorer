@@ -60,7 +60,7 @@
   $effect.pre(() => checkWiring(data, cursor));
 
   // F-67 LP-6: in a leg view the charts read in the leg's sport (speed or pace, cadence unit); the set stays.
-  const charts = $derived((lang(), presentCharts(data, units, view?.sport)));
+  const charts = $derived((lang(), presentCharts(data, units, view?.sport, view)));
   // The x axis (F-17 R-7, R-8): ChartStack's own state, from initialAxis (time by default); the page
   // remembers the viewer's choice through onaxis. Both axes are built once per data value; a switch
   // rebuilds the uPlot instances (F-14 D-11's path) and leaves the stores alone, so the cursor and
@@ -177,7 +177,7 @@
     </div>
    {/if}
    {#key units + scheme + axis.kind + lang() + view?.a}
-    <CursorReadout {data} {cursor} {units} sport={view?.sport} />
+    <CursorReadout {data} {cursor} {units} sport={view?.sport} leg={view} />
     <div class="chart-area" bind:this={area}>
       {#if drawable}
         {#each charts as spec, k (spec.metric)}

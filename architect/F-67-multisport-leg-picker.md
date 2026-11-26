@@ -38,3 +38,5 @@
 
 1. **No picker on a multisport workout without any distance stream** (LP-2). Real triathlons, duathlons and swimruns carry distance; the case would need a reserved row from the server (a `has-legs` class in Go `internal/page` and `lib/page`, a page sample, CSS, and the toolbar condition in `ChartStack`). Overrule if AC 1 must hold there too.
 2. **AC 1's "Whole workout · Swim · Bike · Run"** is the drop-down's option list, not buttons side by side (LP-2).
+
+Update (user decision 2026-11-26): in a leg view, charts with no finite sample in the leg are hidden, with their readout cells; the layout jump is accepted. All legs shows every chart with data anywhere.

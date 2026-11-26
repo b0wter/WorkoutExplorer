@@ -45,3 +45,15 @@ test('F-67: the picker lists whole workout and each leg, and a leg view shows on
   await page.locator('.wx-leg-pick').selectOption({ label: 'Swim' });
   await expect(page.locator('.metric-chart').first()).toBeVisible();
 });
+
+test('F-67: a leg hides the charts without data in it, all legs brings them back', async ({ page }) => {
+  await open(page, workout('triathlon').view);
+  await expect(page.locator('.wx-leg-pick option')).toHaveText(['Whole workout', 'Swim', 'Ride', 'Run']);
+  const charts = page.locator('.metric-chart');
+  const all = await charts.count();
+  await page.locator('.wx-leg-pick').selectOption({ label: 'Swim' });
+  await expect.poll(() => charts.count()).toBeLessThan(all);
+  expect(await charts.count()).toBeGreaterThan(0);
+  await page.locator('.wx-leg-pick').selectOption({ index: 0 });
+  await expect.poll(() => charts.count()).toBe(all);
+});
