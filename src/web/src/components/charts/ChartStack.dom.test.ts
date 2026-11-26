@@ -1090,7 +1090,7 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
     const whole = env.charts.map((r) => r.data.at(-1));
     expect(speedTitle(m)).toBe('Speed · km/h'); // OQ-321
     const fresh = pick(RUN);
-    expect(fresh).toHaveLength(whole.length);
+    expect(fresh).toHaveLength(presentCharts(data, 'metric', 'running', RUN).length); // charts with data in the leg only
     for (const r of fresh) {
       const u = r.u as unknown as Scales;
       expect([u.scales.x.min, u.scales.x.max]).toEqual([data.time[RUN.a], data.time[RUN.b]]);
@@ -1106,22 +1106,16 @@ describe('F-67 leg view (LP-4 to LP-7, LP-10)', () => {
     expect(overs(m).every((o) => o.style.overflow === '')).toBe(true);
   });
 
-  it('every chart of a leg keeps the same plot left edge, also one with no data in the leg', () => {
+  it('every chart of a leg keeps the same plot left edge, and a chart without data in the leg is hidden', () => {
     const { pick } = start();
     for (const leg of [SWIM, BIKE, RUN]) {
       const lefts = pick(leg).map((r) => r.u.bbox.left);
       expect(new Set(lefts).size).toBe(1);
     }
-    // The swim has no power: its chart keeps the gutter but shows no tick labels.
+    // The swim has no power: that chart is hidden in the leg and back in the whole workout (user 2026-11-26).
     const swim = pick(SWIM);
-    const empty = swim.filter((r) => r.data.at(-1)?.y.every((v) => v === null));
-    expect(empty.length).toBeGreaterThan(0);
-    for (const r of empty) {
-      // uPlot draws tick text on canvas, so the axis options are what can be checked.
-      const y = (r.u as unknown as { axes: { values: (u: unknown, s: number[]) => string[]; grid: { show: boolean } }[] }).axes[1];
-      expect(y.values(r.u, [0, 0.5, 1]).join('')).toBe('');
-      expect(y.grid.show).toBe(false);
-    }
+    expect(swim.length).toBeLessThan(presentCharts(data).length);
+    expect(pick(null)).toHaveLength(presentCharts(data).length);
   });
 
   it('AC 2: swim reads per 100 m; bike km/h; the run pace axis fits the run (its samples only)', () => {

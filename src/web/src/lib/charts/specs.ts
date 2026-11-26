@@ -123,9 +123,9 @@ export function axisClip(spec: ChartSpec, values: Float64Array): [number, number
 /** The metric, speed (not pace) specs; tests and bench pages. The page uses chartSpecs. */
 export const CHART_SPECS = chartSpecs('', 'metric');
 
-function hasValue(values: Float64Array | undefined): boolean {
+function hasValue(values: Float64Array | undefined, a = 0, b = Infinity): boolean {
   if (values === undefined) return false;
-  for (let i = 0; i < values.length; i++) if (values[i] === values[i]) return true;
+  for (let i = a, e = Math.min(b, values.length - 1); i <= e; i++) if (values[i] === values[i]) return true;
   return false;
 }
 
@@ -139,9 +139,10 @@ export const dynamics: {
 } = { specs: () => [] };
 
 /** Specs in CHART_ORDER for streams present in data with at least one non-NaN value. */
-export function presentCharts(data: WorkoutData, units: Units = 'metric', sport = data.meta.sport): readonly ChartSpec[] {
+export function presentCharts(data: WorkoutData, units: Units = 'metric', sport = data.meta.sport, leg?: { a: number; b: number } | null): readonly ChartSpec[] {
   const specs = chartSpecs(sport, units);
-  return [...CHART_ORDER.filter((m) => hasValue(data.metrics[m])).map((m) => specs[m]), ...dynamics.specs(units).filter((s) => hasValue(data.metrics[s.metric]))];
+  const has = (m: string): boolean => hasValue(data.metrics[m as ChartMetric], leg?.a, leg?.b); // F-67: in a leg view, only charts with a finite sample in the leg
+  return [...CHART_ORDER.filter(has).map((m) => specs[m]), ...dynamics.specs(units).filter((s) => has(s.metric))];
 }
 
 export interface ReadoutField {
@@ -158,14 +159,14 @@ export interface ReadoutField {
 
 /** Readout fields in order: elapsed, distance (if the stream is present; in `distSport`'s unit, fixed per instance, F-72 YD-2), then presentCharts(data) for `sport` (default the workout's; F-67 LP-10).
  *  Built once per WorkoutData; text() reads the full-resolution arrays (D-9). */
-export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?: string, distSport = data.meta.sport): readonly ReadoutField[] {
+export function readoutFields(data: WorkoutData, units: Units = 'metric', sport?: string, distSport = data.meta.sport, leg?: { a: number; b: number } | null): readonly ReadoutField[] {
   const time = data.time;
   const fields: ReadoutField[] = [{ key: 'elapsed', label: t('axisTime'), unit: '', text: (i) => formatElapsed(time[i]) }];
   const distance = data.metrics.distance;
   if (distance !== undefined) {
     fields.push({ key: 'distance', label: t('axisDistance'), unit: distanceUnit(units, distSport), text: (i) => formatDistance(distance[i], units, distSport) });
   }
-  for (const spec of presentCharts(data, units, sport)) {
+  for (const spec of presentCharts(data, units, sport, leg)) {
     const values = data.metrics[spec.metric];
     if (values === undefined) continue; // presentCharts only returns present streams
     const { toDisplay, format } = spec;
