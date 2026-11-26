@@ -2,6 +2,7 @@
 // On edit.html (marker #wx-edit) it loads the owner chunk instead (F-19 design E-1); on
 // my-workouts.html (#wx-mine) the list page (F-53 MW-1). The viewing page loads neither.
 // F-54 LG-3: those pages' language files load together with their chunk, within 500 ms (no hold).
+import './lib/locale';
 import './page/page.css';
 import { startPage } from './page/start';
 import { loadGroup, pageLang } from './lib/i18n';
