@@ -119,8 +119,7 @@ test('F-43: the device line is in the server HTML without JavaScript and follows
   const html = await (await request.get(workout('indoor-no-gps').view)).text();
   expect(html).toMatch(/<p class="device">Recorded with Wahoo Fitness ELEMNT BOLT · heart-rate monitor, power meter<\/p>/);
   expect(html).not.toMatch(/serial/i);
-  const errors = await open(page, workout('indoor-no-gps').view);
-  await page.locator('#lang-slot select').selectOption('de'); // not the stored choice: WebKit ignored a preset wx.lang here, see the report
+  const errors = await open(page, workout('indoor-no-gps').view, { storage: { 'wx.lang': 'de' } });
   await expect(page.locator('p.device')).not.toContainText('Recorded with'); // lazy language file: retry
   await expect(page.locator('p.device')).toContainText('ELEMNT BOLT');
   expect(errors).toEqual([]);
