@@ -51,6 +51,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `publish.pw.mjs` | F-20, F-12 publish, published page, Share and Copy link, viewing page, edit link after publishing, Delete and the gone page |
 | `hiding.pw.mjs` | F-16, F-55, F-47 start/end hiding radii and trim: the published data file holds no position inside a radius or trimmed part, totals, fully hidden route |
 | `pins-laps.pw.mjs` | F-56, F-65, F-66 edit page: add, edit, delete pins and the pin dialog, add and remove lap boundaries (table and comparison chart follow), Remove/Restore auto-laps |
+| `prefs.pw.mjs` | F-14, F-54, F-41 units (pace, speed, /100 m), language and theme switch live with no data or API request, tint cards in both themes, choices in browser storage only |
 | `legs.pw.mjs` | F-67 leg switch clears the range, charts stay aligned in every leg |
 | `dialogs.pw.mjs` | dialog shell: fixed header, scrolling body, scroll lock, close |
 | `layout.pw.mjs` | header wrap, readout labels, summary cards in en/de/es/fr, several widths |
