@@ -61,6 +61,10 @@ describe('CHART_ORDER', () => {
 });
 
 describe('presentCharts', () => {
+  it('F-67: a leg with no data in any chart falls back to all charts (toolbar and picker stay)', () => {
+    const d = workout(3, ALL);
+    expect(presentCharts(d, 'metric', undefined, { a: 5, b: 9 }).map((s) => s.metric)).toEqual(metricsOf(d)); // leg beyond the samples
+  });
   it('gives six specs in order for all streams', () => {
     expect(metricsOf(workout(3, ALL))).toEqual(['altitude', 'speed', 'heart_rate', 'power', 'cadence', 'temperature']);
     expect(presentCharts(workout(3, ALL))[0].metric).toBe('altitude');

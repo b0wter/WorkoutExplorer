@@ -141,8 +141,13 @@ export const dynamics: {
 /** Specs in CHART_ORDER for streams present in data with at least one non-NaN value. */
 export function presentCharts(data: WorkoutData, units: Units = 'metric', sport = data.meta.sport, leg?: { a: number; b: number } | null): readonly ChartSpec[] {
   const specs = chartSpecs(sport, units);
-  const has = (m: string): boolean => hasValue(data.metrics[m as ChartMetric], leg?.a, leg?.b); // F-67: in a leg view, only charts with a finite sample in the leg
-  return [...CHART_ORDER.filter(has).map((m) => specs[m]), ...dynamics.specs(units).filter((s) => has(s.metric))];
+  const all = (l?: { a: number; b: number } | null): ChartSpec[] => {
+    const has = (m: string): boolean => hasValue(data.metrics[m as ChartMetric], l?.a, l?.b);
+    return [...CHART_ORDER.filter(has).map((m) => specs[m]), ...dynamics.specs(units).filter((s) => has(s.metric))];
+  };
+  // F-67: in a leg view, only charts with a finite sample in the leg; none left: all, so the toolbar and picker stay.
+  const inLeg = leg ? all(leg) : [];
+  return inLeg.length ? inLeg : all();
 }
 
 export interface ReadoutField {
