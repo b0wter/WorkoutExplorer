@@ -55,6 +55,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `legs.pw.mjs` | F-67 leg switch clears the range, charts stay aligned in every leg |
 | `dialogs.pw.mjs` | dialog shell: fixed header, scrolling body, scroll lock, close |
 | `layout.pw.mjs` | header wrap, readout labels, summary cards in en/de/es/fr, several widths |
+| `mine.pw.mjs` | F-53 My workouts: empty state, a UI upload is listed, survives a reload, Forget empties it |
 | `upload.pw.mjs` | upload page: reserved drop zone, paused, fail-open, refusal, one real upload |
 | `helpers.mjs`, `fixtures.mjs`, `setup.mjs` | helpers, fixture list, global setup |
 
