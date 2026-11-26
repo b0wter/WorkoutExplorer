@@ -5,13 +5,11 @@ import { workout, open, hover, texts } from './helpers.mjs';
 const METRIC = { storage: { 'wx.units': 'metric' } };
 const marker = (page) => page.locator('.wx-cursor-marker');
 
-// Opens a workout with every non-local request stubbed (aborted and recorded); `external` lists them.
+// Opens a workout; `external` lists the outside requests open() blocked.
 async function openMap(page, name) {
-  const external = [];
-  await page.route(/^https?:\/\/(?!(localhost|127\.0\.0\.1)[:/])/, (r) => { external.push(r.request().url()); return r.abort(); });
   const errors = await open(page, workout(name).view, METRIC);
   await expect(page.locator('.wx-map canvas.maplibregl-canvas')).toBeVisible({ timeout: 20000 });
-  return { errors, external };
+  return { errors, external: errors.blocked };
 }
 
 // Screenshot of the map box, decoded and sampled in a blank page (the viewing page's CSP blocks data: images). A pixel is "ink"

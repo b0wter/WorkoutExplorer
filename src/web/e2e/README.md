@@ -36,6 +36,7 @@ see it) and must equal the Docker image's version.
 
 A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) skips the phone and tablet projects,
 `test.skip(isMobile, why)` skips touch projects. Headless Firefox has no WebGL, so the map never starts there; `open()` ignores that error.
+`open()` also aborts every non-local request (tile host, fonts) for the whole context and lists them in `errors.blocked`: tests never reach an outside host.
 
 ## Files
 

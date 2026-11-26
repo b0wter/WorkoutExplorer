@@ -47,7 +47,8 @@ function probes() {
 }
 
 /** Opens a page with browser storage preset (wx.lang, wx.units, wx.theme, wx.split.*) before any script runs.
- *  Returns the list of page errors and CSP violations seen so far (the array keeps filling). */
+ *  Returns the list of page errors and CSP violations seen so far (the array keeps filling);
+ *  `.blocked` on it lists the outside requests that were aborted. */
 export async function open(page, url, { storage = {}, wait = true, block = false } = {}) {
   await page.addInitScript(probes);
   await page.addInitScript(({ s, block }) => {
@@ -55,6 +56,9 @@ export async function open(page, url, { storage = {}, wait = true, block = false
     try { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); } catch {}
   }, { s: { 'wx.lang': 'en', ...storage }, block });
   const errors = [];
+  // The suite never reaches an outside host: every non-local request is aborted and its URL recorded in `errors.blocked`.
+  Object.defineProperty(errors, 'blocked', { value: [] }); // non-enumerable: tests compare `errors` with toEqual([])
+  await page.context().route(/^https?:\/\/(?!(localhost|127\.0\.0\.1)[:/])/, (r) => { errors.blocked.push(r.request().url()); return r.abort(); });
   // No WebGL in headless Firefox: the map cannot start there, which is not what the suite checks.
   page.on('pageerror', (e) => { if (!/WebGL/i.test(String(e))) errors.push(String(e)); });
   page.on('console', (m) => { if (/Content.Security.Policy|Refused to/i.test(m.text())) errors.push('csp: ' + m.text()); });
