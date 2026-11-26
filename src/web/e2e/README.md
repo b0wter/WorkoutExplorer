@@ -48,6 +48,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `f72-yards.pw.mjs` | F-72 yards for swims, live unit switch |
 | `laps.pw.mjs` | F-18, F-46, F-69, F-48, F-64 laps and splits table: switch, presets, triggers, strokes, leg tables, row click |
 | `edit.pw.mjs` | F-19, F-45, F-21 edit page of a draft: fields save, suggested title, lifetime, expiry on the view page, token only in the fragment |
+| `publish.pw.mjs` | F-20, F-12 publish, published page, Share and Copy link, viewing page, edit link after publishing, Delete and the gone page |
 | `legs.pw.mjs` | F-67 leg switch clears the range, charts stay aligned in every leg |
 | `dialogs.pw.mjs` | dialog shell: fixed header, scrolling body, scroll lock, close |
 | `layout.pw.mjs` | header wrap, readout labels, summary cards in en/de/es/fr, several widths |
