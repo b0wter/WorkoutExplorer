@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import fs from 'node:fs';
 import { fitPath } from './fixtures.mjs';
 
@@ -64,6 +65,17 @@ export async function open(page, url, { storage = {}, wait = true, block = false
   page.on('console', (m) => { if (/Content.Security.Policy|Refused to/i.test(m.text())) errors.push('csp: ' + m.text()); });
   await page.goto(url);
   if (wait) await charts(page);
+  // LG-2: a page view whose language file misses the 500 ms hold stays English by design. A cold first load (WebKit, fresh
+  // browser) can miss it, and the preset is then not tested. Reload (warm caches; the init script presets again) until it applied.
+  const want = storage['wx.lang'];
+  if (wait && !block && want && want != 'en') {
+    for (let i = 0; i < 4; i++) {
+      await expect.poll(() => page.locator('html').evaluate((h) => 'hold' in h.dataset)).toBe(false);
+      if ((await page.locator('html').getAttribute('lang')) == want) break;
+      await page.reload();
+      await charts(page);
+    }
+  }
   return errors;
 }
 
