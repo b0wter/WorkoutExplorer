@@ -43,6 +43,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | File | Covers |
 | --- | --- |
 | `f73-split.pw.mjs` | F-73 remembered map split, first frame, invalid values, blocked storage, JS off |
+| `locale.pw.mjs` | invalid navigator.language (en-US@posix): viewing and edit page render without errors |
 | `f74-spike.pw.mjs` | F-74 spike removed, kept glitch clips the axis, AP-24 line in four languages |
 | `f71-compare.pw.mjs` | F-71 laps and splits comparison chart |
 | `f72-yards.pw.mjs` | F-72 yards for swims, live unit switch |
