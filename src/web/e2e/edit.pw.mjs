@@ -2,8 +2,6 @@
 import { test, expect } from '@playwright/test';
 import { upload, open } from './helpers.mjs';
 
-// The edit page starts the map; failed tile and font fetches (the tile host is not served here) are not what this suite checks.
-const real = (errors) => errors.filter((e) => !/tiles\.openfreemap\.org/.test(e));
 const form = (page) => page.locator('form.edit-panel');
 const save = async (page) => {
   await form(page).locator('button.edit-save[type=submit]').click();
@@ -20,7 +18,7 @@ test('F-19: title and description save and survive a reload', async ({ page, req
   await page.reload();
   await expect(form(page).locator('input[name=title]')).toHaveValue('Morning spin');
   await expect(form(page).locator('textarea[name=description]')).toHaveValue('Easy legs, windy.');
-  expect(real(errors)).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('F-45: the suggested title shows as placeholder while the title is empty', async ({ page, request }) => {
@@ -31,7 +29,7 @@ test('F-45: the suggested title shows as placeholder while the title is empty', 
   const ph = await title.getAttribute('placeholder');
   expect(ph).toMatch(/\S/);
   expect(ph).toMatch(/run/i);
-  expect(real(errors)).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('F-19, F-21: visibility starts as Draft; the lifetime select saves and the expiry text follows it', async ({ page, request }) => {
@@ -46,13 +44,15 @@ test('F-19, F-21: visibility starts as Draft; the lifetime select saves and the 
   await sel.selectOption(pick);
   await expect(form(page).locator('.edit-expiry')).not.toHaveText(before);
   await save(page);
+  await page.waitForLoadState('networkidle'); // a reload while lazy chunks load aborts them: WebKit logs that as a page error
   await page.reload();
   await expect(sel).toHaveValue(pick);
   // Publishing flips the visibility label.
   await request.post(`/api/workouts/${w.id}/publish`, { headers: { Authorization: 'Bearer ' + w.tok } });
+  await page.waitForLoadState('networkidle');
   await page.reload();
   await expect(form(page).locator('.edit-field', { hasText: 'Visibility' })).toContainText('Unlisted');
-  expect(real(errors)).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('F-21, UP-7: the viewing page shows the expiry date, and it follows the saved lifetime', async ({ page, request }) => {
@@ -68,7 +68,7 @@ test('F-21, UP-7: the viewing page shows the expiry date, and it follows the sav
   const second = days(await page.locator('time[data-expires]').textContent());
   expect(second).toBeLessThanOrEqual(3);
   expect(second).toBeLessThanOrEqual(first);
-  expect(real(errors)).toEqual([]);
+  expect(errors).toEqual([]);
 });
 
 test('F-19, UP-6: the edit token stays in the fragment: no request has it in the path or query', async ({ page, request }) => {
@@ -82,5 +82,5 @@ test('F-19, UP-6: the edit token stays in the fragment: no request has it in the
   expect(urls.filter((u) => u.includes(w.tok))).toEqual([]);
   expect(await page.evaluate(() => location.hash)).toContain(w.tok);
   expect(await page.evaluate(() => location.search)).toBe('');
-  expect(real(errors)).toEqual([]);
+  expect(errors).toEqual([]);
 });
