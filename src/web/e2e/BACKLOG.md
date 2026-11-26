@@ -31,6 +31,7 @@ refusal, one upload).
 | B-18 | open | F-72 (open items) | Yards: open-water swim with a map, pins and added laps in yd, fullscreen strip; imperial default from browser language (`locale: 'en-US'` vs `de-DE`) | `swim-bike-distance-fall` added to `FIXTURES` |
 | B-19 | open | F-05, F-17, F-67 | Touch projects: helper that scrubs with real touch moves (CDP `Input.dispatchTouchEvent` on Chromium; WebKit has none: use `page.touchscreen.tap` plus long-press where the app allows) and a range selection on touch; then enable the readout and range checks now skipped on phones (F-74 readout, F-72 range, legs) | `ride-30min`, `triathlon` |
 | B-20 | done | suite | Stub every non-local request in the shared `open()`/page setup (as `map.pw.mjs` does): tests must not reach the tile host; then drop the openfreemap error filter in `edit.pw.mjs` | none |
+| B-21 | open | suite | Flakes under load: `f76-chart-size.pw.mjs:44` on WebKit (reload aborts lazy chunks, "Unable to preload CSS": wait for networkidle before reload as in `edit.pw.mjs`), `f76-chart-size.pw.mjs:84`, `dialogs.pw.mjs:6`, `laps.pw.mjs:145` on iPad | none |
 
 Known limits of the suite: headless Firefox has no WebGL (the map never starts there), WebKit has no layout-shift observer (the F-73
 shift check runs in Chromium only), the phone projects are emulation, not devices.
