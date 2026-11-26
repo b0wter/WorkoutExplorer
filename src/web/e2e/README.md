@@ -45,6 +45,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `f74-spike.pw.mjs` | F-74 spike removed, kept glitch clips the axis, AP-24 line in four languages |
 | `f71-compare.pw.mjs` | F-71 laps and splits comparison chart |
 | `f72-yards.pw.mjs` | F-72 yards for swims, live unit switch |
+| `laps.pw.mjs` | F-18, F-46, F-69, F-48, F-64 laps and splits table: switch, presets, triggers, strokes, leg tables, row click |
 | `legs.pw.mjs` | F-67 leg switch clears the range, charts stay aligned in every leg |
 | `dialogs.pw.mjs` | dialog shell: fixed header, scrolling body, scroll lock, close |
 | `layout.pw.mjs` | header wrap, readout labels, summary cards in en/de/es/fr, several widths |
