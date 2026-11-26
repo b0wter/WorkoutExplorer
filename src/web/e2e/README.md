@@ -55,6 +55,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `legs.pw.mjs` | F-67 leg switch clears the range, charts stay aligned in every leg |
 | `dialogs.pw.mjs` | dialog shell: fixed header, scrolling body, scroll lock, close |
 | `layout.pw.mjs` | header wrap, readout labels, summary cards in en/de/es/fr, several widths |
+| `help-share.pw.mjs` | F-39, F-58, F-40 how-to bar (shows, x dismisses, stays dismissed), "How these numbers are computed" dialog, range link opens the range, Copy link to this selection round trip |
 | `info-pages.pw.mjs` | F-29, F-38, F-28, F-37 About attributions, no Impressum (bare 404), generic expired page, Report form (validation, keeps text, submit answer), report-delete page with an invalid key |
 | `mine.pw.mjs` | F-53 My workouts: empty state, a UI upload is listed, survives a reload, Forget empties it |
 | `upload.pw.mjs` | upload page: reserved drop zone, paused, fail-open, refusal, one real upload |
