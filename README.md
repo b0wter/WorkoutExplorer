@@ -4,13 +4,29 @@ A small, free viewer for FIT files: upload one, get a shareable activity page. G
 
 **Live demo:** https://workouts.plugman.de
 
-| Ride, desktop, dark, satellite layer | Run, phone |
-| --- | --- |
-| ![Ride page on desktop, dark theme, satellite map: route, linked charts with the cursor mid-ride](docs/screenshots/ride-desktop.jpg) | ![Run page on a phone: summary, map, charts](docs/screenshots/run-phone.jpg) |
+## What a shared page looks like
+
+Upload a FIT file from your watch or bike computer and you get a link like the ones below. Anyone with the link sees the page; no account, no app.
+
+### Map and charts, linked
+
+![Ride page on desktop, dark theme, satellite map: route, linked charts with the cursor mid-ride](docs/screenshots/ride-desktop.jpg)
+
+A bike ride on a desktop, in the dark theme with the satellite map. The summary at the top lists distance, times, speed, heart rate, power and more. The charts below are linked to the map: move the cursor over any chart and the readout above the charts shows every value at that moment, while a marker shows the same spot on the route. Numbered circles on the route mark the laps.
+
+### On the phone
+
+<img src="docs/screenshots/run-phone.jpg" alt="Run page on a phone: summary, map, charts" width="360">
+
+A run on a phone, in the light theme. The page stacks into one column; pace is shown per kilometre (or per mile), and you scrub the charts with a finger. Units, theme and language (English, German, Spanish, French) can be changed on the page.
+
+### Multisport
 
 ![Triathlon page on a tablet with the Ride leg picked: map, linked charts](docs/screenshots/triathlon-tablet.jpg)
 
-Screenshots show synthetic workouts; regenerate with `make screenshots` (needs Docker and internet for map tiles).
+A triathlon on a tablet. The leg picker next to the chart controls (here: Ride) narrows the charts to one leg and shows its speed in that leg's own unit: pace per 100 m for the swim, km/h on the bike, pace per km for the run. Transitions are marked on the map (T1, T2).
+
+The screenshots show synthetic workouts; regenerate them with `make screenshots` (needs Docker and internet for map tiles).
 
 ## Install
 
