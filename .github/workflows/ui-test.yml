@@ -1,0 +1,38 @@
+name: ui-test
+# Nightly browser suite (src/web/e2e, README there); not on push or PR. Synthetic fixtures only; the repo is public.
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ui-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, webkit, firefox, iPhone, Android, iPad, firefox-phone]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: src/server/go.mod
+          cache: true
+          cache-dependency-path: src/server/go.sum
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      # WebKit core dumps are ~6 GB; run.sh also passes --ulimit core=0 to the container.
+      - run: ulimit -c 0 && make ui-test PROJECT=${{ matrix.project }}
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-${{ matrix.project }}
+          path: |
+            build/ui-test/html
+            build/ui-test/results
+          retention-days: 14
