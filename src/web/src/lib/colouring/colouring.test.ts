@@ -250,7 +250,9 @@ describe('golden files', () => {
     for (const m of offeredMetrics(d)) {
       const values = metricValues(d, m);
       const c = classify(values, colourScale(m, values, ends, d.meta.sport));
-      for (const i of ends) if (values[i] === values[i]) expect(c[i]).toBeLessThan(CLASS_COUNT);
+      let bad = 0;
+      for (const i of ends) if (values[i] === values[i] && !(c[i] < CLASS_COUNT)) bad++;
+      expect(bad, m).toBe(0);
     }
   });
 });

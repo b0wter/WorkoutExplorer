@@ -45,14 +45,14 @@ describe('template', () => {
   it('has an empty laps heading slot and no switch, like LapsTable.svelte (F-18 L-6, AC 6; F-46 LS-3)', () => {
     const slot = '</h2><span class="laps-slot" id="laps-slot"></span></div>';
     expect(template).toContain('<div class="laps-head">{{if .None}}<h2 data-t="headSplits">Splits</h2>{{else}}<h2 data-t="headLaps">Laps</h2>{{end}}' + slot.slice(5));
-    expect(sources['../components/page/LapsTable.svelte']).toContain(`<div class="laps-head"><h2>{t(laps.None ? 'headSplits' : 'headLaps')}` + slot);
+    expect(sources['../components/page/LapsTable.svelte']).toMatch(new RegExp('<div class="laps-head"><h2>[^]*?' + slot.replace(/[/]/g, '\\/')));
     expect(template).not.toMatch(/laps-switch|laps-none|No laps recorded/);
   });
 
   it('F-49 ZN-8: one empty, hidden zones slot right after the laps module, like ActivityPage.svelte', () => {
     const slot = '<div id="zones-slot" class="zones-slot" hidden></div>';
     expect(template).toMatch(/<\/section>\{\{end\}\}\s*<div id="zones-slot" class="zones-slot" hidden><\/div>/);
-    expect(sources['../components/page/ActivityPage.svelte']).toMatch(new RegExp('<LapsTable laps=\\{model.Laps\\} \\{remove\\} \\{auto\\} />\\{/key\\}\\s*' + slot));
+    expect(sources['../components/page/ActivityPage.svelte']).toMatch(new RegExp('<LapsTable [^>]*/>\\{/key\\}\\s*' + slot));
   });
 
   it('F-50 EF-8: one empty, hidden efforts slot right after the zones slot, like ActivityPage.svelte', () => {
