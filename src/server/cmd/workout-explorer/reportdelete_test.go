@@ -52,6 +52,8 @@ func newPushFake(t *testing.T) *pushFake {
 	p := &pushFake{reqs: make(chan string, 64)}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
+		w.WriteHeader(200) // on the wire before the test sees the request (see newNtfyFake)
+		w.(http.Flusher).Flush()
 		p.reqs <- string(b)
 	}))
 	t.Cleanup(srv.Close)
@@ -64,6 +66,7 @@ func (p *pushFake) next(t *testing.T) (string, url.Values) {
 	t.Helper()
 	select {
 	case raw := <-p.reqs:
+		settle()
 		f, err := url.ParseQuery(raw)
 		if err != nil {
 			t.Fatal(err)

@@ -93,21 +93,30 @@ func newNtfyFake(t *testing.T, status int) *ntfyFake {
 	f := &ntfyFake{status: status, reqs: make(chan *http.Request, 64), bodies: make(chan string, 64)}
 	f.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
+		f.mu.Lock()
+		w.WriteHeader(f.status)
+		f.mu.Unlock()
+		// Signal only after the response is on the wire: a test that closes the app right after next()
+		// must not cancel a send that still awaits its response (that is a failed send and revokes the key).
+		w.(http.Flusher).Flush()
 		f.bodies <- string(b)
 		f.reqs <- r
-		f.mu.Lock()
-		defer f.mu.Unlock()
-		w.WriteHeader(f.status)
 	}))
 	t.Cleanup(f.srv.Close)
 	return f
 }
 
+// settle gives the app's client the moment to read the response that is already on the wire; the
+// notifier exposes no completion hook, and closing the app first would cancel the send and revoke its key.
+func settle() { time.Sleep(100 * time.Millisecond) }
+
 func (f *ntfyFake) next(t *testing.T) (*http.Request, string) {
 	t.Helper()
 	select {
 	case r := <-f.reqs:
-		return r, <-f.bodies
+		b := <-f.bodies
+		settle()
+		return r, b
 	case <-time.After(5 * time.Second):
 		t.Fatal("no notification")
 		return nil, ""
