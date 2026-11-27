@@ -63,6 +63,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `info-pages.pw.mjs` | F-29, F-38, F-28, F-37 About attributions, no Impressum (bare 404), generic expired page, Report form (validation, keeps text, submit answer), report-delete page with an invalid key |
 | `mine.pw.mjs` | F-53 My workouts: empty state, a UI upload is listed, survives a reload, Forget empties it |
 | `upload.pw.mjs` | upload page: reserved drop zone, paused, fail-open, refusal, one real upload |
+| `zip-gpx.pw.mjs` | F-57 GPX download (one track, points, no time), F-35 zip upload (zip built in the test, deflate), F-63 no Shortcut hint when unconfigured |
 | `helpers.mjs`, `fixtures.mjs`, `setup.mjs` | helpers, fixture list, global setup |
 
 `BACKLOG.md` lists the features that still have no UI test, in small pieces.
