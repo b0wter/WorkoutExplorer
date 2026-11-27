@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import { fitPath } from './fixtures.mjs';
 
@@ -69,6 +69,8 @@ function blockedOf(page) {
  *  Returns the list of page errors and CSP violations seen so far (the array keeps filling);
  *  `.blocked` on it lists the outside requests that were aborted. */
 export async function open(page, url, { storage = {}, wait = true, block = false } = {}) {
+  // B-24: WebKit's web process crashes (6 GB core) on the triathlon page at iPad size (768 px, isMobile); skip instead of hanging until the timeout.
+  test.skip(test.info().project.name === 'iPad' && url === workout('triathlon').view, 'B-24: WebKit web process crashes on the triathlon page on the iPad project (WebKit, not the app)');
   await page.addInitScript(probes);
   await page.addInitScript(({ s, block }) => {
     if (block) { Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError'); } }); return; }
