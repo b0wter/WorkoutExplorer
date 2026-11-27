@@ -40,7 +40,7 @@ test.describe('F-73 wide screen', () => {
   test('blocked storage: page works with the default split', async ({ page }) => {
     const errors = await open(page, workout('run-30min').view, { block: true });
     expect((await ratio(page)).r).toBeGreaterThan(0.2);
-    expect(errors.filter((e) => !/localStorage|blocked/.test(e))).toEqual([]);
+    expect(errors).toEqual([]); // blocked storage raises no error at all: nothing is ignored (QA-76-r1-2)
   });
 
   test('no route: stored split does not break the page', async ({ page }) => {

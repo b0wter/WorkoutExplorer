@@ -367,6 +367,26 @@ describe('ChartStack in jsdom', () => {
       expect(overs(m).map((o) => o.style.height)).toEqual(['200px', '200px', '200px']);
     });
 
+    it('a window resize without a width change re-reads --plot, one read per frame (QA-76-r1-3)', () => {
+      let plot = '120px';
+      const real = window.getComputedStyle.bind(window);
+      const spy = vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element, pseudo?: string | null) => {
+        const cs = real(el, pseudo);
+        return new Proxy(cs, { get: (t, k) => (k === 'getPropertyValue' ? (n: string) => (n === '--plot' ? plot : t.getPropertyValue(n)) : Reflect.get(t, k)) });
+      });
+      const m = setup(golden('no-distance-with-gps'));
+      layout(800);
+      expect(overs(m).map((o) => o.style.height)).toEqual(['120px', '120px', '120px']);
+      plot = '90px';
+      spy.mockClear();
+      window.dispatchEvent(new Event('resize'));
+      window.dispatchEvent(new Event('resize'));
+      env.frame();
+      flushSync();
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(overs(m).map((o) => o.style.height)).toEqual(['90px', '90px', '90px']);
+    });
+
     it('without page CSS the fallback is chartHeight, also after a click', () => {
       const m = setup(golden('no-distance-with-gps'), { chartHeight: 80 });
       layout(800);
