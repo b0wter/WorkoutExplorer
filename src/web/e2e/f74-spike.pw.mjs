@@ -30,12 +30,13 @@ test('F-74: a 1 s spike is removed: max speed is the ride speed, the readout the
   // (The missing sample itself cannot be aimed at: a chart pixel is about 3 s wide, a spike is 1 s.)
 });
 
-test('F-74: a 6 s glitch is kept: true value in the readout and max speed, chart axis clipped (AP-26)', async ({ page, isMobile }) => {
+test('F-74: a 6 s glitch is kept: true value in the readout and max speed, chart axis clipped (AP-26)', async ({ page }) => {
   await open(page, workout('glitch-ride').view, METRIC);
   expect(await maxSpeed(page)).toBeGreaterThan(80);
-  // Taps do not move the cursor like a swipe does, and a 6 s spike is under one pixel of a phone-width chart: the readout is
-  // checked with a mouse on a wide chart only (BACKLOG: touch scrubbing helper).
-  if (!isMobile && page.viewportSize().width >= 600) expect(await scan(page, SPIKE_AT, 'Speed', /8\d\.\d\s*km\/h/), 'readout shows the true value').toMatch(/8\d\.\d/);
+  // The cursor snaps to whole chart pixels: a 6 s glitch is hit only where a pixel is under ~6 s. iPhone's 294 px chart (6.1 s per
+  // pixel) steps over it (probed: 26.0, 25.9, 26.3 around it); headless Firefox at phone width has a mouse and the same narrow chart.
+  const wide = (await page.locator('.chart-area .u-over').first().boundingBox()).width >= 330;
+  if (wide && (page.viewportSize().width >= 600 || await page.evaluate(() => matchMedia('(pointer: coarse)').matches))) expect(await scan(page, SPIKE_AT, 'Speed', /8\d\.\d\s*km\/h/, 14), 'readout shows the true value').toMatch(/8\d\.\d/);
   // The glitch is drawn at the top edge, and the axis is not stretched to 85 km/h: the 26 km/h line's noise spans a visible band.
   const m = await lineMetrics(page);
   expect(m.top).toBeLessThan(0.07); // the plot starts 8 px (6 %) below the canvas top

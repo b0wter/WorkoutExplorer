@@ -85,8 +85,9 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 5. Run it on every project that applies: `make ui-test UI_ARGS=<file>`. Mark flaky tests with `test.fixme` and a BACKLOG row, never
    leave them red.
 
-The phone projects use touch: a tap does not scrub like a swipe, and a chart pixel is several seconds wide, so single-sample
-checks use the mouse projects.
+The phone projects use touch: `scrub` (swipe) and `touchRange` (long press, then drag; `drag` calls it on touch projects) come from
+`helpers.mjs`: real CDP touch events on Chromium, pointer events with pointerType touch on WebKit (no CDP there). A chart pixel is
+several seconds wide on a phone, so single-sample checks (a 6 s glitch) only run where a pixel is narrow enough.
 
 ## Unattended run with a report
 
