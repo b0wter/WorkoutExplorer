@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const CORPUS = '/repo/src/server/testdata/corpus/synthetic';
 const EXTRA = '/repo/build/ui-test/fit';
 
-export const FIXTURES = ['ride-30min', 'run-30min', 'indoor-no-gps', 'pool-swim', 'pool-swim-25yd', 'triathlon', 'ride-12h', 'gps-dropout', 'interval-run', 'spike-ride', 'glitch-ride', 'ride-lap-triggers', 'zones-wahoo-ride', 'zones-apple-run-6'];
+export const FIXTURES = ['ride-30min', 'run-30min', 'indoor-no-gps', 'pool-swim', 'pool-swim-25yd', 'triathlon', 'ride-12h', 'gps-dropout', 'interval-run', 'spike-ride', 'glitch-ride', 'ride-lap-triggers', 'zones-wahoo-ride', 'zones-apple-run-6', 'run-dynamics', 'stryd-power'];
 
 export function fitPath(name) {
   const p = [CORPUS, EXTRA].map((d) => `${d}/${name}.fit`).find((f) => fs.existsSync(f));

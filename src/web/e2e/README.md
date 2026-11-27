@@ -64,6 +64,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `mine.pw.mjs` | F-53 My workouts: empty state, a UI upload is listed, survives a reload, Forget empties it |
 | `upload.pw.mjs` | upload page: reserved drop zone, paused, fail-open, refusal, one real upload |
 | `zip-gpx.pw.mjs` | F-57 GPX download (one track, points, no time), F-35 zip upload (zip built in the test, deflate), F-63 no Shortcut hint when unconfigured |
+| `sensors.pw.mjs` | F-68 running dynamics and Stryd power charts and readout cells only when the data has them (absent on a plain run), labels fit at 360 px in de/es/fr (desktop projects) |
 | `helpers.mjs`, `fixtures.mjs`, `setup.mjs` | helpers, fixture list, global setup |
 
 `BACKLOG.md` lists the features that still have no UI test, in small pieces.
