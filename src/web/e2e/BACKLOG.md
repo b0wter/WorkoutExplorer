@@ -37,3 +37,9 @@ refusal, one upload).
 
 Known limits of the suite: headless Firefox has no WebGL (the map never starts there), WebKit has no layout-shift observer (the F-73
 shift check runs in Chromium only), the phone projects are emulation, not devices.
+
+## Bugs found by the suite (not fixed at night)
+
+| Found | Feature | Bug | Test |
+| --- | --- | --- | --- |
+| B-18, 2026-11-27 | F-72, F-56, F-65 | Edit page of a multisport file: pins and added laps on the swim leg read in mi, not yd; their distance unit follows the file's primary sport instead of the leg (readout and fullscreen strip already follow the leg) | `f72-open-water.pw.mjs`, two `test.fail`: drop `.fail` once fixed |
