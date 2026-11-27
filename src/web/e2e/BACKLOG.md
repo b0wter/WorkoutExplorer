@@ -38,7 +38,7 @@ refusal, one upload).
 | B-25 | waiting (next Playwright/WebKit image bump; the nightly loop skips it) | suite | Re-enable the triathlon page on the iPad project: drop the B-24 `test.skip` in `open()` (`helpers.mjs`), run the triathlon files on iPad a few times; if WebKit still crashes, put the skip back | `triathlon` |
 | B-26 | open | F-34, F-63 | iOS Shortcut upload link: with `WORKOUT_EXPLORER_IOS_SHORTCUT_URL` set (throwaway URL), the hint and link show on the viewing/upload page for an iPhone user agent and not elsewhere; without it, no hint. Check what `info-pages`/F-63 tests already cover first | `ride-30min` |
 | B-27 | open | F-27 | Report and operator delete: a viewer reports a workout (form, confirmation, rate limit message); the operator delete link from the report removes the page (no notification service: Pushover/ntfy unset). Check `security.pw.mjs`/`info-pages.pw.mjs` first, add only what is missing | `ride-30min` |
-| B-28 | open | F-68, F-74 | Flakes seen in the full run of 2026-11-27: `sensors.pw.mjs:15` on iPhone, `f74-spike.pw.mjs:48` on firefox-phone. Find the cause (wait, timing, touch); fix the test without raising retries; if the app, `test.fail` and list the bug | `run-dynamics`, `stryd-power` |
+| B-28 | open | F-68, F-74, F-05, F-20 | Flakes seen in the full runs of 2026-11-27: `sensors.pw.mjs:15` on iPhone, `f74-spike.pw.mjs:48` on firefox-phone; on GitHub: `viewing.pw.mjs:20` on Android, `publish.pw.mjs:44` on iPad. Find the cause (wait, timing, touch); fix the test without raising retries; if the app, `test.fail` and list the bug | `run-dynamics`, `stryd-power` |
 
 
 Known limits of the suite: headless Firefox has no WebGL (the map never starts there), WebKit has no layout-shift observer (the F-73
