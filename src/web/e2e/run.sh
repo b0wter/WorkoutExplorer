@@ -47,5 +47,5 @@ until curl -sf "$base/api/status" >/dev/null 2>&1; do
 done
 echo "ui-test: server on $base"
 
-docker run --rm --network host --ipc=host -u "$(id -u):$(id -g)" -e HOME=/tmp -e WX_BASE="$base" \
+docker run --rm --ulimit core=0 --network host --ipc=host -u "$(id -u):$(id -g)" -e HOME=/tmp -e WX_BASE="$base" \
 	-v "$root:/repo" -w /repo/src/web/e2e "$image" npx playwright test "$@"

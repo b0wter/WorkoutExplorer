@@ -13,6 +13,8 @@ make ui-test UI_ARGS='-g F-73'                # Playwright arguments (grep a tit
 make ui-test PROJECT=chromium UI_ARGS=f74     # one file
 ```
 
+`.github/workflows/ui-test.yml` runs the suite nightly and on manual dispatch, one parallel job per project (`make ui-test PROJECT=<name>`); a failed job uploads the HTML report and traces for 14 days.
+
 What it does (`run.sh`): builds the web bundle and the server into `build/ui-test/` (never `build/web` or `build/data`, so a dev
 server keeps running), generates the suite's own synthetic FIT files (`corpusgen -e2e`), starts its own Go server and Caddy on two
 free ports (never 18080/18081), uploads and publishes the shared fixtures once, and runs Playwright in the Docker image
