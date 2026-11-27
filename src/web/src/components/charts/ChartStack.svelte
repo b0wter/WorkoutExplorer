@@ -138,8 +138,16 @@
     stack.style.cssText = `--y-axis-width:${Y_AXIS_SIZE}px;--title-row-height:${TITLE_ROW_HEIGHT}px`;
     readPlot();
     observer.observe(stack);
+    // QA-76-r1-3: a height-only window change across the landscape cap moves --plot without a width change.
+    let plotFrame = 0;
+    const onResize = (): void => {
+      if (plotFrame === 0) plotFrame = requestAnimationFrame(() => { plotFrame = 0; readPlot(); });
+    };
+    window.addEventListener('resize', onResize);
     return () => {
       observer.disconnect();
+      window.removeEventListener('resize', onResize);
+      if (plotFrame !== 0) cancelAnimationFrame(plotFrame);
       if (frame !== 0) cancelAnimationFrame(frame);
     };
   });

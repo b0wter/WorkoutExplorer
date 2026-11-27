@@ -82,11 +82,15 @@ export const markupText = (key: string): string | undefined => (typeof dict[key]
 
 /** A lazy chunk's group, requested together with its import() (LG-3); English needs no file and no loader. Never rejects. */
 export function loadGroup(group: string, doc: Document = document): Promise<void> {
-  if (groups.includes(group)) return Promise.resolve();
+  // A second caller while the file is still loading gets the same promise, not an early resolve (the dialogs stayed English).
+  if (groups.includes(group)) return loading.get(group) ?? Promise.resolve();
   groups.push(group);
   const l = current;
-  return l == 'en' ? Promise.resolve() : import('./load').then((m) => m.fetchGroup(group, l, doc).then((t) => merge(l, t)), () => {});
+  const p = l == 'en' ? Promise.resolve() : import('./load').then((m) => m.fetchGroup(group, l, doc).then((t) => merge(l, t)), () => {});
+  loading.set(group, p);
+  return p;
 }
+const loading = new Map<string, Promise<void>>();
 
 /** Test seam: back to a fresh page. */
 export function resetI18n(): void {
@@ -95,5 +99,6 @@ export function resetI18n(): void {
   sink = () => {};
   dict = {};
   groups.length = 0;
+  loading.clear();
   listeners = [];
 }

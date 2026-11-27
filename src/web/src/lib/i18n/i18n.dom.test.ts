@@ -127,6 +127,16 @@ describe('switch and lazy groups (LG-1, LG-3)', () => {
     expect(t('h')).toBe('Hilfe');
   });
 
+  it('a second caller of a group still loading waits for the same file (info dialogs stayed English)', async () => {
+    html.dataset.hold = '';
+    await startLang(['page'], document);
+    const first = loadGroup('help');
+    await loadGroup('help');
+    expect(t('h')).toBe('Hilfe');
+    await first;
+    expect(fetched.filter((u) => u == '/de/help.json')).toHaveLength(1);
+  });
+
   it('the later of two quick switches wins', async () => {
     html.dataset.lang = 'en';
     await startLang(['page']);

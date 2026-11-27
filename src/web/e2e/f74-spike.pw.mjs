@@ -47,15 +47,7 @@ const WORDS = { en: /speed spike/i, de: /Geschwindigkeitsspitze/, es: /pico brev
 for (const [lang, re] of Object.entries(WORDS)) {
   test(`AP-24: the summary explanation names the speed spike filter (${lang})`, async ({ page }) => {
     await open(page, workout('spike-ride').view, { storage: { 'wx.lang': lang } });
-    // Opened while the language files still load, the dialog stays English: wait, and reload once if it still does.
-    let text = '';
-    for (let i = 0; i < 2 && !re.test(text); i++) {
-      if (i) await page.reload();
-      await page.waitForTimeout(2000);
-      await page.locator('[data-summary-info]').click();
-      await expect(page.locator('dialog[open] .dlg-body')).toBeVisible();
-      text = await page.locator('dialog[open] .dlg-body').innerText();
-    }
-    expect(text).toMatch(re);
+    await page.locator('[data-summary-info]').click();
+    await expect(page.locator('dialog[open] .dlg-body')).toContainText(re);
   });
 }

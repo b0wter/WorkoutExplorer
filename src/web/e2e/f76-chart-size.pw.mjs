@@ -79,7 +79,7 @@ test.describe('F-76 toggle', () => {
     await expectPlots(page, 200);
     await toggle(page).click();
     await expectPlots(page, 120);
-    expect(errors.filter((e) => !/localStorage|blocked/.test(e))).toEqual([]);
+    expect(errors).toEqual([]); // blocked storage raises no error at all: nothing is ignored (QA-76-r1-2)
   });
 
   test('a workout without distance has the toggle alone in the toolbar row; the leg view keeps the size', async ({ page }) => {
@@ -209,6 +209,14 @@ test.describe('F-76 no layout jump, no CSP violation', () => {
     expect(r.first).toBeGreaterThan(0);
     expect(r.last).toBe(r.first);
     if (r.cls !== null) expect(r.cls).toBeLessThan(0.01);
+    expect(errors).toEqual([]);
+    // Second, cached load (QA-76-r1-2): the same position at the first frame and at rest.
+    await page.reload();
+    await expectPlots(page, 200);
+    await page.waitForTimeout(500);
+    const r2 = await page.evaluate(() => ({ first: window.__below[0], last: Math.round(document.querySelector('section.laps').getBoundingClientRect().top + scrollY) }));
+    expect(r2.first).toBeGreaterThan(0);
+    expect(r2.last).toBe(r2.first);
     expect(errors).toEqual([]);
   });
 
