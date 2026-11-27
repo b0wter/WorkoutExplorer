@@ -59,9 +59,7 @@ async function editSwim(page, request) {
   return { errors, plus };
 }
 
-// BUG (found by B-18): the edit pins list formats distances with the workout's primary sport (here the bike session: "0.11 mi"),
-// not the leg the pin sits in (swim: yd). Readouts and the viewing page follow the leg.
-test.fail('F-72, YD-8: edit page: a pin on the swim leg reads in yd (BUG: reads mi)', async ({ page, request }, info) => {
+test('F-72, YD-8: edit page: a pin on the swim leg reads in yd', async ({ page, request }, info) => {
   test.skip(NOMAP.includes(info.project.name), 'no WebGL: the "+" lives on the map in two columns');
   const { errors, plus } = await editSwim(page, request);
   await plus('Add pin', 0.3);
@@ -76,8 +74,7 @@ test.fail('F-72, YD-8: edit page: a pin on the swim leg reads in yd (BUG: reads 
   expect(errors).toEqual([]);
 });
 
-// BUG (same cause as the pin above): the added-laps table reads mi on the swim leg.
-test.fail('F-72, YD-8: edit page: an added lap on the swim leg in yd (BUG: reads mi)', async ({ page, request }, info) => {
+test('F-72, YD-8: edit page: an added lap on the swim leg in yd', async ({ page, request }, info) => {
   test.skip(NOMAP.includes(info.project.name), 'no WebGL: the "+" lives on the map in two columns');
   const { errors, plus } = await editSwim(page, request);
   await plus('Add lap', 0.55);

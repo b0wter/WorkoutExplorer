@@ -5,7 +5,7 @@ Most-used features first; work top to bottom. Set Status to `done` (with the fil
 test: [README.md](README.md). Data: synthetic only; shared fixtures are in `fixtures.mjs`, new shapes go into
 `src/server/tools/corpusgen/e2e.go`.
 
-Already covered (not listed below): F-73, F-74, F-71, F-72 (swim yards, except the open items in B-18), F-67 leg switch and
+Already covered (not listed below): F-73, F-74, F-71, F-72 (swim yards), F-67 leg switch and
 aligned charts, the dialog shell, the header and readout layout sweep, the upload page (reserved drop zone, paused, fail-open,
 refusal, one upload).
 
@@ -28,7 +28,7 @@ refusal, one upload).
 | B-15 | done (`zip-gpx.pw.mjs`; hint only unconfigured: run.sh has no WORKOUT_EXPLORER_IOS_SHORTCUT_URL) | F-57, F-35, F-63 | GPX route download (a file with the route comes), zip upload (zip holding one FIT), iOS Shortcut hint on the upload page (only when configured) | `ride-30min` zipped in test setup |
 | B-16 | done (`sensors.pw.mjs`) | F-68 | Extra sensor streams: running dynamics and Stryd power charts appear only when present, labels fit at 360 px in de/es/fr | `run-dynamics`, `stryd-power` (corpus) |
 | B-17 | done (`security.pw.mjs`) | F-22, F-23, F-36 | Response smoke: published page and static pages carry CSP, `Referrer-Policy: no-referrer`, `X-Robots-Tag`; Open Graph tags in the head; no request leaves the site except tiles | any published fixture |
-| B-18 | done (`f72-open-water.pw.mjs`; two `test.fail`: pins and added laps in the edit page read mi on the swim leg of a multisport file) | F-72 (open items) | Yards: open-water swim with a map, pins and added laps in yd, fullscreen strip; imperial default from browser language (`locale: 'en-US'` vs `de-DE`) | `swim-bike-distance-fall` added to `FIXTURES` |
+| B-18 | done (`f72-open-water.pw.mjs`) | F-72 (open items) | Yards: open-water swim with a map, pins and added laps in yd, fullscreen strip; imperial default from browser language (`locale: 'en-US'` vs `de-DE`) | `swim-bike-distance-fall` added to `FIXTURES` |
 | B-19 | done (`helpers.mjs`: `touchPath`, `scrub`, `touchRange`; `drag` and `scan` are touch-aware; skips left in `help-share` F-40, `map` mouse block, `f75-lazy` range block: not part of this piece; F-74 readout skipped on iPhone, 6.1 s per chart pixel; legs flaky on iPad under load) | F-05, F-17, F-67 | Touch projects: helper that scrubs with real touch moves (CDP `Input.dispatchTouchEvent` on Chromium; WebKit has none: use `page.touchscreen.tap` plus long-press where the app allows) and a range selection on touch; then enable the readout and range checks now skipped on phones (F-74 readout, F-72 range, legs) | `ride-30min`, `triathlon` |
 | B-20 | done | suite | Stub every non-local request in the shared `open()`/page setup (as `map.pw.mjs` does): tests must not reach the tile host; then drop the openfreemap error filter in `edit.pw.mjs` | none |
 | B-21 | done | suite | `open()` adds a context-level route per call, so handlers stack and `errors.blocked` mixes pages: register once per context; Flakes under load: WebKit logs the suite's own blocked tile fetches as page errors: filter that once in `helpers.mjs` and drop the local openfreemap filter in `hiding.pw.mjs`; `f76-chart-size.pw.mjs:44` on WebKit (reload aborts lazy chunks, "Unable to preload CSS": wait for networkidle before reload as in `edit.pw.mjs`), `f76-chart-size.pw.mjs:84`, `dialogs.pw.mjs:6`, `laps.pw.mjs:145` on iPad | none |
@@ -48,4 +48,3 @@ shift check runs in Chromium only), the phone projects are emulation, not device
 
 | Found | Feature | Bug | Test |
 | --- | --- | --- | --- |
-| B-18, 2026-11-27 | F-72, F-56, F-65 | Edit page of a multisport file: pins and added laps on the swim leg read in mi, not yd; their distance unit follows the file's primary sport instead of the leg (readout and fullscreen strip already follow the leg) | `f72-open-water.pw.mjs`, two `test.fail`: drop `.fail` once fixed |

@@ -10,6 +10,7 @@ import type { PinsView } from '../pins';
 // with the owner chunk's dependency, instead of a third shared chunk in the viewing entry's preload list.
 import { MAX_PINS, PIN_NOTE_MAX, PIN_TITLE_MAX, PIN_TYPES, removed as removedText, typeName, dimReason, fromApi, hasVisibleRoute, pinName, snap, sortPins, toApi, type ApiPin, type PinType, type Shade, type ShownPin } from '../pins';
 
+import { legSport } from '../lib/sections/order';
 import { distanceUnit, formatDistance, formatElapsed } from '../lib/format';
 import { onLanguage } from '../lib/i18n';
 import { t } from './texts';
@@ -85,7 +86,8 @@ export function startPinEditor(env: PinEditorEnv, stored: readonly ApiPin[]): Pi
     const dist = data.metrics.distance;
     const u = view.units.get();
     const km = !!dist && r.every((i) => Number.isFinite(dist[i]));
-    const v = r.map((i) => (km ? formatDistance(dist![i], u, data.meta.sport) : formatElapsed(time[i] - time[0]))).join('–') + (km ? ' ' + distanceUnit(u, data.meta.sport) : '');
+    const ds = legSport(data.meta, r[0], r[r.length - 1]);
+    const v = r.map((i) => (km ? formatDistance(dist![i], u, ds) : formatElapsed(time[i] - time[0]))).join('–') + (km ? ' ' + distanceUnit(u, ds) : '');
     return r.length > 1 ? v : t('whereAt', { v });
   };
   /** Where an enabled item acts. */
