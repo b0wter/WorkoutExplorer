@@ -50,7 +50,7 @@ function probes() {
 const blockedByPage = new WeakMap();
 const routed = new WeakSet();
 /** Blocked outside requests of one page; the context route is registered once and sorts requests by their page. */
-function blockedOf(page) {
+export function blockedOf(page) {
   const ctx = page.context();
   if (!routed.has(ctx)) {
     routed.add(ctx);
