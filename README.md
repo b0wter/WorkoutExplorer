@@ -2,6 +2,16 @@
 
 A small, free viewer for FIT files: upload one, get a shareable activity page. Go server plus Svelte front end.
 
+**Live demo:** https://workouts.plugman.de
+
+| Ride, desktop, dark, satellite layer | Run, phone |
+| --- | --- |
+| ![Ride page on desktop, dark theme, satellite map: route, linked charts with the cursor mid-ride](docs/screenshots/ride-desktop.jpg) | ![Run page on a phone: summary, map, charts](docs/screenshots/run-phone.jpg) |
+
+![Triathlon page on a tablet with the Ride leg picked: map, linked charts](docs/screenshots/triathlon-tablet.jpg)
+
+Screenshots show synthetic workouts; regenerate with `make screenshots` (needs Docker and internet for map tiles).
+
 ## Install
 
 Releases are signed; see `deploy/RUNBOOK.md` for what every install shares, then the guide for your path: `deploy/DOCKER.md` (Docker Compose), `deploy/PODMAN.md` (rootless Podman) or `deploy/BAREMETAL.md` (systemd, no containers). The image is `ghcr.io/b0wter/workout-explorer`.
