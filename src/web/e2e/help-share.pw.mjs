@@ -48,7 +48,6 @@ test.describe('shareable range', () => {
   });
 
   test('F-40: Copy link to this selection, opened in a new page, selects the same range', async ({ page, isMobile }) => {
-    test.skip(isMobile, 'range drag needs a mouse (touch: B-19)');
     await page.addInitScript(() => {
       window.__copied = '';
       Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: (t) => { window.__copied = t; return Promise.resolve(); } } });
@@ -57,7 +56,7 @@ test.describe('shareable range', () => {
     await drag(page, 0.2, 0.6);
     await expect(page.locator('.range-panel')).toBeVisible();
     const before = await rangeCells(page);
-    await page.locator('.range-panel .share').click();
+    await (isMobile ? page.locator('.range-panel .share').tap() : page.locator('.range-panel .share').click());
     await expect(page.locator('.range-panel .share')).toHaveText('Link copied');
     const url = await page.evaluate(() => window.__copied);
     expect(url).toMatch(/\/w\/[^#]+#range=\d+-\d+$/);
