@@ -6,8 +6,24 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
+  # Scheduled runs only when main has new code since the last successful run; dispatch always runs.
+  changed:
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.c.outputs.run }}
+    steps:
+      - id: c
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh run list --repo ${{ github.repository }} --workflow ui-test.yml --branch main --status success --limit 1 --json headSha -q '.[0].headSha')
+          if [ "${{ github.event_name }}" = schedule ] && [ "$last" = "${{ github.sha }}" ]; then r=false; else r=true; fi
+          echo "run=$r" >> "$GITHUB_OUTPUT"
   ui-test:
+    needs: changed
+    if: github.event_name != 'schedule' || needs.changed.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
