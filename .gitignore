@@ -23,3 +23,6 @@
 
 # Claude stuff
 .claude
+
+# Crash dumps of the UI test browsers
+/src/web/e2e/core.*
