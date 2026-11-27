@@ -10,6 +10,7 @@ import type { CursorStore } from '../lib/cursor';
 import type { SelectionStore } from '../lib/selection';
 import type { UnitsStore } from '../lib/units';
 import type { ChartDecorator } from '../components/charts/uplot-options';
+import { legSport } from '../lib/sections/order';
 import { distanceUnit, formatDistance } from '../lib/format';
 import { PIN_TYPES, typeName, pinName, readPins, type PinType, type ShownPin } from '../lib/pins';
 
@@ -121,8 +122,9 @@ export function startPins(env: PinsEnv): PinsView {
   const where = (p: ShownPin): string => {
     if (!dist) return '';
     const u = units.get();
-    const d = (i: number): string => formatDistance(dist[i], u, data.meta.sport);
-    return (p.to === undefined ? d(p.from) : d(p.from) + '–' + d(p.to)) + ' ' + distanceUnit(u, data.meta.sport);
+    const ds = legSport(data.meta, p.from, p.to);
+    const d = (i: number): string => formatDistance(dist[i], u, ds);
+    return (p.to === undefined ? d(p.from) : d(p.from) + '–' + d(p.to)) + ' ' + distanceUnit(u, ds);
   };
 
   /** Every element of one pin carries data-pin and its type class; selection and legend reach all views through them. */

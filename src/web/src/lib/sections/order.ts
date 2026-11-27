@@ -16,6 +16,12 @@ export function ordered(meta: Pick<WorkoutMeta, 'sessions'>): Start[] | null {
   return [...meta.sessions].sort((a, b) => a.start - b.start).map((s, i) => ({ start: i ? s.start_index : 0, sport: s.sport }));
 }
 
+/** The sport whose units apply to samples a..b: their leg on a multisport workout (YD-8), else the workout's. */
+export function legSport(meta: Pick<WorkoutMeta, 'sessions' | 'sport'>, a: number, b = a): string {
+  const s = ordered(meta);
+  return (s && sportIn(s, a, b)) || meta.sport;
+}
+
 /** The sport of the section holding samples a..b (the last whose start ≤ a), or '' when the range
  *  reaches past that section's end (the next start, F-42 MS-6). No allocation (readout flush). */
 export function sportIn(secs: readonly Start[], a: number, b = a): string {

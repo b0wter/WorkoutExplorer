@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Lap, Session } from '../datafile';
 import { lapsBySection, legs, sectionRanges, sections } from '.';
-import { ordered, sportIn } from './order';
+import { legSport, ordered, sportIn } from './order';
 
 const s = (sport: string, start = 0, start_index = 0): Session =>
   ({ sport, sub_sport: '', start, end: start, start_index, end_index: start_index, totals: {} });
@@ -61,6 +61,10 @@ describe('ordered and sportIn (F-67 LP-10)', () => {
       { start: 8, sport: 'running' },
     ]);
     expect(sections({ sessions })?.map((x) => [x.start, x.sport])).toEqual(secs.map((x) => [x.start, x.sport]));
+  });
+  it('legSport: the leg of the points, else the workout sport (YD-8)', () => {
+    const meta = { sessions, sport: 'cycling' };
+    expect([legSport(meta, 1), legSport(meta, 5), legSport(meta, 0, 6), legSport({ sessions: [s('cycling')], sport: 'cycling' }, 1)]).toEqual(['swimming', 'cycling', 'cycling', 'cycling']);
   });
   it('a sample: the last section whose start ≤ it; a range: that section while it ends by the next start, else ""', () => {
     expect([0, 3, 4, 7, 8, 99].map((i) => sportIn(secs, i))).toEqual(['swimming', 'swimming', 'cycling', 'cycling', 'running', 'running']);
