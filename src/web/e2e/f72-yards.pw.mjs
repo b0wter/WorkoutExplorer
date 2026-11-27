@@ -31,8 +31,7 @@ test('F-72: switching units live changes yd to m without reloading', async ({ pa
   expect((await lapHeads(page)).join(' ')).not.toMatch(/yd/);
 });
 
-test('F-72: a range on a swim reads in yd', async ({ page, isMobile }) => {
-  test.skip(isMobile, 'range selection is a mouse drag');
+test('F-72: a range on a swim reads in yd', async ({ page }) => {
   await open(page, workout('pool-swim').view, IMP);
   await drag(page, 0.3, 0.6);
   const range = (await texts(page.locator('.range-panel .cell'))).join(' ');

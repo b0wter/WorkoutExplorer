@@ -2,9 +2,7 @@
 import { test, expect } from '@playwright/test';
 import { workout, open, hover, drag, desktopOnly } from './helpers.mjs';
 
-test.describe('legs, mouse', () => {
-  test.beforeEach(({ isMobile }) => { test.skip(isMobile, 'mouse scrubbing and range drag'); });
-
+test.describe('legs', () => {
   test('F-67: switching the leg clears the selected range', async ({ page }) => {
     await open(page, workout('triathlon').view);
     await drag(page, 0.01, 0.05);
