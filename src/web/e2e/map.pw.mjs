@@ -1,8 +1,10 @@
 // B-02 (F-06 map, F-26 fullscreen, F-33 cursor marker, AP-3 one connected line): the map. Tiles are stubbed (nothing leaves the host).
 import { test, expect } from '@playwright/test';
-import { workout, open, hover, texts } from './helpers.mjs';
+import { workout, open, hover as mouseHover, scrub, texts } from './helpers.mjs';
 
 const METRIC = { storage: { 'wx.units': 'metric' } };
+// Cursor at a fraction of the chart: hover with a mouse, a swipe ending there on touch.
+const hover = (page, f) => page.evaluate(() => matchMedia('(pointer: coarse)').matches).then((t) => (t ? scrub(page, Math.max(0, f - 0.02), f) : mouseHover(page, f)));
 const marker = (page) => page.locator('.wx-cursor-marker');
 
 // Opens a workout; `external` lists the outside requests open() blocked.
@@ -51,8 +53,7 @@ test.describe('map (B-02)', () => {
     expect(external.filter((u) => !/openfreemap\.org/.test(u))).toEqual([]);
   });
 
-  test.describe('mouse', () => {
-    test.beforeEach(({ isMobile }) => { test.skip(isMobile, 'mouse scrubbing (touch: B-19)'); });
+  test.describe('cursor', () => {
 
     test('F-33: the cursor marker follows the chart cursor', async ({ page }) => {
       const { errors } = await openMap(page, 'ride-30min');

@@ -17,13 +17,10 @@ test.describe('F-75 range panel (T-1)', () => {
     expect(box?.height ?? 0).toBe(0);
   });
 
-  test.describe('mouse', () => {
-    test.beforeEach(({ isMobile }) => { test.skip(isMobile, 'range drag'); });
-    test('a dragged range shows the panel', async ({ page }) => {
-      await open(page, workout('run-30min').view);
-      await drag(page, 0.2, 0.5);
-      await expect(page.locator('.range-panel')).toBeVisible();
-    });
+  test('a dragged range (long press on touch) shows the panel', async ({ page }) => {
+    await open(page, workout('run-30min').view);
+    await drag(page, 0.2, 0.5);
+    await expect(page.locator('.range-panel')).toBeVisible();
   });
 });
 
