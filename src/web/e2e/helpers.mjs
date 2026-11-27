@@ -47,6 +47,24 @@ function probes() {
   requestAnimationFrame(tick);
 }
 
+const blockedByPage = new WeakMap();
+const routed = new WeakSet();
+/** Blocked outside requests of one page; the context route is registered once and sorts requests by their page. */
+function blockedOf(page) {
+  const ctx = page.context();
+  if (!routed.has(ctx)) {
+    routed.add(ctx);
+    ctx.route(/^https?:\/\/(?!(localhost|127\.0\.0\.1)[:/])/, (r) => {
+      let p;
+      try { p = r.request().frame().page(); } catch {} // service-worker requests have no frame
+      blockedByPage.get(p)?.push(r.request().url());
+      return r.abort();
+    });
+  }
+  if (!blockedByPage.has(page)) blockedByPage.set(page, []);
+  return blockedByPage.get(page);
+}
+
 /** Opens a page with browser storage preset (wx.lang, wx.units, wx.theme, wx.split.*) before any script runs.
  *  Returns the list of page errors and CSP violations seen so far (the array keeps filling);
  *  `.blocked` on it lists the outside requests that were aborted. */
@@ -57,11 +75,19 @@ export async function open(page, url, { storage = {}, wait = true, block = false
     try { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); } catch {}
   }, { s: { 'wx.lang': 'en', ...storage }, block });
   const errors = [];
-  // The suite never reaches an outside host: every non-local request is aborted and its URL recorded in `errors.blocked`.
-  Object.defineProperty(errors, 'blocked', { value: [] }); // non-enumerable: tests compare `errors` with toEqual([])
-  await page.context().route(/^https?:\/\/(?!(localhost|127\.0\.0\.1)[:/])/, (r) => { errors.blocked.push(r.request().url()); return r.abort(); });
-  // No WebGL in headless Firefox: the map cannot start there, which is not what the suite checks.
-  page.on('pageerror', (e) => { if (!/WebGL/i.test(String(e))) errors.push(String(e)); });
+  // A navigation (goto, reload) while lazy chunks load aborts them; WebKit logs that as "Unable to preload CSS". Not an app error.
+  let navigating = 0;
+  for (const m of ['goto', 'reload']) {
+    const orig = page[m].bind(page);
+    page[m] = async (...a) => { navigating++; try { return await orig(...a); } finally { navigating--; } };
+  }
+  // The suite never reaches an outside host: every non-local request is aborted and its URL recorded in `errors.blocked` (per page).
+  Object.defineProperty(errors, 'blocked', { value: blockedOf(page) }); // non-enumerable: tests compare `errors` with toEqual([])
+  // No WebGL in headless Firefox: the map cannot start there. WebKit logs the suite's own aborted tile/font fetches as page errors.
+  page.on('pageerror', (e) => {
+    if (navigating && /Unable to preload CSS/.test(String(e))) return;
+    if (!/WebGL|(tiles\.openfreemap\.org|server\.arcgisonline\.com)/i.test(String(e))) errors.push(String(e));
+  });
   page.on('console', (m) => { if (/Content.Security.Policy|Refused to/i.test(m.text())) errors.push('csp: ' + m.text()); });
   await page.goto(url);
   if (wait) await charts(page);

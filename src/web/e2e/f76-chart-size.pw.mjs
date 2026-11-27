@@ -48,6 +48,7 @@ test.describe('F-76 toggle', () => {
     await open(page, a.view);
     await toggle(page).click();
     await expectPlots(page, 200);
+    await page.waitForLoadState('networkidle'); // a reload while lazy chunks load aborts them (WebKit: "Unable to preload CSS")
     await page.reload();
     await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
     await expectPlots(page, 200);

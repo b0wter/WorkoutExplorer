@@ -46,8 +46,7 @@ const hav = (a, b, c, d) => {
 };
 const positions = (d) => d.lat.map((la, i) => (Number.isNaN(la) ? null : [la, d.lon[i]]));
 const key = (p) => p[0].toFixed(6) + ',' + p[1].toFixed(6);
-/** Errors of a page that also loads the map: WebKit logs the suite's own aborted tile fetches as page errors. */
-const appErrors = (errors) => errors.filter((e) => !/tiles\.openfreemap\.org/.test(e));
+const appErrors = (errors) => errors;
 const summaryText = (page) => page.locator('.summary').innerText();
 
 test('F-16, F-55, SH-8: radii set on the edit page and saved; no position inside either radius reaches the published page', async ({ page, request, context }) => {
