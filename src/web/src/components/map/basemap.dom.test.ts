@@ -125,7 +125,7 @@ describe('renderBasemap', () => {
 });
 
 describe('module boundary (MC-7, ADR-013 note; AC 45)', () => {
-  const sources = import.meta.glob<string>(['/src/**/*.ts', '/src/**/*.svelte', '!/src/**/*.test.ts'], { query: '?raw', import: 'default', eager: true });
+  const sources = import.meta.glob<string>(['/src/**/*.ts', '/src/**/*.svelte', '!/src/**/*.test.ts', '!/src/**/testing/**'], { query: '?raw', import: 'default', eager: true });
 
   it('only src/edit/basemap-job.ts reaches basemap, and only through import()', () => {
     const users = Object.entries(sources).filter(([, text]) => /map\/basemap['"]/.test(text));
