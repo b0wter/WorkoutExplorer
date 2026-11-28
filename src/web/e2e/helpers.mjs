@@ -157,9 +157,11 @@ export async function touchPath(page, fracs, { hold = 0, yFrac = 0.5, steps = 6 
   if (page.context().browser().browserType().name() === 'chromium') {
     const cdp = await page.context().newCDPSession(page);
     const send = (type, f) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: f === null ? [] : [{ ...at(f), id: 1 }] });
-    await send('touchStart', pts[0]);
-    if (hold) await page.waitForTimeout(hold);
-    for (const f of pts.slice(1)) { await send('touchMove', f); await page.waitForTimeout(16); }
+    // B-28: without a hold, send the first move together with the start: a swipe whose first move arrives after the app's 400 ms
+    // long press (CPU-starved runner) would select a range instead of scrubbing.
+    if (hold) { await send('touchStart', pts[0]); await page.waitForTimeout(hold); }
+    else await Promise.all([send('touchStart', pts[0]), pts.length > 1 ? send('touchMove', pts[1]) : null]);
+    for (const f of pts.slice(hold ? 1 : 2)) { await send('touchMove', f); await page.waitForTimeout(16); }
     await send('touchEnd', null);
     await cdp.detach();
     return;

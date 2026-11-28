@@ -50,7 +50,8 @@ test('F-20, F-12: the viewing link opens the published workout page', async ({ p
   await page.locator('.chart-stack canvas').first().waitFor({ state: 'visible' });
   await expect(page.locator('.summary')).toBeVisible();
   await expect(page.locator('.edit-panel')).toHaveCount(0);
-  expect(errors).toEqual([]);
+  // B-28: the click leaves the edit page while its lazy chunks load; WebKit logs the aborted preload (open() only filters goto/reload).
+  expect(errors.filter((e) => !/Unable to preload CSS/.test(e))).toEqual([]);
 });
 
 test('F-20: after publishing, the edit link still opens the edit view', async ({ page, request }) => {

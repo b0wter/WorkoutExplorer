@@ -14,11 +14,13 @@ test('F-68: absent streams: no dynamics or Stryd charts on a plain run', async (
 for (const [fixture, re] of [['run-dynamics', /Vert\. osc\.|Contact|Stride/], ['stryd-power', /Power/]]) {
   test(`F-68: ${fixture} adds its charts and readout cells`, async ({ page }) => {
     const e1 = await open(page, workout('run-30min').view);
+    await expect.poll(() => count(page)).toBeGreaterThan(0);
     const base = await count(page);
     await page.goto('about:blank');
     const e2 = await open(page, workout(fixture).view);
-    expect(await count(page)).toBeGreaterThan(base);
-    expect((await labels(page)).join('|')).toMatch(re);
+    // B-28: charts and readout cells are added after the first canvas shows (loaded in WebKit under load): poll.
+    await expect.poll(() => count(page)).toBeGreaterThan(base);
+    await expect.poll(async () => (await labels(page)).join('|')).toMatch(re);
     expect([...e1, ...e2]).toEqual([]);
   });
 }
