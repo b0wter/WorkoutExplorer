@@ -37,11 +37,20 @@ function probes() {
     new PerformanceObserver((l) => { for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true });
     window.__clsOk = true;
   } catch {}
+  // Document-relative boxes of the server-rendered blocks (any browser; CLS exists on Chromium only).
+  const boxes = () => Object.fromEntries(['.head', '.map-slot', '#charts-slot', 'section.laps'].map((q) => {
+    const e = document.querySelector(q);
+    if (!e) return [q, null];
+    const r = e.getBoundingClientRect();
+    return [q, [r.left + scrollX, r.top + scrollY, r.width, r.height].map(Math.round)];
+  }));
+  window.__boxes = boxes;
   const tick = () => {
     const m = document.querySelector('.map-slot');
     const L = document.querySelector('.layout');
     if (m && L && [...document.querySelectorAll('link[rel=stylesheet]')].every((l) => l.sheet)) {
       window.__first = { w: m.getBoundingClientRect().width, lw: L.getBoundingClientRect().width };
+      window.__boxes0 = boxes();
     } else requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -105,6 +114,17 @@ export async function open(page, url, { storage = {}, wait = true, block = false
     }
   }
   return errors;
+}
+
+/** No layout jump on any browser: header, map, chart slot and laps are where they were at the first styled frame (1 px slack). */
+export async function expectNoJump(page) {
+  const r = await page.evaluate(() => ({ first: window.__boxes0, rest: window.__boxes() }));
+  expect(r.first, 'first-frame boxes recorded').toBeTruthy();
+  for (const q of Object.keys(r.first)) {
+    if (!r.first[q]) { expect(r.rest[q], q).toBeNull(); continue; }
+    // The laps block is the last one: its own height may grow on hydration, nothing below it is measured.
+    r.first[q].forEach((v, i) => q != 'section.laps' || i < 3 ? expect(Math.abs(v - r.rest[q][i]), `${q} [left, top, width, height][${i}]: ${v} -> ${r.rest[q][i]}`).toBeLessThanOrEqual(1) : 0);
+  }
 }
 
 /** Charts drawn (no waitForFunction: it evals a string, which the page's CSP blocks). */
