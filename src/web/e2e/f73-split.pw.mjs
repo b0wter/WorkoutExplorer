@@ -21,12 +21,11 @@ test.describe('F-73 wide screen', () => {
       expect(s.r).toBeLessThan(0.615);
       expect(Math.abs(s.first - s.r)).toBeLessThan(0.005);
       if (s.cls !== null) expect(s.cls).toBeLessThan(0.01);
-      if (pageName == 'view') await expectNoJump(page); // edit page: see the test.fail below
+      if (pageName == 'view') await expectNoJump(page);
     });
   }
 
-  // B-29 finding: the edit page's client-rendered panel pushes section.laps down 40 px after the first frame (below the fold at 1080 px, CLS stays under 0.01).
-  test.fail('edit page: header, map, charts and laps stay where the first frame put them (B-29 bug: laps +40 px)', async ({ page }) => {
+  test('edit page: header, map, charts and laps stay where the first frame put them', async ({ page }) => {
     await open(page, workout('run-30min').edit, { storage: { 'wx.split.wide': '60' } });
     await page.waitForTimeout(1500);
     await expectNoJump(page);

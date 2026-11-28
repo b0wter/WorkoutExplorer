@@ -197,6 +197,10 @@
   .has-map .layout > .edit-panel {
     margin: 16px 16px 4px 24px;
   }
+  /* The "+" button (40 px) is added after the first frame: its row is reserved, so laps do not move (B-29). */
+  .has-map .layout > .pins-slot:not([data-url]) {
+    min-height: 40px;
+  }
 }
 
 /* The generic page's content (E-4) and server errors. */
