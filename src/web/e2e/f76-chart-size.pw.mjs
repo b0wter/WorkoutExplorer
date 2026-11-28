@@ -1,7 +1,7 @@
 // F-76 (DS-8): taller charts. Toggle 120 -> 200 -> 120 px, remembered, blocked storage, landscape cap,
 // no layout jump with tall stored, no CSP violation. Synthetic workouts only.
 import { test, expect } from '@playwright/test';
-import { workout, open } from './helpers.mjs';
+import { workout, open, expectNoJump } from './helpers.mjs';
 
 const KEY = 'wx.charts';
 const toggle = (page) => page.locator('.size-toggle');
@@ -209,6 +209,7 @@ test.describe('F-76 no layout jump, no CSP violation', () => {
     expect(r.first).toBeGreaterThan(0);
     expect(r.last).toBe(r.first);
     if (r.cls !== null) expect(r.cls).toBeLessThan(0.01);
+    await expectNoJump(page); // B-29: also on WebKit, Firefox and phones
     expect(errors).toEqual([]);
     // Second, cached load (QA-76-r1-2): the same position at the first frame and at rest.
     await page.reload();
@@ -217,6 +218,7 @@ test.describe('F-76 no layout jump, no CSP violation', () => {
     const r2 = await page.evaluate(() => ({ first: window.__below[0], last: Math.round(document.querySelector('section.laps').getBoundingClientRect().top + scrollY) }));
     expect(r2.first).toBeGreaterThan(0);
     expect(r2.last).toBe(r2.first);
+    await expectNoJump(page);
     expect(errors).toEqual([]);
   });
 
