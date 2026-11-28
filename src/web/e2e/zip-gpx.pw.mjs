@@ -1,4 +1,4 @@
-// F-57 GPX route download, F-35 zip upload, F-63 iOS Shortcut hint (unconfigured: run.sh sets no WORKOUT_EXPLORER_IOS_SHORTCUT_URL).
+// F-57 GPX route download, F-35 zip upload, F-63/F-34 iOS Shortcut hint and About link (run.sh sets a throwaway WORKOUT_EXPLORER_IOS_SHORTCUT_URL).
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -52,10 +52,27 @@ test('F-35: a zip holding one FIT uploads through the UI and opens the draft', a
   expect(errors).toEqual([]);
 });
 
-test('F-63: without the setting the upload page has no Shortcut hint', async ({ page }) => {
-  const errors = await open(page, '/', { wait: false });
-  await expect(page.locator('#page')).toHaveAttribute('data-state', 'ready');
-  await expect(page.locator('.shortcut')).toHaveCount(0);
-  await expect(page.locator('a[href*="icloud"]')).toHaveCount(0);
+const SHORTCUT = 'https://www.icloud.com/shortcuts/e2e-throwaway'; // run.sh sets WORKOUT_EXPLORER_IOS_SHORTCUT_URL; "unset: no hint" is the Go shell test
+
+// The hint is server-configured, not user-agent dependent: it shows for every visitor.
+for (const [label, ua] of [['default UA', undefined], ['iPhone UA', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1']]) {
+  test.describe(label, () => {
+    test.use(ua ? { userAgent: ua } : {});
+    test('F-63: the upload page hint links to the Shortcut and to the About section', async ({ page }) => {
+      const errors = await open(page, '/', { wait: false });
+      await expect(page.locator('#page')).toHaveAttribute('data-state', 'ready');
+      const hint = page.locator('p.shortcut');
+      await expect(hint).toBeVisible();
+      await expect(hint.locator('a[data-p=link]')).toHaveAttribute('href', SHORTCUT);
+      await expect(hint.locator('a[data-p=more]')).toHaveAttribute('href', '/about#shortcut');
+      expect(errors).toEqual([]);
+    });
+  });
+}
+
+test('F-34: the About page has the Shortcut section with the link', async ({ page }) => {
+  const errors = await open(page, '/about', { wait: false });
+  await expect(page.locator('#shortcut')).toBeVisible();
+  await expect(page.locator(`#shortcut ~ p a[href="${SHORTCUT}"]`).first()).toBeVisible();
   expect(errors).toEqual([]);
 });

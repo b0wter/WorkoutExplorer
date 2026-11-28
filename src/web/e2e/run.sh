@@ -32,7 +32,7 @@ pids=""
 cleanup() { for p in $pids; do kill "$p" 2>/dev/null || true; done; wait 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
 
-WORKOUT_EXPLORER_BASE_URL=$base WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV4=240 \
+WORKOUT_EXPLORER_BASE_URL=$base WORKOUT_EXPLORER_UPLOADS_PER_HOUR_IPV4=240 WORKOUT_EXPLORER_IOS_SHORTCUT_URL=https://www.icloud.com/shortcuts/e2e-throwaway \
 	"$out/workout-explorer" serve -addr "127.0.0.1:$api_port" -data "$out/data" -web "$out/web" >"$out/server.log" 2>&1 &
 pids="$pids $!"
 WX_SITE=$base WX_BIND=127.0.0.1 WX_API=127.0.0.1:$api_port WX_DATA=$out/data \
