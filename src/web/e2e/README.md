@@ -66,7 +66,7 @@ A layout-specific test restricts itself: `desktopOnly(test, why)` (helpers.mjs) 
 | `info-pages.pw.mjs` | F-29, F-38, F-28, F-37 About attributions, no Impressum (bare 404), generic expired page, Report form (validation, keeps text, submit answer), report-delete page with an invalid key |
 | `mine.pw.mjs` | F-53 My workouts: empty state, a UI upload is listed, survives a reload, Forget empties it |
 | `upload.pw.mjs` | upload page: reserved drop zone, paused, fail-open, refusal, one real upload |
-| `zip-gpx.pw.mjs` | F-57 GPX download (one track, points, no time), F-35 zip upload (zip built in the test, deflate), F-63 no Shortcut hint when unconfigured |
+| `zip-gpx.pw.mjs` | F-57 GPX download (one track, points, no time), F-35 zip upload (zip built in the test, deflate), F-63 Shortcut hint on the upload page (default and iPhone UA), F-34 About link (run.sh sets a throwaway Shortcut URL) |
 | `sensors.pw.mjs` | F-68 running dynamics and Stryd power charts and readout cells only when the data has them (absent on a plain run), labels fit at 360 px in de/es/fr (desktop projects) |
 | `security.pw.mjs` | F-23, F-36 Open Graph tags on the published page, no request to a host but the tile hosts (all projects) |
 | `helpers.mjs`, `fixtures.mjs`, `setup.mjs` | helpers, fixture list, global setup |
